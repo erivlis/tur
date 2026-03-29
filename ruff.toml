@@ -1,0 +1,63 @@
+line-length = 120
+
+# Exclude a variety of commonly ignored directories.
+src = ["src"]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".idea",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules", # Added back
+    "venv",
+    ".tur", # Explicitly ignore the state directory
+]
+
+[format]
+quote-style = "single"
+
+[lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "C90",
+    "I",
+    "N",
+    "U",
+    "C4",
+    "PIE",
+    "PT",
+    "SIM",
+    # "ERA",
+    "TRY",
+    "RUF",
+]
+ignore = ["F401", "PT011", "RUF001", "TRY003"]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "single"
+multiline-quotes = "single"
+
+[lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 15

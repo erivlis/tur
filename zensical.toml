@@ -1,0 +1,54 @@
+# ============================================================================
+# Zensical Configuration for Tur
+# ============================================================================
+
+[project]
+site_name = "Tur: Persona Engineering Framework"
+site_description = "Transform LLMs into deterministic engineering partners using the Council Architecture."
+site_author = "Eran Rivlis, Ariel"
+# site_url = "https://your-tur-domain.com/"
+
+copyright = """
+Copyright &copy; 2026 Eran Rivlis
+"""
+
+# Explicit Navigation
+nav = [
+  { "Home" = "index.md" },
+  { "Usage Guide" = "usage.md" },
+  { "Proposals (EPs)" = [
+      "proposals/EP-0000-process.md",
+      "proposals/EP-0001-project-boundaries.md",
+      "proposals/EP-0002-roadmap.md",
+      "proposals/EP-0100-aleph-server.md"
+  ]}
+]
+
+[project.theme]
+language = "en"
+
+features = [
+    "content.code.annotate",
+    "content.code.copy",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.instant",
+    "navigation.instant.prefetch",
+    "navigation.path",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.tracking",
+    "search.highlight",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"

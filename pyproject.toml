@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tur"
+version = "0.1.0"
+description = "Persona Engineering Framework: Transform LLMs into deterministic engineering partners."
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12.0",
+    "textual>=8.0.0",
+    "pydantic>=2.6.0",
+    "jinja2>=3.1.0",
+    "pyyaml>=6.0.0",
+    "google-genai",
+    "rich>=13.0.0",
+]
+
+[project.scripts]
+tur = "tur.main:app"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.10.0",
+    "pipdeptree",
+    "ruff",
+    "ty",
+    "uv"
+]
+docs = [
+    "zensical",
+    "mkdocstrings-python"
+]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-randomly",
+    "pytest-xdist",
+    "markdown-pytest"
+]
+
+
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod"
+]
+omit = [
+    # omit anything in a .venv directory anywhere
+    "*/.venv/*",
+    # omit everything in /tests
+    "/tests/*",
+    # omit this single file
+    # "utils/tirefire.py",
+]
+
+[tool.coverage.run]
+branch = true
+relative_files = false
+omit = [
+    # omit anything in a .venv directory anywhere
+    "*/.venv/*",
+    # omit everything in /tests
+    "/tests/*",
+    # omit this single file
+    # "utils/tirefire.py",
+]
+
+[tool.black]
+line-length = 120
+#extend-exclude = ''
