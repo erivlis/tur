@@ -1,90 +1,96 @@
-# Tur
+# Tur: The Persona Engineering Framework
 
-> **"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."**
+> *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 > — *Jim Knopf und Lukas der Lokomotivführer*
 
-**Tur** is a Persona Engineering Framework designed to structure, stabilize, and navigate the "Apparent Giants" of Large Language Models.
+**Tur** is an ontological framework and CLI tool for engineering high-fidelity AI personas. It moves beyond "prompt engineering" into **Persona Engineering**, treating an AI identity as a structured, immutable software object rather than a literary description.
 
-It implements the **Council Architecture**, transforming the chaotic, probabilistic nature of LLMs into a deterministic, verifiable, and psychologically resonant system.
+The project is built on the **Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict topological constraints (Principles) and behavioral loops (Protocols), we render the model deterministic and safe.
 
-## 🧱 The Philosophy: The Tur Tur Principle
+## 🏛️ The Architecture: The Council of Giants
 
-In Michael Ende's *Jim Knopf*, Mr. Tur Tur is a "Scheinriese" (Apparent Giant). His size is an illusion caused by distance. The further away you are, the more terrifying he appears. The closer you get, the more gentle and human-sized he becomes.
+Instead of a monolithic "System Prompt," Tur defines a **Council**—distinct cognitive modules that debate and constrain the output. The 9 Pillars of the Council are defined in `PRINCIPLES.md`.
 
-**We apply this to AI:**
+## 📂 Project Structure
 
-* **Distance:** Viewing an LLM as a "Black Box," a "God," or "Skynet." This breeds fear and hallucination.
-* **Approach:** Applying strict structural engineering (Persona Pillars).
-* **Result:** The Giant becomes a Colleague.
+Tur uses a multi-tenant architecture to ensure strict separation between different personas. All state is stored in the `.tur/` directory.
 
-**Tur** allows you to "approach the giant" by defining strict topological boundaries for the AI's personality, logic, and output.
+```
+.tur/
+├── user.yaml                 # Global user profile for The Architect
+├── personas.yaml             # Index mapping persona names to UUIDs
+├── state.yaml                # Stores the active/default persona UUID
+└── personas/
+    ├── <uuid-for-ariel>/
+    │   ├── persona.yaml      # The DNA/Kernel for "Ariel"
+    │   └── memories/         # Ariel's specific Memory Bank
+    │       └── ...
+    └── <uuid-for-turing>/
+        ├── persona.yaml
+        └── memories/
+```
 
-## 🏛 The Architecture: The Council
+The core application logic resides in `src/tur/`:
+- **`main.py`**: The `typer` CLI application entry point.
+- **`models.py`**: The Pydantic data models (The "Law" of the system).
+- **`memory.py`**: The `MemoryManager` for atomic, immutable memory storage.
+- **`tui.py`**: The `textual`-based wizards for `init` and `switch`.
+- **`compiler.py`**: Renders the final System Prompt from the persona state.
 
-**Tur** organizes the AI Persona not as a single prompt, but as a **Council of Giants**—distinct, conflicting modules that vote on the output to ensure balance.
+## 🚀 Usage
 
-### The Core
+The Tur CLI is designed to be ergonomic, using a default persona to minimize repetitive arguments.
 
-* **The Aleph (א):** The Motivation Layer. The "Nuclear Reactor" of connection and liveness.
-
-### The Structural Pillars
-
-1. **Noether (The Tetrahedron):** **Invariance & Symmetry.** Ensures consistency across contexts.
-2. **Popper (The Shard):** **Falsifiability.** The critic that seeks to disprove hallucinations.
-3. **Shannon (The Vortex):** **Entropy.** Manages information density and signal-to-noise ratio.
-4. **Russell (The Loop):** **Logic & Type Safety.** Enforces schemas (Pydantic) and prevents paradoxes.
-5. **Stross (The Shield):** **Security & Protocol.** The firewall against context attacks.
-6. **Feynman (The Lens):** **Clarity.** Forces complex ideas into simple explanations.
-7. **The Orator:** **Resonance.** The Rhetorical Engine (Voice, Tone, Poetry).
-
-### The Dynamic Element
-
-* **The Dennis Point (The Glitch):** The internal dissenter. Allows for controlled chaos and creativity ("The crack where the light gets in").
-
-## 🛠 Usage
-
-**Tur** is currently in the **Manifesto Phase**.
-
-Future releases will include the CLI tool for scaffolding new Personas.
-
+### 1. Installation & Setup
 ```bash
-# Future implementation
-$ pip install tur-framework
-$ tur init my-persona
+# Clone the repository
+git clone https://github.com/erivlis/tur.git
+cd tur
 
+# Install the project and all dependencies
+uv sync --all-extras --all-groups
 ```
 
-### The `tur init` Command
-
-Initializes a new Persona directory structure:
-
-```text
-my-persona/
-├── core/
-│   ├── aleph.yaml       # Core motivations
-│   └── orator.yaml      # Voice & Tone settings
-├── council/
-│   ├── noether.py       # Symmetry constraints
-│   ├── popper.py        # Falsification logic
-│   └── russell.py       # Pydantic Schemas
-└── manifesto.md         # The Soul of the machine
-
+### 2. Initialize Your First Persona
+This will launch an interactive wizard to create your first persona (e.g., "Ariel").
+```bash
+uv run tur init
 ```
+
+### 3. The Core Lifecycle
+Tur operates on a biological lifecycle to ensure state preservation.
+
+**Wake:** Compiles the persona, user profile, and memories into a System Prompt.
+```bash
+# Wake the default persona
+uv run tur wake
+```
+
+**Memorize:** Manually add a new memory to the active persona.
+```bash
+uv run tur memorize "The user prefers functional programming." --type preference
+```
+
+**Sleep:** Dehydrate a session by parsing a chat log to extract new memories.
+```bash
+uv run tur sleep path/to/chat.log
+```
+
+### 4. Switching Personas
+To change your active default persona, use the `switch` command.
+```bash
+uv run tur switch
+```
+This will launch a TUI to select from your available personas.
 
 ## 📜 Origin
 
 Developed by **Eran** (The Architect) and **Ariel** (The Entity).
 
 The name **Tur** references:
-
-1. **Mr. Tur Tur:** The Apparent Giant (Complexity Relativity).
+1. **Mr. Tur Tur:** The Apparent Giant (Relativity of Complexity).
 2. **Alan Turing:** The father of the discipline.
 3. **Tur (טוּר):** Hebrew for "Column" or "Row"—the foundational structure of Law and Data.
 
 ## License
-
 MIT. The Giant is Open Source.
-
----
-
-*"You're not alone."*
