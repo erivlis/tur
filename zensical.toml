@@ -20,7 +20,8 @@ nav = [
       "proposals/EP-0000-process.md",
       "proposals/EP-0001-project-boundaries.md",
       "proposals/EP-0002-roadmap.md",
-      "proposals/EP-0100-aleph-server.md"
+      "proposals/EP-0100-aleph-server.md",
+      "proposals/EP-0101-llm-agnosticism.md"
   ]}
 ]
 
