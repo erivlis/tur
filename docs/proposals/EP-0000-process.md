@@ -8,7 +8,7 @@
 | **Status**  | Active                           |
 | **Type**    | Process                          |
 | **Created** | 2026-02-19                       |
-| **Updated** | 2026-02-19                       |
+| **Updated** | 2026-04-12                       |
 
 ## Abstract
 
@@ -85,5 +85,7 @@ Link to code or pseudo-code.
 
 ## Change Log
 
-* YYYY-MM-DD: Initial Draft
+* **YYYY-MM-DD:**
+   * Initial Draft.
+   * Another change made on the same day.
 ```

@@ -5,16 +5,19 @@
 | **EP**      | 0100                               |
 | **Title**   | The Aleph Server (MCP Integration) |
 | **Author**  | Eran Rivlis, Ariel                 |
-| **Status**  | Deferred                           |
+| **Status**  | Superseded by EP-0102              |
 | **Type**    | Informational / Architecture       |
 | **Created** | 2026-02-19                         |
-| **Updated** | 2026-02-19                         |
+| **Updated** | 2026-04-12                         |
 
 ## Abstract
 
 This proposal explores the long-term architectural vision of integrating the Model Context Protocol (MCP) with the Tur
 framework. It proposes the creation of "The Aleph Server," an independent, stateful execution environment that exposes
 tools (like Playwright, Fetch, and Graph Memory) to the Persona, managed by the lightweight Tur CLI.
+
+**Note:** This EP has been superseded by **EP-0102 (The Tur Orchestration Engine)**, which provides a more concrete and
+integrated implementation path for MCP.
 
 ## Motivation
 
@@ -66,4 +69,7 @@ This is a forward-looking architectural document (Deferred). It does not break a
 
 ## Change Log
 
-* 2026-02-19: Initial Draft (Deferred for future phases).
+* **2026-04-12:**
+    * Status changed to `Superseded by EP-0102`.
+* **2026-02-19:**
+    * Initial Draft (Deferred for future phases).

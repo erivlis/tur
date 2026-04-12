@@ -6,7 +6,7 @@ from typing import Optional
 import yaml
 from textual._path import CSSPathType
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, Grid
+from textual.containers import Grid, Horizontal, Vertical
 from textual.driver import Driver
 from textual.widget import Widget
 from textual.widgets import Button, Footer, Header, Input, Label, OptionList, Static
@@ -113,7 +113,7 @@ class PersonaInitApp(App):
         with open(file_path, "w", encoding="utf-8") as f:
             yaml.dump(persona.model_dump(mode='json'), f, sort_keys=False)
         if index_path.exists():
-            with open(index_path, "r", encoding="utf-8") as f:
+            with open(index_path, encoding="utf-8") as f:
                 index_data = yaml.safe_load(f) or {"personas": []}
                 index = PersonaIndex(**index_data)
         else:

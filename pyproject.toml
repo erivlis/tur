@@ -15,10 +15,12 @@ dependencies = [
     "pyyaml>=6.0.0",
     "google-genai",
     "rich>=13.0.0",
+    "mcp",
 ]
 
 [project.scripts]
 tur = "tur.main:app"
+mcp-server-tur = "tur.mcp_server:main"
 
 [dependency-groups]
 dev = [

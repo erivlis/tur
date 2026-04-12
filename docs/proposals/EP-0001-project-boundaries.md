@@ -5,16 +5,19 @@
 | **EP**      | 0001                                    |
 | **Title**   | Project Boundaries (Core vs. Periphery) |
 | **Author**  | Eran Rivlis                             |
-| **Status**  | Draft                                   |
+| **Status**  | Superseded by EP-0102                   |
 | **Type**    | Informational                           |
 | **Created** | 2026-02-19                              |
-| **Updated** | 2026-02-19                              |
+| **Updated** | 2026-04-12                              |
 
 ## Abstract
 
 This proposal formally defines the architectural boundary between the Tur "Core" (`src/tur/`) and its "Periphery" (
 `tools/`). It establishes strict rules against feature creep by ensuring that heavy, non-deterministic, or
 highly-entropic operations (like web scraping or browser automation) are kept out of the core framework.
+
+**Note:** This EP has been superseded by **EP-0102 (The Tur Orchestration Engine)**, which provides a more robust and
+standardized mechanism (MCP) for integrating external tools without compromising the core.
 
 ## Motivation
 
@@ -66,10 +69,9 @@ Playwright to fetch dynamic HTML and convert it to Markdown. It does not import 
 
 No code is broken. This is an informational EP that formalizes existing implicit rules.
 
-## Reference Implementation
-
-* See `tools/smart_fetch.py` for the standard of how Periphery tools should be structured.
-
 ## Change Log
 
-* 2026-02-19: Initial Draft
+* **2026-04-12:**
+    * Status changed to `Superseded by EP-0102`.
+* **2026-02-19:**
+    * Initial Draft.
