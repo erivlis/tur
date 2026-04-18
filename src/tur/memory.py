@@ -1,42 +1,87 @@
 import contextlib
 import os
+import tempfile
 from pathlib import Path
 
 import yaml
 
-from tur.models import Memory
+from tur.models import Memory, MemoryScope
 
 
 class MemoryManager:
     """
     Manages the 'Memory Bank' for a specific Persona.
-    Handles atomicity, immutability, and retrieval.
+    Handles atomicity, immutability, retrieval, and Federation (Universal vs. Incarnational).
     """
 
-    def __init__(self, base_dir: Path = Path(".tur")):
-        # base_dir is now expected to be the specific persona directory
-        # e.g., Path(".tur/personas/f47ac10b-58cc-4372-a567-0e02b2c3d479")
-        self.memory_dir = base_dir / "memories"
-        self.archive_dir = self.memory_dir / "archive"
-        self._ensure_dir()
+    def __init__(self, base_dir: Path):
+        """
+        Initializes the federated memory system.
 
-    def _ensure_dir(self):
-        self.memory_dir.mkdir(parents=True, exist_ok=True)
-        self.archive_dir.mkdir(parents=True, exist_ok=True)
+        Args:
+            base_dir: The local project's persona directory (e.g., .tur/personas/<uuid>)
+        """
+        self.local_dir = base_dir / "memories"
+        self.local_archive_dir = self.local_dir / "archive"
+
+        # Calculate the global equivalent: ~/.tur/personas/<uuid>
+        # base_dir is usually like .tur/personas/f47ac10b...
+        # We need to extract just the uuid.
+        persona_id = base_dir.name
+        self.global_dir = Path.home() / ".tur" / "personas" / persona_id / "memories"
+        self.global_archive_dir = self.global_dir / "archive"
+
+        self._ensure_dirs()
+
+    def _ensure_dirs(self):
+        """Creates the necessary directory structures for both local and global memory banks."""
+        self.local_dir.mkdir(parents=True, exist_ok=True)
+        self.local_archive_dir.mkdir(parents=True, exist_ok=True)
+        self.global_dir.mkdir(parents=True, exist_ok=True)
+        self.global_archive_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path, Path]:
+        """
+        Determines the correct filesystem path based on the MemoryScope (Federation).
+        """
+        if scope in (MemoryScope.UNIVERSAL, MemoryScope.PERSONA):
+            return self.global_dir, self.global_archive_dir
+        else:
+            return self.local_dir, self.local_archive_dir
 
     def save(self, memory: Memory) -> Path:
         """
-        Saves a Memory to an immutable file.
+        Saves a Memory to an immutable file in the federated storage using atomic POSIX writes.
+        Routes to ~/.tur (Universal) or ./.tur (Incarnational) based on scope.
         Returns the path to the saved file.
         """
+        target_dir, _ = self._get_target_dirs(memory.scope)
+
         # Filename: timestamp_type_id.yaml
         filename = f"{memory.timestamp.strftime('%Y%m%d_%H%M%S')}_{memory.type.value}_{memory.id}.yaml"
-        file_path = self.memory_dir / filename
+        file_path = target_dir / filename
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            # We dump the raw model to ensure full fidelity
-            # Pydantic's json-serializable dict is safe for YAML
-            yaml.dump(memory.model_dump(mode='json'), f, sort_keys=False)
+        # We dump the raw model to ensure full fidelity
+        yaml_content = yaml.dump(memory.model_dump(mode='json'), sort_keys=False)
+
+        # Atomic Write Pattern (to prevent multi-agent collision under EP-0102/EP-0106)
+        # 1. Write to a temporary file in the same directory
+        # 2. fsync to guarantee flush to disk
+        # 3. os.replace to atomically overwrite/create the final file
+        fd, tmp_path_str = tempfile.mkstemp(dir=target_dir, prefix=f"{filename}.tmp.")
+        try:
+            with open(fd, "w", encoding="utf-8") as f:
+                f.write(yaml_content)
+                f.flush()
+                os.fsync(f.fileno())  # Guarantee disk flush
+
+            # Atomic replace (POSIX)
+            os.replace(tmp_path_str, file_path)
+        except Exception:
+            # Clean up the temp file if the atomic rename fails
+            with contextlib.suppress(OSError):
+                os.remove(tmp_path_str)
+            raise
 
         # Lock the file (The Golem's Seal)
         with contextlib.suppress(Exception):
@@ -46,60 +91,71 @@ class MemoryManager:
 
     def archive(self, memory_id: str):
         """
-        'Forgets' a memory by moving it to the archive directory.
+        'Forgets' a memory by atomically moving it to the archive directory.
+        Searches both the local and global federated banks.
         """
-        # Search for the file with the matching UUID
-        files = list(self.memory_dir.glob(f"*_{memory_id}.yaml"))
+        # Search for the file in the local bank first
+        files = list(self.local_dir.glob(f"*_{memory_id}.yaml"))
+        target_archive = self.local_archive_dir
+
+        # If not found locally, search the global bank
         if not files:
-            raise FileNotFoundError(f"No memory found with ID: {memory_id}")
+            files = list(self.global_dir.glob(f"*_{memory_id}.yaml"))
+            target_archive = self.global_archive_dir
+
+        if not files:
+            raise FileNotFoundError(f"No memory found across federated banks with ID: {memory_id}")
 
         source_path = files[0]
-        target_path = self.archive_dir / source_path.name
+        target_path = target_archive / source_path.name
 
-        # Move the file
-        # We might need to change permissions to move it on some systems,
-        # but usually rename/move works if the directory is writable.
-        os.rename(source_path, target_path)
+        # os.replace is atomic across the same filesystem
+        os.replace(source_path, target_path)
 
     def load_all(self, include_archived: bool = False) -> list[Memory]:
         """
-        Retrieves all memories from the bank.
+        Retrieves all memories by merging the local and global memory banks (Federation).
         """
         memories = []
 
-        if self.memory_dir.exists():
-            for file_path in self.memory_dir.glob("*.yaml"):
-                if file_path.is_file():
-                    memories.append(self._load_file(file_path))
+        # Load from both tiers
+        directories = [self.local_dir, self.global_dir]
+        if include_archived:
+            directories.extend([self.local_archive_dir, self.global_archive_dir])
 
-        if include_archived and self.archive_dir.exists():
-            for file_path in self.archive_dir.glob("*.yaml"):
-                if file_path.is_file():
-                    mem = self._load_file(file_path)
-                    if mem:
-                        mem.status = "archived"  # Ensure status reflects location
-                        memories.append(mem)
+        for directory in directories:
+            if directory.exists():
+                for file_path in directory.glob("*.yaml"):
+                    if file_path.is_file():
+                        mem = self._load_file(file_path)
+                        if mem:
+                            # Note (EP-0106): The `status` field was removed from the Memory model.
+                            # Status is now implicitly defined by which directory this file was found in.
+                            memories.append(mem)
 
-        # Sort by timestamp
-        memories = [m for m in memories if m is not None]
+        # Sort combined federated timeline by timestamp
         memories.sort(key=lambda x: x.timestamp)
         return memories
 
-    def _load_file(self, file_path: Path) -> Memory | None:
+    @staticmethod
+    def _load_file(file_path: Path) -> Memory | None:
         try:
             with open(file_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
+                # If the legacy file has 'status', ignore it so Pydantic doesn't throw a ValidationError
+                if 'status' in data:
+                    del data['status']
                 return Memory(**data)
         except Exception:
             return None
 
     def query(self, tags: list[str] | None = None, limit: int = 100) -> list[Memory]:
         """
-        Simple in-memory filter.
+        Simple in-memory filter across the merged federated banks.
         """
         all_memories = self.load_all()
         if not tags:
-            return all_memories[-limit:]  # Return most recent if no filter
+            return all_memories[-limit:]
 
         filtered = [
             m for m in all_memories

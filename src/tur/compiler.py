@@ -9,8 +9,8 @@ def compile_persona(state: SessionState) -> str:
     """
     Renders a SessionState into a final System Prompt string.
     """
-    template_dir = os.path.join(os.path.dirname(__file__), "templates")
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
     env = Environment(loader=FileSystemLoader(template_dir))
-    template = env.get_template("persona.j2")
+    template = env.get_template('persona.j2')
 
     return template.render(state.model_dump())

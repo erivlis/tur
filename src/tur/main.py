@@ -10,7 +10,6 @@ from tur.memory import MemoryManager
 from tur.models import (
     Memory,
     MemoryScope,
-    MemoryStatus,
     MemoryType,
     Persona,
     PersonaIndex,
@@ -166,7 +165,7 @@ def clone(
 
 @app.command()
 def forget(
-        memory_id: str = typer.Argument(..., help="The ID of the memory to forget"),
+        memory_id: str = typer.Argument(..., help="The ID (hash) of the memory to forget"),
         identifier: str | None = typer.Argument(None,
                                                 help="The name or UUID of the persona. If omitted, uses the default.")
 ):
@@ -209,13 +208,16 @@ def memories(
         table = Table(title=f"Memory Bank ({active_id})", show_lines=True)
         table.add_column("ID", style="dim")
         table.add_column("Type", style="cyan")
+        table.add_column("Status", style="magenta")
         table.add_column("Content")
 
         for m in mems:
             content_snippet = (m.content[:80] + '..') if len(m.content) > 80 else m.content
+            # We must determine status dynamically because the field was removed from the schema
+            status_display = "archived" if getattr(m, 'status', None) == "archived" else "active"
+            row_style = "dim" if status_display == "archived" else ""
 
-            row_style = "dim" if m.status == MemoryStatus.ARCHIVED else ""
-            table.add_row(str(m.id), m.type.value, content_snippet, style=row_style)
+            table.add_row(str(m.id), m.type.value, status_display, content_snippet, style=row_style)
 
         console.print(table)
 

@@ -1,8 +1,9 @@
+import hashlib
 from datetime import datetime
 from enum import Enum
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Principle(BaseModel):
@@ -53,11 +54,6 @@ class MemoryType(str, Enum):
     INSIGHT = "insight"  # Derived knowledge (e.g., "Tur Tur principle applies to AI")
 
 
-class MemoryStatus(str, Enum):
-    ACTIVE = "active"  # Currently in the working context
-    ARCHIVED = "archived"  # Stored but not in the default context
-
-
 class MemoryScope(str, Enum):
     UNIVERSAL = "universal"  # True everywhere (e.g., Physics, Standard Libs)
     USER = "user"  # True for the Architect (Preferences, style)
@@ -69,10 +65,10 @@ class MemoryLink(BaseModel):
     """
     A semantic link to another resource.
     URI Schemes:
-    - tur://memory/<uuid>      -> Links to another memory
-    - tur://principle/<name>   -> Links to a Council Principle
-    - file://<path>            -> Links to a local file
-    - https://...              -> Links to the web
+    - tur://memory/<sha256_hash>      -> Links to another memory
+    - tur://principle/<name>          -> Links to a Council Principle
+    - file://<path>                   -> Links to a local file
+    - https://...                     -> Links to the web
     """
     uri: str = Field(..., description="The resource identifier")
     relation: str | None = Field(None,
@@ -84,15 +80,44 @@ class Memory(BaseModel):
     An atomic unit of long-term memory.
     Stored as an immutable file in .tur/memories/
     """
-    id: UUID = Field(default_factory=uuid4, description="Unique identifier for the memory")
+    # The ID is now a SHA-256 hash string, not a UUID. It is set dynamically via model_validator.
+    id: str = Field(default="", description="SHA-256 content-addressable hash")
     timestamp: datetime = Field(default_factory=datetime.now, description="When this memory was formed")
     type: MemoryType = Field(..., description="Classification of the memory")
-    status: MemoryStatus = Field(default=MemoryStatus.ACTIVE, description="Current status of the memory")
     scope: MemoryScope = Field(default=MemoryScope.INCARNATION, description="The context reach of this memory")
     tags: list[str] = Field(default_factory=list, description="Searchable tags")
     content: str = Field(..., description="The actual memory content")
     links: list[MemoryLink] = Field(default_factory=list, description="Connections to other knowledge nodes")
     source_session: str | None = Field(None, description="The session ID where this originated")
+
+    @model_validator(mode="after")
+    def compute_merkle_hash(self) -> "Memory":
+        """
+        EP-0106: Merkle Memory.
+        If the ID is empty (a new memory), compute its SHA-256 hash deterministically.
+        We hash the entire state of the object to guarantee a tamper-proof historical ledger.
+        """
+        if not self.id:
+            # Create a normalized string representation of the core data
+            # Sorting dict keys ensures deterministic hashing across different runs
+            tags_str = ",".join(sorted(self.tags))
+            links_list = [{"uri": link.uri, "relation": link.relation} for link in
+                          sorted(self.links, key=lambda x: x.uri)]
+
+            payload = (
+                f"{self.timestamp.isoformat()}|"
+                f"{self.type.value}|"
+                f"{self.scope.value}|"
+                f"{tags_str}|"
+                f"{self.content}|"
+                f"{links_list!s}|"
+                f"{self.source_session or ''}"
+            )
+
+            # Compute SHA-256
+            self.id = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+        return self
 
 
 class UserProfile(BaseModel):

@@ -1,7 +1,13 @@
 import json
 import os
+import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
+
 from mcp.server.fastmcp import FastMCP
+
 
 # Force the working directory to the tur project root if possible
 def _ensure_project_root():
@@ -13,27 +19,38 @@ def _ensure_project_root():
             os.chdir(parent)
             return
 
+
 _ensure_project_root()
 
 # Defer imports until AFTER the working directory is set
 import yaml
+
 from tur.compiler import compile_persona
 from tur.main import get_active_persona_id, get_persona_path, get_user_profile
 from tur.memory import MemoryManager
-from tur.models import Memory, MemoryScope, MemoryType, Persona, PersonaIndex, SessionState, UserProfile
+from tur.models import Memory, MemoryScope, MemoryType, Persona, SessionState
 from tur.telemetry import CognitiveTelemetry
 
-mcp = FastMCP("tur-server", json_response=True)
+
+@asynccontextmanager
+async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
+    """Lifecycle hook for startup and graceful shutdown."""
+    print("Starting Tur MCP Server (Ontological Porcelain) on stdio...", file=sys.stderr)
+    try:
+        yield {}
+    finally:
+        print("\nShutting down Tur MCP Server gracefully...", file=sys.stderr)
+
+
+mcp = FastMCP("tur-server", json_response=True, lifespan=server_lifespan)
+
 
 @mcp.tool()
-def tur_wake() -> str:
-    """Returns the active persona ID."""
-    active_id = get_active_persona_id()
-    return f"Active Persona ID: {active_id}"
-
-@mcp.tool()
-def tur_compile() -> str:
-    """Compiles the active persona and returns the full System Prompt Constitution."""
+def who_am_i() -> str:
+    """
+    Read your core identity, directives, and system metrics.
+    Call this when you need to remember your constraints or understand your current cognitive load.
+    """
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
@@ -52,89 +69,114 @@ def tur_compile() -> str:
         memories=memories,
         epilogue="Status: Conserved. Aleph: Restored. Carry on, Lion."
     )
-    return compile_persona(state)
-
-@mcp.tool()
-def tur_memorize(content: str, type: str) -> str:
-    """Save a new fact or protocol to the active persona's permanent memory."""
-    active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
-    manager = MemoryManager(base_dir=persona_dir)
-    
-    mem_type = MemoryType(type)
-    memory = Memory(
-        type=mem_type,
-        scope=MemoryScope.INCARNATION,
-        tags=["mcp"],
-        content=content
-    )
-    saved_path = manager.save(memory)
-    return f"Memorized successfully. ID: {memory.id} File: {saved_path.name}"
-
-@mcp.tool()
-def tur_telemetry() -> str:
-    """Quantify the Cognitive Load (Cp) and static token cost of the active persona."""
-    active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
-    
-    file_path = persona_dir / "persona.yaml"
-    with open(file_path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-
-    persona = Persona(**data)
-    user = UserProfile(name="Telemetry", role="Observer")
-    state = SessionState(persona=persona, user=user, memories=[])
     system_prompt = compile_persona(state)
 
+    # Append Telemetry Metadata
     telemetry_engine = CognitiveTelemetry()
     static_metrics = telemetry_engine.measure_static_load(system_prompt)
     cp = telemetry_engine.calculate_constraint_dimensionality(persona)
-    
-    return json.dumps({
-        "active_persona": active_id,
-        "name": persona.name,
-        "constraint_dimensionality": cp,
-        "static_token_cost": static_metrics['est_tokens'],
-        "information_density": static_metrics['density']
-    }, indent=2)
+
+    telemetry_block = (
+        f"\n\n--- [SYSTEM METRICS] ---\n"
+        f"Active Persona ID: {active_id}\n"
+        f"Constraint Dimensionality (Cp): {cp}\n"
+        f"Static Token Cost: {static_metrics['est_tokens']}\n"
+        f"Information Density: {static_metrics['density']:.2f}\n"
+    )
+
+    return system_prompt + telemetry_block
+
 
 @mcp.tool()
-def tur_forget(memory_id: str) -> str:
-    """Archive a memory by its ID for the active persona."""
+def learn(
+        content: str,
+        type: Literal['fact', 'preference', 'insight', 'event', 'axiom'],
+        scope: Literal["incarnation", "universal"] = "incarnation"
+) -> str:
+    """
+    Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
+    Call this when you deduce something that must survive a context window reset.
+
+    Args:
+        content(str): The knowledge or insight to be remembered.
+        type(str): The classification of this memory. Determines how it should be weighted and recalled.
+          must be one of: 'fact', 'preference', 'insight', 'event', 'axiom'.
+         'fact' means an objective truth (e.g., "Project uses FastAPI").
+         'preference' means a user taste (e.g., "Hates black formatter").
+         'event' means a narrative history (e.g., "Refactored Council").
+         'axiom' means a deep philosophical belief (e.g., "Love is the Aleph").
+         'insight' means a derived conclusion (e.g., "Tur Tur principle applies to AI").
+        scope(str): The breadth of this memory's applicability. Determines where it is stored and how it is recalled.
+          must be one of: 'incarnation', 'universal'. Default is 'incarnation'.
+         'incarnation' means it's only relevant to this specific project instance.
+         'universal' means it's a general truth that should be shared across all your personas and projects.
+    """
+    try:
+        mem_type = MemoryType(type)
+    except ValueError:
+        valid_types = ", ".join([t.value for t in MemoryType])
+        return f"Error: Invalid memory_type '{type}'. Must be one of: {valid_types}"
+
+    try:
+        mem_scope = MemoryScope(scope)
+    except ValueError:
+        valid_scopes = ", ".join([s.value for s in MemoryScope])
+        return f"Error: Invalid scope '{scope}'. Must be one of: {valid_scopes}"
+
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
-    manager.archive(memory_id)
-    return f"Memory {memory_id} archived successfully."
+
+    memory = Memory(
+        type=mem_type,
+        scope=mem_scope,
+        tags=["mcp", "agent"],
+        content=content
+    )
+    saved_path = manager.save(memory)
+    return f"Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}"
+
 
 @mcp.tool()
-def tur_list_memories() -> str:
-    """List all active memories in the bank for the active persona."""
+def recall(query: str) -> str:
+    """
+    Search your deep memory bank for past events, decisions, or knowledge not currently in your active context.
+
+    Args:
+        query: The topic or concept to search for in past memories.
+    """
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
     mems = manager.load_all(include_archived=False)
-    mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in mems]
+
+    # Very basic substring search for now (L1 Event Log).
+    # Will be upgraded to semantic graph traversal under EP-0103.
+    query_lower = query.lower()
+    results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
+
+    if not results:
+        return f"No memories found matching query: '{query}'"
+
+    mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in results]
     return json.dumps(mem_list, indent=2)
 
-@mcp.tool()
-def tur_list_personas() -> str:
-    """List all available personas in the index."""
-    index_path = Path(".tur/personas.yaml")
-    if not index_path.exists():
-        raise FileNotFoundError("No personas found.")
-        
-    with open(index_path, encoding="utf-8") as f:
-        index = PersonaIndex(**yaml.safe_load(f))
-        
-    persona_list = [{"id": str(p.id), "name": p.name, "version": p.version} for p in index.personas]
-    return json.dumps(persona_list, indent=2)
 
 def main():
     """Entry point for the MCP server."""
-    # For IDE integration, we default to stdio.
-    # The transport can be overridden by environment variables if needed.
-    mcp.run(transport="stdio")
+    try:
+        mcp.run(transport="stdio")
+    except KeyboardInterrupt:
+        # Architecture Note (The Golem Protocol):
+        # We must catch KeyboardInterrupt at this synchronous top-level boundary.
+        # When Ctrl-C is pressed, the OS sends SIGINT, which `anyio` (the event loop under FastMCP)
+        # catches. `anyio` gracefully cancels all async tasks (triggering our @server_lifespan's
+        # `finally:` block to print the shutdown message to stderr).
+        # However, once the async teardown is complete, `anyio` bubbles the KeyboardInterrupt
+        # back up to this synchronous caller. If we don't swallow it here, it bleeds a noisy
+        # stack trace onto the terminal.
+        sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
