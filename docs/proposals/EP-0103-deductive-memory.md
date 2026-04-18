@@ -5,10 +5,10 @@
 | **EP**      | 0103                                 |
 | **Title**   | Deductive Memory (The Cognitive Map) |
 | **Author**  | The Architect                        |
-| **Status**  | Draft                                |
+| **Status**  | Active                               |
 | **Type**    | Standards Track                      |
 | **Created** | 2026-04-12                           |
-| **Updated** | 2026-04-12                           |
+| **Updated** | 2026-04-18                           |
 
 ## Abstract
 
@@ -82,15 +82,14 @@ Introduce a new CLI command (`tur meditate`) that acts as a background compresso
 
 * **Trigger:** The user runs `tur meditate` when a `knowledge_graph.yaml` already exists.
 * **Input:** The existing L2 `knowledge_graph.yaml` and only the *new* L1 memories created since the last meditation.
-* **Action:** The Cognitive Engine (LLM) receives the existing graph and the new events, and is prompted to integrate
+* **Action:** The Cognitive Engine (via MCP Sampling) receives the existing graph and the new events, and is prompted to integrate
   the new information, resolving contradictions and updating the topology.
 * **Output:** An updated `knowledge_graph.yaml` and the archival of any newly-subsumed L1 memories.
 
 *Mechanism for both modes:*
 
-* **Cognitive Engine (LLM):** Reads the input (either all L1 memories or the L2 graph + new L1 memories) and outputs a
-  structured JSON object representing the desired graph state (or the delta).
-* **Structural Engineering (`Graphinate`):** Uses the LLM's output as a data source to build/update the `networkx.Graph`
+* **Cognitive Engine (MCP Sampling):** Instead of using an embedded LLM SDK, Tur will trigger a `CreateMessage` (Sampling) request to the connected MCP Client (Host App). It asks the Host LLM to read the input and output a structured JSON object representing the desired graph state (or the delta).
+* **Structural Engineering (`Graphinate`):** Uses the Host LLM's output as a data source to build/update the `networkx.Graph`
   object.
 * **Linking & Archival:** New/updated L2 nodes contain `sources` arrays pointing to their constituent L1 events.
   Subsumed L1 files are moved to `memories/archive/`.
@@ -103,7 +102,7 @@ Modify `src/tur/compiler.py`:
 * **Proposed:** Iterates through the L2 Cognitive Map. It injects the compressed graph schema into the `PERSONA.md`
   context.
 * **Result:** The LLM receives the macro-state. If a specific task requires the micro-state of a node, the LLM can use
-  the `tur_read_memory` MCP tool (to be implemented) using the provided URI pointer, which seamlessly retrieves the
+  the `recall` MCP tool using the provided URI pointer, which seamlessly retrieves the
   data by resolving the URI schema.
 
 ## Backwards Compatibility
@@ -119,28 +118,30 @@ Modify `src/tur/compiler.py`:
 
 The `tur meditate` command will be implemented as a two-stage pipeline:
 
-1.  **Cognitive Engine (LLM-based Fact Extraction):**
-    *   The `tur meditate` command will use the `pydantic-ai` library to interact with the configured LLM provider.
-    *   It will read all raw text content from the L1 `memories/` directory.
-    *   This content will be passed to a `pydantic_ai.Agent`.
-    *   The agent's task is to extract every atomic, verifiable statement as a structured `(Subject, Predicate, Object)`
-      triple. `pydantic-ai`'s native ability to return Pydantic models will be used to enforce the output schema, transforming the creative "summarization" task into a deterministic, verifiable data transformation.
-2.  **Structural Engineering (`Graphinate`):**
-    *   The list of `(Subject, Predicate, Object)` triples from the LLM becomes the data source for `Graphinate`.
-    *   A `graphinate.GraphModel` and simple "supplier" functions will be used to `yield` this structured data, creating
+1. **Cognitive Engine (Host LLM-based Fact Extraction via Sampling):**
+    * The `tur meditate` command will execute an MCP `CreateMessage` request to the connected Host Application.
+    * It will read all raw text content from the L1 `memories/` directory and send it in the request payload.
+    * The Host LLM's task is to extract every atomic, verifiable statement as a structured `(Subject, Predicate, Object)`
+      triple and return the JSON array.
+2. **Structural Engineering (`Graphinate`):**
+    * The list of `(Subject, Predicate, Object)` triples from the Host LLM becomes the data source for `Graphinate`.
+    * A `graphinate.GraphModel` and simple "supplier" functions will be used to `yield` this structured data, creating
       nodes for each unique Subject/Object and edges for each Predicate.
-    *   `graphinate.builders.NetworkxBuilder` will consume the suppliers to generate the final, deduplicated
+    * `graphinate.builders.NetworkxBuilder` will consume the suppliers to generate the final, deduplicated
       `networkx.Graph` object.
-3.  **Graph Serialization (`networkx`):**
-    *   The resulting `networkx.Graph` will be serialized to `.tur/personas/<uuid>/knowledge_graph.yaml` using the
+3. **Graph Serialization (`networkx`):**
+    * The resulting `networkx.Graph` will be serialized to `.tur/personas/<uuid>/knowledge_graph.yaml` using the
       `networkx.readwrite.json_graph.node_link_data` function.
-4.  **Graph Visualization (`networkx-mermaid`):**
-    *   A `--visualize` flag will be added to `tur meditate`.
-    *   This will use `networkx-mermaid` to export the `networkx.Graph` into a Mermaid diagram string and print it to the
+4. **Graph Visualization (`networkx-mermaid`):**
+    * A `--visualize` flag will be added to `tur meditate`.
+    * This will use `networkx-mermaid` to export the `networkx.Graph` into a Mermaid diagram string and print it to the
       console.
 
 ## Change Log
 
+* **2026-04-18:**
+    * Updated Status to Active.
+    * Major Architectural Pivot: Replaced the proposed embedded `pydantic-ai` Cognitive Engine with an **MCP Sampling** mechanism. Tur will now ask the connected Host App to extract the RDF triples, maintaining strict separation of concerns (Tur = State, Host = Inference).
 * **2026-04-12:**
     * Initial Draft.
     * Renamed the compression loop command to `tur meditate`.

@@ -1,14 +1,14 @@
 # EP-0000: Tur Enhancement Proposals
 
-| Field       | Value                            |
-|:------------|:---------------------------------|
-| **EP**      | 0000                             |
-| **Title**   | Tur Enhancement Proposals        |
-| **Author**  | Eran Rivlis                      |
-| **Status**  | Active                           |
-| **Type**    | Process                          |
-| **Created** | 2026-02-19                       |
-| **Updated** | 2026-04-12                       |
+| Field       | Value                     |
+|:------------|:--------------------------|
+| **EP**      | 0000                      |
+| **Title**   | Tur Enhancement Proposals |
+| **Author**  | Eran Rivlis               |
+| **Status**  | Active                    |
+| **Type**    | Process                   |
+| **Created** | 2026-02-19                |
+| **Updated** | 2026-04-12                |
 
 ## Abstract
 
@@ -86,6 +86,6 @@ Link to code or pseudo-code.
 ## Change Log
 
 * **YYYY-MM-DD:**
-   * Initial Draft.
-   * Another change made on the same day.
+    * Initial Draft.
+    * Another change made on the same day.
 ```

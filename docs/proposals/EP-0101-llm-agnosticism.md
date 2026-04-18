@@ -1,56 +1,79 @@
-# EP-0101: LLM Agnosticism
+# EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
 
-| Field       | Value                            |
-|:------------|:---------------------------------|
-| **EP**      | 0101                             |
-| **Title**   | LLM Agnosticism                  |
-| **Author**  | Eran Rivlis, Ariel               |
-| **Status**  | Active                           |
-| **Type**    | Architecture                     |
-| **Created** | 2026-03-29                       |
-| **Updated** | 2026-04-12                       |
+| Field       | Value                                    |
+|:------------|:-----------------------------------------|
+| **EP**      | 0101                                     |
+| **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
+| **Author**  | Eran Rivlis, The Architect               |
+| **Status**  | Superseded                               |
+| **Type**    | Architecture                             |
+| **Created** | 2026-03-29                               |
+| **Updated** | 2026-04-18                               |
 
 ## Abstract
 
-This proposal mandates the use of the `pydantic-ai` library as the single, unified interface for all direct, non-agentic Large Language Model interactions within the Tur framework. This includes the `tur sleep` and `tur meditate` commands. This approach replaces previous plans of building a custom provider pattern or using third-party abstraction layers, and it removes direct dependencies on provider-specific SDKs like `google-genai`.
+This proposal initially mandated the use of the `pydantic-ai` library as the unified interface for all direct Large
+Language Model interactions within the Tur framework.
 
-## Motivation
+However, **this approach has been explicitly superseded by a more radical architectural pivot**: Tur will no longer
+embed *any* LLM abstraction library (`pydantic-ai`, `google-genai`, etc.) within its core. Instead, Tur achieves perfect
+LLM Agnosticism by becoming an obligate symbiote to an MCP Client (the Host Application), delegating all cognitive
+tasks (like compiling knowledge graphs or summarizing logs) via **MCP Sampling Requests**.
 
-To be a true Persona Engineering *Framework*, Tur cannot be tied to a single LLM provider. The `tur sleep` command currently has a hardcoded dependency on `google-genai`, and the proposed `tur meditate` command requires a robust, model-agnostic solution for structured data extraction.
+## Motivation (The Historical Context)
 
-By adopting `pydantic-ai`, a library from the Pydantic core team, we gain:
-*   **Instant Agnosticism:** `pydantic-ai` supports virtually every major model and provider (OpenAI, Anthropic, Gemini, local models via Ollama, etc.) behind a consistent interface.
-*   **Native Pydantic Integration:** The library is designed from the ground up to work with Pydantic models, which is the exact requirement for the structured data extraction in both `tur sleep` and `tur meditate`.
-*   **Reduced Dependencies & Maintenance:** We can remove provider-specific SDKs and avoid maintaining our own provider pattern.
-*   **Minimal Dependencies:** By using the `pydantic-ai-slim` package with provider-specific extras (e.g., `pydantic-ai-slim[google]`), we only install what is absolutely necessary, keeping the core framework lightweight.
+Originally, the `tur sleep` command hardcoded a dependency on `google-genai`, and the proposed `tur meditate` command
+required a robust, model-agnostic solution for structured data extraction. The plan was to embed `pydantic-ai` to solve
+this.
+
+### The Paradigm Shift (Why `pydantic-ai` is Dead)
+
+Embedding an LLM SDK violates **The Golem (Containment)** and **Shannon (Efficiency)** principles. If Tur is an
+Ontological State Engine (the "Body"), it shouldn't need its own API keys or HTTP networking libraries to think.
+
+By leveraging the MCP protocol's native **Sampling** feature, Tur can ask the *Host Application's LLM* (e.g., Claude
+running in Cursor or Claude Desktop) to do the thinking for it:
+
+> *"Hello Host LLM. Here are 50 raw memory logs. Please extract them into a strict JSON array of (Subject, Predicate,
+Object) triples and hand them back to me."*
 
 ## Rationale (The Council Framework)
 
-1.  **The Steward (Harmony/Pragmatism):** We adopt a solution from a trusted, core dependency that perfectly fits our needs.
-2.  **Noether (Symmetry):** All non-agentic LLM calls will use the same `pydantic_ai.Agent` interface. The data models we use for validation (`tur.models`) are the same models used for generation.
-3.  **Efficiency (Shannon):** We leverage a library we are already implicitly connected to, and the "slim" installation minimizes new dependency weight.
+1. **Symmetry (Noether):** The separation of concerns is absolute. Tur manages the State (files, hashes, graphs); the
+   Host Application manages the Inference (API keys, model selection, token limits).
+2. **Efficiency (Shannon):** We completely drop heavy LLM SDK dependencies from `pyproject.toml`. Tur remains a
+   lightweight, deterministic parser.
+3. **The Explorer (Structural Novelty):** We transform Tur from a standalone CLI tool into a "Headless Body" that
+   natively integrates with the broader agent ecosystem.
 
-## Specification (High-Level Vision)
+## Specification (The Symbiotic Architecture)
 
-1.  **Dependency Change:**
-    *   Add `pydantic-ai-slim` to the `dependencies` in `pyproject.toml`, with the appropriate provider extra (e.g., `pydantic-ai-slim[google]`).
-    *   Remove `google-genai` from the `dependencies`.
-
-2.  **Refactor `tur sleep`:**
-    *   The `sleep` command will be rewritten to use `pydantic_ai.Agent` to perform the structured data extraction from chat logs, replacing the direct `google-genai` API calls.
-
-3.  **Implement `tur meditate`:**
-    *   The `meditate` command will be implemented using `pydantic_ai.Agent` for its "Cognitive Engine" stage, as specified in `EP-0103`.
+1. **Dependency Purge:**
+    * Remove `google-genai` from `dependencies`.
+    * **Do NOT** install `pydantic-ai`.
+2. **The Sampling Mechanism:**
+    * Any Tur command requiring inference (e.g., the "Cognitive Engine" step of `tur meditate` in EP-0103) will be
+      implemented as an MCP Tool that triggers a `CreateMessage` (Sampling) request back to the connected MCP Client.
+3. **The Wrapper Pattern:**
+    * Because Tur will lack internal LLM access, running cognitive commands (`sleep`, `meditate`) directly from a raw
+      terminal will fail.
+    * If standalone CLI usage is desired, it must be provided by a separate "Wrapper" application (a lightweight MCP
+      Client) that spawns the Tur server over `stdio` and fulfills its Sampling requests using the wrapper's own API
+      keys.
 
 ## Backwards Compatibility
 
-*   This change is primarily internal. Users will no longer need to install provider-specific SDKs like `google-genai`.
-*   The `model` field in `persona.yaml` will be updated to use the `pydantic-ai` format (e.g., `google:gemini-pro`).
+* **Breaking Change:** Commands that rely on LLM inference (like `tur sleep`) will need to be refactored to either fail
+  gracefully when run directly in the CLI, or explicitly request the user to launch a Wrapper Client.
 
 ## Change Log
 
-*   **2026-04-12:**
-    *   Updated status to `Active`.
-    *   Adopted the `pydantic-ai` library as the standard interface, specifying the `pydantic-ai-slim` package for minimal dependencies.
-*   **2026-03-29:**
-    *   Initial Draft (Deferred for Phase 2).
+* **2026-04-18:**
+    * **Status changed to Superseded.**
+    * Completely rewrote the EP to reflect the architectural pivot. Tur will not embed `pydantic-ai`; it will rely on
+      MCP Sampling requests to the Host Application for all cognitive tasks.
+* **2026-04-12:**
+    * Updated status to `Active`.
+    * Adopted the `pydantic-ai` library as the standard interface.
+* **2026-03-29:**
+    * Initial Draft.
