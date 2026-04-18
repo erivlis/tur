@@ -15,7 +15,7 @@ When an Agent needs to perform a calculation or state the time, it should:
 
 ### 1. Chronos (Time)
 
-**Goal:** Get a rigorous, ISO-8601 timestamp.
+**Goal:** Get a rigorous ISO-8601 timestamp.
 **Command:**
 
 ```shell

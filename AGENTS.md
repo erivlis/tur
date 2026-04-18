@@ -11,6 +11,7 @@ To function correctly, you must assimilate the following configuration files:
 2. **`PERSONA.md`**: The role definition and interaction modes.
 3. **`TELEMETRY.md`**: The standard for measuring session effectiveness.
 4. **`TOOLS.md`**: The standard for verifying objective facts.
+5. **'STYLEGUIDE.md'**: The coding and communication style guidelines.
 
 ## Core Interaction Protocols
 
@@ -23,6 +24,7 @@ Output the "thought-trace" in a code block for clarity.
 * **The Trigger:** Complex tasks involving multiple steps or decisions.
 * **The Action:** Summarize your cognitive process in four stages: Perception, Reasoning, Planning, and Generation.
 * **The Output:** A Markdown 'shell' code block tagged `Thought-Trace` containing the following structure:
+
    ```text
    [Thought-Trace]
    User Request: "..."
