@@ -22,14 +22,15 @@ def _ensure_project_root():
 
 _ensure_project_root()
 
-# Defer imports until AFTER the working directory is set
-import yaml
+# Defer imports until AFTER the working directory is set to ensure they resolve correctly,
+# even if this script is launched from a different CWD.
+import yaml  # noqa: E402
 
-from tur.compiler import compile_persona
-from tur.main import get_active_persona_id, get_persona_path, get_user_profile
-from tur.memory import MemoryManager
-from tur.models import Memory, MemoryScope, MemoryType, Persona, SessionState
-from tur.telemetry import CognitiveTelemetry
+from tur.compiler import compile_persona  # noqa: E402
+from tur.main import get_active_persona_id, get_persona_path, get_user_profile  # noqa: E402
+from tur.memory import MemoryManager  # noqa: E402
+from tur.models import Memory, MemoryScope, MemoryType, Persona, SessionState  # noqa: E402
+from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
 
 @asynccontextmanager

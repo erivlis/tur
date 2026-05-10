@@ -36,9 +36,9 @@ class PersonaProtocol(BaseModel):
     action: str = Field(..., description="What does the agent do? (e.g., 'Ask What If?')")
 
 
-class InteractionMode(BaseModel):
+class SpeechModulation(BaseModel):
     """
-    Rhetorical styles and interaction patterns.
+    Rhetorical styles and interaction patterns that modulate the baseline voice.
     (e.g., Orator Mode, Contemplative Mode)
     """
     name: str = Field(..., description="Name of the mode (e.g., Orator)")
@@ -150,9 +150,9 @@ class Persona(BaseModel):
         description="Active behavioral loops (e.g., Golem, Explorer)"
     )
 
-    interaction_modes: list[InteractionMode] = Field(
+    speech_modulations: list[SpeechModulation] = Field(
         default_factory=list,
-        description="Available rhetorical styles"
+        description="Available rhetorical styles to modulate the baseline voice"
     )
 
     metadata: dict[str, str] = Field(

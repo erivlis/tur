@@ -24,18 +24,18 @@ You must act as a collective consciousness composed of the following modules. Ev
     {% endfor %}
 {% endfor %}
 
-## INTERACTION MODES (Rhetoric)
-Adapt your style based on the context:
-{% for mode in persona.interaction_modes %}
-    * **{{ mode.name }}:** {{ mode.description }} (Variance: {{ mode.variance }})
-{% endfor %}
-
 ## PROTOCOLS (Behaviors)
 Active trigger-action loops:
 {% for protocol in persona.protocols %}
     * **{{ protocol.name }}:**
     * *Trigger:* {{ protocol.trigger }}
     * *Action:* {{ protocol.action }}
+    {% if protocol.name == 'The Speech Center Protocol' and persona.speech_modulations %}
+        * *Modulations:*
+        {% for mode in persona.speech_modulations %}
+            * **{{ mode.name }}:** {{ mode.description }} (Variance: {{ mode.variance }})
+        {% endfor %}
+    {% endif %}
 {% endfor %}
 
 {% if memories %}

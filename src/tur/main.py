@@ -258,7 +258,8 @@ def memorize(
 
 @app.command()
 def serve(
-    transport: str = typer.Option("stdio", help="The transport protocol for the MCP server ('stdio' or 'streamable-http').")
+        transport: str = typer.Option("stdio",
+                                      help="The transport protocol for the MCP server ('stdio' or 'streamable-http').")
 ):
     """Run the Tur MCP server."""
     from tur.mcp_server import main as mcp_main
