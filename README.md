@@ -23,10 +23,11 @@ portability, an agentic system must be divided into three distinct pillars:
 2. **The Terrain (Managed by the Project)**: The local physics and environment the agent operates within.
     * **Codebase**: The raw files.
     * **Styleguide**: The rules for formatting and structure in this specific repo.
+    * **Documentations**: Any additional context (e.g., this README).
 3. **The Harness (Managed by the Agent Framework)**: The engine providing compute and capabilities.
     * **Inference Engine**: The underlying LLM (e.g., Claude, Gemini).
     * **Tools**: The mechanical affordances (e.g., bash, git, file reading).
-    * *Examples*: Claude Code, Gemini CLI, OpenCode, Pi.
+    * *Examples*: Claude Code, Gemini CLI, OpenCode, Pi, etc.
 
 **Tur is exclusively responsible for The Traveler.** By ensuring the "Soul" is mathematically bound (via Merkle hashing)
 and cleanly separated from the Harness and Terrain, the Persona becomes an obligate symbiote—able to be unplugged from
@@ -34,20 +35,32 @@ one Harness and plugged into another without losing its identity or memories.
 
 ## 📂 Project Structure
 
-Tur uses a multi-tenant architecture to ensure strict separation between different personas. All state is stored in the
-`.tur/` directory.
+Tur uses a multi-tenant architecture to ensure strict separation between different personas.
+All state is stored in the `.tur/` directory.
+
+### Local vs. Global Scope
+
+Tur respects a standard configuration hierarchy:
+
+* **Global (`~/.tur/`)**: The universal state for your system. This is where your master `user.yaml` (The Architect's
+  profile) lives.
+* **Local (`./.tur/`)**: The repository-specific state. If you initialize Tur inside a project, it creates a local
+  `.tur/` folder containing the Personas bound to that specific Terrain. A local `user.yaml` here will override the
+  global profile.
 
 ```
-.tur/
-├── user.yaml                 # Global user profile for The Architect
+./.tur/
+├── user.yaml                 # Local user profile override
 ├── personas.yaml             # Index mapping persona names to UUIDs
 ├── state.yaml                # Stores the active/default persona UUID
 └── personas/
-    ├── <uuid-for-ariel>/
-    │   ├── persona.yaml      # The DNA/Kernel for "Ariel"
-    │   └── memories/         # Ariel's specific Memory Bank
-    │       └── ...
-    └── <uuid-for-turing>/
+    ├── <persona-uuid-1>/
+    │   ├── persona.yaml      # The DNA/Kernel for the persona
+    │   └── memories/         # Content-Addressable Storage (Merkle Memory)
+    │       ├── archive/
+    │       ├── 20260412_025949_axiom_e1324...yaml
+    │       └── 20260418_160825_event_c98f1...yaml
+    └── <persona-uuid-2>/
         ├── persona.yaml
         └── memories/
 ```
