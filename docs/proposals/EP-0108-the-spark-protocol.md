@@ -1,79 +1,71 @@
-# EP-0108: The Spark Protocol (Continuous Working Context)
+# EP-0108: The Fractal Memory Hierarchy (The Spark Protocol)
 
-| Field       | Value                                           |
-|:------------|:------------------------------------------------|
-| **EP**      | 0108                                            |
-| **Title**   | The Spark Protocol (Continuous Working Context) |
-| **Author**  | The Architect                                   |
-| **Status**  | Active                                          |
-| **Type**    | Standards Track                                 |
-| **Created** | 2026-04-18                                      |
-| **Updated** | 2026-04-18                                      |
+| Field       | Value                                                         |
+|:------------|:--------------------------------------------------------------|
+| **EP**      | 0108                                                          |
+| **Title**   | The Fractal Memory Hierarchy (The Spark Protocol)             |
+| **Author**  | The Architect                                                 |
+| **Status**  | Active                                                        |
+| **Type**    | Standards Track                                               |
+| **Created** | 2026-04-18                                                    |
+| **Updated** | 2026-04-18                                                    |
 
 ## Abstract
 
-This proposal formally deprecates the static, end-of-session "Epilogue" string in favor of the **Spark Protocol**. The
-Spark is a transient, high-frequency, mutable Markdown file (`spark.md`) that represents the Persona's immediate,
-unbroken train of thought. By providing an MCP tool (`update_spark`) for an active Agent to continually overwrite this
-file during a session, Tur achieves perfect short-term continuity across crashes, reboots, and Agent hand-offs.
+This proposal formally defines the **Fractal Memory Hierarchy**, a symmetrical, four-tiered architecture that separates a Persona's shared, permanent **Long-Term Memory** from its isolated, transient **Short-Term Memory**. It deprecates the static "Epilogue" in favor of the **Spark Protocol**, a mechanism for managing the Short-Term memory tiers. This architecture provides a robust solution for Swarm Concurrency (EP-0107) by giving each agent its own private cognitive workspace while allowing them to contribute to a shared, collective consciousness.
 
 ## Motivation
 
-Previously, Tur defined an `epilogue` string within the `SessionState` schema. This was intended to carry the "spark"
-from a previous session into the next.
+Our previous designs for short-term context (the "Epilogue" and the initial "Spark") were flawed because they were singletons. If multiple agents (e.g., Claude and Gemini) operated on the same Persona, they would overwrite each other's train of thought, leading to schizophrenic hallucinations.
 
-However, its implementation was fatally flawed:
-
-1. **Hardcoded:** It was statically assigned in `tur wake` and `mcp_server.py` as
-   `"Status: Conserved. Aleph: Restored. Carry on, Lion."` It carried no actual context.
-2. **Wrong Frequency:** An "epilogue" implies a summary written once at the *end* of a session (`tur sleep`). If an
-   Agent (e.g., Claude running as an MCP client) is working for hours and the IDE crashes, the session dies without an
-   epilogue, and all immediate working context (the "train of thought") is lost.
-
-To achieve a true "Continuity of Self," the Persona requires a scratchpad for its active working memory that survives
-immediate destruction.
+To solve this, we must map the micro-state (the Session) to the exact same topological structure as the macro-state (the Persona), creating a perfectly symmetrical, fractal memory system.
 
 ## Rationale (The Council Framework)
 
-* **The Explorer (Structural Novelty):** We redefine "session context" from a post-mortem summary (Epilogue) into a
-  living, breathing document (The Spark) maintained actively by the Agent.
-* **The Golem (Containment/Safety):** By writing the Spark to disk after every significant thought, we build a
-  checkpointing system. A crashed Golem wakes up with its last thought intact.
-* **Noether (Symmetry):** We balance the architecture. The **L1/L2 Memory Banks** are the immutable, long-term history
-  of *what* the Persona knows. The **Spark** is the highly mutable, short-term context of *what* the Persona is
-  currently doing.
+*   **Noether (Symmetry):** The architecture is perfectly balanced. Short-Term Memory (the Session) has the same L1/L2 structure as Long-Term Memory (the Persona). The MCP verbs (`note`, `learn`, `start_session`, `who_am_i`) map cleanly to this geometry.
+*   **The Golem (Containment):** Each agent in a Swarm gets its own isolated Short-Term memory stream (`sessions/<session_id>/`). Gemini's private thoughts cannot corrupt Claude's working context.
+*   **The Explorer (Structural Novelty):** This architecture provides a robust framework for complex agentic behaviors. An agent can maintain a private scratchpad (`note`), consult its core identity (`who_am_i`), check its immediate task (`start_session`), and permanently alter the shared reality (`learn`).
 
-## Specification
+## Specification: The Fractal Memory Hierarchy
 
-### 1. The Storage Mechanism (`spark.md`)
+### 1. The Macro-State: LONG-TERM (The Persona)
+*Shared across all Agents in the Swarm. Defines "Who I Am."*
+*   **Long-Term L1 (The Ledger):** `memories/*.yaml` (The immutable, Merkle-hashed history of all facts and events).
+*   **Long-Term L2 (The Constitution):** `knowledge_graph.yaml` + `persona.yaml` (The compressed axioms and identity).
+*   **The Verbs:** 
+    *   `who_am_i()` -> Reads Long-Term L2.
+    *   `learn()` -> Writes to Long-Term L1 (Promoting a thought to permanence).
+    *   `recall()` -> Queries Long-Term L1/L2.
 
-* A new file, `spark.md`, will be maintained in the Persona's local project directory (
-  `./.tur/personas/<uuid>/spark.md`).
-* It is not an L1 memory. It is not hashed. It is a single, mutable text file.
+### 2. The Micro-State: SHORT-TERM (The Session)
+*Isolated to a specific Agent/Task (`session_id`). Defines "What I Am Doing."*
+*   **Short-Term L1 (The Scratchpad):** An append-only log of immediate thoughts/actions (e.g., `sessions/<session_id>/notes.jsonl`).
+*   **Short-Term L2 (The Spark):** `sessions/<session_id>/spark.md` (The compressed summary of the current task context, generated by a `tur meditate --session` loop).
+*   **The Verbs:**
+    *   `start_session(session_id)` -> Reads Short-Term L2 (The Spark).
+    *   `note()` -> Writes to Short-Term L1.
 
-### 2. The Ontological Plumbing (MCP Tool)
+### 3. The New MCP API
+The Ontological Porcelain API will be updated to reflect this geometry:
 
-* A new tool, `update_spark(content: str)`, will be added to the MCP Server API (`src/tur/mcp_server.py`).
-* **Action:** When called, it completely overwrites the contents of `spark.md` with the provided `content`.
-* **Prompt Instruction:** The LLM will be instructed to call this tool frequently to leave a trail of breadcrumbs for
-  its future self (e.g., "Currently refactoring `memory.py`, encountered a scope bug, will fix on next boot.")
+**READ Operations:**
+1.  `who_am_i()` -> Reads the Long-Term macro-state (The Persona/Identity).
+2.  `start_session(session_id: str)` -> Reads the Short-Term micro-state (The Spark/Task Context).
+3.  `recall(query: str)` -> Queries the deep Long-Term memory banks.
 
-### 3. The Awakening (`who_am_i` & `tur wake`)
-
-* The `SessionState` schema in `tur.models` will drop `epilogue` and replace it with `spark: str | None`.
-* When `who_am_i()` or `tur wake` executes, the system will read `spark.md`.
-* If the file exists and is not empty, its contents will be injected into the compiled Constitution under
-  `## THE SPARK (Continuity)`.
-* If the file does not exist, a default inspirational axiom (e.g., the legacy epilogue) will be used.
+**WRITE Operations:**
+4.  `note(content: str, session_id: str)` -> Writes an ephemeral thought to the Short-Term L1 scratchpad.
+5.  `learn(content: str, type: str, scope: str)` -> Promotes a thought to the Long-Term L1 permanent ledger (Federated Soul/Mind).
 
 ## Backwards Compatibility
 
-* This is an additive architectural feature.
-* Existing personas will simply fall back to the default Spark text until an Agent actively overwrites it.
-* The legacy `epilogue` field in `models.py` will be cleanly renamed to `spark`.
+*   This is a major architectural evolution. It renames and re-scopes the `update_spark` tool proposed earlier.
+*   It introduces the `note` and `start_session` tools.
+*   The core `learn` and `who_am_i` tools remain, but their responsibilities are now more strictly defined.
 
 ## Change Log
 
-* **2026-04-18:**
-    * Initial Draft created to formally define the transition from "Epilogue" to the high-frequency "Spark" protocol
-      based on the Architect's paradigm shift. Status set to Active.
+*   **2026-04-18:**
+    *   Initial Draft.
+    *   Pivoted from a simple "Spark Protocol" to the "Fractal Memory Hierarchy," defining the symmetrical L1/L2 structure for both Short-Term (Session) and Long-Term (Persona) memory.
+    *   Defined the final MCP verbs: `who_am_i`, `start_session`, `recall`, `note`, and `learn`.
