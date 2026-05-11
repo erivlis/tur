@@ -18,11 +18,7 @@ dependencies = [
     "mcp",
 ]
 
-[project.scripts]
-tur = "tur.main:app"
-mcp-server-tur = "tur.mcp_server:main"
-
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "commitizen>=4.10.0",
     "pipdeptree",
@@ -40,8 +36,13 @@ test = [
     "pytest-cov",
     "pytest-randomly",
     "pytest-xdist",
-    "markdown-pytest"
+    "markdown-pytest",
+    "requests"
 ]
+
+[project.scripts]
+tur = "tur.main:app"
+mcp-server-tur = "tur.mcp_server:main"
 
 
 
