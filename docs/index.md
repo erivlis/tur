@@ -1,7 +1,16 @@
+---
+description: An ontological framework for engineering high-fidelity AI personas.
+icon: lucide/home
+---
+
 # Tur: The Persona Engineering Framework
 
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 > — *Jim Knopf und Lukas der Lokomotivführer*
+
+![Tur Logo Light](assets/images/logo-light.png#only-light){ width="300" align=right}
+![Tur Logo Dark](assets/images/logo-dark.png#only-dark){ width="300" align=right}
+
 
 **Tur** is an ontological framework and CLI tool for engineering high-fidelity AI personas. It moves beyond "prompt engineering" into **Persona Engineering**, treating an AI identity as a structured, immutable software object rather than a literary description.
 

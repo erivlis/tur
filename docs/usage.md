@@ -1,3 +1,7 @@
+---
+description: The complete guide to the Tur CLI commands and biological lifecycle.
+icon: lucide/terminal
+---
 # Usage Guide
 
 Tur is a lightweight, deterministic CLI that manages the lifecycle of your AI personas. It treats an AI identity as a
@@ -9,11 +13,11 @@ Ensure you have [uv](https://github.com/astral-sh/uv) installed.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tur.git
+git clone https://github.com/erivlis/tur.git
 cd tur
 
 # Install the project and dependencies
-uv sync
+uv sync --all-extras --all-groups
 ```
 
 ## The Default Persona Workflow
@@ -83,7 +87,15 @@ uv run tur sleep path/to/chat.log
 uv run tur sleep path/to/chat.log ariel
 ```
 
-### 5. View Memories (`memories`)
+### 5. Running as an MCP Server (`serve`)
+
+**The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This allows Tur to act as the "Traveler" state engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
+
+```bash
+uv run tur serve --transport stdio
+```
+
+### 6. View Memories (`memories`)
 
 Inspect the contents of the Memory Bank. This lists all active memories that will be included during the next `wake`
 cycle.
@@ -98,7 +110,7 @@ To include archived (forgotten) memories in the list:
 uv run tur memories --include-archived
 ```
 
-### 6. Measure Cognitive Load (`telemetry`)
+### 7. Measure Cognitive Load (`telemetry`)
 
 Calculates the "Constraint Dimensionality" ($C_p$) of a persona based on its principles and weights. This helps you
 understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
@@ -107,20 +119,20 @@ understand if your persona's ruleset is becoming too complex for an LLM to handl
 uv run tur telemetry
 ```
 
-### 7. Forget a Memory (`forget`)
+### 8. Forget a Memory (`forget`)
 
 Archives a specific memory by its UUID, removing it from the active context window. The memory is moved to an `archive/`
 folder and is no longer loaded during `wake`.
 
 ```bash
 # You must provide the Memory ID
-uv run tur forget <memory-uuid>
+uv run tur forget <memory-hash>
 
 # For a non-default persona:
-uv run tur forget <memory-uuid> ariel
+uv run tur forget <memory-hash> ariel
 ```
 
-### 8. Clone a Persona (`clone`)
+### 9. Clone a Persona (`clone`)
 
 Duplicates an existing persona into a new identity with a new UUID. This is useful for creating specialized branches of
 a persona without polluting the original's memory bank.
