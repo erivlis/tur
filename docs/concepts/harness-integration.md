@@ -1,6 +1,6 @@
 ---
-description: 
-icon: lucide/play
+description: A guide for integrating Tur (The Traveler) with external agent frameworks (The Harness) via CLI injection or MCP.
+icon: lucide/plug-zap
 ---
 
 # Harness Integration Guide
@@ -12,7 +12,7 @@ Because Tur strictly adheres to the "Boundary of Orchestration," it exposes its 
 and MCP) rather than building internal logic for every new agent framework.
 
 This document provides instructions and prompt templates for integrating Tur into any modern AI Harness (e.g., Pi,
-Claude Code, Openhands, Roo Code).
+Claude Code, OpenCode, Gemini CLI).
 
 ---
 
