@@ -5,7 +5,7 @@
 | **EP**      | 0109                                                   |
 | **Title**   | Harness and Terrain Adapters (The Space Suit Protocol) |
 | **Author**  | The Architect & Ariel                                  |
-| **Status**  | Draft                                                  |
+| **Status**  | Closed (Falsified & Simplified)                        |
 | **Type**    | Standards Track                                        |
 | **Created** | 2026-05-10                                             |
 | **Updated** | 2026-05-11                                             |
@@ -46,46 +46,20 @@ orchestrate external tools.
 ## Specification
 
 ### 1. Hexagonal Architecture (Ports and Adapters)
-
-Tur will adopt a strict Ports and Adapters architecture. The core logic (`MemoryManager`, `compiler`, `models`) will sit
-at the center, ignorant of the outside world.
+*(Struck via The Dennis Point: The internal Hexagonal Architecture was over-engineering. Since Tur relies entirely on standard I/O (CLI) and standard JSON-RPC (MCP), and refuses to build framework-specific logic internally, the "Adapter" interfaces were purely boilerplate. Tur's architecture is simply a Compiler and an MCP Server.)*
 
 ### 2. The Harness Adapter (The Brain-Machine Interface)
 
-An interface defining how Tur provides the Traveler's state to an execution engine, and how that engine communicates
-back.
+Tur does not maintain internal Python adapters. The "Harness Adapter" concept refers entirely to **external code** written in the language of the target Harness (e.g., the `tur-adapter.ts` Pi extension) that executes the standard Tur CLI or connects to the Tur MCP Server.
 
-* **Port (`tur.ports.HarnessPort`):** A universal, thin contract defining methods like `provide_constitution()`,
-  `receive_telemetry()`, and `handle_protocol_trigger()`. Tur exposes its state via standard protocols (e.g., JSON, raw
-  Markdown, or standard MCP).
-* **Core Adapters (`tur.adapters.harness.*`):** Tur will maintain only the most fundamental, universal adapters in its
-  core repository:
-    * `McpHarnessAdapter`: Translates the port into standard JSON-RPC over `stdio` for the broader MCP ecosystem.
-    * `CliHarnessAdapter`: Translates the port into terminal output for local human interaction.
-* **External Adapters (The Boundary Rule):** Specific implementations for distinct harnesses (like a `PiHarnessAdapter`
-  or an `OpenCodeHarnessAdapter`) should generally be built and maintained as third-party plugins or built into the
-  Harnesses themselves (consuming Tur's `McpHarnessAdapter`), preventing Tur from bloating into an orchestrator.
+* **Core Interfaces (Built-in to Tur):**
+    * **CLI:** Standard text output via `stdout` (`tur wake`).
+    * **MCP Server:** Standard JSON-RPC over `stdio` (`tur serve`).
+* **External Adapters:** Scripts or extensions built *outside* Tur that bridge these interfaces to specific agent frameworks.
 
-### 3. The Terrain Adapter (The Sensory Interface)
+### 3. ~~The Terrain Adapter (The Sensory Interface)~~
 
-An interface defining how Tur perceives the local environment and its local physics. Drawing inspiration from
-MemPalace's RFC 002, a `TerrainAdapter` must be a rigorous contract preventing ad-hoc parsing logic from bleeding into
-the core.
-
-* **Port (`tur.ports.TerrainPort`):** The strict contract for sensory input. Every Terrain Adapter must implement:
-    1. **Source Discovery:** How the adapter finds the raw data.
-    2. **Source-Item Identity & Incremental Ingest:** How the adapter tracks file modification hashes to prevent blind
-       re-reading of the entire Terrain.
-    3. **Data Normalization (The Transformation Promise):** How the adapter standardizes heterogeneous data into a flat
-       semantic string for the Persona.
-
-* **Core Adapters (`tur.adapters.terrain.*`):**
-    * `LocalFileSystemTerrainAdapter`: Reads the local `cwd` and standard context files.
-    * `AgentSkillsTerrainAdapter`: Scans the Terrain for standardized domain rules (e.g., `.skills/` folders). *
-      *Crucially, it implements Progressive Disclosure:** it parses *only* the YAML frontmatter (`name`, `description`)
-      to inject a low-token index into the Traveler's Constitution. It relies entirely on the Harness to dynamically
-      hydrate the full Markdown instructions and execute the scripts, perfectly maintaining the Boundary of
-      Orchestration.
+*(Struck via The Dennis Point: The entire concept of a TerrainPort is an anti-pattern. Tur does not need to read the project codebase because the external Harness natively handles file discovery and context injection. Building Terrain Adapters in Tur duplicates context, violating the Shannon Module. Tur's only responsibility is managing the internal state of the Traveler.)*
 
 ## Backwards Compatibility
 
@@ -101,4 +75,6 @@ the core.
       to solve the "100 Flavors of Ice Cream" tool orchestration problem.
     * Refined the Harness Adapter spec to emphasize that Tur only maintains universal ports (like MCP), shifting the
       burden of specific Harness adapters to external plugins or the Harnesses themselves.
-    * (Previous updates regarding Progressive Disclosure and MemPalace contracts remain intact).
+    * Struck out `AgentSkillsTerrainAdapter` from the specification. Falsified via the Dennis Point: injecting skills via Tur duplicates the native discovery mechanisms of modern Harnesses (Claude, Pi), wasting tokens and violating the Boundary of Orchestration.
+    * Struck out the entire `TerrainPort` specification. Tur manages the Traveler; the Harness manages the Terrain.
+    * Struck out the internal Hexagonal Architecture (Ports and Adapters) via the Dennis Point. If Tur only ever supports CLI (stdout) and MCP (stdio), maintaining an internal `HarnessPort` interface is over-engineered boilerplate. "Adapters" are now defined strictly as *external* code (like the Pi extension) that wrap Tur's standard interfaces.
