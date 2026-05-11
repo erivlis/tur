@@ -27,7 +27,7 @@ _ensure_project_root()
 import yaml  # noqa: E402
 
 from tur.compiler import compile_persona  # noqa: E402
-from tur.main import get_active_persona_id, get_persona_path, get_user_profile  # noqa: E402
+from tur.main import get_active_persona_id, get_persona_path, get_user_profile, hydrate_session_state  # noqa: E402
 from tur.memory import MemoryManager  # noqa: E402
 from tur.models import Memory, MemoryScope, MemoryType, Persona, SessionState  # noqa: E402
 from tur.telemetry import CognitiveTelemetry  # noqa: E402
@@ -53,29 +53,13 @@ def who_am_i() -> str:
     Call this when you need to remember your constraints or understand your current cognitive load.
     """
     active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
-    manager = MemoryManager(base_dir=persona_dir)
-
-    file_path = persona_dir / "persona.yaml"
-    with open(file_path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-
-    persona = Persona(**data)
-    user = get_user_profile()
-    memories = manager.load_all()
-
-    state = SessionState(
-        persona=persona,
-        user=user,
-        memories=memories,
-        epilogue="Status: Conserved. Aleph: Restored. Carry on, Lion."
-    )
+    state = hydrate_session_state(active_id)
     system_prompt = compile_persona(state)
 
     # Append Telemetry Metadata
     telemetry_engine = CognitiveTelemetry()
     static_metrics = telemetry_engine.measure_static_load(system_prompt)
-    cp = telemetry_engine.calculate_constraint_dimensionality(persona)
+    cp = telemetry_engine.calculate_constraint_dimensionality(state.persona)
 
     telemetry_block = (
         f"\n\n--- [SYSTEM METRICS] ---\n"
@@ -139,6 +123,22 @@ def learn(
 
 
 @mcp.tool()
+def update_spark(content: str) -> str:
+    """
+    Update the transient session spark (epilogue.md) for the active persona.
+    This replaces the current short-term context.
+    """
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+
+    spark_path = persona_dir / "epilogue.md"
+    with open(spark_path, "w", encoding="utf-8") as f:
+        f.write(content.strip())
+
+    return f"Spark successfully updated for '{active_id}'."
+
+
+@mcp.tool()
 def recall(query: str) -> str:
     """
     Search your deep memory bank for past events, decisions, or knowledge not currently in your active context.
@@ -163,10 +163,19 @@ def recall(query: str) -> str:
     return json.dumps(mem_list, indent=2)
 
 
-def main():
+def main(transport: Literal["stdio", "sse"] = "stdio", port: int = 8000):
     """Entry point for the MCP server."""
     try:
-        mcp.run(transport="stdio")
+        match transport:
+            case 'sse':
+                print(f"Starting SSE server on port {port}...", file=sys.stderr)
+                mcp.settings.port = port
+            case 'stdio':
+                print("Starting stdio server...", file=sys.stderr)
+            case _:
+                raise ValueError(f"Transport '{transport}' is not supported. Must be 'stdio' or 'sse'.")
+
+        mcp.run(transport=transport)
     except KeyboardInterrupt:
         # Architecture Note (The Golem Protocol):
         # We must catch KeyboardInterrupt at this synchronous top-level boundary.

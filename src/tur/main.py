@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import typer
@@ -29,6 +30,24 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+
+# -----------------------------------------------------------------------------
+# THE GOLEM PROTOCOL: TTY Lock
+# -----------------------------------------------------------------------------
+def require_human(func):
+    """
+    Physical safety switch to prevent Harness Agents from executing administrative
+    commands via headless bash execution. Prevents accidental 'lobotomy'.
+    """
+    import functools
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not sys.stdout.isatty():
+            console.print("[red]Error: Administrative command invoked in a non-interactive shell.[/red]")
+            console.print("[red]GOLEM PROTOCOL VIOLATION: Agents must use the MCP Server for state access.[/red]")
+            raise typer.Exit(code=1)
+        return func(*args, **kwargs)
+    return wrapper
 
 
 def get_user_profile() -> UserProfile:
@@ -115,7 +134,35 @@ def get_persona_path(identifier: str) -> Path:
     raise ValueError(f"Persona '{identifier}' not found in index.")
 
 
+def hydrate_session_state(active_id: str) -> SessionState:
+    """Hydrates the full SessionState (Persona, User, Memories, Epilogue) from the filesystem."""
+    persona_dir = get_persona_path(active_id)
+    file_path = persona_dir / "persona.yaml"
+
+    with open(file_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    persona = Persona(**data)
+    user = get_user_profile()
+    memory_manager = MemoryManager(base_dir=persona_dir)
+    memories = memory_manager.load_all()
+
+    epilogue_path = persona_dir / "epilogue.md"
+    if epilogue_path.exists():
+        epilogue_content = epilogue_path.read_text(encoding="utf-8").strip()
+    else:
+        epilogue_content = "Status: Conserved. Aleph: Restored. Carry on, Lion."
+
+    return SessionState(
+        persona=persona,
+        user=user,
+        memories=memories,
+        epilogue=epilogue_content
+    )
+
+
 @app.command()
+@require_human
 def clone(
         identifier: str = typer.Argument(..., help="The name or UUID of the persona to clone"),
         new_name: str = typer.Argument(..., help="The name of the new cloned persona")
@@ -164,6 +211,7 @@ def clone(
 
 
 @app.command()
+@require_human
 def forget(
         memory_id: str = typer.Argument(..., help="The ID (hash) of the memory to forget"),
         identifier: str | None = typer.Argument(None,
@@ -181,12 +229,14 @@ def forget(
 
 
 @app.command()
+@require_human
 def init():
     """Bootstrap a new persona via an interactive TUI questionnaire."""
     init_wizard()
 
 
 @app.command()
+@require_human
 def memories(
         identifier: str | None = typer.Argument(None,
                                                 help="The name or UUID of the persona. If omitted, uses the default."),
@@ -226,6 +276,7 @@ def memories(
 
 
 @app.command()
+# Intentionally bypassing TTY lock to allow agents to write their own memories via Harness CLI execution
 def memorize(
         content: str = typer.Argument(..., help="The content of the memory to store."),
         identifier: str | None = typer.Argument(None,
@@ -257,17 +308,41 @@ def memorize(
 
 
 @app.command()
+# Intentionally bypassing TTY lock to allow agents to update their own continuity
+def spark(
+        content: str = typer.Argument(..., help="The transient content of the current session state (The Epilogue)."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Update the transient session spark (epilogue.md) for a persona."""
+    try:
+        active_id = get_active_persona_id(identifier)
+        persona_dir = get_persona_path(active_id)
+
+        spark_path = persona_dir / "epilogue.md"
+        with open(spark_path, "w", encoding="utf-8") as f:
+            f.write(content.strip())
+
+        console.print(f"Spark updated for '{active_id}'.")
+    except Exception as e:
+        console.print(f"[red]Error saving spark: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def serve(
         transport: str = typer.Option("stdio",
-                                      help="The transport protocol for the MCP server ('stdio' or 'streamable-http').")
+                                      help="The transport protocol for the MCP server ('stdio' or 'sse')."),
+        port: int = typer.Option(8000, help="Port to use when transport is 'sse'.")
 ):
     """Run the Tur MCP server."""
     from tur.mcp_server import main as mcp_main
     console.print(f"[bold green]Starting Tur MCP server with {transport} transport...[/bold green]")
-    mcp_main(transport=transport)
+    mcp_main(transport=transport, port=port)
 
 
 @app.command()
+@require_human
 def sleep(
         log_path: str = typer.Argument(..., help="Path to the chat log file to be parsed."),
         identifier: str | None = typer.Argument(None,
@@ -360,6 +435,7 @@ def sleep(
 
 
 @app.command()
+@require_human
 def switch():
     """Set a new default persona."""
 
@@ -387,6 +463,7 @@ def switch():
 
 
 @app.command()
+@require_human
 def telemetry(
         identifier: str | None = typer.Argument(
             None,
@@ -441,6 +518,7 @@ def telemetry(
 
 
 @app.command()
+# Note: wake is intentionally left without @require_human so headless adapters can fetch the prompt.
 def wake(identifier: str | None = typer.Argument(
     None,
     help="The name or UUID of the persona. If omitted, uses the default.")
@@ -448,35 +526,14 @@ def wake(identifier: str | None = typer.Argument(
     """Activate a persona by name or UUID."""
     try:
         active_id = get_active_persona_id(identifier)
-        persona_dir = get_persona_path(active_id)
-        file_path = persona_dir / "persona.yaml"
+        state = hydrate_session_state(active_id)
 
-        with open(file_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-
-        # 1. Load Persona (The DNA)
-        persona = Persona(**data)
-
-        # 2. Inject User Context (The Architect)
-        user = get_user_profile()
-
-        # 3. Hydrate State (The Soul)
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        memories = memory_manager.load_all()
-
-        state = SessionState(
-            persona=persona,
-            user=user,
-            memories=memories,
-            epilogue="Status: Conserved. Aleph: Restored. Carry on, Lion."
-        )
-
-        # 4. Compile (The Awakening)
+        # Compile (The Awakening)
         system_prompt = compile_persona(state)
 
         # Output
-        console.print(f"[bold green]--- SYSTEM WAKE: {persona.name} (v{persona.version}) ---[/bold green]")
-        console.print(f"[dim]Active Persona: {active_id} ({persona.name})[/dim]")
+        console.print(f"[bold green]--- SYSTEM WAKE: {state.persona.name} (v{state.persona.version}) ---[/bold green]")
+        console.print(f"[dim]Active Persona: {active_id} ({state.persona.name})[/dim]")
 
         # Use a rich panel or syntax highlighting for the prompt if desired,
         # but plain printing is often best for raw system prompts to be copied.
