@@ -24,12 +24,12 @@ _ensure_project_root()
 
 # Defer imports until AFTER the working directory is set to ensure they resolve correctly,
 # even if this script is launched from a different CWD.
-import yaml  # noqa: E402
 
 from tur.compiler import compile_persona  # noqa: E402
-from tur.main import get_active_persona_id, get_persona_path, get_user_profile, hydrate_session_state  # noqa: E402
+from tur.main import get_active_persona_id, get_persona_path, hydrate_session_state, \
+    perform_sleep_dreaming  # noqa: E402
 from tur.memory import MemoryManager  # noqa: E402
-from tur.models import Memory, MemoryScope, MemoryType, Persona, SessionState  # noqa: E402
+from tur.models import Memory, MemoryScope, MemoryType  # noqa: E402
 from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
 
@@ -47,9 +47,9 @@ mcp = FastMCP("tur-server", json_response=True, lifespan=server_lifespan)
 
 
 @mcp.tool()
-def who_am_i() -> str:
+def wake() -> str:
     """
-    Read your core identity, directives, and system metrics.
+    Read your core identity, directives, and system metrics (formerly who_am_i).
     Call this when you need to remember your constraints or understand your current cognitive load.
     """
     active_id = get_active_persona_id()
@@ -123,9 +123,9 @@ def learn(
 
 
 @mcp.tool()
-def update_spark(content: str) -> str:
+def spark(content: str) -> str:
     """
-    Update the transient session spark (epilogue.md) for the active persona.
+    Update the transient session spark (epilogue.md) for the active persona (formerly update_spark).
     This replaces the current short-term context.
     """
     active_id = get_active_persona_id()
@@ -136,6 +136,34 @@ def update_spark(content: str) -> str:
         f.write(content.strip())
 
     return f"Spark successfully updated for '{active_id}'."
+
+
+@mcp.tool()
+def sleep(
+        log_content: str,
+        session_id: str | None = None,
+        model: str = "gemini-3.1-pro-preview"
+) -> str:
+    """
+    Dehydrate a session by parsing the active session's chat log to extract memories.
+    Call this when the active session is ending and you want to consolidate L1 memories.
+
+    Args:
+        log_content(str): The full text/markdown chat transcript of the current session.
+        session_id(str): The optional ID of the session these memories belong to.
+        model(str): The model to use for dreaming (default is 'gemini-3.1-pro-preview').
+    """
+    try:
+        active_id = get_active_persona_id()
+        count = perform_sleep_dreaming(
+            log_content=log_content,
+            active_id=active_id,
+            session_id=session_id,
+            model=model
+        )
+        return f"Dreams consolidated. {count} new memories formed and persona is now sleeping."
+    except Exception as e:
+        return f"Error during dreaming: {e}"
 
 
 @mcp.tool()

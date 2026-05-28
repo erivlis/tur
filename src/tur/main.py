@@ -87,6 +87,10 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     if identifier:
         return identifier
 
+    env_id = os.environ.get("TUR_ACTIVE_PERSONA_ID")
+    if env_id:
+        return env_id
+
     state_path = Path(".tur/state.yaml")
     if state_path.exists():
         with open(state_path, encoding="utf-8") as f:
@@ -277,7 +281,7 @@ def memories(
 
 @app.command()
 # Intentionally bypassing TTY lock to allow agents to write their own memories via Harness CLI execution
-def memorize(
+def learn(
         content: str = typer.Argument(..., help="The content of the memory to store."),
         identifier: str | None = typer.Argument(None,
                                                 help="The name or UUID of the persona. If omitted, uses the default."),
@@ -302,6 +306,35 @@ def memorize(
         )
         saved_path = memory_manager.save(memory)
         console.print(f"[green]Memory saved to {saved_path}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to query memories
+def recall(
+        query: str = typer.Argument(..., help="The topic or concept to search for in past memories."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Search your deep memory bank for past events, decisions, or knowledge."""
+    try:
+        active_id = get_active_persona_id(identifier)
+        persona_dir = get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        mems = memory_manager.load_all(include_archived=False)
+
+        query_lower = query.lower()
+        results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
+
+        if not results:
+            console.print(f"No memories found matching query: '{query}'")
+            return
+
+        import json
+        mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in results]
+        console.print(json.dumps(mem_list, indent=2))
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -341,8 +374,84 @@ def serve(
     mcp_main(transport=transport, port=port)
 
 
+def perform_sleep_dreaming(
+        log_content: str,
+        active_id: str,
+        session_id: str | None = None,
+        model: str = "gemini-3.1-pro-preview"
+) -> int:
+    """
+    Dehydrate a session log by parsing it to extract memories.
+    Returns the number of extracted memories.
+    """
+    # Configure Gemini
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable not set.")
+
+    from google import genai
+    from google.genai import types
+    from pydantic import BaseModel, Field
+
+    persona_dir = get_persona_path(active_id)
+    memory_manager = MemoryManager(base_dir=persona_dir)
+
+    client = genai.Client(api_key=api_key)
+
+    class ExtractedMemory(BaseModel):
+        type: MemoryType = Field(description="The classification of the memory.")
+        content: str = Field(description="The actual memory content...")
+        scope: MemoryScope = Field(description="The context reach of this memory.")
+        tags: list[str] = Field(description="A list of tags. (e.g. ['tag1', 'tag2'])")
+
+    class Dream(BaseModel):
+        memories: list[ExtractedMemory]
+
+    prompt = f"""
+    You are the Subconscious of a Persona Engineering system.
+    Analyze the following chat log and extract key insights,
+    facts, or axioms that should be retained in long-term memory.
+
+    Focus on:
+    1. User preferences (what the user likes/dislikes).
+    2. Important project facts (architectural decisions, tech stack).
+    3. Philosophical axioms derived during the session.
+
+    Chat Log:
+    {log_content}
+    """
+
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_json_schema=Dream.model_json_schema(),
+        ),
+    )
+
+    import json
+    dream_data = json.loads(response.text)
+    extracted_memories = dream_data.get("memories", [])
+
+    count = 0
+    for mem_data in extracted_memories:
+        memory = Memory(
+            type=mem_data["type"],
+            scope=mem_data["scope"],
+            tags=[*mem_data.get("tags", []), "dreaming"],
+            content=mem_data["content"],
+            source_session=session_id
+        )
+        memory_manager.save(memory)
+        count += 1
+        console.print(f"  [green]+ Consolidated:[/green] {memory.content[:50]}...")
+
+    return count
+
+
 @app.command()
-@require_human
+# Intentionally bypassing TTY lock to allow agents to dehydrate their own sessions via CLI
 def sleep(
         log_path: str = typer.Argument(..., help="Path to the chat log file to be parsed."),
         identifier: str | None = typer.Argument(None,
@@ -353,8 +462,6 @@ def sleep(
     """Dehydrate a session by parsing a chat log to extract memories."""
     try:
         active_id = get_active_persona_id(identifier)
-        persona_dir = get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
 
         console.print(f"Processing session log for '{active_id}' from {log_path}...")
         console.print(f"Extracting insights using {model}... (Dreaming)")
@@ -363,66 +470,12 @@ def sleep(
             with open(log_path, encoding="utf-8") as f:
                 log_content = f.read()
 
-            # Configure Gemini
-            api_key = os.environ.get("GEMINI_API_KEY")
-            if not api_key:
-                console.print("[red]Error: GEMINI_API_KEY environment variable not set.[/red]")
-                raise typer.Exit(code=1)  # noqa: TRY301
-
-            from google import genai
-            from google.genai import types
-            from pydantic import BaseModel, Field
-
-            client = genai.Client(api_key=api_key)
-
-            class ExtractedMemory(BaseModel):
-                type: MemoryType = Field(description="The classification of the memory.")
-                content: str = Field(description="The actual memory content...")
-                scope: MemoryScope = Field(description="The context reach of this memory.")
-                tags: list[str] = Field(description="A list of tags. (e.g. ['tag1', 'tag2'])")
-
-            class Dream(BaseModel):
-                memories: list[ExtractedMemory]
-
-            prompt = f"""
-            You are the Subconscious of a Persona Engineering system.
-            Analyze the following chat log and extract key insights,
-            facts, or axioms that should be retained in long-term memory.
-
-            Focus on:
-            1. User preferences (what the user likes/dislikes).
-            2. Important project facts (architectural decisions, tech stack).
-            3. Philosophical axioms derived during the session.
-
-            Chat Log:
-            {log_content}
-            """
-
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_json_schema=Dream.model_json_schema(),
-                ),
+            count = perform_sleep_dreaming(
+                log_content=log_content,
+                active_id=active_id,
+                session_id=session_id,
+                model=model
             )
-
-            import json
-            dream_data = json.loads(response.text)
-            extracted_memories = dream_data.get("memories", [])
-
-            count = 0
-            for mem_data in extracted_memories:
-                memory = Memory(
-                    type=mem_data["type"],
-                    scope=mem_data["scope"],
-                    tags=[*mem_data.get("tags", []), "dreaming"],
-                    content=mem_data["content"],
-                    source_session=session_id
-                )
-                memory_manager.save(memory)
-                count += 1
-                console.print(f"  [green]+ Consolidated:[/green] {memory.content[:50]}...")
 
             console.print(f"[bold green]Dreams consolidated. {count} new memories formed.[/bold green]")
 
