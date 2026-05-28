@@ -79,7 +79,7 @@ The Tur CLI is designed to be ergonomic, using a default persona to minimize rep
 
 ### 1. Installation & Setup
 
-```bash
+```shell
 # Clone the repository
 git clone https://github.com/erivlis/tur.git
 cd tur
@@ -92,7 +92,7 @@ uv sync --all-extras --all-groups
 
 This will launch an interactive wizard to create your first persona (e.g., "Ariel").
 
-```bash
+```shell
 uv run tur init
 ```
 
@@ -102,20 +102,26 @@ Tur operates on a biological lifecycle to ensure state preservation.
 
 **Wake:** Compiles the persona, user profile, and memories into a System Prompt.
 
-```bash
+```shell
 # Wake the default persona
 uv run tur wake
 ```
 
-**Memorize:** Manually add a new memory to the active persona.
+**Learn:** Manually add a new memory to the active persona.
 
-```bash
-uv run tur memorize "The user prefers functional programming." --type preference
+```shell
+uv run tur learn "The user prefers functional programming." --type preference
+```
+
+**Recall:** Search your deep memory bank for past events, decisions, or knowledge.
+
+```shell
+uv run tur recall "functional"
 ```
 
 **Sleep:** Dehydrate a session by parsing a chat log to extract new memories.
 
-```bash
+```shell
 uv run tur sleep path/to/chat.log
 ```
 
@@ -124,7 +130,7 @@ uv run tur sleep path/to/chat.log
 Tur can act as an MCP Server, providing the "Traveler" state to an external "Harness" (like Claude Desktop or another
 MCP client).
 
-```bash
+```shell
 uv run tur serve --transport stdio
 ```
 
@@ -132,7 +138,7 @@ uv run tur serve --transport stdio
 
 To change your active default persona, use the `switch` command.
 
-```bash
+```shell
 uv run tur switch
 ```
 
