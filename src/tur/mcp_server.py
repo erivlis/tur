@@ -165,9 +165,11 @@ def sleep(
             session_id=session_id,
             model=model
         )
-        return f"Dreams consolidated. {count} new memories formed and persona is now sleeping."
     except Exception as e:
         return f"Error during dreaming: {e}"
+    else:
+        return f"Dreams consolidated. {count} new memories formed and persona is now sleeping."
+
 
 
 @mcp.tool()
