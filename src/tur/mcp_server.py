@@ -26,7 +26,7 @@ _ensure_project_root()
 # even if this script is launched from a different CWD.
 
 from tur.compiler import compile_persona  # noqa: E402
-from tur.main import (
+from tur.main import (  # noqa: E402
     get_active_persona_id,
     get_persona_path,
     hydrate_session_state,

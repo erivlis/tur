@@ -326,7 +326,8 @@ def recall(
         mems = memory_manager.load_all(include_archived=False)
 
         query_lower = query.lower()
-        results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
+        results = [m for m in mems
+                   if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
 
         if not results:
             console.print(f"No memories found matching query: '{query}'")
