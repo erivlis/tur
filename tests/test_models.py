@@ -1,0 +1,163 @@
+from datetime import datetime
+from uuid import uuid4
+
+import pytest
+from pydantic import ValidationError
+
+from tur.models import (
+    Memory,
+    MemoryLink,
+    MemoryScope,
+    MemoryType,
+    Persona,
+    PersonaIndex,
+    PersonaIndexEntry,
+    PersonaProtocol,
+    Principle,
+    SessionState,
+    SpeechModulation,
+    UserProfile,
+)
+
+
+def test_principle_model():
+    p = Principle(
+        name="Symmetry",
+        avatar="Noether",
+        role="Guardian of Invariance",
+        constraints=["Do not break symmetry"],
+        weight=1.5
+    )
+    assert p.name == "Symmetry"
+    assert p.avatar == "Noether"
+    assert p.role == "Guardian of Invariance"
+    assert p.constraints == ["Do not break symmetry"]
+    assert p.weight == 1.5
+
+    # Test weight bounds
+    with pytest.raises(ValidationError):
+        Principle(name="Symmetry", role="Guardian", weight=2.5)
+
+    with pytest.raises(ValidationError):
+        Principle(name="Symmetry", role="Guardian", weight=-0.5)
+
+
+def test_persona_protocol_model():
+    proto = PersonaProtocol(
+        name="The Golem Protocol",
+        trigger="Stagnation",
+        action="Ask What If?"
+    )
+    assert proto.name == "The Golem Protocol"
+    assert proto.trigger == "Stagnation"
+    assert proto.action == "Ask What If?"
+
+
+def test_speech_modulation_model():
+    modulation = SpeechModulation(
+        name="Contemplative",
+        description="Low variance, structured paragraphs.",
+        variance="Low"
+    )
+    assert modulation.name == "Contemplative"
+    assert modulation.description == "Low variance, structured paragraphs."
+    assert modulation.variance == "Low"
+
+
+def test_memory_link_model():
+    link = MemoryLink(uri="tur://memory/hash", relation="supports")
+    assert link.uri == "tur://memory/hash"
+    assert link.relation == "supports"
+
+
+def test_memory_merkle_hash():
+    now = datetime(2026, 5, 29, 12, 0, 0)
+    mem1 = Memory(
+        timestamp=now,
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=["manual", "cli"],
+        content="Project uses FastAPI",
+        source_session="session_123"
+    )
+    assert mem1.id != ""
+
+    # Determinism check: same payload should yield exact same hash
+    mem2 = Memory(
+        timestamp=now,
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=["manual", "cli"],
+        content="Project uses FastAPI",
+        source_session="session_123"
+    )
+    assert mem1.id == mem2.id
+
+    # Content change should yield different hash
+    mem3 = Memory(
+        timestamp=now,
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=["manual", "cli"],
+        content="Project uses Flask",
+        source_session="session_123"
+    )
+    assert mem1.id != mem3.id
+
+
+def test_user_profile_model():
+    profile = UserProfile(
+        name="Ariel",
+        role="Principal Architect",
+        domain_expertise=["Python", "Go"],
+        core_values=["Clarity"]
+    )
+    assert profile.name == "Ariel"
+    assert profile.role == "Principal Architect"
+    assert profile.domain_expertise == ["Python", "Go"]
+    assert profile.core_values == ["Clarity"]
+
+
+def test_persona_model_frozen():
+    persona = Persona(
+        name="Ariel",
+        aleph="To architect reality.",
+        principles=[],
+        protocols=[],
+        speech_modulations=[],
+        metadata={"created_by": "Architect"}
+    )
+    assert persona.name == "Ariel"
+    assert persona.aleph == "To architect reality."
+
+    # Try modifying frozen model
+    with pytest.raises(ValidationError):
+        persona.name = "New Ariel"
+
+
+def test_session_state_model():
+    persona = Persona(
+        name="Ariel",
+        aleph="To architect reality.",
+        principles=[]
+    )
+    user = UserProfile(name="Eran", role="Architect")
+    state = SessionState(
+        persona=persona,
+        user=user,
+        memories=[],
+        epilogue="Continuity preserved."
+    )
+    assert state.persona == persona
+    assert state.user == user
+    assert state.memories == []
+    assert state.epilogue == "Continuity preserved."
+
+
+def test_persona_index_models():
+    pid = uuid4()
+    entry = PersonaIndexEntry(id=pid, name="Ariel", version="1.0.0")
+    index = PersonaIndex(personas=[entry])
+    assert index.personas[0].id == pid
+    assert index.personas[0].name == "Ariel"
+    assert index.personas[0].version == "1.0.0"
