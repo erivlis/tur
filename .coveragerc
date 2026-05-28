@@ -5,3 +5,5 @@ omit =
     .venv/*
     docs/*
     tests/*
+    src/tur/tui.py
+    src/tur/__main__.py

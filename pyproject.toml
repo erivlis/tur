@@ -74,8 +74,8 @@ omit = [
     "*/.venv/*",
     # omit everything in /tests
     "/tests/*",
-    # omit this single file
-    # "utils/tirefire.py",
+    "src/tur/tui.py",
+    "src/tur/__main__.py",
 ]
 
 [tool.coverage.run]
@@ -86,8 +86,8 @@ omit = [
     "*/.venv/*",
     # omit everything in /tests
     "/tests/*",
-    # omit this single file
-    # "utils/tirefire.py",
+    "src/tur/tui.py",
+    "src/tur/__main__.py",
 ]
 
 [tool.black]
