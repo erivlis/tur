@@ -61,6 +61,8 @@ a stateful semantic engine supporting external agents via MCP.
 * **Semantic Graph Queries:** Upgrading the MCP `recall` tool to traverse the EP-0103 L2 Knowledge Graph rather than just grepping L1 event logs.
 * **The Tur Orchestration Engine (EP-0102):** Full realization of the "Swarm" capability. Allowing the Architect Persona to dynamically spawn sub-agents via ACP message passing to execute specific, containerized tasks based on Skill definitions.
 * **Multi-Agent Swarm Readiness (EP-0107):** Hardening the memory bank for concurrent access and implementing MCP Resource Subscriptions (`tur://active_constitution`) to proactively synchronize state across multiple agents without triggering context overload.
+* **Semble Integration (EP-0111):** Establishing a dual-symbiote architecture recommending Semble as the high-efficiency Terrain search engine to manage codebase query discovery with ~98% fewer tokens.
+* **agentmemory Integration (EP-0112):** Establishing a dual-symbiote architecture where Tur provides the Constitutional Identity (Traveler) and agentmemory serves as the high-frequency local memory capture and hybrid search engine.
 * **Internal Arbitration:** Implementing mechanisms where the 9 Pillars (Noether, Popper, etc.) can programmatically critique the model's output *before* it reaches the user.
 
 ## Backwards Compatibility
@@ -69,6 +71,9 @@ This is a forward-looking informational document. Future EPs derived from this r
 
 ## Change Log
 
+* **2026-05-28:**
+    * Drafted and added **EP-0111 (Semble Integration)** and **EP-0112 (agentmemory Integration)** to Phase 3.
+    * Refined roadmap to reflect local, CPU-bound federated terrain discovery and high-frequency local-first memory integration.
 * **2026-04-18:**
     * Added **EP-0108 (The Spark Protocol)** to Phase 3.
     * Restructured roadmap to reflect the EP-010X series.
