@@ -11,7 +11,7 @@ structured, immutable software object.
 
 Ensure you have [uv](https://github.com/astral-sh/uv) installed.
 
-```bash
+```shell
 # Clone the repository
 git clone https://github.com/erivlis/tur.git
 cd tur
@@ -44,7 +44,7 @@ The Tur CLI is invoked using `uv run tur` (or just `tur` if your virtual environ
 Bootstrap a new persona interactively. This creates the necessary `.tur/personas/` directory structure, generates a
 unique UUID, and creates your first `persona.yaml` DNA file.
 
-```bash
+```shell
 uv run tur init
 ```
 
@@ -53,7 +53,7 @@ uv run tur init
 **The Awakening:** Compiles the static DNA (`persona.yaml`), the User Context (`user.yaml`), and the Memory Bank into a
 complete "System Prompt" ready to be fed to an LLM.
 
-```bash
+```shell
 # Wake the default persona
 uv run tur wake
 
@@ -66,7 +66,7 @@ uv run tur wake ariel
 **Active Learning:** Manually inject a specific insight, fact, or preference directly into the active persona's Memory
 Bank during a session.
 
-```bash
+```shell
 uv run tur memorize "The user prefers functional programming over OOP." --type preference --scope user
 
 # Or for a specific persona:
@@ -80,7 +80,7 @@ an LLM (acting as the Subconscious) to parse the log and structure the data.
 
 *Note: Requires the `GEMINI_API_KEY` environment variable to be set.*
 
-```bash
+```shell
 uv run tur sleep path/to/chat.log
 
 # Or for a specific persona:
@@ -91,7 +91,7 @@ uv run tur sleep path/to/chat.log ariel
 
 **The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This allows Tur to act as the "Traveler" state engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
 
-```bash
+```shell
 uv run tur serve --transport stdio
 ```
 
@@ -100,13 +100,13 @@ uv run tur serve --transport stdio
 Inspect the contents of the Memory Bank. This lists all active memories that will be included during the next `wake`
 cycle.
 
-```bash
+```shell
 uv run tur memories
 ```
 
 To include archived (forgotten) memories in the list:
 
-```bash
+```shell
 uv run tur memories --include-archived
 ```
 
@@ -115,7 +115,7 @@ uv run tur memories --include-archived
 Calculates the "Constraint Dimensionality" ($C_p$) of a persona based on its principles and weights. This helps you
 understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
 
-```bash
+```shell
 uv run tur telemetry
 ```
 
@@ -124,7 +124,7 @@ uv run tur telemetry
 Archives a specific memory by its UUID, removing it from the active context window. The memory is moved to an `archive/`
 folder and is no longer loaded during `wake`.
 
-```bash
+```shell
 # You must provide the Memory ID
 uv run tur forget <memory-hash>
 
@@ -137,7 +137,7 @@ uv run tur forget <memory-hash> ariel
 Duplicates an existing persona into a new identity with a new UUID. This is useful for creating specialized branches of
 a persona without polluting the original's memory bank.
 
-```bash
+```shell
 uv run tur clone ariel "Ariel (Coding Mode)"
 ```
 
