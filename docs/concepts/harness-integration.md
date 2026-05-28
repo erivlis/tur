@@ -63,13 +63,13 @@ Please configure your MCP client settings to connect to the following local serv
 
 Once connected, you will have access to the following tools:
 
-- `who_am_i`: Read your core identity, directives, and system metrics. Run this at the start of our session if you lose
-  context.
+- `wake`: Read your core identity, directives, and system metrics. Run this at the start of our session if you lose context.
 - `learn`: Assimilate a new invariant, fact, or insight into your permanent memory.
 - `recall`: Search your deep memory bank for past events or knowledge.
+- `spark`: Update your transient session continuity/spark (Short-Term L2).
+- `sleep`: Dehydrate your active session log to extract and consolidate new L1 memories.
 
-You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `who_am_i` to
-rehydrate your constraints.
+You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `wake` to rehydrate your constraints.
 ```
 
 ### Alternate Transport: SSE (Server-Sent Events)
@@ -77,7 +77,7 @@ rehydrate your constraints.
 If the Harness cannot communicate over `stdio` pipes (e.g., distributed architectures or web-based harnesses), you can
 run Tur over HTTP:
 
-```bash
+```shell
 uv run tur serve --transport sse --port 8000
 ```
 

@@ -23,9 +23,10 @@ Am."
 
 **MCP Verbs:**
 
-* `who_am_i()` -> Reads Long-Term L2.
+* `wake()` -> Reads Long-Term L2.
 * `learn()` -> Writes to Long-Term L1 (Promoting a thought to permanence).
 * `recall()` -> Queries Long-Term L1/L2.
+* `sleep()` -> Dehydrates the active session log to extract L1 memories.
 
 ## 2. The Micro-State: SHORT-TERM (The Session)
 
@@ -41,6 +42,7 @@ overwriting each other's immediate working context. It defines "What I Am Doing.
 
 * `start_session()` -> Reads Short-Term L2 (The Spark).
 * `note()` -> Writes to Short-Term L1.
+* `spark()` -> Updates Short-Term L2.
 
 ## Entropy Management: Progressive Disclosure
 
