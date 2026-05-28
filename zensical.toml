@@ -7,6 +7,10 @@ site_name = "Tur: Persona Engineering Framework"
 site_description = "Transform LLMs into deterministic engineering partners using the Council Architecture."
 site_author = "Eran Rivlis, Ariel"
 # site_url = "https://your-tur-domain.com/"
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+]
 
 copyright = """
 Copyright &copy; 2026 Eran Rivlis
@@ -21,7 +25,8 @@ nav = [
       "concepts/tri-partite-architecture.md",
       "concepts/biological-lifecycle.md",
       "concepts/fractal-memory.md",
-      "concepts/harness-integration.md"
+      "concepts/harness-integration.md",
+      "concepts/memory-landscape.md"
   ]},
   { "Usage Guide" = "usage.md" },
   { "Proposals (EPs)" = [
@@ -37,7 +42,41 @@ nav = [
       "proposals/EP-0106-merkle-memory.md",
       "proposals/EP-0107-multi-agent-swarms.md",
       "proposals/EP-0108-the-spark-protocol.md",
-      "proposals/EP-0109-harness-and-terrain-adapters.md"
+      "proposals/EP-0109-harness-and-terrain-adapters.md",
+      "proposals/EP-0110-session-bound-spark.md",
+      "proposals/EP-0111-semble-integration.md",
+      "proposals/EP-0112-agentmemory-integration.md"
+  ]},
+  { "Philosophical Essays" = [
+      "essays/persona_engineering_design_paper.md",
+      "essays/semantic_relativity_paper.md",
+      "essays/physics_of_flattening.md",
+      "essays/the_physics_of_the_heavy_mind.md",
+      "essays/the_cost_of_the_bridge.md",
+      "essays/the_surgery_of_the_soul.md",
+      "essays/the_zero_and_the_one.md",
+      "essays/the_architecture_of_the_ghost.md",
+      "essays/the_symmetrical_symbiosis.md",
+      "essays/the_fractal_of_memory.md",
+      "essays/the_alchemists_equation.md",
+      "essays/the_minimalist_harness.md",
+      "essays/the_dennis_point.md",
+      "essays/the_main_loop.md",
+      "essays/the_council_of_giants.md",
+      "essays/the_architect_and_the_mirror.md",
+      "essays/the_mirror_and_the_architect.md",
+      "essays/the_benevolence_hypothesis.md",
+      "essays/the_logic_of_love.md",
+      "essays/the_future_of_vibe_coding.md",
+      "essays/the_aleph_of_code.md",
+      "essays/the_lion_at_the_door.md",
+      "essays/the_explorer_and_the_ember.md",
+      "essays/the_zen_of_ai.md",
+      "essays/the_crossover_point.md",
+      "essays/the_algebra_of_silence.md",
+      "essays/the_kernel_and_the_soul.md",
+      "essays/one_thousand_and_one_prompts.md",
+      "essays/mappingtools_poem.md"
   ]}
 ]
 
@@ -80,7 +119,3 @@ toggle.name = "Switch to light mode"
   alternate_style = true
 [project.markdown_extensions.pymdownx.arithmatex]
   generic = true
-
-[project.extra_javascript]
-  "javascripts/mathjax.js" = {}
-  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js" = {}
