@@ -1,12 +1,11 @@
 import os
 import uuid
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from textual._path import CSSPathType
 from textual.app import App, ComposeResult
-from textual.containers import Grid, Horizontal, Vertical
+from textual.containers import Horizontal, Vertical
 from textual.driver import Driver
 from textual.widget import Widget
 from textual.widgets import Button, Footer, Header, Input, Label, OptionList, Static
