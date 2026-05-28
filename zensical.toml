@@ -45,7 +45,8 @@ nav = [
       "proposals/EP-0109-harness-and-terrain-adapters.md",
       "proposals/EP-0110-session-bound-spark.md",
       "proposals/EP-0111-semble-integration.md",
-      "proposals/EP-0112-agentmemory-integration.md"
+      "proposals/EP-0112-agentmemory-integration.md",
+      "proposals/EP-0113-the-tether-protocol.md"
   ]},
   { "Philosophical Essays" = [
       "essays/persona_engineering_design_paper.md",
