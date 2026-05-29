@@ -56,6 +56,10 @@ Tur respects a standard configuration hierarchy:
 └── personas/
     ├── <persona-uuid-1>/
     │   ├── persona.yaml      # The DNA/Kernel for the persona
+    │   ├── sessions.yaml     # The session index
+    │   ├── sessions/         # Flat session files
+    │   │   ├── 20260529_185258_143a5bc0.yaml
+    │   │   └── 20260529_173616_c2212cf6.yaml
     │   └── memories/         # Content-Addressable Storage (Merkle Memory)
     │       ├── archive/
     │       ├── 20260412_025949_axiom_e1324...yaml
@@ -67,10 +71,13 @@ Tur respects a standard configuration hierarchy:
 
 The core application logic resides in `src/tur/`:
 
-- **`main.py`**: The `typer` CLI application entry point (The Plumbing).
+- **`cli.py`**: The `typer` CLI application entry point (The Plumbing).
 - **`mcp_server.py`**: The Model Context Protocol server (The Porcelain for LLM interaction).
 - **`models.py`**: The Pydantic data models (The "Law" of the system).
-- **`memory.py`**: The `MemoryManager` for atomic, immutable memory storage.
+- **`user.py`**: User profile bootstrapping and domain management.
+- **`persona.py`**: Active persona resolution and path trace management.
+- **`session.py`**: Flat session trackers, session index consolidation, and epilogue note logic.
+- **`dreaming.py`**: Insight extraction, memory parsing, and LLM dreaming consolidation.
 - **`compiler.py`**: Renders the final System Prompt from the persona state.
 
 ## 🚀 Usage

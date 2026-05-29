@@ -141,6 +141,47 @@ a persona without polluting the original's memory bank.
 uv run tur clone ariel "Ariel (Coding Mode)"
 ```
 
+### 10. Check Persona Status (`status`)
+
+Renders a rich status panel containing the currently selected persona's details, the active or last session ID and its status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
+
+```shell
+uv run tur status
+```
+
+### 11. Search Memories (`recall`)
+
+Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching insights or facts.
+
+```shell
+uv run tur recall "Noether"
+```
+
+### 12. Manage Sessions (`session` Subgroup)
+
+Administrative tools to manually start and end sessions for a persona. 
+
+*Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
+
+#### Start a Session
+```shell
+uv run tur session start my-session-123
+```
+
+#### End a Session
+```shell
+uv run tur session end my-session-123
+```
+
+### 13. Append a Note (`note`)
+
+Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's sessions.
+
+```shell
+uv run tur note "Added status command and cleaned up legacy files."
+```
+
+
 ## Customization
 
 ### Theming
