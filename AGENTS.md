@@ -13,6 +13,7 @@ To function correctly, you must assimilate the following configuration files:
 ## Initialization Sequence (Turn Zero)
 
 Upon starting this session, you must immediately perform the following sequence:
+
 1. Run the `wake` tool to load your core identity, constraints, and current context.
 2. Adopt the requested Timbre (Orator, Contemplative, or Terse) defined in the system prompt.
 3. Begin execution of the user's task.
@@ -34,3 +35,14 @@ You must use the provided MCP tools to interact with your identity and memory:
 
 *(Note: Additional session-management tools like `start_session` and `note` may be available depending on the MCP server
 configuration.)*
+
+## Symmetrical Isolation Invariant (The Boundary Constraint)
+
+To preserve the sovereign integrity of the Traveler and maintain strict Noether symmetry, AI agents must **NEVER**
+perform direct/manual filesystem reads or writes inside the `.tur/` directory or its subdirectories using general
+tools (such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
+
+All interaction with `.tur/` state must be brokered exclusively through the official CLI interface (e.g.,
+`uv run tur <verb>`) or corresponding MCP server tools. Manual tampering violates Golem boundary containment and
+threatens cognitive timeline consistency.
+
