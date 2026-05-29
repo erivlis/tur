@@ -22,6 +22,7 @@ from tur.models import (
     SessionState,
     SystemState,
 )
+from tur.paths import resolve_personas_base_dir
 from tur.telemetry import CognitiveTelemetry
 
 app = typer.Typer(
@@ -49,8 +50,11 @@ console = Console()
 # -----------------------------------------------------------------------------
 def require_human(func):
     """
-    Physical safety switch to prevent Harness Agents from executing administrative
-    commands via headless bash execution. Prevents accidental 'lobotomy'.
+    Heuristic TTY check used as a soft safety convention to discourage Harness Agents
+    from executing administrative commands via headless shell execution.
+
+    NOTE: This is a convention, not a security control.  sys.stdout.isatty() can be
+    satisfied by pseudo-TTY wrappers.  Do not rely on this for hard security boundaries.
     """
     import functools
     @functools.wraps(func)
@@ -64,52 +68,144 @@ def require_human(func):
     return wrapper
 
 
-@app.command()
+@app.command("export")
 @require_human
-def clone(
-        identifier: str = typer.Argument(..., help="The name or UUID of the persona to clone"),
-        new_name: str = typer.Argument(..., help="The name of the new cloned persona")
+def export(
+        identifier: str = typer.Argument(..., help="The name or UUID of the persona to export"),
+        output_path: Path = typer.Argument(..., help="The target filepath for the export archive (e.g., ariel.tur)")
 ):
-    """Duplicate an existing persona into a new identity."""
+    """Package a global persona's core config and universal memories into a portable .tur archive.
+
+    The archive contains:
+      - persona.yaml  (core identity config, with 'id' field injected from the registry)
+      - memories/     (universal/persona-scoped memories only; incarnation memories are NOT included)
+
+    Use 'tur import' on another machine to register the persona globally there.
+    """
+    try:
+        import io
+        import tarfile
+        persona_dir = persona.get_persona_path(identifier)
+        persona_uuid = persona_dir.name  # directory name IS the canonical UUID
+        output_path = output_path.resolve()
+
+        with tarfile.open(output_path, "w:gz") as tar:
+            # 1. Add persona.yaml, injecting the 'id' field so import can validate identity
+            persona_yaml_path = persona_dir / "persona.yaml"
+            if persona_yaml_path.exists():
+                with open(persona_yaml_path, encoding="utf-8") as f:
+                    persona_data = yaml.safe_load(f) or {}
+                persona_data.setdefault("id", persona_uuid)  # inject if absent
+                yaml_bytes = yaml.dump(persona_data, sort_keys=False).encode("utf-8")
+                info = tarfile.TarInfo(name="persona.yaml")
+                info.size = len(yaml_bytes)
+                tar.addfile(info, io.BytesIO(yaml_bytes))
+
+            # 2. Add universal memories directory
+            memories_dir = persona_dir / "memories"
+            if memories_dir.exists():
+                tar.add(memories_dir, arcname="memories")
+
+        console.print(f"[green]Persona '{identifier}' successfully exported to '{output_path}'[/green]")
+    except Exception as e:
+        console.print(f"[red]Error exporting persona: {e}[/red]")
+
+
+@app.command("import")
+@require_human
+def import_persona(
+        archive_path: Path = typer.Argument(..., help="The filepath to the .tur archive to import")
+):
+    """Unpack a .tur archive and register the global persona on this machine."""
     try:
         import shutil
-        import uuid
+        import tarfile
+        import tempfile
+        from uuid import UUID
 
-        source_dir = persona.get_persona_path(identifier)
-        base_dir = Path(".tur")
-        new_id = str(uuid.uuid4())
-        target_dir = base_dir / "personas" / new_id
+        from tur.models import PersonaIndexEntry
 
-        # Copy directory
-        shutil.copytree(source_dir, target_dir)
+        archive_path = archive_path.resolve()
+        if not archive_path.exists():
+            raise FileNotFoundError(f"Archive file not found: {archive_path}")
 
-        # Update persona.yaml
-        persona_path = target_dir / "persona.yaml"
-        with open(persona_path, encoding="utf-8") as f:
-            data = yaml.safe_load(f)
+        # 1. Inspect archive in temp directory
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            with tarfile.open(archive_path, "r:gz") as tar:
+                # C1 FIX: Sanitize all member paths before extraction to prevent path traversal.
+                for member in tar.getmembers():
+                    member_path = (tmp_path / member.name).resolve()
+                    if not str(member_path).startswith(str(tmp_path.resolve())):
+                        raise ValueError(
+                            f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
+                        )
+                tar.extractall(path=tmp_path)
 
-        data["name"] = new_name
-        data["version"] = "1.0.0-cloned"
+            persona_yaml = tmp_path / "persona.yaml"
+            if not persona_yaml.exists():
+                raise ValueError("Invalid archive: persona.yaml is missing.")
 
-        with open(persona_path, "w", encoding="utf-8") as f:
-            yaml.dump(data, f)
+            with open(persona_yaml, encoding="utf-8") as f:
+                persona_data = yaml.safe_load(f)
 
-        # Update Index
-        index_path = base_dir / "personas.yaml"
-        with open(index_path, encoding="utf-8") as f:
-            index_data = yaml.safe_load(f)
-            index = PersonaIndex(**index_data)
+            import uuid
+            persona_id = persona_data.get("id")
+            if not persona_id:
+                # H3 FIX: Identity cannot be conjured at import time.  Reject the archive.
+                raise ValueError(
+                    "Invalid archive: persona.yaml is missing an 'id' field.  "
+                    "This archive cannot be imported — identity must be established at persona creation."
+                )
+            persona_name = persona_data.get("name")
+            persona_version = persona_data.get("version", "unknown")
 
-        new_entry = PersonaIndexEntry(id=new_id, name=new_name, version=data["version"])
-        index.personas.append(new_entry)
+            if not persona_name:
+                raise ValueError("Invalid persona.yaml in archive: missing name.")
 
-        with open(index_path, "w", encoding="utf-8") as f:
-            yaml.dump(index.model_dump(mode='json'), f)
+            # 2. Extract globally — use shared resolver (never silently falls to local on fresh machine)
+            global_base = resolve_personas_base_dir()
+            # If the registry is absent entirely, initialise it rather than silently rerouting
+            global_home = Path.home() / ".tur"
+            if not (global_home / "personas.yaml").exists():
+                global_home.mkdir(parents=True, exist_ok=True)
+                (global_home / "personas.yaml").write_text(
+                    "personas: []\n", encoding="utf-8"
+                )
+                global_base = global_home
+                console.print(
+                    "[yellow]Warning: ~/.tur/personas.yaml not found — "
+                    "initialized a new global registry.[/yellow]"
+                )
 
-        console.print(f"[green]Persona '{identifier}' successfully cloned to '{new_name}' ({new_id})[/green]")
+            dest_dir = global_base / "personas" / str(persona_id)
+            dest_dir.mkdir(parents=True, exist_ok=True)
 
+            # Copy extracted files
+            shutil.copytree(tmp_path, dest_dir, dirs_exist_ok=True)
+
+            # 3. Register in master index
+            index_path = global_base / "personas.yaml"
+            if index_path.exists():
+                with open(index_path, encoding="utf-8") as f:
+                    index_data = yaml.safe_load(f) or {"personas": []}
+                index = PersonaIndex(**index_data)
+            else:
+                index = PersonaIndex(personas=[])
+
+            # Append if not registered
+            existing = next((p for p in index.personas if str(p.id) == str(persona_id)), None)
+            if not existing:
+                entry = PersonaIndexEntry(id=UUID(persona_id), name=persona_name, version=persona_version)
+                index.personas.append(entry)
+                with open(index_path, "w", encoding="utf-8") as f:
+                    yaml.dump(index.model_dump(mode='json'), f, sort_keys=False)
+
+        console.print(
+            f"[green]Persona '{persona_name}' ({persona_id}) successfully imported from '{archive_path}'[/green]"
+        )
     except Exception as e:
-        console.print(f"[red]Error cloning persona: {e}[/red]")
+        console.print(f"[red]Error importing persona: {e}[/red]")
 
 
 @app.command()
@@ -356,7 +452,7 @@ def sleep(
 def switch():
     """Switch active default persona via an interactive TUI picker."""
     try:
-        base_dir = Path(".tur")
+        base_dir = resolve_personas_base_dir()
         index_path = base_dir / "personas.yaml"
         if not index_path.exists():
             console.print("[red]No personas found. Please run `tur init` to create one.[/red]")
@@ -372,18 +468,8 @@ def switch():
 
         selected_id = tui.select_persona_wizard(index)
         if selected_id:
-            # We already updated it inside wizard, just fetch its name to display
-            base_dir = Path(".tur")
-            index_path = base_dir / "personas.yaml"
-            persona_name = selected_id
-            if index_path.exists():
-                with open(index_path, encoding="utf-8") as f:
-                    index_data = yaml.safe_load(f)
-                index = PersonaIndex(**index_data)
-                matched = next((p for p in index.personas if str(p.id) == selected_id), None)
-                if matched:
-                    persona_name = matched.name
-
+            matched = next((p for p in index.personas if str(p.id) == selected_id), None)
+            persona_name = matched.name if matched else selected_id
             console.print(f"[green]Default persona switched to: '{persona_name}' ({selected_id})[/green]")
         else:
             console.print("[yellow]Switch cancelled.[/yellow]")

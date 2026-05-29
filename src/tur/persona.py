@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 
 from tur.models import PersonaIndex, SystemState
+from tur.paths import resolve_personas_base_dir
 from tur.tui import select_persona_wizard
 
 
@@ -34,7 +35,8 @@ def get_active_persona_id(identifier: str | None = None) -> str:
                 return str(state_obj.active_persona_id)
 
     # If we're here, no default is set, so we launch the selector TUI
-    index_path = Path(".tur/personas.yaml")
+    base_dir = resolve_personas_base_dir()
+    index_path = base_dir / "personas.yaml"
     if not index_path.exists():
         raise FileNotFoundError("No personas found. Please run `tur init` to create one.")
 
@@ -57,7 +59,7 @@ def get_persona_path(identifier: str) -> Path:
     """
     Resolves a persona identifier (UUID or name) to its directory path.
     """
-    base_dir = Path(".tur")
+    base_dir = resolve_personas_base_dir()
     index_path = base_dir / "personas.yaml"
 
     if not index_path.exists():

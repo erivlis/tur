@@ -254,7 +254,7 @@ def start_session(session_id: str) -> str:
 @mcp.tool()
 def end_session(session_id: str) -> str:
     """
-    End an isolated session and compile its spark to the global epilogue.md.
+    End an isolated session and mark it as complete.
 
     Args:
         session_id(str): The ID of the session to end.

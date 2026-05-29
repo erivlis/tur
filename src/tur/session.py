@@ -15,13 +15,40 @@ from tur.models import (
     SessionState,
     SystemState,
 )
+from tur.paths import is_global_path
 from tur.persona import get_active_persona_id, get_persona_path
 from tur.user import get_user_profile
 
 
+def get_local_persona_dir(persona_dir: Path) -> Path:
+    """
+    Returns the project-local persona directory path for runtime state (sessions, notes).
+
+    When *persona_dir* is a global path (~/.tur/...) the corresponding local mirror
+    under the current working directory is returned.  This function is a pure query —
+    it does NOT create directories.  Call ensure_local_persona_dir() when you need
+    the directory to actually exist on disk.
+    """
+    if is_global_path(persona_dir):
+        return Path.cwd() / ".tur" / "personas" / persona_dir.name
+    return persona_dir
+
+
+def ensure_local_persona_dir(persona_dir: Path) -> Path:
+    """
+    Returns the project-local persona directory, creating it on disk if necessary.
+
+    Use this instead of get_local_persona_dir() when you are about to write files
+    into the directory.  Callers that only *read* should use the pure getter.
+    """
+    local_dir = get_local_persona_dir(persona_dir)
+    local_dir.mkdir(parents=True, exist_ok=True)
+    return local_dir
+
+
 def load_session_index(persona_dir: Path) -> SessionIndex:
     """Loads the session index from sessions.yaml or returns an empty index."""
-    index_path = persona_dir / "sessions.yaml"
+    index_path = get_local_persona_dir(persona_dir) / "sessions.yaml"  # read-only path query
     if index_path.exists():
         with open(index_path, encoding="utf-8") as f:
             try:
@@ -34,14 +61,14 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
 
 def save_session_index(persona_dir: Path, index: SessionIndex):
     """Saves the session index to sessions.yaml."""
-    index_path = persona_dir / "sessions.yaml"
+    index_path = ensure_local_persona_dir(persona_dir) / "sessions.yaml"
     with open(index_path, "w", encoding="utf-8") as f:
         yaml.dump(index.model_dump(mode="json"), f)
 
 
 def get_session_file(persona_dir: Path, session_id: str) -> Path:
     """Returns the flat YAML file path for a session: sessions/<session_id>.yaml"""
-    return persona_dir / "sessions" / f"{session_id}.yaml"
+    return get_local_persona_dir(persona_dir) / "sessions" / f"{session_id}.yaml"  # read-only path query
 
 
 def get_active_session_id() -> str | None:
@@ -134,9 +161,9 @@ def start_session_logic(session_id: str, identifier: str | None = None, previous
     active_id = get_active_persona_id(identifier)
     persona_dir = get_persona_path(active_id)
 
-    sessions_dir = persona_dir / "sessions"
+    # ensure_local_persona_dir creates the dir; get_session_file reuses the same path
+    sessions_dir = ensure_local_persona_dir(persona_dir) / "sessions"
     sessions_dir.mkdir(parents=True, exist_ok=True)
-
     session_file = get_session_file(persona_dir, session_id)
 
     if not session_file.exists():
@@ -181,10 +208,7 @@ def start_session_logic(session_id: str, identifier: str | None = None, previous
     with open(state_path, "w", encoding="utf-8") as f:
         yaml.dump(state_obj.model_dump(mode="json"), f)
 
-    return (
-        f"Session '{session_id}' started successfully "
-        f"(Session '{session_id}' successfully started for active persona '{active_id}')."
-    )
+    return f"Session '{session_id}' started successfully for persona '{active_id}'."
 
 
 def end_session_logic(session_id: str, identifier: str | None = None) -> str:

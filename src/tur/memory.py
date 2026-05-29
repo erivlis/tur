@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from tur.models import Memory, MemoryScope
+from tur.paths import is_global_path
 
 
 class MemoryManager:
@@ -19,15 +20,21 @@ class MemoryManager:
         Initializes the federated memory system.
 
         Args:
-            base_dir: The local project's persona directory (e.g., .tur/personas/<uuid>)
+            base_dir: The persona directory to anchor memory storage to.  May be either
+                      the global identity directory (~/.tur/personas/<uuid>) or a local
+                      project directory (.tur/personas/<uuid>).  The manager self-corrects:
+                      universal/persona-scoped memories always go to the global store;
+                      incarnation-scoped memories always go to the local store.
         """
-        self.local_dir = base_dir / "memories"
+        persona_id = base_dir.name
+
+        if is_global_path(base_dir):
+            self.local_dir = Path.cwd() / ".tur" / "personas" / persona_id / "memories"
+        else:
+            self.local_dir = base_dir / "memories"
         self.local_archive_dir = self.local_dir / "archive"
 
         # Calculate the global equivalent: ~/.tur/personas/<uuid>
-        # base_dir is usually like .tur/personas/f47ac10b...
-        # We need to extract just the uuid.
-        persona_id = base_dir.name
         self.global_dir = Path.home() / ".tur" / "personas" / persona_id / "memories"
         self.global_archive_dir = self.global_dir / "archive"
 

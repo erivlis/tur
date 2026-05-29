@@ -101,7 +101,7 @@ class PersonaInitApp(App):
             self.exit("Initialization cancelled.")
 
     def _save_persona(self, persona: Persona) -> uuid.UUID:
-        base_dir = Path(".tur")
+        base_dir = Path.home() / ".tur"
         personas_dir = base_dir / "personas"
         index_path = base_dir / "personas.yaml"
         personas_dir.mkdir(parents=True, exist_ok=True)

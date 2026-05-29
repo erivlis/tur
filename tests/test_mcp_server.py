@@ -217,7 +217,7 @@ def test_mcp_session_lifecycle(mock_mcp_env, monkeypatch):
 
     # 1. Start a session
     start_res = mcp_server.start_session("test-session-123")
-    assert "successfully started" in start_res
+    assert "started successfully" in start_res
 
     session_file = persona_dir / "sessions" / "test-session-123.yaml"
     assert session_file.exists()

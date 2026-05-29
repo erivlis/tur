@@ -218,16 +218,27 @@ def test_cli_forget(mock_workspace):
     assert len(active_mems_after) == 0
 
 
-def test_cli_clone(mock_workspace):
-    result = runner.invoke(app, ["clone", "Ariel", "ArielClone"])
-    assert result.exit_code == 0
-    assert "successfully cloned to 'ArielClone'" in result.stdout
+def test_cli_export_and_import(mock_workspace, tmp_path):
+    import shutil
+    _, _persona_id_1, _ = mock_workspace
+    archive_path = Path("ariel.tur")
+    result_export = runner.invoke(app, ["export", "Ariel", str(archive_path)])
+    assert result_export.exit_code == 0
+    assert "successfully exported" in result_export.stdout
+    assert archive_path.exists()
 
-    # Verify both exist in personas.yaml index now
-    with open(".tur/personas.yaml", encoding="utf-8") as f:
-        index_data = yaml.safe_load(f)
-    assert len(index_data["personas"]) == 3
-    assert any(p["name"] == "ArielClone" for p in index_data["personas"])
+    result_import = runner.invoke(app, ["import", str(archive_path)])
+    assert result_import.exit_code == 0
+    assert "successfully imported" in result_import.stdout
+
+    # Import registers in the global registry (~/.tur/ → fake_home/.tur/ in tests).
+    # Verify the global registry now contains Ariel.
+    fake_home = Path.home()
+    global_index_path = fake_home / ".tur" / "personas.yaml"
+    assert global_index_path.exists(), "Global registry should have been initialised by import"
+    with open(global_index_path, encoding="utf-8") as f:
+        global_index = yaml.safe_load(f)
+    assert any(p["name"] == "Ariel" for p in global_index["personas"])
 
 
 def test_cli_sleep(mock_workspace, monkeypatch):
@@ -272,8 +283,8 @@ def test_cli_golem_protocol_violation(mock_workspace, monkeypatch):
 
     monkeypatch.setattr(cli, "sys", FalseSysProxy())
 
-    # Try calling clone (decorated with require_human)
-    result = runner.invoke(app, ["clone", "Ariel", "ArielClone"])
+    # Try calling export (decorated with require_human)
+    result = runner.invoke(app, ["export", "Ariel", "ariel.tur"])
     assert result.exit_code == 1
     assert "GOLEM PROTOCOL VIOLATION" in result.stdout
 
@@ -520,15 +531,15 @@ def test_get_active_persona_id_state_exists_but_no_id(mock_workspace, monkeypatc
     assert persona.get_active_persona_id() == "7544202e-92f5-40ce-adfb-e4b0eae6c262"
 
 
-def test_cli_clone_error(mock_workspace, monkeypatch):
+def test_cli_export_error(mock_workspace, monkeypatch):
     def mock_raise(*args, **kwargs):
-        raise RuntimeError("Clone failed internally")
+        raise RuntimeError("Export failed internally")
 
     monkeypatch.setattr(persona, "get_persona_path", mock_raise)
 
-    result = runner.invoke(app, ["clone", "Ariel", "ArielClone"])
+    result = runner.invoke(app, ["export", "Ariel", "ariel.tur"])
     assert result.exit_code == 0
-    assert "Error cloning persona: Clone failed internally" in result.stdout
+    assert "Error exporting persona: Export failed internally" in result.stdout
 
 
 def test_cli_forget_error(mock_workspace, monkeypatch):
