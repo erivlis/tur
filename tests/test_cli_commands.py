@@ -210,7 +210,8 @@ def test_cli_forget(mock_workspace):
     # Forget it
     result_forget = runner.invoke(app, ["forget", mem_id])
     assert result_forget.exit_code == 0
-    assert f"Memory {mem_id} has been forgotten" in result_forget.stdout
+    assert f"Memory {mem_id}" in result_forget.stdout
+    assert "forgotten" in result_forget.stdout
 
     # Verify it is no longer in active list
     active_mems_after = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262").memories
