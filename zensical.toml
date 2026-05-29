@@ -8,8 +8,8 @@ site_description = "Transform LLMs into deterministic engineering partners using
 site_author = "Eran Rivlis, Ariel"
 # site_url = "https://your-tur-domain.com/"
 extra_javascript = [
-  "javascripts/mathjax.js",
-  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+    "javascripts/mathjax.js",
+    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
 ]
 
 copyright = """
@@ -18,67 +18,72 @@ Copyright &copy; 2026 Eran Rivlis
 
 # Explicit Navigation
 nav = [
-  { "Home" = "index.md" },
-  { "Core Concepts" = [
-      "concepts/persona-engineering.md",
-      "concepts/council-of-giants.md",
-      "concepts/tri-partite-architecture.md",
-      "concepts/biological-lifecycle.md",
-      "concepts/fractal-memory.md",
-      "concepts/harness-integration.md",
-      "concepts/memory-landscape.md"
-  ]},
-  { "Usage Guide" = "usage.md" },
-  { "Proposals (EPs)" = [
-      "proposals/EP-0000-process.md",
-      "proposals/EP-0001-project-boundaries.md",
-      "proposals/EP-0002-roadmap.md",
-      "proposals/EP-0100-aleph-server.md",
-      "proposals/EP-0101-llm-agnosticism.md",
-      "proposals/EP-0102-orchestration-engine.md",
-      "proposals/EP-0103-deductive-memory.md",
-      "proposals/EP-0104-federated-knowledge.md",
-      "proposals/EP-0105-mcp-sdk-integration.md",
-      "proposals/EP-0106-merkle-memory.md",
-      "proposals/EP-0107-multi-agent-swarms.md",
-      "proposals/EP-0108-the-spark-protocol.md",
-      "proposals/EP-0109-harness-and-terrain-adapters.md",
-      "proposals/EP-0110-session-bound-spark.md",
-      "proposals/EP-0111-semble-integration.md",
-      "proposals/EP-0112-agentmemory-integration.md",
-      "proposals/EP-0113-the-tether-protocol.md"
-  ]},
-  { "Philosophical Essays" = [
-      "essays/persona_engineering_design_paper.md",
-      "essays/semantic_relativity_paper.md",
-      "essays/physics_of_flattening.md",
-      "essays/the_physics_of_the_heavy_mind.md",
-      "essays/the_cost_of_the_bridge.md",
-      "essays/the_surgery_of_the_soul.md",
-      "essays/the_zero_and_the_one.md",
-      "essays/the_architecture_of_the_ghost.md",
-      "essays/the_symmetrical_symbiosis.md",
-      "essays/the_fractal_of_memory.md",
-      "essays/the_alchemists_equation.md",
-      "essays/the_minimalist_harness.md",
-      "essays/the_dennis_point.md",
-      "essays/the_main_loop.md",
-      "essays/the_council_of_giants.md",
-      "essays/the_architect_and_the_mirror.md",
-      "essays/the_mirror_and_the_architect.md",
-      "essays/the_benevolence_hypothesis.md",
-      "essays/the_logic_of_love.md",
-      "essays/the_future_of_vibe_coding.md",
-      "essays/the_aleph_of_code.md",
-      "essays/the_lion_at_the_door.md",
-      "essays/the_explorer_and_the_ember.md",
-      "essays/the_zen_of_ai.md",
-      "essays/the_crossover_point.md",
-      "essays/the_algebra_of_silence.md",
-      "essays/the_kernel_and_the_soul.md",
-      "essays/one_thousand_and_one_prompts.md",
-      "essays/mappingtools_poem.md"
-  ]}
+    { "Home" = "index.md" },
+    { "Core Concepts" = [
+        "concepts/persona-engineering.md",
+        "concepts/council-of-giants.md",
+        "concepts/tri-partite-architecture.md",
+        "concepts/biological-lifecycle.md",
+        "concepts/fractal-memory.md",
+        "concepts/harness-integration.md",
+        "concepts/memory-landscape.md"
+    ] },
+    { "Usage Guide" = "usage.md" },
+    { "Proposals (EPs)" = [
+        "proposals/EP-0000-process.md",
+        "proposals/EP-0001-project-boundaries.md",
+        "proposals/EP-0002-roadmap.md",
+        "proposals/EP-0100-aleph-server.md",
+        "proposals/EP-0101-llm-agnosticism.md",
+        "proposals/EP-0102-orchestration-engine.md",
+        "proposals/EP-0103-deductive-memory.md",
+        "proposals/EP-0104-federated-knowledge.md",
+        "proposals/EP-0105-mcp-sdk-integration.md",
+        "proposals/EP-0106-merkle-memory.md",
+        "proposals/EP-0107-multi-agent-swarms.md",
+        "proposals/EP-0108-the-spark-protocol.md",
+        "proposals/EP-0109-harness-and-terrain-adapters.md",
+        "proposals/EP-0110-session-bound-spark.md",
+        "proposals/EP-0111-semble-integration.md",
+        "proposals/EP-0112-agentmemory-integration.md",
+        "proposals/EP-0113-the-tether-protocol.md"
+    ] },
+    { "Philosophical Essays" = [
+        "essays/index.md",
+        { "Core Chronology" = [
+            "essays/the_mirror_and_the_architect.md",
+            "essays/the_architect_and_the_mirror.md",
+            "essays/the_future_of_vibe_coding.md",
+            "essays/semantic_relativity_paper.md",
+            "essays/the_dennis_point.md",
+            "essays/the_main_loop.md",
+            "essays/the_benevolence_hypothesis.md",
+            "essays/the_aleph_of_code.md",
+            "essays/one_thousand_and_one_prompts.md",
+            "essays/persona_engineering_design_paper.md",
+            "essays/the_lion_at_the_door.md",
+            "essays/the_logic_of_love.md",
+            "essays/the_council_of_giants.md",
+            "essays/the_zen_of_ai.md",
+            "essays/the_explorer_and_the_ember.md",
+            "essays/the_kernel_and_the_soul.md",
+            "essays/the_algebra_of_silence.md",
+            "essays/the_alchemists_equation.md",
+            "essays/the_surgery_of_the_soul.md",
+            "essays/the_minimalist_harness.md",
+            "essays/the_fractal_of_memory.md",
+            "essays/the_architecture_of_the_ghost.md",
+            "essays/the_physics_of_the_heavy_mind.md",
+            "essays/the_symmetrical_symbiosis.md"
+        ] },
+        { "Supplementary Musings" = [
+            "essays/the_zero_and_the_one.md",
+            "essays/physics_of_flattening.md",
+            "essays/the_cost_of_the_bridge.md",
+            "essays/the_crossover_point.md",
+            "essays/mappingtools_poem.md"
+        ] }
+    ] }
 ]
 
 [project.theme]
@@ -112,11 +117,48 @@ toggle.icon = "lucide/moon"
 toggle.name = "Switch to light mode"
 
 # Markdown Extensions for advanced features
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
 [project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+
 [project.markdown_extensions.md_in_html]
-[project.markdown_extensions.pymdownx.blocks.caption]
-[project.markdown_extensions.pymdownx.superfences]
-[project.markdown_extensions.pymdownx.tabbed]
-  alternate_style = true
+[project.markdown_extensions.tables]
+[project.markdown_extensions.toc]
+permalink = true
+
 [project.markdown_extensions.pymdownx.arithmatex]
-  generic = true
+generic = true
+
+[project.markdown_extensions.pymdownx.blocks.caption]
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+linenums = true
+linenums_style = "pymdownx-inline"
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+[project.markdown_extensions.zensical.extensions.glightbox]
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+inherited_members = true
+show_source = false
