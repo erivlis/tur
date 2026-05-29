@@ -1,3 +1,8 @@
+---
+description: An architectural comparative review of 12 local-first agentic memory, cognitive architecture, and codebase search frameworks and their alignment with Tur.
+icon: lucide/compass
+---
+
 # The Sovereign Mind: A Comparative Analysis of the Agentic Memory Landscape
 
 | Field        | Value                                       |
