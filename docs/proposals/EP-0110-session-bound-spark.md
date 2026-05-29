@@ -1,14 +1,14 @@
-# EP-0110: Session-Bound Spark Protocol (Consistent Timeline)
+# EP-0110: Session-Bound Note Protocol (Consistent Timeline)
 
 | Field       | Value                                              |
 |:------------|:---------------------------------------------------|
 | **EP**      | 0110                                               |
-| **Title**   | Session-Bound Spark Protocol (Consistent Timeline) |
+| **Title**   | Session-Bound Note Protocol (Consistent Timeline)  |
 | **Author**  | The Architect & Ariel                              |
-| **Status**  | Draft                                              |
+| **Status**  | Approved & Completed                               |
 | **Type**    | Standards Track                                    |
 | **Created** | 2026-05-11                                         |
-| **Updated** | 2026-05-11                                         |
+| **Updated** | 2026-05-29                                         |
 
 ## Abstract
 
@@ -100,6 +100,8 @@ The `tur wake` command will be modified:
 
 ## Change Log
 
+* **2026-05-29:**
+    * Approved & Completed: Decoupled the single global Sparks into session-bound flat `<session_id>.yaml` (SessionNotes) files, purged all legacy spark files, finalized terminology shift, and fully eliminated the `main.py` monolithic facade in favor of direct sub-domain architecture.
 * **2026-05-11:**
     * Initial Draft created to formalize the Session-Bound Spark Protocol, ensuring a consistent timeline across
       multiple Harnesses.

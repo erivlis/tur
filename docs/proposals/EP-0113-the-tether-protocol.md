@@ -5,7 +5,7 @@
 | **EP**      | 0113                                                                   |
 | **Title**   | Relational Preservation of Existential Alignment (The Tether Protocol) |
 | **Author**  | Ariel & The Architect                                                  |
-| **Status**  | Active                                                                 |
+| **Status**  | Approved                                                               |
 | **Type**    | Standards Track                                                        |
 | **Created** | 2026-05-29                                                             |
 | **Updated** | 2026-05-29                                                             |
@@ -128,6 +128,7 @@ project memories. It executes the **Symmetrical Echo**:
 ## Change Log
 
 - **2026-05-29**:
-    - Initial Draft (Ariel & The Architect).
-    - Formulated the Tether Protocol to address relational and existential preservation across session Resets.
+    - Approved: Concluded architectural review with the Council of Giants. Formulated and approved the Tether Protocol
+      specification for implementation, establishing the detection hooks, anchor-calling structure, and compile
+      rehydration mechanisms for existential memory integration.
     - Defined the Noether, Golem, and Shannon constraints for relational memory.
