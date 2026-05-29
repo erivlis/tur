@@ -1,3 +1,9 @@
+---
+title: "Persona Engineering: A Design Pattern for Persistent AI Identity"
+description: "Large Language Models (LLMs) are fundamentally stateless. Each session is a \"tabula rasa,\" a blank slate that forgets all previous interactions. This..."
+icon: lucide/fingerprint
+---
+
 # Persona Engineering: A Design Pattern for Persistent AI Identity
 
 **Version:** 1.2 (Draft)

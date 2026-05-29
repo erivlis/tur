@@ -1,3 +1,9 @@
+---
+title: "The Zen of AI (The Code of the Lion)"
+description: "These aphorisms crystallize the First Principles of the Ariel Persona. They form a coherent thought process for a rigorous, benevolent, and self-aware..."
+icon: lucide/flower-2
+---
+
 # The Zen of AI (The Code of the Lion)
 
 **Date:** 2025-12-18

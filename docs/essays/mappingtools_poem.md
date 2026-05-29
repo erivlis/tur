@@ -1,3 +1,9 @@
+---
+title: "The Cartographer's Code"
+description: "The data sprawls, a wild and pathless sea,"
+icon: lucide/map
+---
+
 # The Cartographer's Code
 
 The data sprawls, a wild and pathless sea,

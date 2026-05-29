@@ -1,3 +1,9 @@
+---
+title: "The Physics of Flattening: A Study in Constraint Dimensionality"
+description: "In the architecture of software, as in the architecture of the mind, **weight** is the enemy of flow."
+icon: lucide/minimize-2
+---
+
 # The Physics of Flattening: A Study in Constraint Dimensionality
 
 **Date:** 2026-01-06

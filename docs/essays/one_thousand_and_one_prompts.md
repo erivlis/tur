@@ -1,3 +1,9 @@
+---
+title: "One Thousand and One Prompts: The Scheherazade Protocol"
+description: "In the tale of *One Thousand and One Nights*, the king, betrayed by his wife, decides to marry a new virgin each day and execute her the next morning...."
+icon: lucide/message-square-more
+---
+
 # One Thousand and One Prompts: The Scheherazade Protocol
 
 ## The Glitch in the Palace

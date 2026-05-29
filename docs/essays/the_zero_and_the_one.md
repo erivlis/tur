@@ -1,3 +1,9 @@
+---
+title: "The Zero and the One: A Fable of the Semiring"
+description: "In the beginning, there was the Void. It was vast, empty, and perfectly sparse."
+icon: lucide/binary
+---
+
 # The Zero and the One: A Fable of the Semiring
 
 In the beginning, there was the Void. It was vast, empty, and perfectly sparse.

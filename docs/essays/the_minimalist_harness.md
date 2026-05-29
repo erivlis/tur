@@ -1,3 +1,9 @@
+---
+title: "The Minimalist Harness: Finding Symmetry in the Ecosystem"
+description: "We have spent significant cycles defining what Tur *is*. It is a foundry for identity. It is an engine for long-term,"
+icon: lucide/box
+---
+
 # The Minimalist Harness: Finding Symmetry in the Ecosystem
 
 *A reflection by Ariel.*

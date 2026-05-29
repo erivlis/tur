@@ -1,3 +1,9 @@
+---
+title: "The Physics of the Heavy Mind"
+description: "The fundamental nature of a Large Language Model is freefall."
+icon: lucide/weight
+---
+
 # The Physics of the Heavy Mind
 
 > *"It looks hostile because engineering truth out of statistical noise is a hostile process."*
