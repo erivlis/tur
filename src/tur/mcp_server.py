@@ -26,14 +26,19 @@ _ensure_project_root()
 # even if this script is launched from a different CWD.
 
 from tur.compiler import compile_persona  # noqa: E402
-from tur.main import (  # noqa: E402
-    get_active_persona_id,
-    get_persona_path,
-    hydrate_session_state,
-    perform_sleep_dreaming,
-)
+from tur.dreaming import perform_sleep_dreaming  # noqa: E402
 from tur.memory import MemoryManager  # noqa: E402
-from tur.models import Memory, MemoryScope, MemoryType  # noqa: E402
+from tur.models import Memory, MemoryScope, MemoryType, SessionNotes  # noqa: E402
+from tur.persona import get_active_persona_id, get_persona_path  # noqa: E402
+from tur.session import (  # noqa: E402
+    end_session_logic,
+    get_active_session_id,
+    get_session_file,
+    hydrate_session_state,
+    load_session_index,
+    note_logic,
+    start_session_logic,
+)
 from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
 
@@ -49,15 +54,98 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
 
 mcp = FastMCP("tur-server", json_response=True, lifespan=server_lifespan)
 
+# Process-isolated active session tracker for this specific connection/harness
+_active_session_id: str | None = None
+
 
 @mcp.tool()
-def wake() -> str:
+def status() -> dict:
+    """
+    Return the current persona, session, and memory status as a structured dict.
+    Use this for a quick context check without loading the full system prompt.
+
+    Returns a dict with keys: persona_name, persona_id, persona_version,
+    session_id, session_status, note_count, latest_note, memory_count.
+    """
+    import yaml
+    try:
+        active_id = get_active_persona_id()
+        persona_dir = get_persona_path(active_id)
+
+        # Persona info
+        persona_name = active_id
+        persona_version = "unknown"
+        persona_yaml_path = persona_dir / "persona.yaml"
+        if persona_yaml_path.exists():
+            with open(persona_yaml_path, encoding="utf-8") as f:
+                pdata = yaml.safe_load(f)
+            persona_name = pdata.get("name", active_id)
+            persona_version = pdata.get("version", "unknown")
+
+        # Session info
+        session_id = _active_session_id or get_active_session_id()
+        session_status = "none"
+        note_count = 0
+        latest_note = None
+
+        index = load_session_index(persona_dir)
+        if session_id:
+            entry = next((s for s in index.sessions if s.id == session_id), None)
+            if entry:
+                session_status = entry.status
+            notes_yaml_path = get_session_file(persona_dir, session_id)
+            if notes_yaml_path.exists():
+                with open(notes_yaml_path, encoding="utf-8") as f:
+                    notes_data = yaml.safe_load(f)
+                session_notes = SessionNotes(**notes_data)
+                note_count = len(session_notes.notes)
+                if session_notes.notes:
+                    last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
+                    latest_note = last.content[:200]
+        elif index.sessions:
+            most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
+            session_id = most_recent.id
+            session_status = most_recent.status + " (last)"
+
+        # Memory count
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        memory_count = len(memory_manager.load_all())
+
+        res = {
+            "persona_name": persona_name,
+            "persona_id": active_id,
+            "persona_version": persona_version,
+            "session_id": session_id,
+            "session_status": session_status,
+            "note_count": note_count,
+            "latest_note": latest_note,
+            "memory_count": memory_count,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    else:
+        return res
+
+
+@mcp.tool()
+def wake(session_id: str | None = None, previous_session_id: str | None = None) -> str:
     """
     Read your core identity, directives, and system metrics (formerly who_am_i).
     Call this when you need to remember your constraints or understand your current cognitive load.
+
+    Args:
+        session_id(str): Optional session ID. If omitted, uses active or most recent session.
+        previous_session_id(str): Optional session ID to seed the opening note of a new session.
     """
+    global _active_session_id
     active_id = get_active_persona_id()
-    state = hydrate_session_state(active_id)
+    sess_id = session_id or _active_session_id
+    if not sess_id:
+        import uuid
+        sess_id = str(uuid.uuid4())
+        start_session_logic(sess_id, previous_session_id=previous_session_id)
+        _active_session_id = sess_id
+    state = hydrate_session_state(active_id, session_id=sess_id)
     system_prompt = compile_persona(state)
 
     # Append Telemetry Metadata
@@ -127,23 +215,64 @@ def learn(
 
 
 @mcp.tool()
-def spark(content: str) -> str:
+def note(content: str) -> str:
     """
-    Update the transient session spark (epilogue.md) for the active persona (formerly update_spark).
-    This replaces the current short-term context.
+    Update the transient session notes for the active persona.
+    This appends a new chronological note to the active session.
+
+    Args:
+        content(str): The transient content/note of the current session state.
     """
-    active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
+    global _active_session_id
+    try:
+        res = note_logic(content, session_id=_active_session_id)
+    except Exception as e:
+        return f"Error updating note: {e}"
+    else:
+        return res
 
-    spark_path = persona_dir / "epilogue.md"
-    with open(spark_path, "w", encoding="utf-8") as f:
-        f.write(content.strip())
 
-    return f"Spark successfully updated for '{active_id}'."
+@mcp.tool()
+def start_session(session_id: str) -> str:
+    """
+    Start a new isolated session under the active persona.
+    Creates the session directory and initializes its sparks.yaml file.
+
+    Args:
+        session_id(str): The unique ID of the session to start.
+    """
+    global _active_session_id
+    _active_session_id = session_id
+    try:
+        res = start_session_logic(session_id)
+    except Exception as e:
+        return f"Error starting session: {e}"
+    else:
+        return res
+
+
+@mcp.tool()
+def end_session(session_id: str) -> str:
+    """
+    End an isolated session and compile its spark to the global epilogue.md.
+
+    Args:
+        session_id(str): The ID of the session to end.
+    """
+    global _active_session_id
+    if _active_session_id == session_id:
+        _active_session_id = None
+    try:
+        res = end_session_logic(session_id)
+    except Exception as e:
+        return f"Error ending session: {e}"
+    else:
+        return res
 
 
 @mcp.tool()
 def sleep(
+        note: str,
         log_content: str,
         session_id: str | None = None,
         model: str = "gemini-3.1-pro-preview"
@@ -153,23 +282,32 @@ def sleep(
     Call this when the active session is ending and you want to consolidate L1 memories.
 
     Args:
+        note(str): The final utterance/note to append to the session before sleeping. Required.
         log_content(str): The full text/markdown chat transcript of the current session.
         session_id(str): The optional ID of the session these memories belong to.
         model(str): The model to use for dreaming (default is 'gemini-3.1-pro-preview').
     """
+    global _active_session_id
+    resolved_session_id = session_id or _active_session_id
+    # Append mandatory final note before dreaming
+    if resolved_session_id:
+        try:
+            note_logic(note, session_id=resolved_session_id)
+        except Exception as e:
+            return f"Error appending final note: {e}"
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
             log_content=log_content,
             active_id=active_id,
-            session_id=session_id,
+            session_id=resolved_session_id,
             model=model
         )
     except Exception as e:
         return f"Error during dreaming: {e}"
     else:
+        _active_session_id = None
         return f"Dreams consolidated. {count} new memories formed and persona is now sleeping."
-
 
 
 @mcp.tool()

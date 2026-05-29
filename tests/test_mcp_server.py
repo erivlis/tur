@@ -6,9 +6,6 @@ import pytest
 
 from tur import mcp_server
 from tur.models import (
-    Memory,
-    MemoryScope,
-    MemoryType,
     Persona,
     Principle,
     SessionState,
@@ -26,9 +23,18 @@ def mock_mcp_env(tmp_path, monkeypatch):
     # Create subfolders for memory management to prevent crashes
     (persona_dir / "memories" / "archive").mkdir(parents=True, exist_ok=True)
 
-    # Mock return values for main functions used by mcp_server
+    # Mock return values for main functions used by mcp_server and domain modules
+    import tur.persona
+    import tur.session
+    # Also patch mcp_server's direct imports
     monkeypatch.setattr(mcp_server, "get_active_persona_id", lambda *args: persona_id)
     monkeypatch.setattr(mcp_server, "get_persona_path", lambda *args: persona_dir)
+    monkeypatch.setattr(tur.persona, "get_active_persona_id", lambda *args: persona_id)
+    monkeypatch.setattr(tur.persona, "get_persona_path", lambda *args: persona_dir)
+    monkeypatch.setattr(tur.session, "get_active_persona_id", lambda *args: persona_id)
+    monkeypatch.setattr(tur.session, "get_persona_path", lambda *args: persona_dir)
+    # Ensure tests are isolated from any real active session on disk
+    monkeypatch.setattr(tur.session, "get_active_session_id", lambda: None)
 
     persona = Persona(
         name="MockAriel",
@@ -40,7 +46,7 @@ def mock_mcp_env(tmp_path, monkeypatch):
     user = UserProfile(name="Tester", role="Developer")
     state = SessionState(persona=persona, user=user, memories=[], epilogue="Start")
 
-    monkeypatch.setattr(mcp_server, "hydrate_session_state", lambda *args: state)
+    monkeypatch.setattr(mcp_server, "hydrate_session_state", lambda *args, **kwargs: state)
 
     return persona_dir, state
 
@@ -72,16 +78,6 @@ def test_mcp_learn(mock_mcp_env, monkeypatch):
     assert "Error: Invalid scope" in res_err_scope
 
 
-def test_mcp_spark(mock_mcp_env):
-    persona_dir, _ = mock_mcp_env
-    res = mcp_server.spark("New transient epilogue spark")
-    assert "Spark successfully updated" in res
-
-    epilogue_file = persona_dir / "epilogue.md"
-    assert epilogue_file.exists()
-    assert epilogue_file.read_text(encoding="utf-8") == "New transient epilogue spark"
-
-
 def test_mcp_recall(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
     monkeypatch.setattr(Path, "home", lambda: persona_dir)
@@ -104,16 +100,17 @@ def test_mcp_sleep(mock_mcp_env, monkeypatch):
     # Mock perform_sleep_dreaming to prevent hitting real Gemini API
     monkeypatch.setattr(mcp_server, "perform_sleep_dreaming", lambda **kwargs: 3)
 
-    res = mcp_server.sleep(log_content="Log trace", session_id="sess-1")
+    res = mcp_server.sleep(log_content="Log trace", note="Test sleep note", session_id="sess-1")
     assert "Dreams consolidated. 3 new memories formed" in res
 
 
 def test_mcp_sleep_exception(mock_mcp_env, monkeypatch):
     def raise_err(**kwargs):
         raise ValueError("Simulated Gemini Failure")
+
     monkeypatch.setattr(mcp_server, "perform_sleep_dreaming", raise_err)
 
-    res = mcp_server.sleep(log_content="Log trace")
+    res = mcp_server.sleep(log_content="Log trace", note="Test sleep note")
     assert "Error during dreaming: Simulated Gemini Failure" in res
 
 
@@ -139,6 +136,7 @@ def test_mcp_server_main(monkeypatch):
 def test_mcp_server_main_keyboard_interrupt(monkeypatch):
     def raise_kb_interrupt(*args, **kwargs):
         raise KeyboardInterrupt()
+
     monkeypatch.setattr(mcp_server.mcp, "run", raise_kb_interrupt)
 
     with pytest.raises(SystemExit) as exc:
@@ -185,10 +183,12 @@ def test_ensure_project_root_no_dot_tur(tmp_path, monkeypatch):
 
     # Mock Path(".tur").exists() to be False so we traverse
     original_exists = Path.exists
+
     def mock_exists(self):
         if self.name == ".tur":
             return False
         return original_exists(self)
+
     monkeypatch.setattr(Path, "exists", mock_exists)
 
     # Call _ensure_project_root
@@ -212,3 +212,21 @@ def test_mcp_server_module_main(monkeypatch):
     mock_run.assert_called_with(transport="stdio")
 
 
+def test_mcp_session_lifecycle(mock_mcp_env, monkeypatch):
+    persona_dir, _state = mock_mcp_env
+
+    # 1. Start a session
+    start_res = mcp_server.start_session("test-session-123")
+    assert "successfully started" in start_res
+
+    session_file = persona_dir / "sessions" / "test-session-123.yaml"
+    assert session_file.exists()
+
+    # 2. Add a note inside active session
+    mcp_server._active_session_id = "test-session-123"
+    note_res = mcp_server.note("Updated note content")
+    assert "session 'test-session-123'" in note_res
+
+    # 3. End session
+    end_res = mcp_server.end_session("test-session-123")
+    assert "ended successfully" in end_res

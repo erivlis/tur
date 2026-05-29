@@ -54,7 +54,7 @@ test = [
 ]
 
 [project.scripts]
-tur = "tur.main:app"
+tur = "tur.cli:app"
 mcp-server-tur = "tur.mcp_server:main"
 
 

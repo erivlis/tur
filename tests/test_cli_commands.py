@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -7,10 +6,11 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from tur import main
-from tur.main import app
+from tur import cli, dreaming, persona, session, tui, user
+from tur.cli import app
 
 runner = CliRunner()
+
 
 @pytest.fixture
 def mock_workspace(tmp_path, monkeypatch):
@@ -103,7 +103,8 @@ def mock_workspace(tmp_path, monkeypatch):
                 return StdoutProxy()
             return getattr(sys, name)
 
-    monkeypatch.setattr(main, "sys", SysProxy())
+
+    monkeypatch.setattr(cli, "sys", SysProxy())
 
     return tmp_path, persona_id_1, persona_id_2
 
@@ -146,15 +147,32 @@ def test_cli_learn_and_recall(mock_workspace):
     assert "Memory content fact description" in result_recall.stdout
 
 
-def test_cli_spark(mock_workspace):
-    result = runner.invoke(app, ["spark", "Updating epilogue spark"])
-    assert result.exit_code == 0
-    assert "Spark updated for" in result.stdout
+def test_cli_session_lifecycle(mock_workspace):
+    # 1. Start a session
+    result_start = runner.invoke(app, ["session", "start", "session-foo"])
+    assert result_start.exit_code == 0
+    assert "Session 'session-foo' started" in result_start.stdout
 
-    # Check epilogue.md file was updated
-    epilogue_path = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/epilogue.md")
-    assert epilogue_path.exists()
-    assert epilogue_path.read_text(encoding="utf-8").strip() == "Updating epilogue spark"
+    notes_yaml = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/sessions/session-foo.yaml")
+    assert notes_yaml.exists()
+
+    # 2. Add a note to the session
+    result_note = runner.invoke(app, ["note", "Updated in session", "--session-id", "session-foo"])
+    assert result_note.exit_code == 0
+    assert "successfully" in result_note.stdout
+    assert "session-foo" in result_note.stdout
+
+    # 3. Wake with session ID — prompt should contain the note content
+    result_wake = runner.invoke(app, ["wake", "--session-id", "session-foo"])
+    assert result_wake.exit_code == 0
+    assert "SYSTEM WAKE" in result_wake.stdout
+    assert "Session ID: session-foo" in result_wake.stdout
+    assert "Updated in session" in result_wake.stdout
+
+    # 4. End the session
+    result_end = runner.invoke(app, ["session", "end", "session-foo"])
+    assert result_end.exit_code == 0
+    assert "Session 'session-foo' ended" in result_end.stdout
 
 
 def test_cli_telemetry(mock_workspace):
@@ -185,7 +203,7 @@ def test_cli_forget(mock_workspace):
     runner.invoke(app, ["learn", "Manual memory to be forgotten.", "--type", "insight"])
 
     # Read active memory list to find its ID
-    active_mems = main.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262").memories
+    active_mems = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262").memories
     assert len(active_mems) == 1
     mem_id = active_mems[0].id
 
@@ -195,7 +213,7 @@ def test_cli_forget(mock_workspace):
     assert f"Memory {mem_id} has been forgotten" in result_forget.stdout
 
     # Verify it is no longer in active list
-    active_mems_after = main.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262").memories
+    active_mems_after = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262").memories
     assert len(active_mems_after) == 0
 
 
@@ -212,12 +230,12 @@ def test_cli_clone(mock_workspace):
 
 
 def test_cli_sleep(mock_workspace, monkeypatch):
-    monkeypatch.setattr(main, "perform_sleep_dreaming", lambda **kwargs: 2)
+    monkeypatch.setattr(dreaming, "perform_sleep_dreaming", lambda **kwargs: 2)
 
     log_path = Path("fake_chat.log")
     log_path.write_text("User: Hello\nAgent: Hi", encoding="utf-8")
 
-    result = runner.invoke(app, ["sleep", str(log_path)])
+    result = runner.invoke(app, ["sleep", str(log_path), "--note", "Test sleep note"])
     assert result.exit_code == 0
     assert "Dreams consolidated. 2 new memories formed." in result.stdout
 
@@ -225,12 +243,13 @@ def test_cli_sleep(mock_workspace, monkeypatch):
 def test_cli_sleep_exception(mock_workspace, monkeypatch):
     def raise_err(**kwargs):
         raise RuntimeError("LLM Failure")
-    monkeypatch.setattr(main, "perform_sleep_dreaming", raise_err)
+
+    monkeypatch.setattr(dreaming, "perform_sleep_dreaming", raise_err)
 
     log_path = Path("fake_chat.log")
     log_path.write_text("User: Hello\nAgent: Hi", encoding="utf-8")
 
-    result = runner.invoke(app, ["sleep", str(log_path)])
+    result = runner.invoke(app, ["sleep", str(log_path), "--note", "Test sleep note"])
     assert result.exit_code == 0  # CLI prints error but exits gracefully
     assert "Error during dreaming: LLM Failure" in result.stdout
 
@@ -249,7 +268,8 @@ def test_cli_golem_protocol_violation(mock_workspace, monkeypatch):
                 return FalseStdoutProxy()
             return getattr(sys, name)
 
-    monkeypatch.setattr(main, "sys", FalseSysProxy())
+
+    monkeypatch.setattr(cli, "sys", FalseSysProxy())
 
     # Try calling clone (decorated with require_human)
     result = runner.invoke(app, ["clone", "Ariel", "ArielClone"])
@@ -259,7 +279,7 @@ def test_cli_golem_protocol_violation(mock_workspace, monkeypatch):
 
 def test_cli_init_mocked(mock_workspace, monkeypatch):
     mock_wizard = MagicMock()
-    monkeypatch.setattr(main, "init_wizard", mock_wizard)
+    monkeypatch.setattr(tui, "init_wizard", mock_wizard)
 
     result = runner.invoke(app, ["init"])
     assert result.exit_code == 0
@@ -268,7 +288,7 @@ def test_cli_init_mocked(mock_workspace, monkeypatch):
 
 def test_cli_switch_mocked(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value="fab6858c-e4ad-4adf-9e2d-0c86455917cf")
-    monkeypatch.setattr(main, "select_persona_wizard", mock_wizard)
+    monkeypatch.setattr(tui, "select_persona_wizard", mock_wizard)
 
     result = runner.invoke(app, ["switch"])
     assert result.exit_code == 0
@@ -277,7 +297,7 @@ def test_cli_switch_mocked(mock_workspace, monkeypatch):
 
 def test_cli_switch_cancelled(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value=None)
-    monkeypatch.setattr(main, "select_persona_wizard", mock_wizard)
+    monkeypatch.setattr(tui, "select_persona_wizard", mock_wizard)
 
     result = runner.invoke(app, ["switch"])
     assert result.exit_code == 0
@@ -287,7 +307,8 @@ def test_cli_switch_cancelled(mock_workspace, monkeypatch):
 def test_cli_switch_error(mock_workspace, monkeypatch):
     def raise_err(*args, **kwargs):
         raise RuntimeError("TUI error")
-    monkeypatch.setattr(main, "select_persona_wizard", raise_err)
+
+    monkeypatch.setattr(tui, "select_persona_wizard", raise_err)
 
     result = runner.invoke(app, ["switch"])
     assert result.exit_code == 1
@@ -311,7 +332,7 @@ def test_get_user_profile_global_path(mock_workspace, monkeypatch):
     with open(global_dir / "user.yaml", "w", encoding="utf-8") as f:
         yaml.dump(global_user_data, f)
 
-    profile = main.get_user_profile()
+    profile = user.get_user_profile()
     assert profile.name == "Global Architect"
 
 
@@ -320,7 +341,7 @@ def test_get_user_profile_fallback(mock_workspace):
     Path(".tur/user.yaml").unlink()
     # Path.home() has no config
 
-    profile = main.get_user_profile()
+    profile = user.get_user_profile()
     assert profile.name == "Default User"
     assert "Software Development" in profile.domain_expertise
 
@@ -328,25 +349,26 @@ def test_get_user_profile_fallback(mock_workspace):
 def test_get_active_persona_id_env_and_selector(mock_workspace, monkeypatch):
     # 1. Resolve via env variable
     monkeypatch.setenv("TUR_ACTIVE_PERSONA_ID", "env-persona-id")
-    assert main.get_active_persona_id() == "env-persona-id"
+    assert persona.get_active_persona_id() == "env-persona-id"
     monkeypatch.delenv("TUR_ACTIVE_PERSONA_ID")
 
     # 2. Resolve via selector wizard when state.yaml is missing
     Path(".tur/state.yaml").unlink()
     mock_select = MagicMock(return_value="fab6858c-e4ad-4adf-9e2d-0c86455917cf")
-    monkeypatch.setattr(main, "select_persona_wizard", mock_select)
+    import tur.persona
+    monkeypatch.setattr(tur.persona, "select_persona_wizard", mock_select)
 
-    assert main.get_active_persona_id() == "fab6858c-e4ad-4adf-9e2d-0c86455917cf"
+    assert persona.get_active_persona_id() == "fab6858c-e4ad-4adf-9e2d-0c86455917cf"
 
 
 def test_get_persona_path_missing_index(mock_workspace):
     Path(".tur/personas.yaml").unlink()
     with pytest.raises(FileNotFoundError):
-        main.get_persona_path("Ariel")
+        persona.get_persona_path("Ariel")
 
 
 def test_hydrate_session_state_missing_epilogue(mock_workspace):
-    state = main.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262")
+    state = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262")
     # Verify default epilogue when epilogue.md does not exist
     assert "Status: Conserved. Aleph: Restored." in state.epilogue
 
@@ -408,14 +430,14 @@ def test_perform_sleep_dreaming(mock_workspace, monkeypatch):
     from google import genai
     monkeypatch.setattr(genai, "Client", lambda api_key: mock_client)
 
-    count = main.perform_sleep_dreaming(
+    count = dreaming.perform_sleep_dreaming(
         log_content="User: hello",
         active_id="7544202e-92f5-40ce-adfb-e4b0eae6c262"
     )
     assert count == 1
 
     # Verify the memory was saved in the state
-    state = main.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262")
+    state = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262")
     assert len(state.memories) == 1
     assert state.memories[0].content == "Pytest is fast"
 
@@ -423,7 +445,7 @@ def test_perform_sleep_dreaming(mock_workspace, monkeypatch):
 def test_perform_sleep_dreaming_missing_api_key(mock_workspace, monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     with pytest.raises(ValueError) as exc:
-        main.perform_sleep_dreaming(
+        dreaming.perform_sleep_dreaming(
             log_content="User: hello",
             active_id="7544202e-92f5-40ce-adfb-e4b0eae6c262"
         )
@@ -436,7 +458,7 @@ def test_get_active_persona_id_missing_personas_yaml(mock_workspace, monkeypatch
     Path(".tur/personas.yaml").unlink()
 
     with pytest.raises(FileNotFoundError) as exc:
-        main.get_active_persona_id()
+        persona.get_active_persona_id()
     assert "No personas found." in str(exc.value)
 
 
@@ -449,7 +471,7 @@ def test_get_active_persona_id_empty_personas(mock_workspace, monkeypatch):
         yaml.dump({"personas": []}, f)
 
     with pytest.raises(ValueError) as exc:
-        main.get_active_persona_id()
+        persona.get_active_persona_id()
     assert "No personas available to select." in str(exc.value)
 
 
@@ -457,37 +479,51 @@ def test_get_active_persona_id_selector_returns_none(mock_workspace, monkeypatch
     # Remove state file
     Path(".tur/state.yaml").unlink()
 
-    # Mock select_persona_wizard to return None
-    monkeypatch.setattr(main, "select_persona_wizard", lambda index: None)
+    # Mock select_persona_wizard in tur.persona module namespace to return None
+    import tur.persona
+    monkeypatch.setattr(tur.persona, "select_persona_wizard", lambda index: None)
 
     import typer
     with pytest.raises(typer.Exit) as exc:
-        main.get_active_persona_id()
+        persona.get_active_persona_id()
     assert "No persona selected" in str(exc.value)
 
 
-def test_hydrate_session_state_with_epilogue(mock_workspace):
-    # Write a fake epilogue file
-    epilogue_path = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/epilogue.md")
-    epilogue_path.write_text("Hello Epilogue", encoding="utf-8")
+def test_hydrate_session_state_with_session_notes(mock_workspace):
+    # Create a session with a note so hydrate can pick it up
+    session_parent = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/sessions")
+    session_parent.mkdir(parents=True, exist_ok=True)
+    notes_yaml = session_parent / "test-hydrate-session.yaml"
+    import yaml as _yaml
+    _yaml.dump({"notes": [{"timestamp": "2026-01-01T00:00:00", "content": "Hello from notes"}]},
+               notes_yaml.open("w", encoding="utf-8"))
+    # Also register the session in sessions.yaml
+    sessions_yaml = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/sessions.yaml")
+    _yaml.dump({"active_session_id": "test-hydrate-session",
+                "sessions": [{"id": "test-hydrate-session", "status": "active",
+                              "created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-01T00:00:00"}]},
+               sessions_yaml.open("w", encoding="utf-8"))
 
-    state = main.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262")
-    assert state.epilogue == "Hello Epilogue"
+    state = session.hydrate_session_state("7544202e-92f5-40ce-adfb-e4b0eae6c262",
+                                       session_id="test-hydrate-session")
+    assert state.epilogue == "Hello from notes"
 
 
 def test_get_active_persona_id_state_exists_but_no_id(mock_workspace, monkeypatch):
     # Write a state file without active_persona_id
     with open(".tur/state.yaml", "w", encoding="utf-8") as f:
         yaml.dump({}, f)
-    # Mock select_persona_wizard to return a mock persona ID so it resolves it
-    monkeypatch.setattr(main, "select_persona_wizard", lambda index: "7544202e-92f5-40ce-adfb-e4b0eae6c262")
-    assert main.get_active_persona_id() == "7544202e-92f5-40ce-adfb-e4b0eae6c262"
+    # Mock select_persona_wizard under tur.persona module namespace
+    import tur.persona
+    monkeypatch.setattr(tur.persona, "select_persona_wizard", lambda index: "7544202e-92f5-40ce-adfb-e4b0eae6c262")
+    assert persona.get_active_persona_id() == "7544202e-92f5-40ce-adfb-e4b0eae6c262"
 
 
 def test_cli_clone_error(mock_workspace, monkeypatch):
     def mock_raise(*args, **kwargs):
         raise RuntimeError("Clone failed internally")
-    monkeypatch.setattr(main, "get_persona_path", mock_raise)
+
+    monkeypatch.setattr(persona, "get_persona_path", mock_raise)
 
     result = runner.invoke(app, ["clone", "Ariel", "ArielClone"])
     assert result.exit_code == 0
@@ -497,7 +533,8 @@ def test_cli_clone_error(mock_workspace, monkeypatch):
 def test_cli_forget_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Forget failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["forget", "some-memory-id"])
     assert result.exit_code == 0
@@ -507,7 +544,8 @@ def test_cli_forget_error(mock_workspace, monkeypatch):
 def test_cli_memories_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Memories failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["memories"])
     assert result.exit_code == 0
@@ -517,7 +555,8 @@ def test_cli_memories_error(mock_workspace, monkeypatch):
 def test_cli_learn_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Learn failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["learn", "Memory content fact description"])
     assert result.exit_code == 0
@@ -533,29 +572,21 @@ def test_cli_recall_no_match(mock_workspace):
 def test_cli_recall_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Recall failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["recall", "description"])
     assert result.exit_code == 0
     assert "Error: Recall failed" in result.stdout
 
 
-def test_cli_spark_error(mock_workspace, monkeypatch):
-    def mock_raise(*args):
-        raise RuntimeError("Spark failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
-
-    result = runner.invoke(app, ["spark", "new content"])
-    assert result.exit_code == 1
-    assert "Error saving spark: Spark failed" in result.stdout
-
-
 def test_cli_sleep_top_level_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Sleep top-level failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
 
-    result = runner.invoke(app, ["sleep", "fake_chat.log"])
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
+
+    result = runner.invoke(app, ["sleep", "fake_chat.log", "--note", "Test sleep note"])
     assert result.exit_code == 0
     assert "Error: Sleep top-level failed" in result.stdout
 
@@ -578,7 +609,8 @@ def test_cli_switch_empty_personas(mock_workspace):
 def test_cli_telemetry_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Telemetry failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["telemetry", "Ariel"])
     assert result.exit_code == 1
@@ -588,7 +620,8 @@ def test_cli_telemetry_error(mock_workspace, monkeypatch):
 def test_cli_wake_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError("Wake failed")
-    monkeypatch.setattr(main, "get_active_persona_id", mock_raise)
+
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
 
     result = runner.invoke(app, ["wake"])
     assert result.exit_code == 1
@@ -600,10 +633,97 @@ def test_cli_module_main(monkeypatch):
 
     import runpy
     with pytest.raises(SystemExit) as exc:
-        runpy.run_module("tur.main", run_name="__main__")
+        runpy.run_module("tur.cli", run_name="__main__")
 
     assert exc.value.code == 0
 
 
+def test_cli_status(mock_workspace):
+    # No active session yet
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 0
+    assert "Tur Status" in result.stdout
+    assert "Ariel" in result.stdout
+    assert "Status" in result.stdout
+    assert "none" in result.stdout
+
+    # Now start one
+    runner.invoke(app, ["session", "start", "session-status-test"])
+    result_active = runner.invoke(app, ["status"])
+    assert result_active.exit_code == 0
+    assert "Status" in result_active.stdout
+    assert "active" in result_active.stdout
+    assert "session-status-test" in result_active.stdout
+
+    # Add a long note (> 80 chars) to test snippet truncation
+    long_content = (
+        "A very long note that exceeds eighty characters in length to test "
+        "the truncation snippet rendering logic inside the CLI status command table."
+    )
+    runner.invoke(app, ["note", long_content, "--session-id", "session-status-test"])
+    result_long_note = runner.invoke(app, ["status"])
+    assert result_long_note.exit_code == 0
+    assert "…" in result_long_note.stdout
+
+    # Now end it and check status to trigger "last" session branch
+    runner.invoke(app, ["session", "end", "session-status-test"])
+    result_ended = runner.invoke(app, ["status"])
+    assert result_ended.exit_code == 0
+    assert "session-status-test" in result_ended.stdout
+    assert "ended" in result_ended.stdout
 
 
+def test_cli_status_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise RuntimeError("Status error")
+    monkeypatch.setattr(persona, "get_active_persona_id", mock_raise)
+
+    result = runner.invoke(app, ["status"])
+    assert result.exit_code == 1
+    assert "Error: Status error" in result.stdout
+
+
+def test_cli_session_start_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise RuntimeError("Start failed")
+    monkeypatch.setattr(session, "start_session_logic", mock_raise)
+
+    result = runner.invoke(app, ["session", "start", "err-sess"])
+    assert result.exit_code == 1
+    assert "Error starting session: Start failed" in result.stdout
+
+
+def test_cli_session_end_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise RuntimeError("End failed")
+    monkeypatch.setattr(session, "end_session_logic", mock_raise)
+
+    result = runner.invoke(app, ["session", "end", "err-sess"])
+    assert result.exit_code == 1
+    assert "Error ending session: End failed" in result.stdout
+
+
+def test_cli_wake_auto_start(mock_workspace):
+    # Ensure active_session_id is None under state.yaml
+    state_path = Path(".tur/state.yaml")
+    with open(state_path, "w", encoding="utf-8") as f:
+        yaml.dump({"active_persona_id": "7544202e-92f5-40ce-adfb-e4b0eae6c262", "active_session_id": None}, f)
+
+    result = runner.invoke(app, ["wake"])
+    assert result.exit_code == 0
+    assert "Auto-started new session" in result.stdout
+
+
+def test_cli_session_start_previous_seeding(mock_workspace):
+    # Start session 1
+    runner.invoke(app, ["session", "start", "session-prev"])
+    # Append a note to session 1
+    runner.invoke(app, ["note", "First session final note.", "--session-id", "session-prev"])
+    # Start session 2 seeding from session 1 via main logic
+    from tur import cli, session
+    session.start_session_logic("session-next", previous_session_id="session-prev")
+
+    # Verify the seed content is inherited
+    persona_dir = Path(".tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262")
+    seed_content = session.compile_session_notes(persona_dir, "session-next")
+    assert seed_content == "First session final note."

@@ -11,7 +11,7 @@ from textual.widget import Widget
 from textual.widgets import Button, Footer, Header, Input, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
-from tur.models import Persona, PersonaIndex, PersonaIndexEntry, Principle
+from tur.models import Persona, PersonaIndex, PersonaIndexEntry, Principle, SystemState
 
 
 class LabeledInput(Widget):
@@ -177,9 +177,18 @@ class PersonaSelectorApp(App):
             selected_option = self.option_list.get_option_at_index(self.option_list.highlighted)
             if selected_option:
                 state_path = Path(".tur/state.yaml")
-                state_data = {"active_persona_id": selected_option.id}
+                if state_path.exists():
+                    try:
+                        with open(state_path, encoding="utf-8") as f:
+                            state_obj = SystemState(**yaml.safe_load(f))
+                        state_obj.active_persona_id = uuid.UUID(selected_option.id)
+                    except Exception:
+                        state_obj = SystemState(active_persona_id=uuid.UUID(selected_option.id))
+                else:
+                    state_obj = SystemState(active_persona_id=uuid.UUID(selected_option.id))
+
                 with open(state_path, "w", encoding="utf-8") as f:
-                    yaml.dump(state_data, f)
+                    yaml.dump(state_obj.model_dump(mode="json"), f)
                 self.exit(selected_option.id)
         elif event.button.id == "cancel":
             self.exit(None)

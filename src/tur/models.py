@@ -189,3 +189,46 @@ class PersonaIndex(BaseModel):
     The root model for the persona index file (personas.yaml).
     """
     personas: list[PersonaIndexEntry] = Field(default_factory=list, description="A list of all available personas.")
+
+
+class SessionEntry(BaseModel):
+    """
+    An entry for an isolated session in sessions.yaml.
+    """
+    id: str = Field(..., description="The unique session ID.")
+    created_at: datetime = Field(default_factory=datetime.now, description="When the session was started.")
+    updated_at: datetime = Field(default_factory=datetime.now, description="When the session was last updated.")
+    status: str = Field("active", description="The status of the session ('active' or 'ended').")
+
+
+class SessionIndex(BaseModel):
+    """
+    The root model for the persona's sessions index file (sessions.yaml).
+    """
+    active_session_id: str | None = Field(None, description="The currently active session ID.")
+    sessions: list[SessionEntry] = Field(default_factory=list, description="A list of all sessions for this persona.")
+
+
+class SystemState(BaseModel):
+    """
+    Global harness-level configuration (.tur/state.yaml).
+    Tracks active workspace assignments.
+    """
+    active_persona_id: UUID | None = Field(None, description="The UUID of the active persona.")
+    active_session_id: str | None = Field(None, description="The currently active session ID.")
+
+
+class Note(BaseModel):
+    """
+    An atomic narrative continuity snapshot written by an agent.
+    """
+    timestamp: datetime = Field(default_factory=datetime.now, description="When this note was written.")
+    content: str = Field(..., description="The narrative continuity summary content.")
+
+
+class SessionNotes(BaseModel):
+    """
+    A collection of chronological notes for a specific session.
+    Stored as .tur/personas/<uuid>/sessions/<session_id>/notes.yaml
+    """
+    notes: list[Note] = Field(default_factory=list, description="Chronological notes.")

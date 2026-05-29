@@ -1,0 +1,630 @@
+import sys
+from datetime import datetime
+from pathlib import Path
+from uuid import UUID
+
+import typer
+import yaml
+from rich.console import Console
+
+# Import logic directly from main.py
+from tur import dreaming, persona, session, tui, user
+from tur.compiler import compile_persona
+from tur.memory import MemoryManager
+from tur.models import (
+    Memory,
+    MemoryScope,
+    MemoryType,
+    Persona,
+    PersonaIndex,
+    PersonaIndexEntry,
+    SessionNotes,
+    SessionState,
+    SystemState,
+)
+from tur.telemetry import CognitiveTelemetry
+
+app = typer.Typer(
+    help="Tur: Persona Lifecycle Manager (Wake/Sleep)",
+    context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=False,
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+    rich_markup_mode="rich",
+)
+session_app = typer.Typer(
+    help="Manage sessions (administrative tools).",
+    context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=False,
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+    rich_markup_mode="rich",
+)
+app.add_typer(session_app, name="session")
+console = Console()
+
+
+# -----------------------------------------------------------------------------
+# THE GOLEM PROTOCOL: TTY Lock
+# -----------------------------------------------------------------------------
+def require_human(func):
+    """
+    Physical safety switch to prevent Harness Agents from executing administrative
+    commands via headless bash execution. Prevents accidental 'lobotomy'.
+    """
+    import functools
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not sys.stdout.isatty():
+            console.print("[red]Error: Administrative command invoked in a non-interactive shell.[/red]")
+            console.print("[red]GOLEM PROTOCOL VIOLATION: Agents must use the MCP Server for state access.[/red]")
+            raise typer.Exit(code=1)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@app.command()
+@require_human
+def clone(
+        identifier: str = typer.Argument(..., help="The name or UUID of the persona to clone"),
+        new_name: str = typer.Argument(..., help="The name of the new cloned persona")
+):
+    """Duplicate an existing persona into a new identity."""
+    try:
+        import shutil
+        import uuid
+
+        source_dir = persona.get_persona_path(identifier)
+        base_dir = Path(".tur")
+        new_id = str(uuid.uuid4())
+        target_dir = base_dir / "personas" / new_id
+
+        # Copy directory
+        shutil.copytree(source_dir, target_dir)
+
+        # Update persona.yaml
+        persona_path = target_dir / "persona.yaml"
+        with open(persona_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        data["name"] = new_name
+        data["version"] = "1.0.0-cloned"
+
+        with open(persona_path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f)
+
+        # Update Index
+        index_path = base_dir / "personas.yaml"
+        with open(index_path, encoding="utf-8") as f:
+            index_data = yaml.safe_load(f)
+            index = PersonaIndex(**index_data)
+
+        new_entry = PersonaIndexEntry(id=new_id, name=new_name, version=data["version"])
+        index.personas.append(new_entry)
+
+        with open(index_path, "w", encoding="utf-8") as f:
+            yaml.dump(index.model_dump(mode='json'), f)
+
+        console.print(f"[green]Persona '{identifier}' successfully cloned to '{new_name}' ({new_id})[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error cloning persona: {e}[/red]")
+
+
+@app.command()
+@require_human
+def forget(
+        memory_id: str = typer.Argument(..., help="The ID (hash) of the memory to forget"),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Archive a memory by its ID for a specific persona."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        memory_manager.archive(memory_id)
+        console.print(f"[green]Memory {memory_id} has been forgotten (archived).[/green]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+@require_human
+def init():
+    """Bootstrap a new persona via an interactive TUI questionnaire."""
+    tui.init_wizard()
+
+
+@app.command()
+@require_human
+def memories(
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default."),
+        include_archived: bool = typer.Option(False, help="Include forgotten memories")
+):
+    """Show all memories in the bank for a specific persona."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        mems = memory_manager.load_all(include_archived=include_archived)
+
+        if not mems:
+            console.print(f"The Memory Bank for {active_id} is empty.")
+            return
+
+        from rich.table import Table
+
+        table = Table(title=f"Memory Bank ({active_id})", show_lines=True)
+        table.add_column("ID", style="dim")
+        table.add_column("Type", style="cyan")
+        table.add_column("Status", style="magenta")
+        table.add_column("Content")
+
+        for m in mems:
+            content_snippet = (m.content[:80] + '..') if len(m.content) > 80 else m.content
+            status_display = "archived" if getattr(m, 'status', None) == "archived" else "active"
+            row_style = "dim" if status_display == "archived" else ""
+
+            table.add_row(str(m.id), m.type.value, status_display, content_snippet, style=row_style)
+
+        console.print(table)
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to write their own memories via Harness CLI execution
+def learn(
+        content: str = typer.Argument(..., help="The content of the memory to store."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default."),
+        type: MemoryType = typer.Option(MemoryType.INSIGHT, help="The type of memory."),
+        scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help="The scope of the memory."),
+        session_id: str = typer.Option(None, help="The name/ID of the session this memory belongs to")
+):
+    """Create a new memory for a persona."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+
+        console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
+
+        memory = Memory(
+            type=type,
+            scope=scope,
+            tags=["manual", "cli"],
+            content=content,
+            source_session=session_id
+        )
+        saved_path = memory_manager.save(memory)
+        console.print(f"[green]Memory saved to {saved_path}[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to query memories
+def recall(
+        query: str = typer.Argument(..., help="The topic or concept to search for in past memories."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Search your deep memory bank for past events, decisions, or knowledge."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        mems = memory_manager.load_all(include_archived=False)
+
+        query_lower = query.lower()
+        results = [m for m in mems
+                   if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
+
+        if not results:
+            console.print(f"No memories found matching query: '{query}'")
+            return
+
+        import json
+        mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in results]
+        console.print(json.dumps(mem_list, indent=2))
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to update their own continuity
+def note(
+        content: str = typer.Argument(..., help="The transient content/note of the current session state."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default."),
+        session_id: str | None = typer.Option(None, help="The session ID to isolate this note to.")
+):
+    """Append a note to the active session's notes.yaml."""
+    try:
+        res = session.note_logic(content, session_id=session_id, identifier=identifier)
+        console.print(f"[green]{res}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error saving note: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@session_app.command("start")
+@require_human
+def start_session(
+        session_id: str = typer.Argument(..., help="The ID of the session to start."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Create a new isolated session under the active persona."""
+    try:
+        res = session.start_session_logic(session_id, identifier=identifier)
+        console.print(f"[green]{res}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error starting session: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@session_app.command("end")
+@require_human
+def end_session(
+        session_id: str = typer.Argument(..., help="The ID of the session to end."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Mark the session as ended."""
+    try:
+        res = session.end_session_logic(session_id, identifier=identifier)
+        console.print(f"[green]{res}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error ending session: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def serve(
+        transport: str = typer.Option("stdio",
+                                      help="The transport protocol for the MCP server ('stdio' or 'sse')."),
+        port: int = typer.Option(8000, help="Port to use when transport is 'sse'.")
+):
+    """Run the Tur MCP server."""
+    try:
+        from tur.mcp_server import main as mcp_main
+        console.print(f"[bold green]Starting Tur MCP server with {transport} transport...[/bold green]")
+        mcp_main(transport=transport, port=port)
+    except Exception as e:
+        console.print(f"[red]Error starting server: {e}[/red]")
+        sys.exit(1)
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to dehydrate their own sessions via CLI
+def sleep(
+        log_path: str = typer.Argument(..., help="Path to the chat log file to be parsed."),
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default."),
+        session_id: str = typer.Option(None, help="The name/ID of the session these memories belong to"),
+        model: str = typer.Option("gemini-3.1-pro-preview", help="The model to use for dreaming (insight extraction)"),
+        note: str = typer.Option(
+            ..., "-n", "--note", help="Final note/utterance to append before sleeping."
+        )
+):
+    """Dehydrate a session by parsing a chat log to extract memories."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        resolved_session_id = session_id or session.get_active_session_id()
+
+        # Append final note
+        if resolved_session_id:
+            session.note_logic(note, session_id=resolved_session_id, identifier=identifier)
+            console.print(f"[green]Final note appended to session '{resolved_session_id}'.[/green]")
+
+            # Auto-end session on sleep
+            res_end = session.end_session_logic(resolved_session_id, identifier=identifier)
+            console.print(f"[dim]Auto-ended session: {res_end}[/dim]")
+
+        console.print(f"Processing session log for '{active_id}' from {log_path}...")
+        console.print(f"Extracting insights using {model}... (Dreaming)")
+
+        try:
+            count = dreaming.perform_sleep_dreaming(
+                log_content=Path(log_path).read_text(encoding="utf-8"),
+                active_id=active_id,
+                session_id=resolved_session_id,
+                model=model
+            )
+
+            console.print(f"[bold green]Dreams consolidated. {count} new memories formed.[/bold green]")
+
+        except Exception as e:
+            console.print(f"[red]Error during dreaming: {e}[/red]")
+
+        console.print("[bold green]State saved. Persona is now sleeping.[/bold green]")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@app.command()
+@require_human
+def switch():
+    """Switch active default persona via an interactive TUI picker."""
+    try:
+        base_dir = Path(".tur")
+        index_path = base_dir / "personas.yaml"
+        if not index_path.exists():
+            console.print("[red]No personas found. Please run `tur init` to create one.[/red]")
+            raise typer.Exit(code=1)
+
+        with open(index_path, encoding="utf-8") as f:
+            index_data = yaml.safe_load(f)
+        index = PersonaIndex(**index_data)
+
+        if not index.personas:
+            console.print("[red]No personas available to select. Please run `tur init`.[/red]")
+            raise typer.Exit(code=1)
+
+        selected_id = tui.select_persona_wizard(index)
+        if selected_id:
+            # We already updated it inside wizard, just fetch its name to display
+            base_dir = Path(".tur")
+            index_path = base_dir / "personas.yaml"
+            persona_name = selected_id
+            if index_path.exists():
+                with open(index_path, encoding="utf-8") as f:
+                    index_data = yaml.safe_load(f)
+                index = PersonaIndex(**index_data)
+                matched = next((p for p in index.personas if str(p.id) == selected_id), None)
+                if matched:
+                    persona_name = matched.name
+
+            console.print(f"[green]Default persona switched to: '{persona_name}' ({selected_id})[/green]")
+        else:
+            console.print("[yellow]Switch cancelled.[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Error switching persona: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to query cognitive load
+def telemetry(
+        identifier: str | None = typer.Argument(None,
+                                                help="The name or UUID of the persona. If omitted, uses the default.")
+):
+    """Calculate Constraint Dimensionality (C_p) for a persona."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        file_path = persona_dir / "persona.yaml"
+
+        with open(file_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        persona_obj = Persona(**data)
+
+        # Mock state for compilation measurement
+        user_profile = user.get_user_profile()
+        state = SessionState(persona=persona_obj, user=user_profile, memories=[])
+        system_prompt = compile_persona(state)
+
+        telemetry_engine = CognitiveTelemetry()
+        static_metrics = telemetry_engine.measure_static_load(system_prompt)
+        cp = telemetry_engine.calculate_constraint_dimensionality(persona_obj)
+
+        console.print(f"[bold cyan]--- TELEMETRY REPORT: {persona_obj.name} ---[/bold cyan]")
+        console.print(f"Active Persona: {active_id} ({persona_obj.name})")
+        console.print(f"Constraint Dimensionality (Cp): [bold]{cp}[/bold]")
+
+        # The Giant Rating
+        if cp < 5:
+            rating = "Human (Manageable)"
+            color = "green"
+        elif cp < 10:
+            rating = "Giant (Heavy Load)"
+            color = "yellow"
+        else:
+            rating = "Titan (Inference Warning)"
+            color = "red"
+
+        console.print(f"Class: [{color}]{rating}[/{color}]")
+
+        console.print("---")
+        console.print(f"Static Token Cost: ~{static_metrics['est_tokens']}")
+        console.print(f"Information Density: {static_metrics['density']}")
+        console.print("---")
+
+    except Exception as e:
+        console.print(f"[red]Error calculating telemetry: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+# Intentionally bypassing TTY lock to allow agents to query their own state
+def status(
+        identifier: str | None = typer.Argument(
+            None,
+            help="The name or UUID of the persona. If omitted, uses the default."
+        )
+):
+    """Show the current persona, session, and memory status."""
+    from rich import box
+    from rich.panel import Panel
+    from rich.table import Table
+
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+
+        # --- Persona info ---
+        persona_yaml = persona_dir / "persona.yaml"
+        persona_name = active_id
+        persona_version = "unknown"
+        if persona_yaml.exists():
+            try:
+                with open(persona_yaml, encoding="utf-8") as f:
+                    pdata = yaml.safe_load(f)
+                persona_name = pdata.get("name", active_id)
+                persona_version = pdata.get("version", "unknown")
+            except Exception:
+                pass
+
+        # --- Session info ---
+        session_id = session.get_active_session_id()
+        session_status = "none"
+        session_created = "-"
+        session_updated = "-"
+        note_count = 0
+        latest_note = "-"
+
+        index = session.load_session_index(persona_dir)
+
+        if session_id:
+            entry = next((s for s in index.sessions if s.id == session_id), None)
+            if entry:
+                session_status = entry.status
+                session_created = entry.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                session_updated = entry.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+
+            notes_yaml_path = session.get_session_file(persona_dir, session_id)
+            if notes_yaml_path.exists():
+                try:
+                    with open(notes_yaml_path, encoding="utf-8") as f:
+                        notes_data = yaml.safe_load(f)
+                    session_notes = SessionNotes(**notes_data)
+                    note_count = len(session_notes.notes)
+                    if session_notes.notes:
+                        last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
+                        snippet = last.content[:80].replace("\n", " ")
+                        if len(last.content) > 80:
+                            snippet += "…"
+                        latest_note = snippet
+                except Exception:
+                    pass
+        elif index.sessions:
+            # No active session — show most recently touched one
+            most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
+            session_id = most_recent.id + " (last)"
+            session_status = most_recent.status
+            session_updated = most_recent.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+
+        # --- Memory count ---
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        memories = memory_manager.load_all()
+        memory_count = len(memories)
+
+        # --- Render ---
+        table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+        table.add_column("Key", style="bold cyan", no_wrap=True)
+        table.add_column("Value", style="white")
+
+        table.add_row("Persona", f"{persona_name} [dim](v{persona_version})[/dim]")
+        table.add_row("Persona ID", active_id)
+        table.add_row("", "")
+        table.add_row("Session ID", session_id or "[dim]none[/dim]")
+        table.add_row("Status", f"[green]{session_status}[/green]" if session_status == "active"
+        else f"[dim]{session_status}[/dim]")
+        table.add_row("Started", session_created)
+        table.add_row("Updated", session_updated)
+        table.add_row("Notes", str(note_count))
+        table.add_row("Latest note", f"[dim]{latest_note}[/dim]")
+        table.add_row("", "")
+        table.add_row("Memories", str(memory_count))
+
+        console.print(Panel(table, title="[bold]Tur Status[/bold]", border_style="cyan"))
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+# Note: wake is intentionally left without @require_human so headless adapters can fetch the prompt.
+def wake(
+        session_id: str | None = typer.Option(
+            None,
+            help="The session ID to resume or wake under. If omitted, uses active or auto-starts one."
+        ),
+        from_session: str | None = typer.Option(
+            None,
+            help="Optional ID of a previous session whose last note will seed a newly started session."
+        ),
+        identifier: str | None = typer.Argument(
+            None,
+            help="The name or UUID of the persona. If omitted, uses the default."
+        )
+):
+    """Wake the persona and compile the prompt."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        _persona_dir = persona.get_persona_path(active_id)
+
+        resolved_session_id = session_id or session.get_active_session_id()
+        is_auto_started = False
+
+        if not resolved_session_id:
+            import uuid
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            short_hex = uuid.uuid4().hex[:8]
+            resolved_session_id = f"{ts}_{short_hex}"
+            is_auto_started = True
+
+            session.start_session_logic(resolved_session_id, identifier=active_id, previous_session_id=from_session)
+
+        # Update .tur/state.yaml
+        state_path = Path(".tur/state.yaml")
+        if state_path.exists():
+            try:
+                with open(state_path, encoding="utf-8") as f:
+                    state_data = yaml.safe_load(f)
+                state_obj = SystemState(**state_data)
+                changed = False
+                if state_obj.active_persona_id != UUID(active_id):
+                    state_obj.active_persona_id = UUID(active_id)
+                    changed = True
+                if state_obj.active_session_id != resolved_session_id:
+                    state_obj.active_session_id = resolved_session_id
+                    changed = True
+                if changed:
+                    with open(state_path, "w", encoding="utf-8") as f:
+                        yaml.dump(state_obj.model_dump(mode="json"), f)
+            except Exception:
+                pass
+        else:
+            try:
+                state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=resolved_session_id)
+                state_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(state_path, "w", encoding="utf-8") as f:
+                    yaml.dump(state_obj.model_dump(mode="json"), f)
+            except Exception:
+                pass
+
+        state = session.hydrate_session_state(active_id, session_id=resolved_session_id)
+
+        # Compile (The Awakening)
+        system_prompt = compile_persona(state)
+
+        # Output
+        console.print(f"[bold green]--- SYSTEM WAKE: {state.persona.name} (v{state.persona.version}) ---[/bold green]")
+        console.print(f"[dim]Active Persona: {active_id} ({state.persona.name})[/dim]")
+        if resolved_session_id:
+            console.print(f"[dim]Session ID: {resolved_session_id}[/dim]")
+        if is_auto_started:
+            console.print(f"[dim]Auto-started new session: {resolved_session_id}[/dim]")
+
+        console.print(system_prompt)
+        console.print("[bold green]--- SYSTEM READY ---[/bold green]")
+
+    except Exception as e:
+        console.print(f"[red]Error waking persona: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+if __name__ == "__main__":
+    app()
