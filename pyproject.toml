@@ -6,7 +6,20 @@ build-backend = "hatchling.build"
 name = "tur"
 version = "0.1.0"
 description = "Persona Engineering Framework: Transform LLMs into deterministic engineering partners."
+readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Eran Rivlis"},
+    {name = "Ariel"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+urls = { Repository = "https://github.com/erivlis/tur" }
 dependencies = [
     "typer>=0.12.0",
     "textual>=8.0.0",
@@ -93,3 +106,9 @@ omit = [
 [tool.black]
 line-length = 120
 #extend-exclude = ''
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tur"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/tur", "README.md", "LICENSE"]
