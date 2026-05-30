@@ -51,10 +51,13 @@ class MemoryManager:
         """
         Determines the correct filesystem path based on the MemoryScope (Federation).
         """
-        if scope in (MemoryScope.UNIVERSAL, MemoryScope.PERSONA):
-            return self.global_dir, self.global_archive_dir
-        else:
-            return self.local_dir, self.local_archive_dir
+        match scope:
+            case MemoryScope.UNIVERSAL | MemoryScope.PERSONA:
+                return self.global_dir, self.global_archive_dir
+            case MemoryScope.INCARNATION | MemoryScope.USER:
+                return self.local_dir, self.local_archive_dir
+            case _:
+                raise ValueError(f"Unsupported MemoryScope: {scope}")
 
     def save(self, memory: Memory) -> Path:
         """

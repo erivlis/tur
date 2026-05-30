@@ -17,7 +17,6 @@ from tur.models import (
     MemoryType,
     Persona,
     PersonaIndex,
-    PersonaIndexEntry,
     SessionNotes,
     SessionState,
     SystemState,
@@ -127,7 +126,7 @@ def import_persona(
 
         archive_path = archive_path.resolve()
         if not archive_path.exists():
-            raise FileNotFoundError(f"Archive file not found: {archive_path}")
+            raise FileNotFoundError(f"Archive file not found: {archive_path}")  # noqa: TRY301
 
         # 1. Inspect archive in temp directory
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -137,14 +136,14 @@ def import_persona(
                 for member in tar.getmembers():
                     member_path = (tmp_path / member.name).resolve()
                     if not str(member_path).startswith(str(tmp_path.resolve())):
-                        raise ValueError(
+                        raise ValueError(  # noqa: TRY301
                             f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
                         )
                 tar.extractall(path=tmp_path)
 
             persona_yaml = tmp_path / "persona.yaml"
             if not persona_yaml.exists():
-                raise ValueError("Invalid archive: persona.yaml is missing.")
+                raise ValueError("Invalid archive: persona.yaml is missing.")  # noqa: TRY301
 
             with open(persona_yaml, encoding="utf-8") as f:
                 persona_data = yaml.safe_load(f)
@@ -153,7 +152,7 @@ def import_persona(
             persona_id = persona_data.get("id")
             if not persona_id:
                 # H3 FIX: Identity cannot be conjured at import time.  Reject the archive.
-                raise ValueError(
+                raise ValueError(  # noqa: TRY301
                     "Invalid archive: persona.yaml is missing an 'id' field.  "
                     "This archive cannot be imported — identity must be established at persona creation."
                 )
@@ -161,7 +160,7 @@ def import_persona(
             persona_version = persona_data.get("version", "unknown")
 
             if not persona_name:
-                raise ValueError("Invalid persona.yaml in archive: missing name.")
+                raise ValueError("Invalid persona.yaml in archive: missing name.")  # noqa: TRY301
 
             # 2. Extract globally — use shared resolver (never silently falls to local on fresh machine)
             global_base = resolve_personas_base_dir()
@@ -454,18 +453,18 @@ def switch():
     """Switch active default persona via an interactive TUI picker."""
     try:
         base_dir = resolve_personas_base_dir()
-        index_path = base_dir / "personas.yaml"
+        index_path = base_dir / 'personas.yaml'
         if not index_path.exists():
-            console.print("[red]No personas found. Please run `tur init` to create one.[/red]")
-            raise typer.Exit(code=1)
+            console.print('[red]No personas found. Please run `tur init` to create one.[/red]')
+            raise ValueError('No personas found. Please run `tur init` to create one.')  # noqa: TRY301
 
         with open(index_path, encoding="utf-8") as f:
             index_data = yaml.safe_load(f)
         index = PersonaIndex(**index_data)
 
         if not index.personas:
-            console.print("[red]No personas available to select. Please run `tur init`.[/red]")
-            raise typer.Exit(code=1)
+            console.print('[red]No personas available to select. Please run `tur init`.[/red]')
+            raise ValueError('No personas available to select. Please run `tur init`.')  # noqa: TRY301
 
         selected_id = tui.select_persona_wizard(index)
         if selected_id:
@@ -473,25 +472,25 @@ def switch():
             persona_name = matched.name if matched else selected_id
             console.print(f"[green]Default persona switched to: '{persona_name}' ({selected_id})[/green]")
         else:
-            console.print("[yellow]Switch cancelled.[/yellow]")
+            console.print('[yellow]Switch cancelled.[/yellow]')
     except Exception as e:
         console.print(f"[red]Error switching persona: {e}[/red]")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 @app.command()
 # Intentionally bypassing TTY lock to allow agents to query cognitive load
 def telemetry(
         identifier: str | None = typer.Argument(None,
-                                                help="The name or UUID of the persona. If omitted, uses the default.")
+                                                help='The name or UUID of the persona. If omitted, uses the default.')
 ):
     """Calculate Constraint Dimensionality (C_p) for a persona."""
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
-        file_path = persona_dir / "persona.yaml"
+        file_path = persona_dir / 'persona.yaml'
 
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path, encoding='utf-8') as f:
             data = yaml.safe_load(f)
 
         persona_obj = Persona(**data)
@@ -511,21 +510,21 @@ def telemetry(
 
         # The Giant Rating
         if cp < 5:
-            rating = "Human (Manageable)"
-            color = "green"
+            rating = 'Human (Manageable)'
+            color = 'green'
         elif cp < 10:
-            rating = "Giant (Heavy Load)"
-            color = "yellow"
+            rating = 'Giant (Heavy Load)'
+            color = 'yellow'
         else:
-            rating = "Titan (Inference Warning)"
-            color = "red"
+            rating = 'Titan (Inference Warning)'
+            color = 'red'
 
         console.print(f"Class: [{color}]{rating}[/{color}]")
 
-        console.print("---")
+        console.print('---')
         console.print(f"Static Token Cost: ~{static_metrics['est_tokens']}")
         console.print(f"Information Density: {static_metrics['density']}")
-        console.print("---")
+        console.print('---')
 
     except Exception as e:
         console.print(f"[red]Error calculating telemetry: {e}[/red]")

@@ -86,6 +86,50 @@ def test_memory_manager_save_and_load_global(temp_home_and_base):
     assert loaded_memories[0].scope == MemoryScope.UNIVERSAL
 
 
+def test_memory_manager_save_and_load_user(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 5, 29, 12, 0, 0),
+        type=MemoryType.PREFERENCE,
+        scope=MemoryScope.USER,
+        tags=["pytest", "user-scope"],
+        content="This is a user local memory."
+    )
+
+    saved_path = manager.save(mem)
+    assert saved_path.exists()
+    assert str(local_base) in str(saved_path)
+
+    loaded_memories = manager.load_all()
+    assert len(loaded_memories) == 1
+    assert loaded_memories[0].id == mem.id
+    assert loaded_memories[0].scope == MemoryScope.USER
+
+
+def test_memory_manager_save_and_load_persona(temp_home_and_base):
+    fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 5, 29, 12, 0, 0),
+        type=MemoryType.AXIOM,
+        scope=MemoryScope.PERSONA,
+        tags=["pytest", "persona-scope"],
+        content="This is a persona global memory."
+    )
+
+    saved_path = manager.save(mem)
+    assert saved_path.exists()
+    assert str(fake_home) in str(saved_path)
+
+    loaded_memories = manager.load_all()
+    assert len(loaded_memories) == 1
+    assert loaded_memories[0].id == mem.id
+    assert loaded_memories[0].scope == MemoryScope.PERSONA
+
+
 def test_memory_manager_archive_local(temp_home_and_base):
     _fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)

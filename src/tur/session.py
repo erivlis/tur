@@ -293,7 +293,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
             index.sessions.append(new_entry)
         save_session_index(persona_dir, index)
 
-        return f"Note saved for '{active_id}' in session "
+        return f"Note successfully saved for '{active_id}' in session '{resolved_session_id}'"
 
 
     else:

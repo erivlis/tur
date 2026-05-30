@@ -214,11 +214,14 @@ def test_mcp_server_module_main(monkeypatch):
 
 def test_mcp_telemetry(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
-    
+
     # Setup persona file for telemetry with required 'aleph' field
     persona_yaml = persona_dir / "persona.yaml"
-    persona_yaml.write_text("name: MockAriel\nversion: 5.4.0\naleph: To design test scenarios.\nprinciples: []\n", encoding="utf-8")
-    
+    persona_yaml.write_text(
+        "name: MockAriel\nversion: 5.4.0\naleph: To design test scenarios.\nprinciples: []\n",
+        encoding="utf-8"
+    )
+
     res = mcp_server.telemetry(identifier="fake-persona-uuid")
     assert res["persona_name"] == "MockAriel"
     assert res["constraint_dimensionality"] == 0
@@ -229,19 +232,19 @@ def test_mcp_telemetry(mock_mcp_env, monkeypatch):
 def test_mcp_wake_reuses_active_session(mock_mcp_env, monkeypatch):
     # Mock get_active_session_id to return an active session id
     monkeypatch.setattr(mcp_server, "get_active_session_id", lambda: "active-sess-id")
-    
+
     # Initialize process tracker to None
     mcp_server._active_session_id = None
-    
+
     # Mock start_session_logic to fail if called
     mock_start = MagicMock()
     monkeypatch.setattr(mcp_server, "start_session_logic", mock_start)
-    
+
     # Call wake
     mcp_server.wake()
-    
+
     # Ensure start_session_logic was not called
     mock_start.assert_not_called()
-    
+
     # Ensure process tracker is synchronized
     assert mcp_server._active_session_id == "active-sess-id"
