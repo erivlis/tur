@@ -171,6 +171,38 @@ Append a narrative note/utterance to the active session. These notes form the co
 uv run tur note "Added status command and cleaned up legacy files."
 ```
 
+### 13. Switch Active Default Persona (`switch`)
+
+Interactive Textual TUI wizard to switch your current active default persona globally or locally. 
+
+*Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
+
+```shell
+uv run tur switch
+```
+
+### 14. Export Persona (`export`)
+
+**Portability:** Packages a global persona's core configuration and universal memories into a portable `.tur` gzip-compressed archive (excluding project-local incarnation-specific memories).
+
+*Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
+
+```shell
+# Export a persona by its name or UUID to a destination file
+uv run tur export ariel ariel.tur
+```
+
+### 15. Import Persona (`import`)
+
+**Portability:** Unpacks a `.tur` archive and registers it globally as a new persona on the local system. The framework sanitizes all Member paths prior to extraction to guarantee safety against path traversal vulnerabilities.
+
+*Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
+
+```shell
+# Import a persona from a .tur archive
+uv run tur import ariel.tur
+```
+
 
 ## Customization
 
