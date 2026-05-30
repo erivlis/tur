@@ -63,11 +63,13 @@ Please configure your MCP client settings to connect to the following local serv
 
 Once connected, you will have access to the following tools:
 
+- `status`: Return the current persona, session, and memory status as a structured dict.
 - `wake`: Read your core identity, directives, and system metrics. Run this at the start of our session if you lose context.
 - `learn`: Assimilate a new invariant, fact, or insight into your permanent memory.
 - `recall`: Search your deep memory bank for past events or knowledge.
-- `spark`: Update your transient session continuity/spark (Short-Term L2).
-- `sleep`: Dehydrate your active session log to extract and consolidate new L1 memories.
+- `note`: Append a transient chronological note/utterance to the active session continuity (Short-Term L2).
+- `sleep`: Symmetrically end the active session, dehydrating the chat log to extract and consolidate new L1 memories.
+- `telemetry`: Measure static token cost, information density, and Cp (Constraint Dimensionality).
 
 You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `wake` to rehydrate your constraints.
 ```

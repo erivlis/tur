@@ -61,16 +61,15 @@ uv run tur wake
 uv run tur wake ariel
 ```
 
-### 3. Memorize (`memorize`)
+### 3. Learn a Memory (`learn`)
 
-**Active Learning:** Manually inject a specific insight, fact, or preference directly into the active persona's Memory
-Bank during a session.
+**Active Learning:** Manually inject a specific insight, fact, or preference directly into the active persona's Memory Bank during a session.
 
 ```shell
-uv run tur memorize "The user prefers functional programming over OOP." --type preference --scope user
+uv run tur learn "The user prefers functional programming over OOP." --type preference --scope incarnation
 
 # Or for a specific persona:
-uv run tur memorize "Code must be perfectly symmetrical." ariel --type axiom
+uv run tur learn "Code must be perfectly symmetrical." ariel --type axiom
 ```
 
 ### 4. Sleep & Consolidate (`sleep`)
@@ -132,16 +131,7 @@ uv run tur forget <memory-hash>
 uv run tur forget <memory-hash> ariel
 ```
 
-### 9. Clone a Persona (`clone`)
-
-Duplicates an existing persona into a new identity with a new UUID. This is useful for creating specialized branches of
-a persona without polluting the original's memory bank.
-
-```shell
-uv run tur clone ariel "Ariel (Coding Mode)"
-```
-
-### 10. Check Persona Status (`status`)
+### 9. Check Persona Status (`status`)
 
 Renders a rich status panel containing the currently selected persona's details, the active or last session ID and its status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
 
@@ -149,7 +139,7 @@ Renders a rich status panel containing the currently selected persona's details,
 uv run tur status
 ```
 
-### 11. Search Memories (`recall`)
+### 10. Search Memories (`recall`)
 
 Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching insights or facts.
 
@@ -157,7 +147,7 @@ Perform an exact or keyword search across all memories inside the persona's memo
 uv run tur recall "Noether"
 ```
 
-### 12. Manage Sessions (`session` Subgroup)
+### 11. Manage Sessions (`session` Subgroup)
 
 Administrative tools to manually start and end sessions for a persona. 
 
@@ -173,7 +163,7 @@ uv run tur session start my-session-123
 uv run tur session end my-session-123
 ```
 
-### 13. Append a Note (`note`)
+### 12. Append a Note (`note`)
 
 Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's sessions.
 

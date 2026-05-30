@@ -293,10 +293,8 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
             index.sessions.append(new_entry)
         save_session_index(persona_dir, index)
 
-        return (
-            f"Note saved for '{active_id}' in session "
-            f"'{resolved_session_id}' successfully (Spark successfully updated)."
-        )
+        return f"Note saved for '{active_id}' in session "
+
 
     else:
         # Fall back to the most recently updated session

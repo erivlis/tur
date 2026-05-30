@@ -256,6 +256,7 @@ def memories(
         table = Table(title=f"Memory Bank ({active_id})", show_lines=True)
         table.add_column("ID", style="dim")
         table.add_column("Type", style="cyan")
+        table.add_column("Source", style="green")
         table.add_column("Status", style="magenta")
         table.add_column("Content")
 
@@ -264,7 +265,7 @@ def memories(
             status_display = "archived" if getattr(m, 'status', None) == "archived" else "active"
             row_style = "dim" if status_display == "archived" else ""
 
-            table.add_row(str(m.id), m.type.value, status_display, content_snippet, style=row_style)
+            table.add_row(str(m.id), m.type.value, m.scope.value, status_display, content_snippet, style=row_style)
 
         console.print(table)
 

@@ -139,11 +139,16 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
     """
     global _active_session_id
     active_id = get_active_persona_id()
-    sess_id = session_id or _active_session_id
+    sess_id = session_id or _active_session_id or get_active_session_id()
     if not sess_id:
         import uuid
-        sess_id = str(uuid.uuid4())
+        from datetime import datetime
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        short_hex = uuid.uuid4().hex[:8]
+        sess_id = f"{ts}_{short_hex}"
         start_session_logic(sess_id, previous_session_id=previous_session_id)
+        _active_session_id = sess_id
+    else:
         _active_session_id = sess_id
     state = hydrate_session_state(active_id, session_id=sess_id)
     system_prompt = compile_persona(state)
@@ -233,44 +238,6 @@ def note(content: str) -> str:
 
 
 @mcp.tool()
-def start_session(session_id: str) -> str:
-    """
-    Start a new isolated session under the active persona.
-    Creates the session directory and initializes its sparks.yaml file.
-
-    Args:
-        session_id(str): The unique ID of the session to start.
-    """
-    global _active_session_id
-    _active_session_id = session_id
-    try:
-        res = start_session_logic(session_id)
-    except Exception as e:
-        return f"Error starting session: {e}"
-    else:
-        return res
-
-
-@mcp.tool()
-def end_session(session_id: str) -> str:
-    """
-    End an isolated session and mark it as complete.
-
-    Args:
-        session_id(str): The ID of the session to end.
-    """
-    global _active_session_id
-    if _active_session_id == session_id:
-        _active_session_id = None
-    try:
-        res = end_session_logic(session_id)
-    except Exception as e:
-        return f"Error ending session: {e}"
-    else:
-        return res
-
-
-@mcp.tool()
 def sleep(
         note: str,
         log_content: str,
@@ -289,12 +256,16 @@ def sleep(
     """
     global _active_session_id
     resolved_session_id = session_id or _active_session_id
-    # Append mandatory final note before dreaming
+    # Append mandatory final note and auto-end session on sleep
     if resolved_session_id:
         try:
             note_logic(note, session_id=resolved_session_id)
         except Exception as e:
             return f"Error appending final note: {e}"
+        try:
+            end_session_logic(resolved_session_id)
+        except Exception as e:
+            return f"Error ending session: {e}"
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
@@ -333,6 +304,57 @@ def recall(query: str) -> str:
 
     mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in results]
     return json.dumps(mem_list, indent=2)
+
+
+@mcp.tool()
+def telemetry(identifier: str | None = None) -> dict:
+    """
+    Calculate Constraint Dimensionality (Cp) and cognitive load metrics for a persona.
+
+    Args:
+        identifier: The name or UUID of the persona. If omitted, uses the default.
+    """
+    try:
+        import yaml
+
+        from tur.models import Persona, SessionState
+        from tur.user import get_user_profile
+
+        active_id = get_active_persona_id(identifier)
+        persona_dir = get_persona_path(active_id)
+        file_path = persona_dir / "persona.yaml"
+
+        with open(file_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        persona_obj = Persona(**data)
+
+        # Mock state for compilation measurement
+        user_profile = get_user_profile()
+        state = SessionState(persona=persona_obj, user=user_profile, memories=[])
+        system_prompt = compile_persona(state)
+
+        telemetry_engine = CognitiveTelemetry()
+        static_metrics = telemetry_engine.measure_static_load(system_prompt)
+        cp = telemetry_engine.calculate_constraint_dimensionality(persona_obj)
+
+        if cp < 5:
+            rating = "Human (Manageable)"
+        elif cp < 10:
+            rating = "Giant (Heavy Load)"
+        else:
+            rating = "Titan (Inference Warning)"
+    except Exception as e:
+        return {"error": str(e)}
+    else:
+        return {
+            "persona_id": active_id,
+            "persona_name": persona_obj.name,
+            "constraint_dimensionality": cp,
+            "class": rating,
+            "static_token_cost": static_metrics['est_tokens'],
+            "information_density": static_metrics['density']
+        }
 
 
 def main(transport: Literal["stdio", "sse"] = "stdio", port: int = 8000):
