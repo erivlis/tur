@@ -24,7 +24,8 @@ class CognitiveTelemetry:
             "density": self._calculate_density(system_prompt)
         }
 
-    def calculate_constraint_dimensionality(self, persona: Persona) -> float:
+    @staticmethod
+    def calculate_constraint_dimensionality(persona: Persona) -> float | int:
         """
         Calculates Cp = Sum(N_c * W_c) + I_conflict
         """
@@ -39,7 +40,8 @@ class CognitiveTelemetry:
 
         return round(base_load + interaction_penalty, 2)
 
-    def _calculate_density(self, text: str) -> float:
+    @staticmethod
+    def _calculate_density(text: str) -> float | int:
         """
         Estimates Information Density (Unique Words / Total Words).
         """
