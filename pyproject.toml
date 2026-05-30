@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tur"
-version = "0.2.0"
+version = "0.2.1"
 description = "Persona Engineering Framework: Transform LLMs into deterministic engineering partners."
 readme = "README.md"
 requires-python = ">=3.10"

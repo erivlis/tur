@@ -1,3 +1,9 @@
+## v0.2.1 (2026-05-31)
+
+### Refactor
+
+- telemetry methods to static and broadens return type hints.
+
 ## v0.2.0 (2026-05-30)
 
 ### Feat
