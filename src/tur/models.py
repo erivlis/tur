@@ -47,18 +47,34 @@ class SpeechModulation(BaseModel):
 
 
 class MemoryType(str, Enum):
-    FACT = "fact"  # Objective truth (e.g., "Project uses FastAPI")
-    PREFERENCE = "preference"  # User taste (e.g., "Hates black formatter")
-    EVENT = "event"  # Narrative history (e.g., "Refactored Council")
-    AXIOM = "axiom"  # Deep philosophical belief (e.g., "Love is the Aleph")
-    INSIGHT = "insight"  # Derived knowledge (e.g., "Tur Tur principle applies to AI")
+    FACT = "fact"
+    """Objective truth (e.g., "Project uses FastAPI")"""
+
+    PREFERENCE = "preference"
+    """User taste (e.g., "Hates black formatter")"""
+
+    EVENT = "event"
+    """Narrative history (e.g., "Refactored Council")"""
+
+    AXIOM = "axiom"
+    """Deep philosophical belief (e.g., "Love is the Aleph")"""
+
+    INSIGHT = "insight"
+    """Derived knowledge (e.g., "Tur Tur principle applies to AI")"""
 
 
 class MemoryScope(str, Enum):
-    UNIVERSAL = "universal"  # True everywhere (e.g., Physics, Standard Libs)
-    USER = "user"  # True for the Architect (Preferences, style)
-    PERSONA = "persona"  # True for the Entity (Values, axioms)
-    INCARNATION = "incarnation"  # True only for this specific project instance
+    UNIVERSAL = "universal"
+    """True everywhere (e.g., Physics, Standard Libs)"""
+
+    USER = "user"
+    """True for the Architect (Preferences, style)"""
+
+    PERSONA = "persona"
+    """True for the Entity (Values, axioms)"""
+
+    INCARNATION = "incarnation"
+    """True only for this specific project instance"""
 
 
 class MemoryLink(BaseModel):
