@@ -48,7 +48,12 @@ select = [
     "TRY",
     "RUF",
 ]
-ignore = ["F401", "PT011", "RUF001", "TRY003"]
+ignore = [
+    "F401",
+    "PT011",
+    "RUF001",
+    "TRY003"
+]
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
