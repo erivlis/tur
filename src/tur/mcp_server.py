@@ -130,8 +130,17 @@ def status() -> dict:
 @mcp.tool()
 def wake(session_id: str | None = None, previous_session_id: str | None = None) -> str:
     """
-    Read your core identity, directives, and system metrics (formerly who_am_i).
-    Call this when you need to remember your constraints or understand your current cognitive load.
+    Read your core identity, directives, and system metrics to establish context.
+
+    Trigger Conditions:
+      - Turn Zero: Execute immediately on the very first turn of a session to compile your prompt and establish
+        identity.
+      - Context Loss/Degradation: Invoke if you detect high perplexity, confusion, or suspect a context window reset
+        occurred.
+      - Task Shift: Call if the user pivots to an entirely different project epic.
+
+    Avoid Overuse:
+      - Do NOT call wake() repeatedly within an active, stable conversation.
 
     Args:
         session_id(str): Optional session ID. If omitted, uses active or most recent session.
@@ -173,11 +182,21 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
 def learn(
         content: str,
         type: Literal['fact', 'preference', 'insight', 'event', 'axiom'],
-        scope: Literal["incarnation", "universal"] = "incarnation"
+        scope: Literal["incarnation", "universal", "user", "persona"] = "incarnation"
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
-    Call this when you deduce something that must survive a context window reset.
+
+    Trigger Conditions:
+      - Invariants & Preferences: Call only when you deduce or the user explicitly states an immutable ruleset,
+        architectural constraint, or taste that must survive future session resets (e.g., "User prefers HSL-curated
+        HSL palettes over plain RGB").
+      - Structural Insights: Call when you derive a permanent project axiom (e.g., "SSE transport has a boundary leak
+        on local CWD").
+
+    Avoid Overuse:
+      - Do NOT call learn() for temporary or volatile facts (like active git branch names or temporary files),
+        which belong in note().
 
     Args:
         content(str): The knowledge or insight to be remembered.
@@ -189,9 +208,11 @@ def learn(
          'axiom' means a deep philosophical belief (e.g., "Love is the Aleph").
          'insight' means a derived conclusion (e.g., "Tur Tur principle applies to AI").
         scope(str): The breadth of this memory's applicability. Determines where it is stored and how it is recalled.
-          must be one of: 'incarnation', 'universal'. Default is 'incarnation'.
-         'incarnation' means it's only relevant to this specific project instance.
-         'universal' means it's a general truth that should be shared across all your personas and projects.
+          must be one of: 'incarnation', 'universal', 'user', 'persona'. Default is 'incarnation'.
+         'incarnation' means it's only relevant to this specific project instance (stored locally).
+         'user' means it's true for the Architect across all systems (stored locally).
+         'persona' means it's a value/axiom of the persona (stored globally).
+         'universal' means it's a universal truth shared across all projects and personas (stored globally).
     """
     try:
         mem_type = MemoryType(type)
@@ -223,7 +244,17 @@ def learn(
 def note(content: str) -> str:
     """
     Update the transient session notes for the active persona.
-    This appends a new chronological note to the active session.
+    This appends a new chronological note to the active session scratchpad.
+
+    Trigger Conditions:
+      - Milestone Achievements: Invoke when a critical engineering goal is verified and completed (e.g., refactoring
+        a module, passing a test suite).
+      - Progress Snapshots: Call before concluding a session to capture the exact coordinates of incomplete work for
+        the next instance.
+
+    Avoid Overuse:
+      - Do NOT write notes for trivial, intermediate steps (e.g., standard file views, directory lists).
+        One descriptive note per major milestone is the optimal frequency.
 
     Args:
         content(str): The transient content/note of the current session state.
@@ -246,7 +277,15 @@ def sleep(
 ) -> str:
     """
     Dehydrate a session by parsing the active session's chat log to extract memories.
-    Call this when the active session is ending and you want to consolidate L1 memories.
+    This is a terminal operation that closes the active session.
+
+    Trigger Conditions:
+      - Epic Completion: Call strictly at the end of the entire engineering session or when concluding a major
+        architectural iteration.
+
+    Avoid Overuse:
+      - Never call sleep() intermediate-turn. It ends the active session state, closes it on disk, and consolidates the
+        chat log into L1 ledger memories.
 
     Args:
         note(str): The final utterance/note to append to the session before sleeping. Required.
