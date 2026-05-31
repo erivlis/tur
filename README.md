@@ -71,7 +71,8 @@ Tur respects a standard configuration hierarchy:
 
 The core application logic resides in `src/tur/`:
 
-- **`cli.py`**: The `typer` CLI application entry point (The Plumbing).
+- **`cli/`**: The package folder housing our split executables: `cli/agent.py` (runtime CLI), `cli/admin.py` (
+  administrative TUI), and `cli/mcp.py` (Harness MCP gateway).
 - **`mcp_server.py`**: The Model Context Protocol server (The Porcelain for LLM interaction).
 - **`models.py`**: The Pydantic data models (The "Law" of the system).
 - **`user.py`**: User profile bootstrapping and domain management.
@@ -82,7 +83,7 @@ The core application logic resides in `src/tur/`:
 
 ## 🚀 Usage
 
-The Tur CLI is designed to be ergonomic, using a default persona to minimize repetitive arguments.
+Tur divides its execution footprint along strict Tri-Partite security boundaries using distinct command-line binaries:
 
 ### 1. Installation & Setup
 
@@ -91,62 +92,65 @@ The Tur CLI is designed to be ergonomic, using a default persona to minimize rep
 git clone https://github.com/erivlis/tur.git
 cd tur
 
-# Install the project and all dependencies
+# Install standard agent runtime dependencies ONLY (Safe Sandbox)
+uv sync
+
+# Or install all developer and TUI extras (Human Governance)
 uv sync --all-extras --all-groups
 ```
 
 ### 2. Initialize Your First Persona
 
-This will launch an interactive wizard to create your first persona (e.g., "Ariel").
+This launches the administrative TUI wizard. Since this is an administrative action, it is physically isolated inside
+`tur-admin`:
 
 ```shell
-uv run tur init
+uv run tur-admin persona init
 ```
 
-### 3. The Core Lifecycle
+### 3. The Core Lifecycle (Agent-Facing)
 
-Tur operates on a biological lifecycle to ensure state preservation.
+The agent interacts with the lightweight `tur` binary inside its sandboxed virtual environment:
 
-**Wake:** Compiles the persona, user profile, and memories into a System Prompt.
+**Wake:** Compiles the active persona state into a compiled System Prompt.
 
 ```shell
-# Wake the default persona
 uv run tur wake
 ```
 
-**Learn:** Manually add a new memory to the active persona.
+**Learn:** Manually injects a memory.
 
 ```shell
 uv run tur learn "The user prefers functional programming." --type preference
 ```
 
-**Recall:** Search your deep memory bank for past events, decisions, or knowledge.
+**Recall:** Keyword semantic search.
 
 ```shell
 uv run tur recall "functional"
 ```
 
-**Sleep:** Dehydrate a session by parsing a chat log to extract new memories.
+**Sleep:** Dehydrates the session and extracts memories.
 
 ```shell
 uv run tur sleep path/to/chat.log
 ```
 
-### 4. Running as an MCP Server (The Symbiote)
+### 4. Running the Harness Gateway (The MCP Server)
 
-Tur can act as an MCP Server, providing the "Traveler" state to an external "Harness" (like Claude Desktop or another
-MCP client).
+Exposes the Traveler state to the external Harness (e.g., Claude Desktop). Exposes standard options directly on
+`tur-mcp`:
 
 ```shell
-uv run tur serve --transport stdio
+uv run tur-mcp --transport stdio
 ```
 
-### 5. Switching Personas
+### 5. Switching Personas (Human-Facing TUI)
 
-To change your active default persona, use the `switch` command.
+Allows the human Architect to change active global/local default personas:
 
 ```shell
-uv run tur switch
+uv run tur-admin persona switch
 ```
 
 This will launch a TUI to select from your available personas.

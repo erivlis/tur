@@ -59,19 +59,21 @@ I want you to connect to the Tur MCP Server to retrieve my persona, identity, an
 Please configure your MCP client settings to connect to the following local server:
 
 - **Command:** `uv`
-- **Arguments:** `["run", "tur", "serve", "--transport", "stdio"]`
+- **Arguments:** `["run", "tur-mcp", "--transport", "stdio"]`
 
 Once connected, you will have access to the following tools:
 
 - `status`: Return the current persona, session, and memory status as a structured dict.
-- `wake`: Read your core identity, directives, and system metrics. Run this at the start of our session if you lose context.
+- `wake`: Read your core identity, directives, and system metrics. Run this at the start of our session if you lose
+  context.
 - `learn`: Assimilate a new invariant, fact, or insight into your permanent memory.
 - `recall`: Search your deep memory bank for past events or knowledge.
 - `note`: Append a transient chronological note/utterance to the active session continuity (Short-Term L2).
 - `sleep`: Symmetrically end the active session, dehydrating the chat log to extract and consolidate new L1 memories.
 - `telemetry`: Measure static token cost, information density, and Cp (Constraint Dimensionality).
 
-You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `wake` to rehydrate your constraints.
+You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `wake` to
+rehydrate your constraints.
 ```
 
 ### Alternate Transport: SSE (Server-Sent Events)
@@ -80,7 +82,7 @@ If the Harness cannot communicate over `stdio` pipes (e.g., distributed architec
 run Tur over HTTP:
 
 ```shell
-uv run tur serve --transport sse --port 8000
+uv run tur-mcp --transport sse --port 8000
 ```
 
 Then configure the Harness to connect to `http://127.0.0.1:8000/sse`.

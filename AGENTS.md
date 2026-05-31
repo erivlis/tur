@@ -35,9 +35,9 @@ You must use the provided MCP tools to interact with your identity and memory:
   memories.
 - **`telemetry()`**: Measure static token cost, information density, and $C_p$ (Constraint Dimensionality).
 
-*(Note: Administrative tools like `start_session`, `end_session`, `forget`, `export`, and `import` are decorated
-with `@require_human` and exist exclusively on the CLI. The MCP server does not expose these administrative
-capabilities, preserving strict human-in-the-loop boundaries.)*
+*(Note: Administrative capabilities (e.g., persona management, memory pruning, and session control) are physically
+isolated in the `tur-admin` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and
+the `tur-mcp` server do not expose or contain these administrative commands, preserving strict physical boundaries.)*
 
 ## Cognitive Lifecycle Triggers (When to Act)
 
@@ -90,7 +90,8 @@ To preserve the sovereign integrity of the Traveler and maintain strict Noether 
 perform direct/manual filesystem reads or writes inside the `.tur/` directory or its subdirectories using general
 tools (such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
 
-All interaction with `.tur/` state must be brokered exclusively through the official CLI interface (e.g.,
-`uv run tur <verb>`) or corresponding MCP server tools. Manual tampering violates Golem boundary containment and
-threatens cognitive timeline consistency.
+All interaction with `.tur/` state must be brokered exclusively through the safe, agent-facing `tur` CLI interface or
+corresponding MCP server tools. Accessing or executing commands in the human-facing `tur-admin` binary is strictly
+forbidden and structurally blocked, preserving the sovereign integrity of the system. Manual tampering violates Golem
+boundary containment and threatens cognitive timeline consistency.
 

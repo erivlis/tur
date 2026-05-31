@@ -2,6 +2,7 @@
 description: The complete guide to the Tur CLI commands and biological lifecycle.
 icon: lucide/terminal
 ---
+
 # Usage Guide
 
 Tur is a lightweight, deterministic CLI that manages the lifecycle of your AI personas. It treats an AI identity as a
@@ -37,7 +38,8 @@ You can always override the default by explicitly providing a name or UUID (e.g.
 
 ## Core Commands
 
-The Tur CLI is invoked using `uv run tur` (or just `tur` if your virtual environment is active).
+The Tur CLI is divided along strict security boundaries using distinct executables: `uv run tur` (safe agent runtime),
+`uv run tur-admin` (human-facing governance), and `uv run tur-mcp` (Harness gateway).
 
 ### 1. Initialize a Persona (`init`)
 
@@ -45,7 +47,7 @@ Bootstrap a new persona interactively. This creates the necessary `.tur/personas
 unique UUID, and creates your first `persona.yaml` DNA file.
 
 ```shell
-uv run tur init
+uv run tur-admin persona init
 ```
 
 ### 2. Wake the Persona (`wake`)
@@ -63,7 +65,8 @@ uv run tur wake ariel
 
 ### 3. Learn a Memory (`learn`)
 
-**Active Learning:** Manually inject a specific insight, fact, or preference directly into the active persona's Memory Bank during a session.
+**Active Learning:** Manually inject a specific insight, fact, or preference directly into the active persona's Memory
+Bank during a session.
 
 ```shell
 uv run tur learn "The user prefers functional programming over OOP." --type preference --scope incarnation
@@ -88,10 +91,11 @@ uv run tur sleep path/to/chat.log ariel
 
 ### 5. Running as an MCP Server (`serve`)
 
-**The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This allows Tur to act as the "Traveler" state engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
+**The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This allows Tur to act as the "Traveler" state
+engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
 
 ```shell
-uv run tur serve --transport stdio
+uv run tur-mcp --transport stdio
 ```
 
 ### 6. View Memories (`memories`)
@@ -100,13 +104,13 @@ Inspect the contents of the Memory Bank. This lists all active memories that wil
 cycle.
 
 ```shell
-uv run tur memories
+uv run tur-admin memory list
 ```
 
 To include archived (forgotten) memories in the list:
 
 ```shell
-uv run tur memories --include-archived
+uv run tur-admin memory list --include-archived
 ```
 
 ### 7. Measure Cognitive Load (`telemetry`)
@@ -125,15 +129,16 @@ folder and is no longer loaded during `wake`.
 
 ```shell
 # You must provide the Memory ID
-uv run tur forget <memory-hash>
+uv run tur-admin memory forget <memory-hash>
 
 # For a non-default persona:
-uv run tur forget <memory-hash> ariel
+uv run tur-admin memory forget <memory-hash> ariel
 ```
 
 ### 9. Check Persona Status (`status`)
 
-Renders a rich status panel containing the currently selected persona's details, the active or last session ID and its status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
+Renders a rich status panel containing the currently selected persona's details, the active or last session ID and its
+status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
 
 ```shell
 uv run tur status
@@ -141,7 +146,8 @@ uv run tur status
 
 ### 10. Search Memories (`recall`)
 
-Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching insights or facts.
+Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching
+insights or facts.
 
 ```shell
 uv run tur recall "Noether"
@@ -149,23 +155,26 @@ uv run tur recall "Noether"
 
 ### 11. Manage Sessions (`session` Subgroup)
 
-Administrative tools to manually start and end sessions for a persona. 
+Administrative tools to manually start and end sessions for a persona.
 
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 #### Start a Session
+
 ```shell
-uv run tur session start my-session-123
+uv run tur-admin session start my-session-123
 ```
 
 #### End a Session
+
 ```shell
-uv run tur session end my-session-123
+uv run tur-admin session end my-session-123
 ```
 
 ### 12. Append a Note (`note`)
 
-Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's sessions.
+Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's
+sessions.
 
 ```shell
 uv run tur note "Added status command and cleaned up legacy files."
@@ -173,36 +182,37 @@ uv run tur note "Added status command and cleaned up legacy files."
 
 ### 13. Switch Active Default Persona (`switch`)
 
-Interactive Textual TUI wizard to switch your current active default persona globally or locally. 
+Interactive Textual TUI wizard to switch your current active default persona globally or locally.
 
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
-uv run tur switch
+uv run tur-admin persona switch
 ```
 
 ### 14. Export Persona (`export`)
 
-**Portability:** Packages a global persona's core configuration and universal memories into a portable `.tur` gzip-compressed archive (excluding project-local incarnation-specific memories).
+**Portability:** Packages a global persona's core configuration and universal memories into a portable `.tur`
+gzip-compressed archive (excluding project-local incarnation-specific memories).
 
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
 # Export a persona by its name or UUID to a destination file
-uv run tur export ariel ariel.tur
+uv run tur-admin persona export ariel ariel.tur
 ```
 
 ### 15. Import Persona (`import`)
 
-**Portability:** Unpacks a `.tur` archive and registers it globally as a new persona on the local system. The framework sanitizes all Member paths prior to extraction to guarantee safety against path traversal vulnerabilities.
+**Portability:** Unpacks a `.tur` archive and registers it globally as a new persona on the local system. The framework
+sanitizes all Member paths prior to extraction to guarantee safety against path traversal vulnerabilities.
 
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
 # Import a persona from a .tur archive
-uv run tur import ariel.tur
+uv run tur-admin persona import ariel.tur
 ```
-
 
 ## Customization
 
