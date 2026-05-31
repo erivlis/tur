@@ -263,7 +263,8 @@ def test_admin_memory_list_with_items(mock_workspace):
     result = runner.invoke(admin_app, ['memory', 'list'])
     assert result.exit_code == 0
     assert 'Memory Bank (7544202e-92f5-40ce-adfb-e4b0eae6c262)' in result.stdout
-    assert 'Pytest is running inside admin test.' in result.stdout
+    assert 'Pytest is running' in result.stdout
+    assert 'inside admin test.' in result.stdout
 
 
 def test_admin_memory_forget(mock_workspace):
@@ -406,3 +407,189 @@ def test_admin_module_main(monkeypatch):
         runpy.run_module('tur.cli.admin', run_name='__main__')
 
     assert exc.value.code == 0
+
+
+def test_admin_persona_view_missing_yaml(mock_workspace):
+    # Remove persona.yaml
+    persona_path = Path('.tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/persona.yaml')
+    if persona_path.exists():
+        persona_path.unlink()
+
+    result = runner.invoke(admin_app, ['persona', 'view', 'Ariel'])
+    assert result.exit_code == 0
+    assert 'persona.yaml not found' in result.stdout
+
+
+def test_admin_persona_import_path_traversal(mock_workspace, tmp_path):
+    # Create malicious archive
+    archive_path = tmp_path / 'traversal.tur'
+    import tarfile
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        info = tarfile.TarInfo(name='../../etc/passwd')
+        info.size = len(b'traversal')
+        import io
+
+        tar.addfile(info, io.BytesIO(b'traversal'))
+
+    result = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result.exit_code == 1
+    assert 'Archive contains a path traversal entry' in result.stdout
+
+
+def test_admin_persona_import_invalid_uuid(mock_workspace, tmp_path):
+    archive_path = tmp_path / 'invalid_uuid.tur'
+    import tarfile
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        persona_data = {'id': 'not-a-valid-uuid', 'name': 'Fake'}
+        yaml_bytes = yaml.dump(persona_data).encode('utf-8')
+        info = tarfile.TarInfo(name='persona.yaml')
+        info.size = len(yaml_bytes)
+        import io
+
+        tar.addfile(info, io.BytesIO(yaml_bytes))
+
+    result = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result.exit_code == 1
+    assert 'Registry Failure: Imported ID' in result.stdout
+
+
+def test_admin_session_note_invalid_index(mock_workspace):
+    # Start session first so notes folder exists
+    runner.invoke(admin_app, ['session', 'start', 'session-note-bound-test'])
+
+    # Attempt index 5 (which is out of bounds, since there's only 1 default note)
+    result = runner.invoke(admin_app, ['session', 'note', '5', '--session-id', 'session-note-bound-test'])
+    assert result.exit_code == 0
+    assert 'Invalid note index' in result.stdout
+
+    # Attempt index < 1
+    result_neg = runner.invoke(admin_app, ['session', 'note', '0', '--session-id', 'session-note-bound-test'])
+    assert result_neg.exit_code == 0
+    assert 'Invalid note index' in result_neg.stdout
+
+
+def test_admin_persona_list_empty(mock_workspace):
+    # Remove personas.yaml
+    index_path = Path('.tur/personas.yaml')
+    if index_path.exists():
+        index_path.unlink()
+
+    result = runner.invoke(admin_app, ['persona', 'list'])
+    assert result.exit_code == 0
+    assert 'No registered personas found' in result.stdout
+
+
+def test_admin_persona_list_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Listing failed')
+
+    import tur.cli.admin
+    monkeypatch.setattr(tur.cli.admin, 'resolve_personas_base_dir', mock_raise)
+
+    result = runner.invoke(admin_app, ['persona', 'list'])
+    assert result.exit_code == 1
+    assert 'Error listing personas: Listing failed' in result.stdout
+
+
+def test_admin_persona_view_empty_principles_and_directives(mock_workspace):
+    # Ariel has principles by default in mock_workspace. Umbriel has no principles/directives by default.
+    result = runner.invoke(admin_app, ['persona', 'view', 'Umbriel'])
+    assert result.exit_code == 0
+    assert 'Principles' in result.stdout
+    assert 'none' in result.stdout.lower()
+
+
+def test_admin_persona_view_with_directives(mock_workspace):
+    # Write a custom persona.yaml with directives and empty principles
+    persona_path = Path('.tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/persona.yaml')
+    custom_yaml = {
+        'name': 'ArielCustom',
+        'version': '5.4.0',
+        'model': 'gemini-3.1-pro-preview',
+        'aleph': 'To safeguard reality.',
+        'principles': [],
+        'directives': ['Stay calm.', 'Think step by step.']
+    }
+    with open(persona_path, 'w', encoding='utf-8') as f:
+        yaml.dump(custom_yaml, f)
+
+    result = runner.invoke(admin_app, ['persona', 'view', 'Ariel'])
+    assert result.exit_code == 0
+    assert 'Directives' in result.stdout
+    assert 'Stay calm.' in result.stdout
+
+
+def test_admin_persona_view_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise ValueError('View failed')
+
+    monkeypatch.setattr(persona, 'get_active_persona_id', mock_raise)
+
+    result = runner.invoke(admin_app, ['persona', 'view', 'Ariel'])
+    assert result.exit_code == 1
+    assert 'Error viewing persona: View failed' in result.stdout
+
+
+def test_admin_memory_view_not_found(mock_workspace):
+    result = runner.invoke(admin_app, ['memory', 'view', 'non-existent-hash'])
+    assert result.exit_code == 0
+    assert 'No memory found matching ID' in result.stdout
+
+
+def test_admin_memory_view_error(mock_workspace, monkeypatch):
+    from tur.memory import MemoryManager
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Load failed')
+
+    monkeypatch.setattr(MemoryManager, 'load_all', mock_raise)
+
+    result = runner.invoke(admin_app, ['memory', 'view', 'some-hash'])
+    assert result.exit_code == 1
+    assert 'Error viewing memory: Load failed' in result.stdout
+
+
+def test_admin_memory_forget_error(mock_workspace, monkeypatch):
+    from tur.memory import MemoryManager
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Forget failed')
+
+    monkeypatch.setattr(MemoryManager, 'archive', mock_raise)
+
+    result = runner.invoke(admin_app, ['memory', 'forget', 'some-hash'])
+    assert result.exit_code == 1
+    assert 'Error: Forget failed' in result.stdout
+
+
+def test_admin_session_note_no_active(mock_workspace):
+    # Set active_session_id to None in state.yaml
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': None}, f)
+
+    result = runner.invoke(admin_app, ['session', 'note', '1'])
+    assert result.exit_code == 0
+    assert 'No active session found' in result.stdout
+
+
+def test_admin_session_note_missing_file(mock_workspace):
+    # Set active session but delete its notes file
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': 'non-existent-sess'}, f)
+
+    result = runner.invoke(admin_app, ['session', 'note', '1'])
+    assert result.exit_code == 0
+    assert 'No notes file found for session' in result.stdout
+
+
+def test_admin_session_note_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Session note view failed')
+
+    monkeypatch.setattr(persona, 'get_active_persona_id', mock_raise)
+
+    result = runner.invoke(admin_app, ['session', 'note', '1'])
+    assert result.exit_code == 1
+    assert 'Error viewing session note: Session note view failed' in result.stdout

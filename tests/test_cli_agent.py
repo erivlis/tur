@@ -344,3 +344,43 @@ def test_tur_module_main(monkeypatch):
         runpy.run_module('tur', run_name='__main__')
 
     assert exc.value.code == 0
+
+
+def test_agent_wake_state_file_corrupt(mock_workspace, monkeypatch):
+    # Corrupt state.yaml
+    state_path = Path('.tur/state.yaml')
+    state_path.write_text('invalid: yaml: : content', encoding='utf-8')
+
+    # Mock select_persona_wizard to prevent blocking TUI from launching
+    import tur.persona
+    import tur.tui
+
+    monkeypatch.setattr(tur.persona, 'select_persona_wizard', lambda index: '7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    monkeypatch.setattr(tur.tui, 'select_persona_wizard', lambda index: '7544202e-92f5-40ce-adfb-e4b0eae6c262')
+
+    result = runner.invoke(agent_app, ['wake'])
+    assert result.exit_code == 0
+    assert 'SYSTEM WAKE' in result.stdout
+
+
+def test_agent_status_no_persona_yaml(mock_workspace):
+    # Remove persona.yaml
+    persona_path = Path('.tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262/persona.yaml')
+    if persona_path.exists():
+        persona_path.unlink()
+
+    result = runner.invoke(agent_app, ['status'])
+    assert result.exit_code == 0
+    assert 'Tur Status' in result.stdout
+    assert 'unknown' in result.stdout.lower()
+
+
+def test_agent_status_no_session(mock_workspace):
+    # Ensure active session is None
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': None}, f)
+
+    result = runner.invoke(agent_app, ['status'])
+    assert result.exit_code == 0
+    assert 'Tur Status' in result.stdout

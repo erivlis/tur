@@ -248,3 +248,54 @@ def test_mcp_wake_reuses_active_session(mock_mcp_env, monkeypatch):
 
     # Ensure process tracker is synchronized
     assert mcp_server._active_session_id == 'active-sess-id'
+
+
+def test_mcp_status(mock_mcp_env):
+    res = mcp_server.status()
+    assert res['persona_name'] == 'fake-persona-uuid'
+    assert res['persona_id'] == 'fake-persona-uuid'
+    assert res['session_status'] == 'none'
+
+
+def test_mcp_status_error(mock_mcp_env, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Status parsing error')
+
+    monkeypatch.setattr(mcp_server, 'get_active_persona_id', mock_raise)
+
+    res = mcp_server.status()
+    assert 'error' in res
+    assert 'Status parsing error' in res['error']
+
+
+def test_mcp_note_success(mock_mcp_env, monkeypatch):
+    mock_note = MagicMock(return_value='Note added successfully')
+    monkeypatch.setattr(mcp_server, 'note_logic', mock_note)
+
+    res = mcp_server.note(content='Milestone complete')
+    assert res == 'Note added successfully'
+
+
+def test_mcp_note_failure(mock_mcp_env, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise ValueError('Note appending failure')
+
+    monkeypatch.setattr(mcp_server, 'note_logic', mock_raise)
+
+    res = mcp_server.note(content='Milestone fail')
+    assert 'Error updating note: Note appending failure' in res
+
+
+def test_mcp_sleep_additional(mock_mcp_env, monkeypatch):
+    mcp_server._active_session_id = 'sess-active'
+
+    monkeypatch.setattr(mcp_server, 'perform_sleep_dreaming', lambda **kwargs: 1)
+
+    mock_note = MagicMock()
+    mock_end = MagicMock(return_value='sess-active ended')
+    monkeypatch.setattr(mcp_server, 'note_logic', mock_note)
+    monkeypatch.setattr(mcp_server, 'end_session_logic', mock_end)
+
+    res = mcp_server.sleep(note='Goodbye', log_content='Chat content')
+    assert 'Dreams consolidated' in res
+    assert mcp_server._active_session_id is None

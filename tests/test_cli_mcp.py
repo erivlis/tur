@@ -96,7 +96,10 @@ def test_mcp_module_main(monkeypatch):
 @pytest.fixture(scope='module')
 def sse_server():
     """Fixture to start and stop the Tur MCP server for SSE transport testing."""
-    port = 9015
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
     command = ['uv', 'run', 'python', '-m', 'tur.cli.mcp', '--transport', 'sse', '--port', str(port)]
 
     env = os.environ.copy()

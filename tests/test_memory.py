@@ -292,3 +292,23 @@ def test_load_all_with_non_existent_directory(temp_home_and_base):
 
     mems = manager.load_all(include_archived=True)
     assert len(mems) == 0
+
+
+def test_memory_manager_global_path_init(temp_home_and_base):
+    fake_home, local_base = temp_home_and_base
+    # Initialize with a global path (starts inside fake_home/.tur/)
+    global_base = fake_home / '.tur' / 'personas' / 'global-uuid'
+    global_base.mkdir(parents=True, exist_ok=True)
+    
+    manager = MemoryManager(base_dir=global_base)
+    assert manager.local_dir == Path.cwd() / '.tur' / 'personas' / 'global-uuid' / 'memories'
+
+
+def test_memory_manager_invalid_scope(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+    
+    # We raise ValueError on invalid scope
+    with pytest.raises(ValueError) as exc:
+        manager._get_target_dirs('unsupported-scope')
+    assert 'Unsupported MemoryScope' in str(exc.value)
