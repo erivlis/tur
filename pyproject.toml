@@ -82,7 +82,7 @@ mcp-server-tur = "tur.mcp_server:main"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-
+asyncio_mode = "auto"
 
 [tool.coverage.report]
 show_missing = true
@@ -107,7 +107,6 @@ omit = [
     "*/.venv/*",
     # omit everything in /tests
     "/tests/*",
-    "src/tur/tui.py",
     "src/tur/__main__.py",
 ]
 
@@ -119,7 +118,6 @@ omit = [
     "*/.venv/*",
     # omit everything in /tests
     "/tests/*",
-    "src/tur/tui.py",
     "src/tur/__main__.py",
 ]
 
