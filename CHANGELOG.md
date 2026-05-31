@@ -1,3 +1,14 @@
+## v0.3.0 (2026-06-01)
+
+### Feat
+
+- Configures dedicated CLI entry points and optional dependencies.
+- Splits CLI into agent, admin, and mcp commands.
+
+### Refactor
+
+- Renames `tur-admin` CLI to `tur-adm` and refactors CLI modules.
+
 ## v0.2.1 (2026-05-31)
 
 ### Refactor
