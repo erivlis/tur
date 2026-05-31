@@ -399,7 +399,7 @@ def test_admin_session_end_error(mock_workspace, monkeypatch):
 
 
 def test_admin_module_main(monkeypatch):
-    monkeypatch.setattr(sys, 'argv', ['tur-admin', '--help'])
+    monkeypatch.setattr(sys, 'argv', ['tur-adm', '--help'])
 
     import runpy
 

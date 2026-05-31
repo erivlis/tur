@@ -1,10 +1,7 @@
 import io
-import os
 import shutil
-import sys
 import tarfile
 import tempfile
-from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -18,13 +15,8 @@ from tur import persona, session, tui
 from tur.cli.common import console, require_human
 from tur.memory import MemoryManager
 from tur.models import (
-    Memory,
-    MemoryScope,
-    MemoryType,
     PersonaIndex,
-    PersonaIndexEntry,
     SessionNotes,
-    SystemState,
 )
 from tur.paths import resolve_personas_base_dir
 
@@ -67,7 +59,7 @@ def persona_list():
         index_path = base_dir / 'personas.yaml'
         if not index_path.exists():
             console.print(
-                '[yellow]No registered personas found. Run `tur-admin persona init` to bootstrap one.[/yellow]'
+                '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
             )
             return
         with open(index_path, encoding='utf-8') as f:
@@ -143,14 +135,14 @@ def persona_switch():
         base_dir = resolve_personas_base_dir()
         index_path = base_dir / 'personas.yaml'
         if not index_path.exists():
-            console.print('[red]No personas found. Please run `tur-admin persona init` to create one.[/red]')
-            raise typer.Exit(code=1)
+            console.print('[red]No personas found. Please run `tur-adm persona init` to create one.[/red]')
+            raise ValueError('No personas found. Please run `tur-adm persona init` to create one.')  # noqa: TRY301
         with open(index_path, encoding='utf-8') as f:
             index_data = yaml.safe_load(f)
         index = PersonaIndex(**index_data)
         if not index.personas:
-            console.print('[red]No personas available to select. Please run `tur-admin persona init`.[/red]')
-            raise typer.Exit(code=1)
+            console.print('[red]No personas available to select. Please run `tur-adm persona init`.[/red]')
+            raise ValueError('No personas available to select. Please run `tur-adm persona init`.')  # noqa: TRY301
 
         selected_id = tui.select_persona_wizard(index)
         if selected_id:
@@ -167,8 +159,8 @@ def persona_switch():
 @persona_app.command('export')
 @require_human
 def persona_export(
-    identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
-    output_path: Path = typer.Argument(..., help='The target filepath for the export archive (e.g., ariel.tur)'),
+        identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
+        output_path: Path = typer.Argument(..., help='The target filepath for the export archive (e.g., ariel.tur)'),
 ):
     """Package a global persona's core config and universal memories into a portable .tur archive."""
     try:
@@ -208,7 +200,7 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
 
         archive_path = archive_path.resolve()
         if not archive_path.exists():
-            raise FileNotFoundError(f'Archive file not found: {archive_path}')
+            raise FileNotFoundError(f'Archive file not found: {archive_path}')  # noqa: TRY301
 
         # 1. Inspect archive in temp directory
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -218,14 +210,14 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
                 for member in tar.getmembers():
                     member_path = (tmp_path / member.name).resolve()
                     if not str(member_path).startswith(str(tmp_path.resolve())):
-                        raise ValueError(
+                        raise ValueError(  # noqa: TRY301
                             f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
                         )
                 tar.extractall(path=tmp_path)
 
             persona_yaml = tmp_path / 'persona.yaml'
             if not persona_yaml.exists():
-                raise ValueError('Invalid archive: persona.yaml is missing.')
+                raise ValueError('Invalid archive: persona.yaml is missing.')  # noqa: TRY301
 
             with open(persona_yaml, encoding='utf-8') as f:
                 persona_data = yaml.safe_load(f)
@@ -235,13 +227,17 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
             persona_version = persona_data.get('version', '1.0.0')
 
             if not persona_id:
-                raise ValueError("Registry Failure: Exported archive is missing its canonical 'id' identity parameter.")
+                raise ValueError(  # noqa: TRY301
+                    "Registry Failure: Exported archive is missing its canonical 'id' identity parameter."
+                )
 
             # Validate that the ID is a valid UUID
             try:
                 UUID(persona_id)
             except ValueError as e:
-                raise ValueError(f"Registry Failure: Imported ID '{persona_id}' is not a valid UUID.") from e
+                raise ValueError(
+                    f"Registry Failure: Imported ID '{persona_id}' is not a valid UUID."
+                ) from e
 
             # 2. Reconstruct the global home
             global_home = Path.home() / '.tur'
@@ -292,8 +288,9 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
 @memory_app.command('list')
 @require_human
 def memory_list(
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
-    include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses default.'),
+        include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
 ):
     """Show all memories in the bank for a specific persona."""
     try:
@@ -329,8 +326,9 @@ def memory_list(
 @memory_app.command('view')
 @require_human
 def memory_view(
-    memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+        memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """View the detailed contents of a specific memory."""
     try:
@@ -366,8 +364,9 @@ def memory_view(
 @memory_app.command('forget')
 @require_human
 def memory_forget(
-    memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+        memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """Archive a memory by its ID for a specific persona."""
     try:
@@ -389,7 +388,8 @@ def memory_forget(
 @session_app.command('list')
 @require_human
 def session_list(
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """List all sessions in the index for a specific persona."""
     try:
@@ -424,8 +424,9 @@ def session_list(
 @session_app.command('start')
 @require_human
 def start_session(
-    session_id: str = typer.Argument(..., help='The ID of the session to start.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
+        session_id: str = typer.Argument(..., help='The ID of the session to start.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses standard.'),
 ):
     """Create a new isolated session under the active persona."""
     try:
@@ -439,8 +440,9 @@ def start_session(
 @session_app.command('end')
 @require_human
 def end_session(
-    session_id: str = typer.Argument(..., help='The ID of the session to end.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
+        session_id: str = typer.Argument(..., help='The ID of the session to end.'),
+        identifier: str | None = typer.Argument(None,
+                                                help='The name or UUID of the persona. If omitted, uses standard.'),
 ):
     """Mark the session as ended."""
     try:
@@ -454,9 +456,10 @@ def end_session(
 @session_app.command('note')
 @require_human
 def session_note(
-    note_index: int = typer.Argument(..., help="The 1-indexed position of the note in the session's ledger to view."),
-    session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
-    identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
+        note_index: int = typer.Argument(...,
+                                         help="The 1-indexed position of the note in the session's ledger to view."),
+        session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
+        identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """View a specific note by its 1-indexed position in a session."""
     try:

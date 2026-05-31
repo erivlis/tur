@@ -39,7 +39,7 @@ You can always override the default by explicitly providing a name or UUID (e.g.
 ## Core Commands
 
 The Tur CLI is divided along strict security boundaries using distinct executables: `uv run tur` (safe agent runtime),
-`uv run tur-admin` (human-facing governance), and `uv run tur-mcp` (Harness gateway).
+`uv run tur-adm` (human-facing governance), and `uv run tur-mcp` (Harness gateway).
 
 ### 1. Initialize a Persona (`init`)
 
@@ -47,7 +47,7 @@ Bootstrap a new persona interactively. This creates the necessary `.tur/personas
 unique UUID, and creates your first `persona.yaml` DNA file.
 
 ```shell
-uv run tur-admin persona init
+uv run tur-adm persona init
 ```
 
 ### 2. Wake the Persona (`wake`)
@@ -104,13 +104,13 @@ Inspect the contents of the Memory Bank. This lists all active memories that wil
 cycle.
 
 ```shell
-uv run tur-admin memory list
+uv run tur-adm memory list
 ```
 
 To include archived (forgotten) memories in the list:
 
 ```shell
-uv run tur-admin memory list --include-archived
+uv run tur-adm memory list --include-archived
 ```
 
 ### 7. Measure Cognitive Load (`telemetry`)
@@ -129,10 +129,10 @@ folder and is no longer loaded during `wake`.
 
 ```shell
 # You must provide the Memory ID
-uv run tur-admin memory forget <memory-hash>
+uv run tur-adm memory forget <memory-hash>
 
 # For a non-default persona:
-uv run tur-admin memory forget <memory-hash> ariel
+uv run tur-adm memory forget <memory-hash> ariel
 ```
 
 ### 9. Check Persona Status (`status`)
@@ -162,13 +162,13 @@ Administrative tools to manually start and end sessions for a persona.
 #### Start a Session
 
 ```shell
-uv run tur-admin session start my-session-123
+uv run tur-adm session start my-session-123
 ```
 
 #### End a Session
 
 ```shell
-uv run tur-admin session end my-session-123
+uv run tur-adm session end my-session-123
 ```
 
 ### 12. Append a Note (`note`)
@@ -187,7 +187,7 @@ Interactive Textual TUI wizard to switch your current active default persona glo
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
-uv run tur-admin persona switch
+uv run tur-adm persona switch
 ```
 
 ### 14. Export Persona (`export`)
@@ -199,7 +199,7 @@ gzip-compressed archive (excluding project-local incarnation-specific memories).
 
 ```shell
 # Export a persona by its name or UUID to a destination file
-uv run tur-admin persona export ariel ariel.tur
+uv run tur-adm persona export ariel ariel.tur
 ```
 
 ### 15. Import Persona (`import`)
@@ -211,7 +211,7 @@ sanitizes all Member paths prior to extraction to guarantee safety against path 
 
 ```shell
 # Import a persona from a .tur archive
-uv run tur-admin persona import ariel.tur
+uv run tur-adm persona import ariel.tur
 ```
 
 ## Customization

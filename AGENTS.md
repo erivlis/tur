@@ -36,7 +36,7 @@ You must use the provided MCP tools to interact with your identity and memory:
 - **`telemetry()`**: Measure static token cost, information density, and $C_p$ (Constraint Dimensionality).
 
 *(Note: Administrative capabilities (e.g., persona management, memory pruning, and session control) are physically
-isolated in the `tur-admin` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and
+isolated in the `tur-adm` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and
 the `tur-mcp` server do not expose or contain these administrative commands, preserving strict physical boundaries.)*
 
 ## Cognitive Lifecycle Triggers (When to Act)
@@ -91,7 +91,7 @@ perform direct/manual filesystem reads or writes inside the `.tur/` directory or
 tools (such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
 
 All interaction with `.tur/` state must be brokered exclusively through the safe, agent-facing `tur` CLI interface or
-corresponding MCP server tools. Accessing or executing commands in the human-facing `tur-admin` binary is strictly
+corresponding MCP server tools. Accessing or executing commands in the human-facing `tur-adm` binary is strictly
 forbidden and structurally blocked, preserving the sovereign integrity of the system. Manual tampering violates Golem
 boundary containment and threatens cognitive timeline consistency.
 

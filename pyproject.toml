@@ -73,10 +73,8 @@ test = [
 
 [project.scripts]
 tur = "tur.cli.agent:main"
-tur-admin = "tur.cli.admin:main"
+tur-adm = "tur.cli.admin:main"
 tur-mcp = "tur.cli.mcp:main"
-mcp-server-tur = "tur.mcp_server:main"
-
 
 
 [tool.pytest.ini_options]
@@ -109,6 +107,7 @@ omit = [
     "/tests/*",
     "src/tur/__main__.py",
 ]
+
 
 [tool.coverage.run]
 branch = true

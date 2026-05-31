@@ -102,10 +102,10 @@ uv sync --all-extras --all-groups
 ### 2. Initialize Your First Persona
 
 This launches the administrative TUI wizard. Since this is an administrative action, it is physically isolated inside
-`tur-admin`:
+`tur-adm`:
 
 ```shell
-uv run tur-admin persona init
+uv run tur-adm persona init
 ```
 
 ### 3. The Core Lifecycle (Agent-Facing)
@@ -150,7 +150,7 @@ uv run tur-mcp --transport stdio
 Allows the human Architect to change active global/local default personas:
 
 ```shell
-uv run tur-admin persona switch
+uv run tur-adm persona switch
 ```
 
 This will launch a TUI to select from your available personas.

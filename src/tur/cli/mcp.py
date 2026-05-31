@@ -1,4 +1,5 @@
 import sys
+from typing import Literal
 
 import typer
 
@@ -16,8 +17,11 @@ app = typer.Typer(
 
 @app.command()
 def serve(
-    transport: str = typer.Option('stdio', help="The transport protocol for the MCP server ('stdio' or 'sse')."),
-    port: int = typer.Option(8000, help="Port to use when transport is 'sse'."),
+        transport: Literal['stdio', 'sse'] = typer.Option(
+            'stdio',
+            help="The transport protocol for the MCP server ('stdio' or 'sse')."
+        ),
+        port: int = typer.Option(8000, help="Port to use when transport is 'sse'."),
 ):
     """Run the Tur MCP server."""
     try:
