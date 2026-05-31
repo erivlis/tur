@@ -29,14 +29,14 @@ class MemoryManager:
         persona_id = base_dir.name
 
         if is_global_path(base_dir):
-            self.local_dir = Path.cwd() / ".tur" / "personas" / persona_id / "memories"
+            self.local_dir = Path.cwd() / '.tur' / 'personas' / persona_id / 'memories'
         else:
-            self.local_dir = base_dir / "memories"
-        self.local_archive_dir = self.local_dir / "archive"
+            self.local_dir = base_dir / 'memories'
+        self.local_archive_dir = self.local_dir / 'archive'
 
         # Calculate the global equivalent: ~/.tur/personas/<uuid>
-        self.global_dir = Path.home() / ".tur" / "personas" / persona_id / "memories"
-        self.global_archive_dir = self.global_dir / "archive"
+        self.global_dir = Path.home() / '.tur' / 'personas' / persona_id / 'memories'
+        self.global_archive_dir = self.global_dir / 'archive'
 
         self._ensure_dirs()
 
@@ -57,7 +57,7 @@ class MemoryManager:
             case MemoryScope.INCARNATION | MemoryScope.USER:
                 return self.local_dir, self.local_archive_dir
             case _:
-                raise ValueError(f"Unsupported MemoryScope: {scope}")
+                raise ValueError(f'Unsupported MemoryScope: {scope}')
 
     def save(self, memory: Memory) -> Path:
         """
@@ -68,7 +68,7 @@ class MemoryManager:
         target_dir, _ = self._get_target_dirs(memory.scope)
 
         # Filename: timestamp_type_id.yaml
-        filename = f"{memory.timestamp.strftime('%Y%m%d_%H%M%S')}_{memory.type.value}_{memory.id}.yaml"
+        filename = f'{memory.timestamp.strftime("%Y%m%d_%H%M%S")}_{memory.type.value}_{memory.id}.yaml'
         file_path = target_dir / filename
 
         # We dump the raw model to ensure full fidelity
@@ -78,9 +78,9 @@ class MemoryManager:
         # 1. Write to a temporary file in the same directory
         # 2. fsync to guarantee flush to disk
         # 3. os.replace to atomically overwrite/create the final file
-        fd, tmp_path_str = tempfile.mkstemp(dir=target_dir, prefix=f"{filename}.tmp.")
+        fd, tmp_path_str = tempfile.mkstemp(dir=target_dir, prefix=f'{filename}.tmp.')
         try:
-            with open(fd, "w", encoding="utf-8") as f:
+            with open(fd, 'w', encoding='utf-8') as f:
                 f.write(yaml_content)
                 f.flush()
                 os.fsync(f.fileno())  # Guarantee disk flush
@@ -105,16 +105,16 @@ class MemoryManager:
         Searches both the local and global federated banks.
         """
         # Search for the file in the local bank first
-        files = list(self.local_dir.glob(f"*_{memory_id}.yaml"))
+        files = list(self.local_dir.glob(f'*_{memory_id}.yaml'))
         target_archive = self.local_archive_dir
 
         # If not found locally, search the global bank
         if not files:
-            files = list(self.global_dir.glob(f"*_{memory_id}.yaml"))
+            files = list(self.global_dir.glob(f'*_{memory_id}.yaml'))
             target_archive = self.global_archive_dir
 
         if not files:
-            raise FileNotFoundError(f"No memory found across federated banks with ID: {memory_id}")
+            raise FileNotFoundError(f'No memory found across federated banks with ID: {memory_id}')
 
         source_path = files[0]
         target_path = target_archive / source_path.name
@@ -135,7 +135,7 @@ class MemoryManager:
 
         for directory in directories:
             if directory.exists():
-                for file_path in directory.glob("*.yaml"):
+                for file_path in directory.glob('*.yaml'):
                     if file_path.is_file():
                         mem = self._load_file(file_path)
                         if mem:
@@ -150,7 +150,7 @@ class MemoryManager:
     @staticmethod
     def _load_file(file_path: Path) -> Memory | None:
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with open(file_path, encoding='utf-8') as f:
                 data = yaml.safe_load(f)
                 # If the legacy file has 'status', ignore it so Pydantic doesn't throw a ValidationError
                 if 'status' in data:
@@ -167,8 +167,5 @@ class MemoryManager:
         if not tags:
             return all_memories[-limit:]
 
-        filtered = [
-            m for m in all_memories
-            if any(tag in m.tags for tag in tags)
-        ]
+        filtered = [m for m in all_memories if any(tag in m.tags for tag in tags)]
         return filtered[-limit:]

@@ -19,9 +19,9 @@ class CognitiveTelemetry:
         est_tokens = char_count / 4
 
         return {
-            "char_count": char_count,
-            "est_tokens": int(est_tokens),
-            "density": self._calculate_density(system_prompt)
+            'char_count': char_count,
+            'est_tokens': int(est_tokens),
+            'density': self._calculate_density(system_prompt),
         }
 
     @staticmethod

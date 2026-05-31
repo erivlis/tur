@@ -10,13 +10,13 @@ from tur.models import Memory, MemoryScope, MemoryType
 
 @pytest.fixture
 def temp_home_and_base(tmp_path, monkeypatch):
-    fake_home = tmp_path / "fake_home"
+    fake_home = tmp_path / 'fake_home'
     fake_home.mkdir()
 
     # Mock Path.home() to return fake_home
-    monkeypatch.setattr(Path, "home", lambda: fake_home)
+    monkeypatch.setattr(Path, 'home', lambda: fake_home)
 
-    local_base = tmp_path / "local_base"
+    local_base = tmp_path / 'local_base'
     local_base.mkdir()
 
     return fake_home, local_base
@@ -26,10 +26,10 @@ def test_memory_manager_init_and_dirs(temp_home_and_base):
     fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)
 
-    assert manager.local_dir == local_base / "memories"
-    assert manager.local_archive_dir == local_base / "memories" / "archive"
-    assert manager.global_dir == fake_home / ".tur" / "personas" / local_base.name / "memories"
-    assert manager.global_archive_dir == manager.global_dir / "archive"
+    assert manager.local_dir == local_base / 'memories'
+    assert manager.local_archive_dir == local_base / 'memories' / 'archive'
+    assert manager.global_dir == fake_home / '.tur' / 'personas' / local_base.name / 'memories'
+    assert manager.global_archive_dir == manager.global_dir / 'archive'
 
     assert manager.local_dir.exists()
     assert manager.local_archive_dir.exists()
@@ -45,8 +45,8 @@ def test_memory_manager_save_and_load_local(temp_home_and_base):
         timestamp=datetime(2026, 5, 29, 12, 0, 0),
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        tags=["pytest", "local"],
-        content="This is a local incarnation memory."
+        tags=['pytest', 'local'],
+        content='This is a local incarnation memory.',
     )
 
     saved_path = manager.save(mem)
@@ -72,8 +72,8 @@ def test_memory_manager_save_and_load_global(temp_home_and_base):
         timestamp=datetime(2026, 5, 29, 12, 0, 0),
         type=MemoryType.FACT,
         scope=MemoryScope.UNIVERSAL,
-        tags=["pytest", "global"],
-        content="This is a universal global memory."
+        tags=['pytest', 'global'],
+        content='This is a universal global memory.',
     )
 
     saved_path = manager.save(mem)
@@ -94,8 +94,8 @@ def test_memory_manager_save_and_load_user(temp_home_and_base):
         timestamp=datetime(2026, 5, 29, 12, 0, 0),
         type=MemoryType.PREFERENCE,
         scope=MemoryScope.USER,
-        tags=["pytest", "user-scope"],
-        content="This is a user local memory."
+        tags=['pytest', 'user-scope'],
+        content='This is a user local memory.',
     )
 
     saved_path = manager.save(mem)
@@ -116,8 +116,8 @@ def test_memory_manager_save_and_load_persona(temp_home_and_base):
         timestamp=datetime(2026, 5, 29, 12, 0, 0),
         type=MemoryType.AXIOM,
         scope=MemoryScope.PERSONA,
-        tags=["pytest", "persona-scope"],
-        content="This is a persona global memory."
+        tags=['pytest', 'persona-scope'],
+        content='This is a persona global memory.',
     )
 
     saved_path = manager.save(mem)
@@ -134,12 +134,7 @@ def test_memory_manager_archive_local(temp_home_and_base):
     _fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)
 
-    mem = Memory(
-        type=MemoryType.INSIGHT,
-        scope=MemoryScope.INCARNATION,
-        tags=["temp"],
-        content="Forgettable content."
-    )
+    mem = Memory(type=MemoryType.INSIGHT, scope=MemoryScope.INCARNATION, tags=['temp'], content='Forgettable content.')
 
     manager.save(mem)
     assert len(manager.load_all(include_archived=False)) == 1
@@ -161,10 +156,7 @@ def test_memory_manager_archive_global(temp_home_and_base):
     manager = MemoryManager(base_dir=local_base)
 
     mem = Memory(
-        type=MemoryType.INSIGHT,
-        scope=MemoryScope.UNIVERSAL,
-        tags=["temp"],
-        content="Forgettable global content."
+        type=MemoryType.INSIGHT, scope=MemoryScope.UNIVERSAL, tags=['temp'], content='Forgettable global content.'
     )
 
     manager.save(mem)
@@ -183,7 +175,7 @@ def test_memory_manager_archive_not_found(temp_home_and_base):
     manager = MemoryManager(base_dir=local_base)
 
     with pytest.raises(FileNotFoundError):
-        manager.archive("nonexistent-id")
+        manager.archive('nonexistent-id')
 
 
 def test_memory_manager_query(temp_home_and_base):
@@ -191,16 +183,10 @@ def test_memory_manager_query(temp_home_and_base):
     manager = MemoryManager(base_dir=local_base)
 
     mem1 = Memory(
-        type=MemoryType.FACT,
-        scope=MemoryScope.INCARNATION,
-        tags=["tag-a", "tag-common"],
-        content="First memory"
+        type=MemoryType.FACT, scope=MemoryScope.INCARNATION, tags=['tag-a', 'tag-common'], content='First memory'
     )
     mem2 = Memory(
-        type=MemoryType.AXIOM,
-        scope=MemoryScope.INCARNATION,
-        tags=["tag-b", "tag-common"],
-        content="Second memory"
+        type=MemoryType.AXIOM, scope=MemoryScope.INCARNATION, tags=['tag-b', 'tag-common'], content='Second memory'
     )
 
     manager.save(mem1)
@@ -211,11 +197,11 @@ def test_memory_manager_query(temp_home_and_base):
     assert len(manager.query()) == 2
 
     # Query with specific tag
-    filtered_a = manager.query(tags=["tag-a"])
+    filtered_a = manager.query(tags=['tag-a'])
     assert len(filtered_a) == 1
-    assert filtered_a[0].content == "First memory"
+    assert filtered_a[0].content == 'First memory'
 
-    filtered_common = manager.query(tags=["tag-common"])
+    filtered_common = manager.query(tags=['tag-common'])
     assert len(filtered_common) == 2
 
 
@@ -223,9 +209,9 @@ def test_load_corrupted_file(temp_home_and_base):
     _fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)
 
-    corrupt_file = manager.local_dir / "20260529_000000_insight_badhash.yaml"
-    with open(corrupt_file, "w", encoding="utf-8") as f:
-        f.write("corrupted: yaml: content: {")
+    corrupt_file = manager.local_dir / '20260529_000000_insight_badhash.yaml'
+    with open(corrupt_file, 'w', encoding='utf-8') as f:
+        f.write('corrupted: yaml: content: {')
 
     # Should handle error and return None in _load_file
     assert manager._load_file(corrupt_file) is None
@@ -238,24 +224,20 @@ def test_save_exception_cleanup(temp_home_and_base, monkeypatch):
     _fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)
 
-    mem = Memory(
-        type=MemoryType.FACT,
-        scope=MemoryScope.INCARNATION,
-        tags=["pytest"],
-        content="Will fail."
-    )
+    mem = Memory(type=MemoryType.FACT, scope=MemoryScope.INCARNATION, tags=['pytest'], content='Will fail.')
 
     # Mock os.replace to raise an exception
     def mock_replace(src, dst):
-        raise RuntimeError("Atomic replace failed")
-    monkeypatch.setattr(os, "replace", mock_replace)
+        raise RuntimeError('Atomic replace failed')
+
+    monkeypatch.setattr(os, 'replace', mock_replace)
 
     # Save should raise and cleanup temp file
     with pytest.raises(RuntimeError):
         manager.save(mem)
 
     # Check that no temporary files remain in target directory
-    temp_files = list(manager.local_dir.glob("*.tmp.*"))
+    temp_files = list(manager.local_dir.glob('*.tmp.*'))
     assert len(temp_files) == 0
 
 
@@ -265,25 +247,25 @@ def test_load_legacy_with_status(temp_home_and_base):
 
     # Create a legacy yaml file containing a 'status' attribute
     legacy_content = (
-        "id: legacy-id-123\n"
-        "timestamp: 2026-05-29T12:00:00\n"
-        "type: fact\n"
-        "scope: incarnation\n"
-        "tags: [legacy]\n"
-        "content: This has status.\n"
-        "status: active\n"
+        'id: legacy-id-123\n'
+        'timestamp: 2026-05-29T12:00:00\n'
+        'type: fact\n'
+        'scope: incarnation\n'
+        'tags: [legacy]\n'
+        'content: This has status.\n'
+        'status: active\n'
     )
 
-    legacy_file = manager.local_dir / "20260529_120000_fact_legacy-id-123.yaml"
-    with open(legacy_file, "w", encoding="utf-8") as f:
+    legacy_file = manager.local_dir / '20260529_120000_fact_legacy-id-123.yaml'
+    with open(legacy_file, 'w', encoding='utf-8') as f:
         f.write(legacy_content)
 
     mem = manager._load_file(legacy_file)
     assert mem is not None
-    assert mem.id == "legacy-id-123"
-    assert mem.content == "This has status."
+    assert mem.id == 'legacy-id-123'
+    assert mem.content == 'This has status.'
     # status key should be successfully removed before validating
-    assert not hasattr(mem, "status")
+    assert not hasattr(mem, 'status')
 
 
 def test_load_all_skips_directories(temp_home_and_base):
@@ -291,7 +273,7 @@ def test_load_all_skips_directories(temp_home_and_base):
     manager = MemoryManager(base_dir=local_base)
 
     # Create a subdirectory inside local_dir ending in .yaml to trigger the loop but fail is_file()
-    nested_dir = manager.local_dir / "not_a_file.yaml"
+    nested_dir = manager.local_dir / 'not_a_file.yaml'
     nested_dir.mkdir()
 
     mems = manager.load_all()
@@ -310,5 +292,3 @@ def test_load_all_with_non_existent_directory(temp_home_and_base):
 
     mems = manager.load_all(include_archived=True)
     assert len(mems) == 0
-
-

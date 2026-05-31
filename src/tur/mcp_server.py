@@ -11,11 +11,11 @@ from mcp.server.fastmcp import FastMCP
 
 # Force the working directory to the tur project root if possible
 def _ensure_project_root():
-    if Path(".tur").exists():
+    if Path('.tur').exists():
         return
     current = Path(__file__).resolve()
     for parent in current.parents:
-        if (parent / ".tur").exists():
+        if (parent / '.tur').exists():
             os.chdir(parent)
             return
 
@@ -45,14 +45,14 @@ from tur.telemetry import CognitiveTelemetry  # noqa: E402
 @asynccontextmanager
 async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
     """Lifecycle hook for startup and graceful shutdown."""
-    print("Starting Tur MCP Server (Ontological Porcelain) on stdio...", file=sys.stderr)
+    print('Starting Tur MCP Server (Ontological Porcelain) on stdio...', file=sys.stderr)
     try:
         yield {}
     finally:
-        print("\nShutting down Tur MCP Server gracefully...", file=sys.stderr)
+        print('\nShutting down Tur MCP Server gracefully...', file=sys.stderr)
 
 
-mcp = FastMCP("tur-server", json_response=True, lifespan=server_lifespan)
+mcp = FastMCP('tur-server', json_response=True, lifespan=server_lifespan)
 
 # Process-isolated active session tracker for this specific connection/harness
 _active_session_id: str | None = None
@@ -68,23 +68,24 @@ def status() -> dict:
     session_id, session_status, note_count, latest_note, memory_count.
     """
     import yaml
+
     try:
         active_id = get_active_persona_id()
         persona_dir = get_persona_path(active_id)
 
         # Persona info
         persona_name = active_id
-        persona_version = "unknown"
-        persona_yaml_path = persona_dir / "persona.yaml"
+        persona_version = 'unknown'
+        persona_yaml_path = persona_dir / 'persona.yaml'
         if persona_yaml_path.exists():
-            with open(persona_yaml_path, encoding="utf-8") as f:
+            with open(persona_yaml_path, encoding='utf-8') as f:
                 pdata = yaml.safe_load(f)
-            persona_name = pdata.get("name", active_id)
-            persona_version = pdata.get("version", "unknown")
+            persona_name = pdata.get('name', active_id)
+            persona_version = pdata.get('version', 'unknown')
 
         # Session info
         session_id = _active_session_id or get_active_session_id()
-        session_status = "none"
+        session_status = 'none'
         note_count = 0
         latest_note = None
 
@@ -95,7 +96,7 @@ def status() -> dict:
                 session_status = entry.status
             notes_yaml_path = get_session_file(persona_dir, session_id)
             if notes_yaml_path.exists():
-                with open(notes_yaml_path, encoding="utf-8") as f:
+                with open(notes_yaml_path, encoding='utf-8') as f:
                     notes_data = yaml.safe_load(f)
                 session_notes = SessionNotes(**notes_data)
                 note_count = len(session_notes.notes)
@@ -105,24 +106,24 @@ def status() -> dict:
         elif index.sessions:
             most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
             session_id = most_recent.id
-            session_status = most_recent.status + " (last)"
+            session_status = most_recent.status + ' (last)'
 
         # Memory count
         memory_manager = MemoryManager(base_dir=persona_dir)
         memory_count = len(memory_manager.load_all())
 
         res = {
-            "persona_name": persona_name,
-            "persona_id": active_id,
-            "persona_version": persona_version,
-            "session_id": session_id,
-            "session_status": session_status,
-            "note_count": note_count,
-            "latest_note": latest_note,
-            "memory_count": memory_count,
+            'persona_name': persona_name,
+            'persona_id': active_id,
+            'persona_version': persona_version,
+            'session_id': session_id,
+            'session_status': session_status,
+            'note_count': note_count,
+            'latest_note': latest_note,
+            'memory_count': memory_count,
         }
     except Exception as e:
-        return {"error": str(e)}
+        return {'error': str(e)}
     else:
         return res
 
@@ -152,9 +153,10 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
     if not sess_id:
         import uuid
         from datetime import datetime
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
         short_hex = uuid.uuid4().hex[:8]
-        sess_id = f"{ts}_{short_hex}"
+        sess_id = f'{ts}_{short_hex}'
         start_session_logic(sess_id, previous_session_id=previous_session_id)
         _active_session_id = sess_id
     else:
@@ -168,11 +170,11 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
     cp = telemetry_engine.calculate_constraint_dimensionality(state.persona)
 
     telemetry_block = (
-        f"\n\n--- [SYSTEM METRICS] ---\n"
-        f"Active Persona ID: {active_id}\n"
-        f"Constraint Dimensionality (Cp): {cp}\n"
-        f"Static Token Cost: {static_metrics['est_tokens']}\n"
-        f"Information Density: {static_metrics['density']:.2f}\n"
+        f'\n\n--- [SYSTEM METRICS] ---\n'
+        f'Active Persona ID: {active_id}\n'
+        f'Constraint Dimensionality (Cp): {cp}\n'
+        f'Static Token Cost: {static_metrics["est_tokens"]}\n'
+        f'Information Density: {static_metrics["density"]:.2f}\n'
     )
 
     return system_prompt + telemetry_block
@@ -180,9 +182,9 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
 
 @mcp.tool()
 def learn(
-        content: str,
-        type: Literal['fact', 'preference', 'insight', 'event', 'axiom'],
-        scope: Literal["incarnation", "universal", "user", "persona"] = "incarnation"
+    content: str,
+    type: Literal['fact', 'preference', 'insight', 'event', 'axiom'],
+    scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
@@ -217,27 +219,22 @@ def learn(
     try:
         mem_type = MemoryType(type)
     except ValueError:
-        valid_types = ", ".join([t.value for t in MemoryType])
+        valid_types = ', '.join([t.value for t in MemoryType])
         return f"Error: Invalid memory_type '{type}'. Must be one of: {valid_types}"
 
     try:
         mem_scope = MemoryScope(scope)
     except ValueError:
-        valid_scopes = ", ".join([s.value for s in MemoryScope])
+        valid_scopes = ', '.join([s.value for s in MemoryScope])
         return f"Error: Invalid scope '{scope}'. Must be one of: {valid_scopes}"
 
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
-    memory = Memory(
-        type=mem_type,
-        scope=mem_scope,
-        tags=["mcp", "agent"],
-        content=content
-    )
+    memory = Memory(type=mem_type, scope=mem_scope, tags=['mcp', 'agent'], content=content)
     saved_path = manager.save(memory)
-    return f"Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}"
+    return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
 
 
 @mcp.tool()
@@ -263,18 +260,13 @@ def note(content: str) -> str:
     try:
         res = note_logic(content, session_id=_active_session_id)
     except Exception as e:
-        return f"Error updating note: {e}"
+        return f'Error updating note: {e}'
     else:
         return res
 
 
 @mcp.tool()
-def sleep(
-        note: str,
-        log_content: str,
-        session_id: str | None = None,
-        model: str = "gemini-3.1-pro-preview"
-) -> str:
+def sleep(note: str, log_content: str, session_id: str | None = None, model: str = 'gemini-3.1-pro-preview') -> str:
     """
     Dehydrate a session by parsing the active session's chat log to extract memories.
     This is a terminal operation that closes the active session.
@@ -300,24 +292,21 @@ def sleep(
         try:
             note_logic(note, session_id=resolved_session_id)
         except Exception as e:
-            return f"Error appending final note: {e}"
+            return f'Error appending final note: {e}'
         try:
             end_session_logic(resolved_session_id)
         except Exception as e:
-            return f"Error ending session: {e}"
+            return f'Error ending session: {e}'
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
-            log_content=log_content,
-            active_id=active_id,
-            session_id=resolved_session_id,
-            model=model
+            log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model
         )
     except Exception as e:
-        return f"Error during dreaming: {e}"
+        return f'Error during dreaming: {e}'
     else:
         _active_session_id = None
-        return f"Dreams consolidated. {count} new memories formed and persona is now sleeping."
+        return f'Dreams consolidated. {count} new memories formed and persona is now sleeping.'
 
 
 @mcp.tool()
@@ -341,7 +330,7 @@ def recall(query: str) -> str:
     if not results:
         return f"No memories found matching query: '{query}'"
 
-    mem_list = [{"id": str(m.id), "type": m.type.value, "content": m.content} for m in results]
+    mem_list = [{'id': str(m.id), 'type': m.type.value, 'content': m.content} for m in results]
     return json.dumps(mem_list, indent=2)
 
 
@@ -361,9 +350,9 @@ def telemetry(identifier: str | None = None) -> dict:
 
         active_id = get_active_persona_id(identifier)
         persona_dir = get_persona_path(active_id)
-        file_path = persona_dir / "persona.yaml"
+        file_path = persona_dir / 'persona.yaml'
 
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path, encoding='utf-8') as f:
             data = yaml.safe_load(f)
 
         persona_obj = Persona(**data)
@@ -378,33 +367,33 @@ def telemetry(identifier: str | None = None) -> dict:
         cp = telemetry_engine.calculate_constraint_dimensionality(persona_obj)
 
         if cp < 5:
-            rating = "Human (Manageable)"
+            rating = 'Human (Manageable)'
         elif cp < 10:
-            rating = "Giant (Heavy Load)"
+            rating = 'Giant (Heavy Load)'
         else:
-            rating = "Titan (Inference Warning)"
+            rating = 'Titan (Inference Warning)'
     except Exception as e:
-        return {"error": str(e)}
+        return {'error': str(e)}
     else:
         return {
-            "persona_id": active_id,
-            "persona_name": persona_obj.name,
-            "constraint_dimensionality": cp,
-            "class": rating,
-            "static_token_cost": static_metrics['est_tokens'],
-            "information_density": static_metrics['density']
+            'persona_id': active_id,
+            'persona_name': persona_obj.name,
+            'constraint_dimensionality': cp,
+            'class': rating,
+            'static_token_cost': static_metrics['est_tokens'],
+            'information_density': static_metrics['density'],
         }
 
 
-def main(transport: Literal["stdio", "sse"] = "stdio", port: int = 8000):
+def main(transport: Literal['stdio', 'sse'] = 'stdio', port: int = 8000):
     """Entry point for the MCP server."""
     try:
         match transport:
             case 'sse':
-                print(f"Starting SSE server on port {port}...", file=sys.stderr)
+                print(f'Starting SSE server on port {port}...', file=sys.stderr)
                 mcp.settings.port = port
             case 'stdio':
-                print("Starting stdio server...", file=sys.stderr)
+                print('Starting stdio server...', file=sys.stderr)
             case _:
                 raise ValueError(f"Transport '{transport}' is not supported. Must be 'stdio' or 'sse'.")
 
@@ -421,5 +410,5 @@ def main(transport: Literal["stdio", "sse"] = "stdio", port: int = 8000):
         sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

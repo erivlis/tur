@@ -34,7 +34,7 @@ class LabeledInput(Widget):
     }
     """
 
-    def __init__(self, label: str, placeholder: str = ""):
+    def __init__(self, label: str, placeholder: str = ''):
         super().__init__()
         self.label = label
         self.placeholder = placeholder
@@ -52,40 +52,40 @@ class PersonaInitApp(App):
     """A Textual app to bootstrap a new persona."""
 
     def __init__(
-            self,
-            driver_class: type[Driver] | None = None,
-            css_path: CSSPathType | None = None,
-            watch_css: bool = False,
+        self,
+        driver_class: type[Driver] | None = None,
+        css_path: CSSPathType | None = None,
+        watch_css: bool = False,
     ):
         super().__init__(driver_class, css_path, watch_css)
         self.aleph_input = None
         self.name_input = None
         # Set theme from env var. Available: textual-dark, nord, gruvbox, solarized-light, etc.
-        self.theme = os.environ.get("TUR_THEME", "textual-dark").lower()
+        self.theme = os.environ.get('TUR_THEME', 'textual-dark').lower()
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Vertical(id="dialog"):
-            yield Static("Bootstrap New Persona", classes="title")
-            self.name_input = LabeledInput("Name:", "e.g., Ariel")
+        with Vertical(id='dialog'):
+            yield Static('Bootstrap New Persona', classes='title')
+            self.name_input = LabeledInput('Name:', 'e.g., Ariel')
             yield self.name_input
-            self.aleph_input = LabeledInput("The Aleph:", "e.g., To architect reality.")
+            self.aleph_input = LabeledInput('The Aleph:', 'e.g., To architect reality.')
             yield self.aleph_input
 
-            with Horizontal(classes="button-bar"):
-                yield Button("Create", variant="success", id="submit")
-                yield Button("Cancel", variant="error", id="cancel")
+            with Horizontal(classes='button-bar'):
+                yield Button('Create', variant='success', id='submit')
+                yield Button('Cancel', variant='error', id='cancel')
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "submit":
+        if event.button.id == 'submit':
             name = self.name_input.value
             aleph = self.aleph_input.value
 
             if name and aleph:
                 default_principles = [
-                    Principle(name="Symmetry", role="Guardian of Invariance", weight=1.5),
-                    Principle(name="Safety", role="Containment Protocol", weight=2.0)
+                    Principle(name='Symmetry', role='Guardian of Invariance', weight=1.5),
+                    Principle(name='Safety', role='Containment Protocol', weight=2.0),
                 ]
                 persona = Persona(name=name, aleph=aleph, principles=default_principles)
                 persona_id = self._save_persona(persona)
@@ -93,33 +93,33 @@ class PersonaInitApp(App):
             else:
                 # Basic validation
                 if not name:
-                    self.name_input.query_one(Input).styles.border = ("solid", "red")
+                    self.name_input.query_one(Input).styles.border = ('solid', 'red')
                 if not aleph:
-                    self.aleph_input.query_one(Input).styles.border = ("solid", "red")
+                    self.aleph_input.query_one(Input).styles.border = ('solid', 'red')
 
-        elif event.button.id == "cancel":
-            self.exit("Initialization cancelled.")
+        elif event.button.id == 'cancel':
+            self.exit('Initialization cancelled.')
 
     def _save_persona(self, persona: Persona) -> uuid.UUID:
-        base_dir = Path.home() / ".tur"
-        personas_dir = base_dir / "personas"
-        index_path = base_dir / "personas.yaml"
+        base_dir = Path.home() / '.tur'
+        personas_dir = base_dir / 'personas'
+        index_path = base_dir / 'personas.yaml'
         personas_dir.mkdir(parents=True, exist_ok=True)
         persona_id = uuid.uuid4()
         persona_folder = personas_dir / str(persona_id)
         persona_folder.mkdir(exist_ok=True)
-        file_path = persona_folder / "persona.yaml"
-        with open(file_path, "w", encoding="utf-8") as f:
+        file_path = persona_folder / 'persona.yaml'
+        with open(file_path, 'w', encoding='utf-8') as f:
             yaml.dump(persona.model_dump(mode='json'), f, sort_keys=False)
         if index_path.exists():
-            with open(index_path, encoding="utf-8") as f:
-                index_data = yaml.safe_load(f) or {"personas": []}
+            with open(index_path, encoding='utf-8') as f:
+                index_data = yaml.safe_load(f) or {'personas': []}
                 index = PersonaIndex(**index_data)
         else:
             index = PersonaIndex(personas=[])
         entry = PersonaIndexEntry(id=persona_id, name=persona.name, version=persona.version)
         index.personas.append(entry)
-        with open(index_path, "w", encoding="utf-8") as f:
+        with open(index_path, 'w', encoding='utf-8') as f:
             yaml.dump(index.model_dump(mode='json'), f, sort_keys=False)
         return persona_id
 
@@ -157,29 +157,29 @@ class PersonaSelectorApp(App):
     def __init__(self, index: PersonaIndex):
         super().__init__()
         # Set theme from env var. Available:textual-light, textual-dark, nord, gruvbox, solarized-light, etc.
-        self.theme = os.environ.get("TUR_THEME", "textual-dark").lower()
+        self.theme = os.environ.get('TUR_THEME', 'textual-dark').lower()
         self.index = index
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Vertical(id="dialog"):
-            yield Static("Select Active Persona", classes="title")
+        with Vertical(id='dialog'):
+            yield Static('Select Active Persona', classes='title')
             options = [Option(p.name, id=str(p.id)) for p in self.index.personas]
-            self.option_list = OptionList(*options, id="persona_list")
+            self.option_list = OptionList(*options, id='persona_list')
             yield self.option_list
-            with Horizontal(classes="button-bar"):
-                yield Button("Select", variant="success", id="submit")
-                yield Button("Cancel", variant="error", id="cancel")
+            with Horizontal(classes='button-bar'):
+                yield Button('Select', variant='success', id='submit')
+                yield Button('Cancel', variant='error', id='cancel')
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "submit":
+        if event.button.id == 'submit':
             selected_option = self.option_list.get_option_at_index(self.option_list.highlighted)
             if selected_option:
-                state_path = Path(".tur/state.yaml")
+                state_path = Path('.tur/state.yaml')
                 if state_path.exists():
                     try:
-                        with open(state_path, encoding="utf-8") as f:
+                        with open(state_path, encoding='utf-8') as f:
                             state_obj = SystemState(**yaml.safe_load(f))
                         state_obj.active_persona_id = uuid.UUID(selected_option.id)
                     except Exception:
@@ -187,10 +187,10 @@ class PersonaSelectorApp(App):
                 else:
                     state_obj = SystemState(active_persona_id=uuid.UUID(selected_option.id))
 
-                with open(state_path, "w", encoding="utf-8") as f:
-                    yaml.dump(state_obj.model_dump(mode="json"), f)
+                with open(state_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(state_obj.model_dump(mode='json'), f)
                 self.exit(selected_option.id)
-        elif event.button.id == "cancel":
+        elif event.button.id == 'cancel':
             self.exit(None)
 
 

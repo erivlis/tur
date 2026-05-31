@@ -30,7 +30,7 @@ def get_local_persona_dir(persona_dir: Path) -> Path:
     the directory to actually exist on disk.
     """
     if is_global_path(persona_dir):
-        return Path.cwd() / ".tur" / "personas" / persona_dir.name
+        return Path.cwd() / '.tur' / 'personas' / persona_dir.name
     return persona_dir
 
 
@@ -48,9 +48,9 @@ def ensure_local_persona_dir(persona_dir: Path) -> Path:
 
 def load_session_index(persona_dir: Path) -> SessionIndex:
     """Loads the session index from sessions.yaml or returns an empty index."""
-    index_path = get_local_persona_dir(persona_dir) / "sessions.yaml"  # read-only path query
+    index_path = get_local_persona_dir(persona_dir) / 'sessions.yaml'  # read-only path query
     if index_path.exists():
-        with open(index_path, encoding="utf-8") as f:
+        with open(index_path, encoding='utf-8') as f:
             try:
                 data = yaml.safe_load(f) or {}
                 return SessionIndex(**data)
@@ -61,14 +61,14 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
 
 def save_session_index(persona_dir: Path, index: SessionIndex):
     """Saves the session index to sessions.yaml."""
-    index_path = ensure_local_persona_dir(persona_dir) / "sessions.yaml"
-    with open(index_path, "w", encoding="utf-8") as f:
-        yaml.dump(index.model_dump(mode="json"), f)
+    index_path = ensure_local_persona_dir(persona_dir) / 'sessions.yaml'
+    with open(index_path, 'w', encoding='utf-8') as f:
+        yaml.dump(index.model_dump(mode='json'), f)
 
 
 def get_session_file(persona_dir: Path, session_id: str) -> Path:
     """Returns the flat YAML file path for a session: sessions/<session_id>.yaml"""
-    return get_local_persona_dir(persona_dir) / "sessions" / f"{session_id}.yaml"  # read-only path query
+    return get_local_persona_dir(persona_dir) / 'sessions' / f'{session_id}.yaml'  # read-only path query
 
 
 def get_active_session_id() -> str | None:
@@ -77,14 +77,14 @@ def get_active_session_id() -> str | None:
     - Checks env var `TUR_ACTIVE_SESSION_ID`.
     - Checks `active_session_id` in `.tur/state.yaml`.
     """
-    env_id = os.environ.get("TUR_ACTIVE_SESSION_ID")
+    env_id = os.environ.get('TUR_ACTIVE_SESSION_ID')
     if env_id:
         return env_id
 
-    state_path = Path(".tur/state.yaml")
+    state_path = Path('.tur/state.yaml')
     if state_path.exists():
         try:
-            with open(state_path, encoding="utf-8") as f:
+            with open(state_path, encoding='utf-8') as f:
                 state_data = yaml.safe_load(f)
             state_obj = SystemState(**state_data)
         except Exception:
@@ -100,13 +100,13 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     or the default axiom if no notes are found.
     """
     if not session_id:
-        return "Status: Conserved. Aleph: Restored. Carry on, Lion."
+        return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
 
     session_file = get_session_file(persona_dir, session_id)
 
     if session_file.exists():
         try:
-            with open(session_file, encoding="utf-8") as f:
+            with open(session_file, encoding='utf-8') as f:
                 notes_data = yaml.safe_load(f)
             session_notes = SessionNotes(**notes_data)
             if session_notes.notes:
@@ -115,15 +115,15 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
         except Exception:
             pass
 
-    return "Status: Conserved. Aleph: Restored. Carry on, Lion."
+    return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
 
 
 def hydrate_session_state(active_id: str, session_id: str | None = None) -> SessionState:
     """Hydrates the full SessionState (Persona, User, Memories, Epilogue) from the filesystem."""
     persona_dir = get_persona_path(active_id)
-    file_path = persona_dir / "persona.yaml"
+    file_path = persona_dir / 'persona.yaml'
 
-    with open(file_path, encoding="utf-8") as f:
+    with open(file_path, encoding='utf-8') as f:
         data = yaml.safe_load(f)
 
     persona = Persona(**data)
@@ -144,12 +144,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
         else:
             epilogue_content = compile_session_notes(persona_dir, None)
 
-    return SessionState(
-        persona=persona,
-        user=user,
-        memories=memories,
-        epilogue=epilogue_content
-    )
+    return SessionState(persona=persona, user=user, memories=memories, epilogue=epilogue_content)
 
 
 def start_session_logic(session_id: str, identifier: str | None = None, previous_session_id: str | None = None) -> str:
@@ -162,21 +157,19 @@ def start_session_logic(session_id: str, identifier: str | None = None, previous
     persona_dir = get_persona_path(active_id)
 
     # ensure_local_persona_dir creates the dir; get_session_file reuses the same path
-    sessions_dir = ensure_local_persona_dir(persona_dir) / "sessions"
+    sessions_dir = ensure_local_persona_dir(persona_dir) / 'sessions'
     sessions_dir.mkdir(parents=True, exist_ok=True)
     session_file = get_session_file(persona_dir, session_id)
 
     if not session_file.exists():
-        seed_content = "Session started."
+        seed_content = 'Session started.'
         if previous_session_id:
             prev_content = compile_session_notes(persona_dir, previous_session_id)
-            if prev_content and prev_content != "Status: Conserved. Aleph: Restored. Carry on, Lion.":
+            if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
                 seed_content = prev_content
-        session_notes = SessionNotes(notes=[
-            Note(timestamp=datetime.now(), content=seed_content)
-        ])
-        with open(session_file, "w", encoding="utf-8") as f:
-            yaml.dump(session_notes.model_dump(mode="json"), f)
+        session_notes = SessionNotes(notes=[Note(timestamp=datetime.now(), content=seed_content)])
+        with open(session_file, 'w', encoding='utf-8') as f:
+            yaml.dump(session_notes.model_dump(mode='json'), f)
 
     # Update sessions.yaml
     index = load_session_index(persona_dir)
@@ -185,18 +178,18 @@ def start_session_logic(session_id: str, identifier: str | None = None, previous
     existing_entry = next((s for s in index.sessions if s.id == session_id), None)
     if existing_entry:
         existing_entry.updated_at = datetime.now()
-        existing_entry.status = "active"
+        existing_entry.status = 'active'
     else:
-        new_entry = SessionEntry(id=session_id, status="active")
+        new_entry = SessionEntry(id=session_id, status='active')
         index.sessions.append(new_entry)
 
     save_session_index(persona_dir, index)
 
     # Update .tur/state.yaml
-    state_path = Path(".tur/state.yaml")
+    state_path = Path('.tur/state.yaml')
     if state_path.exists():
         try:
-            with open(state_path, encoding="utf-8") as f:
+            with open(state_path, encoding='utf-8') as f:
                 state_data = yaml.safe_load(f)
             state_obj = SystemState(**state_data)
             state_obj.active_session_id = session_id
@@ -205,8 +198,8 @@ def start_session_logic(session_id: str, identifier: str | None = None, previous
     else:
         state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
 
-    with open(state_path, "w", encoding="utf-8") as f:
-        yaml.dump(state_obj.model_dump(mode="json"), f)
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump(state_obj.model_dump(mode='json'), f)
 
     return f"Session '{session_id}' started successfully for persona '{active_id}'."
 
@@ -230,21 +223,21 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
 
     existing_entry = next((s for s in index.sessions if s.id == session_id), None)
     if existing_entry:
-        existing_entry.status = "ended"
+        existing_entry.status = 'ended'
         existing_entry.updated_at = datetime.now()
 
     save_session_index(persona_dir, index)
 
     # Update .tur/state.yaml
-    state_path = Path(".tur/state.yaml")
+    state_path = Path('.tur/state.yaml')
     if state_path.exists():
         try:
-            with open(state_path, encoding="utf-8") as f:
+            with open(state_path, encoding='utf-8') as f:
                 state_obj = SystemState(**yaml.safe_load(f))
             if state_obj.active_session_id == session_id:
                 state_obj.active_session_id = None
-            with open(state_path, "w", encoding="utf-8") as f:
-                yaml.dump(state_obj.model_dump(mode="json"), f)
+            with open(state_path, 'w', encoding='utf-8') as f:
+                yaml.dump(state_obj.model_dump(mode='json'), f)
         except Exception:
             pass
 
@@ -269,7 +262,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         notes_list = []
         if session_file.exists():
             try:
-                with open(session_file, encoding="utf-8") as f:
+                with open(session_file, encoding='utf-8') as f:
                     notes_data = yaml.safe_load(f)
                 session_notes = SessionNotes(**notes_data)
                 notes_list = session_notes.notes
@@ -280,8 +273,8 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         notes_list.append(Note(timestamp=datetime.now(), content=content.strip()))
         session_notes = SessionNotes(notes=notes_list)
 
-        with open(session_file, "w", encoding="utf-8") as f:
-            yaml.dump(session_notes.model_dump(mode="json"), f)
+        with open(session_file, 'w', encoding='utf-8') as f:
+            yaml.dump(session_notes.model_dump(mode='json'), f)
 
         # Update sessions.yaml index
         index = load_session_index(persona_dir)
@@ -294,7 +287,6 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         save_session_index(persona_dir, index)
 
         return f"Note successfully saved for '{active_id}' in session '{resolved_session_id}'"
-
 
     else:
         # Fall back to the most recently updated session

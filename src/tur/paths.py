@@ -4,6 +4,7 @@ Shared path resolution utilities.
 Single canonical source for the global/local path predicates and registry resolution.
 All other modules import from here — no inline copies permitted.
 """
+
 import logging
 from pathlib import Path
 
@@ -18,7 +19,7 @@ def is_global_path(p: Path) -> bool:
     Do NOT duplicate this logic inline elsewhere.
     """
     try:
-        p.relative_to(Path.home() / ".tur")
+        p.relative_to(Path.home() / '.tur')
     except ValueError:
         return False
     else:
@@ -36,14 +37,14 @@ def resolve_personas_base_dir() -> Path:
     A warning is emitted when falling back to local, so callers have
     visibility into which store was resolved.
     """
-    global_base = Path.home() / ".tur"
-    if (global_base / "personas.yaml").exists():
+    global_base = Path.home() / '.tur'
+    if (global_base / 'personas.yaml').exists():
         return global_base
 
-    local_base = Path(".tur")
+    local_base = Path('.tur')
     logger.warning(
-        "Falling back to local .tur/ registry — "
-        "global ~/.tur/personas.yaml not found. "
-        "Run migration if this is unexpected."
+        'Falling back to local .tur/ registry — '
+        'global ~/.tur/personas.yaml not found. '
+        'Run migration if this is unexpected.'
     )
     return local_base
