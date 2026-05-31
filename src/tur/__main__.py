@@ -1,4 +1,4 @@
-from tur.cli import app
+from tur.cli.agent import app
 
 if __name__ == "__main__":
     app()
