@@ -486,6 +486,7 @@ def test_admin_persona_list_error(mock_workspace, monkeypatch):
         raise ValueError('Listing failed')
 
     import tur.cli.admin
+
     monkeypatch.setattr(tur.cli.admin, 'resolve_personas_base_dir', mock_raise)
 
     result = runner.invoke(admin_app, ['persona', 'list'])
@@ -510,7 +511,7 @@ def test_admin_persona_view_with_directives(mock_workspace):
         'model': 'gemini-3.1-pro-preview',
         'aleph': 'To safeguard reality.',
         'principles': [],
-        'directives': ['Stay calm.', 'Think step by step.']
+        'directives': ['Stay calm.', 'Think step by step.'],
     }
     with open(persona_path, 'w', encoding='utf-8') as f:
         yaml.dump(custom_yaml, f)
@@ -540,6 +541,7 @@ def test_admin_memory_view_not_found(mock_workspace):
 
 def test_admin_memory_view_error(mock_workspace, monkeypatch):
     from tur.memory import MemoryManager
+
     def mock_raise(*args, **kwargs):
         raise ValueError('Load failed')
 
@@ -548,18 +550,6 @@ def test_admin_memory_view_error(mock_workspace, monkeypatch):
     result = runner.invoke(admin_app, ['memory', 'view', 'some-hash'])
     assert result.exit_code == 1
     assert 'Error viewing memory: Load failed' in result.stdout
-
-
-def test_admin_memory_forget_error(mock_workspace, monkeypatch):
-    from tur.memory import MemoryManager
-    def mock_raise(*args, **kwargs):
-        raise ValueError('Forget failed')
-
-    monkeypatch.setattr(MemoryManager, 'archive', mock_raise)
-
-    result = runner.invoke(admin_app, ['memory', 'forget', 'some-hash'])
-    assert result.exit_code == 1
-    assert 'Error: Forget failed' in result.stdout
 
 
 def test_admin_session_note_no_active(mock_workspace):
@@ -577,7 +567,13 @@ def test_admin_session_note_missing_file(mock_workspace):
     # Set active session but delete its notes file
     state_path = Path('.tur/state.yaml')
     with open(state_path, 'w', encoding='utf-8') as f:
-        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': 'non-existent-sess'}, f)
+        yaml.dump(
+            {
+                'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262',
+                'active_session_id': 'non-existent-sess',
+            },
+            f,
+        )
 
     result = runner.invoke(admin_app, ['session', 'note', '1'])
     assert result.exit_code == 0

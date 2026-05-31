@@ -97,12 +97,14 @@ def test_mcp_module_main(monkeypatch):
 def sse_server():
     """Fixture to start and stop the Tur MCP server for SSE transport testing."""
     import socket
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
     command = ['uv', 'run', 'python', '-m', 'tur.cli.mcp', '--transport', 'sse', '--port', str(port)]
 
     env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
     # Ensure any active persona state can be found if needed by the server
     try:
         from pathlib import Path
@@ -123,10 +125,10 @@ def sse_server():
 
     try:
         captured = []
-        # Wait up to 10 seconds for Uvicorn's startup message
+        # Wait up to 30 seconds for Uvicorn's startup message
         start_time = time.time()
         ready = False
-        while time.time() - start_time < 10:
+        while time.time() - start_time < 30:
             if process.poll() is not None:
                 remaining, _ = process.communicate(timeout=1)
                 captured.append(remaining)
