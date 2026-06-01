@@ -46,7 +46,7 @@ admin = [
     "textual>=8.0.0",
 ]
 mcp = [
-    "mcp",
+    "mcp>=1.27,<2",
 ]
 
 [dependency-groups]
