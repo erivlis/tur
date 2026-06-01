@@ -1,3 +1,9 @@
+## v0.3.1 (2026-06-01)
+
+### Refactor
+
+- Enhances CLI dependency checks with rich error messages and graceful exits.
+
 ## v0.3.0 (2026-06-01)
 
 ### Feat
