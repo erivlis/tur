@@ -1,3 +1,57 @@
+import sys
+
+from rich.syntax import Syntax
+
+try:
+    import textual
+except ImportError:
+    from rich.console import Console, Group
+    from rich.markup import escape
+    from rich.panel import Panel
+
+    console = Console(stderr=True)
+
+    # 1. Create the inner code block
+
+    code = (
+        'pip install tur[admin]'
+        '\n# or'
+        '\nuv pip install tur[admin]'
+    )
+
+    code_syntax = Syntax(
+        code,
+        "shell",
+        theme="monokai",
+        line_numbers=True
+    )
+
+    # 2. Wrap the code in its own panel
+    code_panel = Panel(
+        code_syntax,
+        title="[cyan]Shell[/cyan]",
+        border_style="cyan",
+        expand=True
+    )
+
+    # 3. Group the introductory text and the code panel together
+    panel_contents = Group(
+        "[bold red]Error: The 'textual' package is required to run 'tur-adm'.[/bold red]\n\n"
+        'Please install the admin extra dependencies by running:\n',
+        code_panel
+    )
+
+    # 4. Pass the group into the parent Panel
+    console.print(
+        Panel(
+            panel_contents,
+            title='[bold red]Dependency Missing[/bold red]',
+            border_style='red',
+            expand=False
+        )
+    )
+    sys.exit(1)
+
 import io
 import shutil
 import tarfile
@@ -58,9 +112,7 @@ def persona_list():
         base_dir = resolve_personas_base_dir()
         index_path = base_dir / 'personas.yaml'
         if not index_path.exists():
-            console.print(
-                '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
-            )
+            console.print('[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]')
             return
         with open(index_path, encoding='utf-8') as f:
             index_data = yaml.safe_load(f) or {'personas': []}
@@ -235,9 +287,7 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
             try:
                 UUID(persona_id)
             except ValueError as e:
-                raise ValueError(
-                    f"Registry Failure: Imported ID '{persona_id}' is not a valid UUID."
-                ) from e
+                raise ValueError(f"Registry Failure: Imported ID '{persona_id}' is not a valid UUID.") from e
 
             # 2. Reconstruct the global home
             global_home = Path.home() / '.tur'
