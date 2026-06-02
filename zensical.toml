@@ -49,7 +49,9 @@ nav = [
         "proposals/EP-0113-the-tether-protocol.md",
         "proposals/EP-0114-global-persona-architecture.md",
         "proposals/EP-0115-traveler-export-protocol.md",
-        "proposals/EP-0116-split-cli.md"
+        "proposals/EP-0116-split-cli.md",
+        "proposals/EP-0117-substrate-benchmark.md",
+        "proposals/EP-0118-inter-agent-signal-protocol.md"
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
