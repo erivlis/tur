@@ -1,3 +1,9 @@
+## v0.4.0 (2026-06-02)
+
+### Feat
+
+- Implements EP-0118 with SQLite for multi-agent signaling and consensus sleep.
+
 ## v0.3.1 (2026-06-01)
 
 ### Refactor
