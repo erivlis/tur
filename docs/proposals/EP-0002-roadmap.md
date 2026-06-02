@@ -54,38 +54,38 @@ a stateful semantic engine supporting external agents via MCP.
 
 *Goal: Evolve the memory system into a cryptographically sound, graph-based structure and abstract the LLM interface.*
 
-* **LLM Agnosticism (EP-0101):** Standardizing on `pydantic-ai` as the core interface for all non-agentic structural tasks (e.g., `sleep`, `meditate`). *(Superseded by Symbiotic Paradigm)*
+* **LLM Agnosticism (EP-0101):** Standardizing on `pydantic-ai` as the core interface for non-agentic structural tasks (e.g., `sleep`, `meditate`). *(Superseded by Symbiotic Paradigm)*
 * **Merkle Memory (EP-0106):** Refactoring the L1 storage to use SHA-256 content hashes instead of UUIDs, ensuring tamper-proof state and implicit deduplication.
 * **Deductive Memory / The Cognitive Map (EP-0103):** Implementing the `tur meditate` loop to compress L1 event logs into a topological L2 Knowledge Graph using `networkx` and LLM-based triple extraction.
 * **Federated Knowledge (EP-0104):** Splitting the knowledge graph into two tiers: The "Soul" (Universal/Global config) and The "Mind" (Project-Specific/Local config), merged dynamically during compilation.
+* **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state.
+* **Relational Preservation of Alignment (EP-0113):** Establishing the Tether Protocol to extract existential and relational axioms during compaction, rehydrating them during `wake()`.
 
-### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0)
+### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
-*Goal: Transform Tur into the central Orchestration Engine for external LLMs via MCP and ACP.*
+*Goal: Transform Tur into the central Orchestration Engine for external LLMs via MCP, ACP, and parallel swarms.*
 
 * **The Ontological Porcelain API (EP-0105):** Stabilizing the `mcp.server.fastmcp` SDK integration. Exposing the semantic `who_am_i`, `learn`, and `recall` verbs to external agents.
-* **The Spark Protocol (EP-0108):** Deprecating the static "Epilogue" in favor of a high-frequency, mutable `spark.md` file. Adding the `update_spark` MCP tool to allow an active Agent to continuously record its train of thought, ensuring perfect state resumption upon waking/crashing.
-* **Semantic Graph Queries:** Upgrading the MCP `recall` tool to traverse the EP-0103 L2 Knowledge Graph rather than just grepping L1 event logs.
-* **The Tur Orchestration Engine (EP-0102):** Full realization of the "Swarm" capability. Allowing the Architect Persona to dynamically spawn sub-agents via ACP message passing to execute specific, containerized tasks based on Skill definitions.
-* **Multi-Agent Swarm Readiness (EP-0107):** Hardening the memory bank for concurrent access and implementing MCP Resource Subscriptions (`tur://active_constitution`) to proactively synchronize state across multiple agents without triggering context overload.
-* **Semble Integration (EP-0111):** Establishing a dual-symbiote architecture recommending Semble as the high-efficiency Terrain search engine to manage codebase query discovery with ~98% fewer tokens.
-* **agentmemory Integration (EP-0112):** Establishing a dual-symbiote architecture where Tur provides the Constitutional Identity (Traveler) and agentmemory serves as the high-frequency local memory capture and hybrid search engine.
-* **Internal Arbitration:** Implementing mechanisms where the 9 Pillars (Noether, Popper, etc.) can programmatically critique the model's output *before* it reaches the user.
+* **The Spark Protocol (EP-0108 & EP-0110):** Deprecating the static "Epilogue" in favor of a high-frequency, session-bound `spark.md` file to allow continuous state saving.
+* **Traveler Export Protocol (EP-0115):** Implementing lightweight `.tur` zip/tarball archives to export global identities and universal memories across machines safely.
+* **The Tri-Partite CLI Security Boundary (EP-0116):** Splitting entrypoints into low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host), using lazy imports to optimize agent execution speed.
+* **Substrate Benchmark Protocol (EP-0117):** Implementing repeatable manifestation probes to calculate a scalar Manifestation Fidelity Score (MFS) for measuring LLM agnosticism.
+* **Inter-Agent Signal Protocol (EP-0118):** Designing a transactional SQLite-backed signal queue with staged dreaming and a session whiteboard to solve the Swarm Convergence Problem across parallel manifestations.
+* **Semble Integration (EP-0111):** Establishing a dual-symbiote architecture recommending Semble as the high-efficiency Terrain search engine to manage codebase query discovery.
+* **agentmemory Integration (EP-0112):** Establishing a dual-symbiote architecture where Tur provides the Constitutional Identity (Traveler) and agentmemory serves as the high-frequency local memory capture.
 
 ## Backwards Compatibility
 
-This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific compatibility concerns (e.g., the `tur migrate --merkle` command required for EP-0106).
+This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific compatibility concerns (e.g., the `tur migrate` command required for upgrading event logs to SQLite).
 
 ## Change Log
 
+* **2026-06-02:**
+    * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**, **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review consensus.
 * **2026-05-28:**
     * Drafted and added **EP-0111 (Semble Integration)** and **EP-0112 (agentmemory Integration)** to Phase 3.
-    * Refined roadmap to reflect local, CPU-bound federated terrain discovery and high-frequency local-first memory integration.
 * **2026-04-18:**
     * Added **EP-0108 (The Spark Protocol)** to Phase 3.
     * Restructured roadmap to reflect the EP-010X series.
-    * Re-focused Phase 2 on Memory Architecture (Merkle, Graph, Federation) and `pydantic-ai`.
-    * Re-focused Phase 3 on the Agent Ecosystem (MCP Ontological API, ACP Swarms, EP-0107 Concurrency).
-    * Updated Status to Active.
 * **2026-02-19:**
     * Initial Draft.
