@@ -30,39 +30,20 @@ def serve(
         from rich.panel import Panel
         from rich.syntax import Syntax
 
-        code = (
-            'pip install tur[mcp]'
-            '\n# or'
-            '\nuv pip install tur[mcp]'
-        )
+        code = 'pip install tur[mcp]\n# or\nuv pip install tur[mcp]'
 
-        code_syntax = Syntax(
-            code,
-            "shell",
-            theme="monokai",
-            line_numbers=True
-        )
+        code_syntax = Syntax(code, 'shell', theme='monokai', line_numbers=True)
 
-        code_panel = Panel(
-            code_syntax,
-            title="[cyan]Shell[/cyan]",
-            border_style="cyan",
-            expand=True
-        )
+        code_panel = Panel(code_syntax, title='[cyan]Shell[/cyan]', border_style='cyan', expand=True)
 
         panel_contents = Group(
             "[bold red]Error: The 'mcp' package is required to run the Tur MCP server.[/bold red]\n\n"
-            "Please install the mcp extra dependencies by running:\n",
-            code_panel
+            'Please install the mcp extra dependencies by running:\n',
+            code_panel,
         )
 
         console.print(
-            Panel(
-                panel_contents,
-                title='[bold red]Dependency Missing[/bold red]',
-                border_style='red',
-                expand=False
-            )
+            Panel(panel_contents, title='[bold red]Dependency Missing[/bold red]', border_style='red', expand=False)
         )
         sys.exit(1)
 

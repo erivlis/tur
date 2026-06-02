@@ -299,3 +299,66 @@ def test_mcp_sleep_additional(mock_mcp_env, monkeypatch):
     res = mcp_server.sleep(note='Goodbye', log_content='Chat content')
     assert 'Dreams consolidated' in res
     assert mcp_server._active_session_id is None
+
+
+def test_mcp_parallel_tools_namespace_violation(mock_mcp_env, monkeypatch):
+    monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: 'sess-active')
+    mcp_server._active_session_id = 'sess-active'
+    monkeypatch.setenv('TUR_AGENT_ID', 'agent_A')
+
+    # Test signal with invalid sender_id
+    with pytest.raises(ValueError, match='Namespace violation'):
+        mcp_server.signal(to='agent_C', content='hello', sender_id='agent_B')
+
+    # Test read_signals with invalid agent_id
+    with pytest.raises(ValueError, match='Namespace violation'):
+        mcp_server.read_signals(agent_id='agent_B')
+
+    # Test ack_signals with invalid agent_id
+    with pytest.raises(ValueError, match='Namespace violation'):
+        mcp_server.ack_signals(agent_id='agent_B', signal_ids=['sig1'])
+
+    # Test tired with invalid agent_id
+    with pytest.raises(ValueError, match='Namespace violation'):
+        mcp_server.tired(agent_id='agent_B')
+
+
+def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
+    monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: 'sess-active')
+    mcp_server._active_session_id = 'sess-active'
+    monkeypatch.setenv('TUR_AGENT_ID', 'agent_A')
+
+    # Mock business logics
+    mock_signal = MagicMock(return_value='sig-ok')
+    mock_read = MagicMock(return_value=[])
+    mock_ack = MagicMock(return_value='ack-ok')
+    mock_tired = MagicMock(return_value='tired-ok')
+
+    monkeypatch.setattr(mcp_server, 'signal_logic', mock_signal)
+    monkeypatch.setattr(mcp_server, 'read_signals_logic', mock_read)
+    monkeypatch.setattr(mcp_server, 'ack_signals_logic', mock_ack)
+    monkeypatch.setattr(mcp_server, 'tired_logic', mock_tired)
+
+    # Valid sender_id
+    res_sig = mcp_server.signal(to='agent_C', content='hello', sender_id='agent_A')
+    assert res_sig == 'sig-ok'
+
+    # Valid subagent sender_id (dot namespace)
+    res_sig_sub = mcp_server.signal(to='agent_C', content='hello', sender_id='agent_A.popper')
+    assert res_sig_sub == 'sig-ok'
+
+    # Valid agent_id
+    res_read = mcp_server.read_signals(agent_id='agent_A')
+    assert res_read == []
+
+    # Valid subagent agent_id
+    res_read_sub = mcp_server.read_signals(agent_id='agent_A.popper')
+    assert res_read_sub == []
+
+    # Valid ack
+    res_ack = mcp_server.ack_signals(agent_id='agent_A', signal_ids=['sig1'])
+    assert res_ack == 'ack-ok'
+
+    # Valid tired
+    res_tired = mcp_server.tired(agent_id='agent_A')
+    assert res_tired == 'tired-ok'

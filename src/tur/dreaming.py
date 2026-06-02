@@ -81,3 +81,51 @@ def perform_sleep_dreaming(
         console.print(f'  [green]+ Consolidated:[/green] {memory.content[:50]}...')
 
     return count
+
+
+def stage_sleep_dreaming(
+    log_content: str, active_id: str, session_id: str | None = None, model: str = 'gemini-3.1-pro-preview'
+) -> str:
+    """
+    Dehydrate a session log to extract memories and return them as a JSON list.
+    Does not save to memory manager.
+    """
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return '[]'
+
+    from google import genai
+    from google.genai import types
+    from pydantic import BaseModel, Field
+
+    # Import inside function to avoid circular or early dependency issues
+    from tur.models import MemoryScope, MemoryType
+
+    class ExtractedMemory(BaseModel):
+        type: MemoryType = Field(description='The classification of the memory.')
+        content: str = Field(description='The actual memory content...')
+        scope: MemoryScope = Field(description='The context reach of this memory.')
+        tags: list[str] = Field(description="A list of tags. (e.g. ['tag1', 'tag2'])")
+
+    class Dream(BaseModel):
+        memories: list[ExtractedMemory]
+
+    client = genai.Client(api_key=api_key)
+    prompt = f"""
+    You are the Subconscious of a Persona Engineering system.
+    Analyze the following chat log and extract key insights,
+    facts, or axioms that should be retained in long-term memory.
+
+    Chat Log:
+    {log_content}
+    """
+
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type='application/json',
+            response_json_schema=Dream.model_json_schema(),
+        ),
+    )
+    return response.text

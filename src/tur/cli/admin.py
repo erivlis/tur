@@ -13,42 +13,23 @@ except ImportError:
 
     # 1. Create the inner code block
 
-    code = (
-        'pip install tur[admin]'
-        '\n# or'
-        '\nuv pip install tur[admin]'
-    )
+    code = 'pip install tur[admin]\n# or\nuv pip install tur[admin]'
 
-    code_syntax = Syntax(
-        code,
-        "shell",
-        theme="monokai",
-        line_numbers=True
-    )
+    code_syntax = Syntax(code, 'shell', theme='monokai', line_numbers=True)
 
     # 2. Wrap the code in its own panel
-    code_panel = Panel(
-        code_syntax,
-        title="[cyan]Shell[/cyan]",
-        border_style="cyan",
-        expand=True
-    )
+    code_panel = Panel(code_syntax, title='[cyan]Shell[/cyan]', border_style='cyan', expand=True)
 
     # 3. Group the introductory text and the code panel together
     panel_contents = Group(
         "[bold red]Error: The 'textual' package is required to run 'tur-adm'.[/bold red]\n\n"
         'Please install the admin extra dependencies by running:\n',
-        code_panel
+        code_panel,
     )
 
     # 4. Pass the group into the parent Panel
     console.print(
-        Panel(
-            panel_contents,
-            title='[bold red]Dependency Missing[/bold red]',
-            border_style='red',
-            expand=False
-        )
+        Panel(panel_contents, title='[bold red]Dependency Missing[/bold red]', border_style='red', expand=False)
     )
     sys.exit(1)
 
@@ -211,8 +192,8 @@ def persona_switch():
 @persona_app.command('export')
 @require_human
 def persona_export(
-        identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
-        output_path: Path = typer.Argument(..., help='The target filepath for the export archive (e.g., ariel.tur)'),
+    identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
+    output_path: Path = typer.Argument(..., help='The target filepath for the export archive (e.g., ariel.tur)'),
 ):
     """Package a global persona's core config and universal memories into a portable .tur archive."""
     try:
@@ -338,9 +319,8 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
 @memory_app.command('list')
 @require_human
 def memory_list(
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
-        include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
 ):
     """Show all memories in the bank for a specific persona."""
     try:
@@ -376,9 +356,8 @@ def memory_list(
 @memory_app.command('view')
 @require_human
 def memory_view(
-        memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """View the detailed contents of a specific memory."""
     try:
@@ -414,9 +393,8 @@ def memory_view(
 @memory_app.command('forget')
 @require_human
 def memory_forget(
-        memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """Archive a memory by its ID for a specific persona."""
     try:
@@ -438,8 +416,7 @@ def memory_forget(
 @session_app.command('list')
 @require_human
 def session_list(
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """List all sessions in the index for a specific persona."""
     try:
@@ -474,9 +451,8 @@ def session_list(
 @session_app.command('start')
 @require_human
 def start_session(
-        session_id: str = typer.Argument(..., help='The ID of the session to start.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses standard.'),
+    session_id: str = typer.Argument(..., help='The ID of the session to start.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
 ):
     """Create a new isolated session under the active persona."""
     try:
@@ -490,9 +466,8 @@ def start_session(
 @session_app.command('end')
 @require_human
 def end_session(
-        session_id: str = typer.Argument(..., help='The ID of the session to end.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses standard.'),
+    session_id: str = typer.Argument(..., help='The ID of the session to end.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
 ):
     """Mark the session as ended."""
     try:
@@ -506,10 +481,9 @@ def end_session(
 @session_app.command('note')
 @require_human
 def session_note(
-        note_index: int = typer.Argument(...,
-                                         help="The 1-indexed position of the note in the session's ledger to view."),
-        session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
-        identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    note_index: int = typer.Argument(..., help="The 1-indexed position of the note in the session's ledger to view."),
+    session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
+    identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ):
     """View a specific note by its 1-indexed position in a session."""
     try:

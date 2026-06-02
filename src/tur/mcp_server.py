@@ -31,13 +31,21 @@ from tur.memory import MemoryManager  # noqa: E402
 from tur.models import Memory, MemoryScope, MemoryType, SessionNotes  # noqa: E402
 from tur.persona import get_active_persona_id, get_persona_path  # noqa: E402
 from tur.session import (  # noqa: E402
+    ack_signals_logic,
     end_session_logic,
     get_active_session_id,
     get_session_file,
     hydrate_session_state,
+    list_agents_logic,
     load_session_index,
     note_logic,
+    read_notes_logic,
+    read_signals_logic,
+    read_whiteboard_logic,
+    signal_logic,
     start_session_logic,
+    tired_logic,
+    write_whiteboard_logic,
 )
 from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
@@ -383,6 +391,119 @@ def telemetry(identifier: str | None = None) -> dict:
             'static_token_cost': static_metrics['est_tokens'],
             'information_density': static_metrics['density'],
         }
+
+
+@mcp.tool()
+def read_notes(session_id: str | None = None, limit: int = 50) -> list[dict]:
+    """
+    Returns the session broadcast notes in strict ascending sequence order.
+    """
+    sess_id = session_id or _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    return read_notes_logic(sess_id, limit)
+
+
+@mcp.tool()
+def signal(to: str, content: str, type: str = 'inform', sender_id: str | None = None) -> str:
+    """
+    Sends a message signal to another manifestation or broadcast to all ('*').
+    Enforces a token-bucket rate limiter of 10 messages/minute.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    if sender_id and env_agent_id and sender_id != env_agent_id and not sender_id.startswith(env_agent_id + '.'):
+        raise ValueError(f"Namespace violation: sender_id '{sender_id}' does not match calling agent '{env_agent_id}'.")
+    sender = sender_id or env_agent_id or 'mcp_agent'
+    return signal_logic(sess_id, sender, to, content, type)
+
+
+@mcp.tool()
+def read_signals(agent_id: str | None = None, unread_only: bool = True) -> list[dict]:
+    """
+    Peeks incoming signals directed to the agent or its namespaces.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
+        raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
+    active_agent = agent_id or env_agent_id or 'mcp_agent'
+    return read_signals_logic(sess_id, active_agent, unread_only)
+
+
+@mcp.tool()
+def ack_signals(agent_id: str | None = None, signal_ids: list[str] | None = None) -> str:
+    """
+    Acknowledges signals by marking them as read.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
+        raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
+    active_agent = agent_id or env_agent_id or 'mcp_agent'
+    if not signal_ids:
+        return 'No signal IDs provided.'
+    return ack_signals_logic(sess_id, active_agent, signal_ids)
+
+
+@mcp.tool()
+def list_agents() -> list[dict]:
+    """
+    Lists all registered manifestations from the SQLite session database.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    return list_agents_logic(sess_id)
+
+
+@mcp.tool()
+def write_whiteboard(key: str, value: str) -> str:
+    """
+    Writes or updates key-value state parameters on the shared session whiteboard.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    sender = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
+    return write_whiteboard_logic(sess_id, key, value, sender)
+
+
+@mcp.tool()
+def read_whiteboard(key: str) -> str | None:
+    """
+    Reads coordinate parameters from the shared session whiteboard.
+    """
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    return read_whiteboard_logic(sess_id, key)
+
+
+@mcp.tool()
+def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
+    """
+    Marks the agent as idle, runs staged dreaming, and ends the session if all agents are idle.
+    This replaces standard sleep() intermediate-turn in multi-agent environments.
+    """
+    global _active_session_id
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        raise ValueError('No active session ID found.')
+    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
+        raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
+    active_agent = agent_id or env_agent_id or 'mcp_agent'
+    res = tired_logic(sess_id, active_agent, transcript)
+    if 'Consensus sleep reached' in res:
+        _active_session_id = None
+    return res
 
 
 def main(transport: Literal['stdio', 'sse'] = 'stdio', port: int = 8000):

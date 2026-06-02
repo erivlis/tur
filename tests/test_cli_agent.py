@@ -257,6 +257,25 @@ def test_agent_wake_auto_start(mock_workspace):
     assert 'Auto-started new session' in result.stdout
 
 
+def test_agent_wake_with_args(mock_workspace):
+    result = runner.invoke(agent_app, ['wake', '--agent-id', 'test_agent_cli', '--harness-conversation-id', 'conv_123'])
+    assert result.exit_code == 0
+    assert 'SYSTEM WAKE: Ariel' in result.stdout
+
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, encoding='utf-8') as f:
+        state_data = yaml.safe_load(f)
+    session_id = state_data['active_session_id']
+
+    conn = session.get_db_connection(session_id)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, status FROM agents WHERE id = 'test_agent_cli'")
+    row = cursor.fetchone()
+    assert row is not None
+    assert row['status'] == 'active'
+    conn.close()
+
+
 def test_agent_learn_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError('Learn failed')

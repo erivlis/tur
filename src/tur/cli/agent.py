@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -36,6 +35,8 @@ def wake(
     from_session: str | None = typer.Option(
         None, help='Optional ID of a previous session whose last note will seed a newly started session.'
     ),
+    agent_id: str | None = typer.Option(None, help='The unique agent ID representing this manifestation.'),
+    harness_conversation_id: str | None = typer.Option(None, help='The harness conversation ID.'),
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
@@ -56,7 +57,13 @@ def wake(
             resolved_session_id = f'{ts}_{short_hex}'
             is_auto_started = True
 
-            session.start_session_logic(resolved_session_id, identifier=active_id, previous_session_id=from_session)
+        session.start_session_logic(
+            resolved_session_id,
+            identifier=active_id,
+            previous_session_id=from_session,
+            agent_id=agent_id,
+            harness_conversation_id=harness_conversation_id,
+        )
 
         # Update .tur/state.yaml
         state_path = Path('.tur/state.yaml')
@@ -327,6 +334,236 @@ def sleep(
 
     except Exception as e:
         console.print(f'[red]Error during sleep: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
+    import os
+
+    # 1. Resolve session_id
+    sess_id = session_id_opt or session.get_active_session_id()
+    if not sess_id:
+        console.print("[red]Error: No active session ID found. Run 'wake' first or provide --session-id option.[/red]")
+        raise typer.Exit(code=1)
+
+    # 2. Resolve agent_id
+    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    if (
+        agent_id_opt
+        and env_agent_id
+        and agent_id_opt != env_agent_id
+        and not agent_id_opt.startswith(env_agent_id + '.')
+    ):
+        console.print(
+            f"[red]Error: Namespace violation: agent_id '{agent_id_opt}' "
+            f"does not match calling agent '{env_agent_id}'.[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    agent_id = agent_id_opt or env_agent_id
+    if not agent_id:
+        active_agents = []
+        try:
+            agents = session.list_agents_logic(sess_id)
+            active_agents = [a['id'] for a in agents if a['status'] == 'active']
+        except Exception:
+            pass
+
+        if len(active_agents) == 1:
+            agent_id = active_agents[0]
+        elif len(active_agents) > 1:
+            console.print(
+                f'[red]AmbiguousIdentityError: Multiple active agents found: {active_agents}. '
+                f'Please specify --agent-id.[/red]'
+            )
+            raise typer.Exit(code=1)
+
+    if not agent_id:
+        model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
+        import uuid
+
+        short_hex = uuid.uuid4().hex[:8]
+        agent_id = f'{model_slug}_cli_{short_hex}'
+
+    return agent_id, sess_id
+
+
+@app.command()
+def list_agents(
+    session_id: str | None = typer.Option(None, help='Session ID. If omitted, uses active session.'),
+    json_mode: bool = typer.Option(False, '--json', help='Output in JSON format.'),
+):
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        console.print('[red]Error: No active session ID found.[/red]')
+        raise typer.Exit(code=1)
+
+    try:
+        agents = session.list_agents_logic(sess_id)
+        if json_mode:
+            import json
+
+            console.print(json.dumps(agents, indent=2))
+        else:
+            from rich.table import Table
+
+            table = Table(title=f'Manifestations in Session {sess_id}')
+            table.add_column('Agent ID', style='cyan')
+            table.add_column('Harness', style='magenta')
+            table.add_column('Substrate', style='green')
+            table.add_column('Status', style='yellow')
+            table.add_column('Last Heartbeat', style='white')
+
+            for agent in agents:
+                table.add_row(
+                    agent['id'], agent['harness'], agent['substrate'], agent['status'], agent['last_heartbeat']
+                )
+            console.print(table)
+    except Exception as e:
+        console.print(f'[red]Error listing agents: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def signal(
+    to: str = typer.Argument(..., help='The recipient agent ID or dot-notation handle, or "*" for broadcast.'),
+    content: str = typer.Argument(..., help='The content string of the signal.'),
+    type: str = typer.Option('inform', help='The signal type (inform, query, delegate, ack, warn, etc.).'),
+    agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    """Send a coordination message signal to another manifestation."""
+    try:
+        sender_id, sess_id = resolve_cli_context(agent_id, session_id)
+        sig_id = session.signal_logic(sess_id, sender_id, to, content, type)
+        console.print(f'[green]Signal sent successfully. ID: {sig_id}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error sending signal: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def read_signals(
+    unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread signals or all.'),
+    json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    """Retrieve incoming coordination signals."""
+    try:
+        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
+        signals = session.read_signals_logic(sess_id, reader_id, unread_only)
+
+        if json_mode:
+            import json
+
+            console.print(json.dumps(signals, indent=2))
+        else:
+            if not signals:
+                console.print('[dim]No incoming signals.[/dim]')
+                return
+            for sig in signals:
+                console.print(f'[bold cyan][{sig["sender"]} -> {sig["recipient"]}][/bold cyan] ({sig["type"]})')
+                console.print(f'  Sequence: {sig["sequence"]} | Timestamp: {sig["timestamp"]}')
+                console.print(f'  Content: {sig["content"]}')
+                console.print('')
+    except Exception as e:
+        console.print(f'[red]Error reading signals: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def ack_signals(
+    signal_ids: str = typer.Argument(..., help='Comma-separated list of signal IDs to acknowledge.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    """Acknowledge read signals to mark them as read."""
+    try:
+        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
+        ids = [sid.strip() for sid in signal_ids.split(',') if sid.strip()]
+        res = session.ack_signals_logic(sess_id, reader_id, ids)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error acknowledging signals: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def read_notes(
+    limit: int = typer.Option(50, help='Max number of notes to retrieve.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        console.print('[red]Error: No active session ID found.[/red]')
+        raise typer.Exit(code=1)
+
+    try:
+        notes = session.read_notes_logic(sess_id, limit)
+        if not notes:
+            console.print('[dim]No broadcast notes found.[/dim]')
+            return
+        for note_data in notes:
+            console.print(f'[bold yellow][{note_data["sender"]}][/bold yellow] ({note_data["timestamp"]})')
+            console.print(f'  {note_data["content"]}')
+            console.print('')
+    except Exception as e:
+        console.print(f'[red]Error reading notes: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def whiteboard_write(
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    value: str = typer.Argument(..., help='The value string.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    """Write or update parameters on the shared session whiteboard."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        res = session.write_whiteboard_logic(sess_id, key, value, modifier_id)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error writing to whiteboard: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def whiteboard_read(
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+):
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        console.print('[red]Error: No active session ID found.[/red]')
+        raise typer.Exit(code=1)
+
+    try:
+        val = session.read_whiteboard_logic(sess_id, key)
+        if val is None:
+            console.print(f"[dim]Key '{key}' not set.[/dim]")
+        else:
+            console.print(val)
+    except Exception as e:
+        console.print(f'[red]Error reading from whiteboard: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def tired(
+    agent_id: str | None = typer.Option(None, help='The agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+    transcript: str | None = typer.Option(None, help='Optional chat log transcript content.'),
+):
+    """Transition agent to idle, runs staged dreaming, and evaluates sleep consensus."""
+    try:
+        active_agent, sess_id = resolve_cli_context(agent_id, session_id)
+        res = session.tired_logic(sess_id, active_agent, transcript)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error executing tired command: {e}[/red]')
         raise typer.Exit(code=1)
 
 
