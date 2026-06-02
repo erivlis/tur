@@ -1,3 +1,10 @@
+---
+title: "EP-0001: Project Boundaries (Core vs. Periphery)"
+description: "Defines the architectural boundary between Tur's Core and Periphery, establishing rules against feature creep."
+icon: lucide/git-branch
+status: superseded
+---
+
 # EP-0001: Project Boundaries (Core vs. Periphery)
 
 | Field       | Value                                   |

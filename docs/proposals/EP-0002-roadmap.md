@@ -1,3 +1,10 @@
+---
+title: "EP-0002: Project Roadmap"
+description: "Strategic roadmap for the Tur project, outlining short-, medium-, and long-term development goals."
+icon: lucide/map
+status: active
+---
+
 # EP-0002: Project Roadmap
 
 | Field       | Value           |

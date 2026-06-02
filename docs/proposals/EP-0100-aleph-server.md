@@ -1,3 +1,10 @@
+---
+title: "EP-0100: The Aleph Server (MCP Integration)"
+description: "Explores the long-term vision of integrating MCP with Tur via an independent, stateful Aleph Server."
+icon: lucide/server
+status: superseded
+---
+
 # EP-0100: The Aleph Server (MCP Integration)
 
 | Field       | Value                              |

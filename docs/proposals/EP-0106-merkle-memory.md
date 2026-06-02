@@ -1,3 +1,10 @@
+---
+title: "EP-0106: Merkle Memory (Content-Addressable State)"
+description: "Replaces random UUIDs with SHA-256 content hashes, transforming Tur's memory into a cryptographic Merkle DAG."
+icon: lucide/shield-check
+status: active
+---
+
 # EP-0106: Merkle Memory (Content-Addressable State)
 
 | Field       | Value                                     |

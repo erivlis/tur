@@ -1,3 +1,10 @@
+---
+title: "EP-0105: MCP SDK Integration & The Ontological Porcelain"
+description: "Mandates the official MCP SDK and redefines the tool surface as a semantic Ontological Porcelain API."
+icon: lucide/layers
+status: active
+---
+
 # EP-0105: MCP SDK Integration & The Ontological Porcelain
 
 | Field       | Value                                           |

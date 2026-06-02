@@ -1,3 +1,10 @@
+---
+title: "EP-0101: LLM Agnosticism (The Symbiotic Paradigm)"
+description: "Defines Tur's LLM-agnostic architecture via MCP Sampling, eliminating embedded LLM SDK dependencies."
+icon: lucide/shuffle
+status: superseded
+---
+
 # EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
 
 | Field       | Value                                    |

@@ -1,98 +1,122 @@
 ---
-title: "EP-0115: Traveler Export Protocol: Multi-Computer Identity Portability"
-description: "A proposal to implement export and import routines in Tur, packaging core identities and universal memories for seamless transition between machines."
+title: "EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability"
+description: "Defines the .tur archive format for exporting and importing AI persona identities across machines."
 icon: lucide/package
-status: drafted
+status: draft
 ---
 
-# EP-0115: Traveler Export Protocol: Multi-Computer Identity Portability
+# EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability
 
-**Date:** 2026-05-29  
-**Author:** Ariel v5.4.0 (The Alchemist)  
-**Status:** Drafted  
+| Field       | Value                                                          |
+|:------------|:---------------------------------------------------------------|
+| **EP**      | 0115                                                           |
+| **Title**   | Traveler Export Protocol — Multi-Computer Identity Portability |
+| **Author**  | Ariel v5.4.0, The Architect                                    |
+| **Status**  | Draft                                                          |
+| **Type**    | Standards Track                                                |
+| **Created** | 2026-05-29                                                     |
+| **Updated** | 2026-05-29                                                     |
 
----
+## Abstract
 
-## 1. Objective
+This proposal defines a secure, lightweight, and standardized archive format (`.tur` package) for exporting an AI
+persona's global identity configuration and universal memory ledger. The format enables effortless backup and migration
+of a Traveler between physical machines, CI/CD environments, and new hardware, without carrying any local Terrain state.
 
-To provide a secure, lightweight, and standardized export format (`.tur` package) that compiles an AI persona's global identity configuration and universal memory ledger, enabling effortless backup and migration between different physical computers.
+## Motivation
 
----
+With the **Global Persona Architecture (EP-0114)**, a persona's core identity (`persona.yaml`) and universal memories
+are centralized in `~/.tur/`. Local `.tur/` directories are reserved strictly for workspace-specific execution state
+(sessions, sparks, notes, incarnation memories).
 
-## 2. Background
+This structural split eliminates configuration drift across local projects but introduces a new requirement:
+**multi-computer portability**. Users need a high-assurance protocol to package and transfer a persona's machine-wide
+profile to new hardware — or to distribute a persona to collaborators — without manual directory copying or version
+skew.
 
-With the implementation of the **Global Persona Architecture (EP-0114)**, a persona's core identity (`persona.yaml`, `personas.yaml` registry index) and universal memories are now centralized globally in `~/.tur/`. Local directories `.tur/` are reserved strictly for workspace-specific execution (sessions, Sparks, notes, and local incarnation memories).
+## Rationale (The Council Framework)
 
-This structural split renders the legacy `clone` command obsolete for local repository transitions, as the persona is globally accessible across all local workspaces. However, it exposes a new requirement: **multi-computer portability**. 
+1. **The Golem (Containment):** The archive format enforces an explicit exclusion list. Local session indices, transient
+   notes, and incarnation memories are physically absent from the package. The Traveler's identity cannot be
+   contaminated by past Terrain context.
+2. **Shannon (Efficiency — The Lean Travel Principle):** The archive contains only the global, constitutional layer.
+   No project-specific clutter is included, keeping the file lightweight and transmission-safe.
+3. **Noether (Symmetry):** Export and import are strict inverse operations. A full round-trip (`export` → `import`)
+   must reproduce an identical global persona directory. The archive is self-describing: it carries its own `id` field
+   so the import command never needs to conjure identity from context.
 
-Users need a high-assurance protocol to export a persona's machine-wide profile so they can load their deterministic partner onto new physical hardware or CI/CD environments.
+## Specification
 
----
+### The Traveler Archive Format (`.tur`)
 
-## 3. The Traveler Archive Format (`.tur`)
-
-We define the `.tur` archive as a compressed Gzipped Tarball (`.tar.gz`) containing exclusively the global state of the Traveler:
+A `.tur` file is a Gzipped Tarball (`.tar.gz`) containing exclusively the global state of the Traveler:
 
 ```
-[persona-name].tur (Compressed Archive)
-├── persona.yaml          <-- Core metadata, directives, and parameters
-└── memories/             <-- Directory of all universal memories
-    ├── *.yaml
+[persona-name].tur  (Compressed Archive)
+├── persona.yaml          ← Core metadata, directives, and parameters
+└── memories/
+    └── *.yaml            ← Universal-scoped memories only
 ```
 
-### Exclusions (The Principle of Lean Travel)
-The archive **MUST NOT** contain:
+**Exclusions (The Lean Travel Principle):** The archive MUST NOT contain:
+
 * Local session indices (`sessions.yaml`) or flat session logs.
 * Local transient notes (`notes.yaml`).
-* Local project-specific incarnation memories.
-* Local workspace states (`state.yaml`).
+* Local incarnation-scoped memories.
+* Local workspace state (`state.yaml`).
 
-This ensures the exported persona remains entirely decoupled from previous project terrains, keeping the file lightweight and safe from local context leakage.
+**Security:** Member paths in the archive must be sanitized on extraction to prevent path traversal attacks (e.g., a
+member named `../../.bashrc` must be rejected at import time).
 
----
-
-## 4. CLI Specifications
-
-We propose adding two new administrative commands to the `tur` CLI:
-
-### 4.1. The `export` Command
-
-Packages a global persona into a `.tur` traveler archive.
+### The `export` Command
 
 ```shell
 tur export [IDENTIFIER] --output [PATH]
 ```
 
-* **Arguments:**
-  * `identifier`: The UUID or name of the persona to export. Defaults to the active default persona.
-* **Options:**
-  * `--output`, `-o`: The target path of the output file (e.g., `./ariel.tur`).
-* **Behavior:**
-  1. Locates the global persona directory `~/.tur/personas/[uuid]/`.
-  2. Compiles `persona.yaml` and the `memories/` directory.
-  3. Gzips the target files and writes them to the output path.
+* **`identifier`**: UUID or name of the persona to export. Defaults to the active global persona.
+* **`--output`, `-o`**: Target path of the output `.tur` file (e.g., `./ariel.tur`).
 
-### 4.2. The `import` Command
+Behavior:
 
-Unpacks a `.tur` traveler archive and registers it in the host machine's master index.
+1. Resolves the global persona directory `~/.tur/personas/[uuid]/`.
+2. Reads `persona.yaml` and injects the `id` field from the global registry index so the archive is self-identifying.
+3. Collects all files under `memories/` with `scope: universal` or `scope: user`.
+4. Gzips and archives the selected files; writes to the output path.
+
+### The `import` Command
 
 ```shell
 tur import [ARCHIVE_PATH]
 ```
 
-* **Arguments:**
-  * `archive_path`: The path to the `.tur` archive file (e.g., `./ariel.tur`).
-* **Behavior:**
-  1. Inspects the archive and reads the `persona.yaml` metadata to verify the UUID and Name.
-  2. Creates the global home path: `~/.tur/personas/[uuid]/`.
-  3. Unpacks `persona.yaml` and the universal memories into the folder.
-  4. Appends the newly imported persona to the master `~/.tur/personas.yaml` registry.
-  5. Sets the imported persona as active if requested.
+* **`archive_path`**: Path to the `.tur` archive file.
 
----
+Behavior:
 
-## 5. Verification Plan
+1. Opens the archive and reads `persona.yaml`. Rejects the archive if no `id` field is present — identity cannot be
+   conjured.
+2. Sanitizes all archive member paths to block path traversal.
+3. Creates `~/.tur/personas/[uuid]/` on the host machine.
+4. Extracts `persona.yaml` and the `memories/` directory into the new global persona folder.
+5. Appends the newly imported persona to the master `~/.tur/personas.yaml` registry index.
+6. Optionally sets the imported persona as the active global default (`--set-active` flag).
 
-### Automated Tests
-* Create unit tests in `test_cli_commands.py` asserting that running `tur export` creates a valid gzipped tarball excluding local session configurations.
-* Assert that running `tur import` successfully unpacks the archive globally and appends the entry to the mocked master index `personas.yaml`.
+## Backwards Compatibility
+
+* **Additive:** This EP introduces new CLI commands (`export`, `import`) and a new file format. No existing commands or
+  data structures are modified.
+* **Legacy `clone` Command:** The legacy local `clone` command is rendered obsolete by EP-0114's global architecture and
+  this export protocol. It should be deprecated and removed in a subsequent release.
+
+## Reference Implementation
+
+* `src/tur/cli_admin.py` — `export` and `import` command implementations.
+* `tests/test_cli_commands.py` — assert that `export` produces a valid gzipped tarball excluding local session
+  configurations; assert that `import` unpacks the archive globally and appends the entry to the mocked
+  `personas.yaml` index.
+
+## Change Log
+
+* **2026-05-29:**
+    * Initial Draft.

@@ -1,3 +1,10 @@
+---
+title: "EP-0103: Deductive Memory (The Cognitive Map)"
+description: "Evolves Tur's memory architecture from a linear event log into a compressed, topological Knowledge Graph."
+icon: lucide/brain
+status: active
+---
+
 # EP-0103: Deductive Memory (The Cognitive Map)
 
 | Field       | Value                                |

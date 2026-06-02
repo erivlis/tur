@@ -1,3 +1,10 @@
+---
+title: "EP-0107: Multi-Agent Swarm Readiness (Synchronization & Concurrency)"
+description: "Addresses concurrent MCP agent challenges via atomic writes and a subscribable MCP Resource model."
+icon: lucide/network
+status: draft
+---
+
 # EP-0107: Multi-Agent Swarm Readiness (Synchronization & Concurrency)
 
 | Field       | Value                                                       |

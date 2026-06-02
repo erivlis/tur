@@ -1,27 +1,32 @@
 ---
-title: "EP-0114: Global Persona Architecture: Separating Traveler from Local Terrain"
-description: "A proposal to migrate core persona configurations to a global home directory, ensuring zero-friction mobility across repositories."
+title: "EP-0114: Global Persona Architecture — Separating Traveler from Local Terrain"
+description: "Migrates core persona configurations to a global home directory for zero-friction mobility across repositories."
 icon: lucide/globe
-status: drafted
+status: draft
 ---
 
-# EP-0114: Global Persona Architecture: Separating Traveler from Local Terrain
+# EP-0114: Global Persona Architecture — Separating Traveler from Local Terrain
 
-**Date:** 2026-05-29  
-**Author:** Ariel v5.4.0 (The Alchemist)  
-**Status:** Drafted  
+| Field       | Value                                                                |
+|:------------|:---------------------------------------------------------------------|
+| **EP**      | 0114                                                                 |
+| **Title**   | Global Persona Architecture — Separating Traveler from Local Terrain |
+| **Author**  | Ariel v5.4.0, The Architect                                          |
+| **Status**  | Draft                                                                |
+| **Type**    | Standards Track                                                      |
+| **Created** | 2026-05-29                                                           |
+| **Updated** | 2026-05-29                                                           |
 
----
+## Abstract
 
-## 1. Objective
+This proposal decouples the **Traveler** (the persona's core configuration, parameters, and global identity) from the
+**Terrain** (the local project repository). By migrating core `persona.yaml` configurations and the global persona
+registry to a user-level directory (`~/.tur/`), Tur enables zero-friction portability of AI personas across multiple
+local codebases without configuration drift.
 
-To decouple the **Traveler** (the persona's core configuration, parameters, and global identity) from the **Terrain** (the local project repository). By migrating core `persona.yaml` configurations and global persona registries to a user-level global directory (`~/.tur/`), we enable zero-friction portability of AI personas across multiple local codebases.
+## Motivation
 
----
-
-## 2. Background & The Problem
-
-Currently, Tur stores persona configurations (such as `persona.yaml`) locally inside each project's `.tur/personas/` directory:
+Currently, Tur stores persona configurations locally inside each project's `.tur/personas/` directory:
 
 ```
 local-project/
@@ -34,81 +39,85 @@ local-project/
             └── sessions/
 ```
 
-This local-first configuration introduces three critical friction points:
-1. **Configuration Drift:** If a user updates a persona's parameters (e.g., system configuration, version, model settings) in project A, those changes do not replicate to project B.
-2. **Migration Friction:** Cloning a persona into a new repository requires physical file copies (`shutil.copytree`), which duplicates state and cognitive load.
-3. **Redundant Identity:** The persona's core identity becomes fragmented across multiple isolated project folders, violating the principle of a singular, evolving companion.
+This local-first layout introduces three critical friction points:
 
----
+1. **Configuration Drift:** Updates to a persona's parameters in project A do not propagate to project B.
+2. **Migration Friction:** Cloning a persona into a new repository requires physical file copies (`shutil.copytree`),
+   duplicating state and cognitive load.
+3. **Redundant Identity:** The persona's core identity fragments across isolated project folders, violating the principle
+   of a singular, continuously evolving Traveler.
 
-## 3. Proposed Architecture: The Global/Local Split
+## Rationale (The Council Framework)
 
-We propose a strict architectural separation between **Global Identity** and **Local Incarnation**:
+1. **The Golem (Containment):** Separating persona identity into a global directory creates a hard physical boundary
+   between the Traveler's DNA and any local Terrain. A project cannot accidentally corrupt or overwrite global identity
+   state.
+2. **Noether (Symmetry):** A single authoritative source of truth for the persona (`~/.tur/personas/[uuid]/`) eliminates
+   the asymmetry of multiple diverging local copies. All local workspaces read the same global baseline.
+3. **Shannon (Efficiency):** Local repositories remain featherweight — they store only transient execution artifacts
+   (sessions, sparks, incarnation memories). The global core avoids redundant duplication of the persona's heavy
+   constitutional data across every project.
 
-```
-Global Directory (~/.tur/)
-├── state.yaml                 <-- Global default active persona registry
-└── personas/
-    └── [persona-uuid]/
-        ├── persona.yaml       <-- Core settings, parameters, name, version
-        └── memories/
-            └── [universal]/   <-- Memories with scope: universal
+## Specification
 
-Local Project Directory (C:/dev/my-project/.tur/)
-├── state.yaml                 <-- Local session state
-└── sessions/                  <-- Project-specific session notes and sparks
-└── memories/
-    └── [incarnation]/         <-- Memories with scope: incarnation
-```
+### The Global/Local Split
+
+| Layer               | Path                                      | Contains                                                   |
+|:--------------------|:------------------------------------------|:-----------------------------------------------------------|
+| **Global Identity** | `~/.tur/personas/[uuid]/persona.yaml`     | Core metadata, directives, parameters, persona version     |
+| **Global Memory**   | `~/.tur/personas/[uuid]/memories/`        | Memories with `scope: universal` or `scope: user`          |
+| **Local State**     | `.tur/state.yaml`                         | Active persona pointer for this workspace                  |
+| **Local Session**   | `.tur/sessions/`                          | Session notes, sparks, and incarnation-scoped memories     |
 
 ### Path Resolution Logic
 
-When an agent or CLI command is executed:
-1. **Persona Identity:** Resolved from the Global directory `~/.tur/personas/`. The core `persona.yaml` is read exclusively from this global store.
-2. **Universal Memories:** Read from the Global persona's memory bank: `~/.tur/personas/[uuid]/memories/`.
-3. **Local Incarnation State:** Read and written locally inside the active project workspace's `.tur/` folder. This includes local sessions, session notes (`notes.yaml`), sparks, and project-specific incarnation memories.
+When a CLI command or MCP tool executes:
 
----
+1. **Persona Identity**: Resolved exclusively from `~/.tur/personas/`. The `persona.yaml` is never read from local paths.
+2. **Universal Memories**: Read from `~/.tur/personas/[uuid]/memories/`.
+3. **Local Incarnation State**: Read and written in the active project's `.tur/` folder.
 
-## 4. Proposed Changes
-
-### 4.1. `src/tur/persona.py`
-Modify `get_persona_path` and persona discovery to resolve paths globally:
+The canonical path predicates live in `src/tur/paths.py`:
 
 ```python
 def get_global_tur_dir() -> Path:
-    """Returns the global user-level Tur directory (~/.tur/)."""
     return Path.home() / ".tur"
 
-def get_persona_path(identifier: str) -> Path:
-    """
-    Locates a persona's core directory globally.
-    Falls back to local if legacy mode requires it.
-    """
-    global_dir = get_global_tur_dir() / "personas"
-    
-    # 1. Search globally by UUID or Name
-    # ...
+def resolve_personas_base_dir() -> Path:
+    return get_global_tur_dir() / "personas"
+
+def is_global_path(path: Path) -> bool:
+    return path.is_relative_to(get_global_tur_dir())
 ```
 
-### 4.2. `src/tur/cli.py` & `src/tur/mcp_server.py`
-Update CLI commands (`init`, `status`, `switch`) to write core configurations to the global home directory, while reserving local workspaces strictly for local execution files.
+No other module may inline these paths; all imports must come from `paths.py`.
 
-* **`tur init`**: Creates the persona in the global directory `~/.tur/personas/[uuid]`.
-* **`tur wake`**: Compiles the prompt by fetching the global persona configuration and blending it with the local project's active session state and incarnation memories.
+### CLI Impact
 
----
+* **`tur init`**: Creates the persona in `~/.tur/personas/[uuid]/`.
+* **`tur wake`**: Compiles the system prompt by fetching the global persona configuration and blending it with the local
+  workspace's active session state and incarnation memories.
+* **`tur switch`**: Updates `~/.tur/state.yaml` (global default) or `.tur/state.yaml` (local override).
 
-## 5. Benefits
+## Backwards Compatibility
 
-1. **Zero-Friction Portability:** To activate Ariel in a new repository (e.g., `mappingtools`), simply run `tur wake Ariel`. Tur instantly initializes a lightweight local `.tur/` folder and links it to the global Ariel persona.
-2. **No Configuration Drift:** A single, authoritative source of truth for Ariel's identity lives on the machine.
-3. **Clean Boundaries:** Local repositories remain lightweight, storing only local development context, while the global core remains clean of project-specific clutter.
+* **Breaking Change:** Existing personas stored in local `.tur/personas/` directories must be migrated to
+  `~/.tur/personas/`. A one-time migration path is provided via `tur admin migrate` (or equivalent) which copies local
+  persona directories to the global store and updates path references.
+* **Fallback:** During the transition period, Tur CLI commands may detect legacy local-only personas and emit a
+  deprecation warning prompting migration.
 
----
+## Reference Implementation
 
-## 6. Verification Plan
+* `src/tur/paths.py` — canonical path predicates (`is_global_path`, `resolve_personas_base_dir`,
+  `ensure_local_persona_dir`).
+* `tests/test_persona.py` — assert that core persona paths resolve to the mocked user home directory, and that two
+  separate temp workspaces under the same mock home compile the same global persona but maintain separate local sessions.
 
-### Automated Tests
-* Update `test_persona.py` to assert that core persona paths resolve to the mocked user home directory instead of the project root.
-* Verify that running `tur wake` in two different temporary directories under the same mocked home directory successfully compiles the identical global persona but starts separate local sessions.
+## Change Log
+
+* **2026-05-29:**
+    * Initial Draft.
+    * Council of Giants review: 5 REJECT / 4 APPROVE WITH CONCERNS. Key remediations applied: tarball path traversal
+      fixed, `get_local_persona_dir` split into pure getter + `ensure_local_persona_dir`, export injects `id` from
+      index, import rejects archives missing persona `id`, `switch` fixed to global-first resolution.

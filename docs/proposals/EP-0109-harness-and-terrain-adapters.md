@@ -1,3 +1,10 @@
+---
+title: "EP-0109: Harness and Terrain Adapters (The Space Suit Protocol)"
+description: "Proposes the Adapter Pattern for bridging Tur's core identity with external harnesses and terrain environments."
+icon: lucide/plug
+status: superseded
+---
+
 # EP-0109: Harness and Terrain Adapters (The Space Suit Protocol)
 
 | Field       | Value                                                  |

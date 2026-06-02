@@ -1,3 +1,10 @@
+---
+title: "EP-0108: The Fractal Memory Hierarchy (The Spark Protocol)"
+description: "Defines the symmetrical four-tiered Fractal Memory Hierarchy and the Spark Protocol for short-term session memory."
+icon: lucide/zap
+status: active
+---
+
 # EP-0108: The Fractal Memory Hierarchy (The Spark Protocol)
 
 | Field       | Value                                             |

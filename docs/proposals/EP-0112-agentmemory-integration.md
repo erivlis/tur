@@ -1,3 +1,10 @@
+---
+title: "EP-0112: Symmetrical Sovereign Symbiosis (agentmemory Integration)"
+description: "Establishes a dual-symbiote architecture with agentmemory as the high-frequency memory engine alongside Tur."
+icon: lucide/hard-drive
+status: draft
+---
+
 # EP-0112: Symmetrical Sovereign Symbiosis (agentmemory Integration)
 
 | Field       | Value                                                     |

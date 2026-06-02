@@ -1,3 +1,10 @@
+---
+title: "EP-0102: The Tur Orchestration Engine (MCP + ACP + Skills)"
+description: "Transforms Tur from a static prompt compiler into a distributed, multi-tenant agent operating system."
+icon: lucide/cpu
+status: active
+---
+
 # EP-0102: The Tur Orchestration Engine (MCP + ACP + Skills)
 
 | Field       | Value                        |

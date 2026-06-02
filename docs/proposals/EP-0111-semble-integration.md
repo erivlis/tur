@@ -1,3 +1,10 @@
+---
+title: "EP-0111: Federated Code Search (Semble Integration)"
+description: "Recommends Semble as the dual-symbiote Terrain Search Engine for token-efficient codebase discovery."
+icon: lucide/search
+status: draft
+---
+
 # EP-0111: Federated Code Search (Semble Integration)
 
 | Field       | Value                                      |

@@ -1,3 +1,10 @@
+---
+title: "EP-0000: Tur Enhancement Proposals"
+description: "The process for creating, reviewing, and implementing Tur Enhancement Proposals (EPs)."
+icon: lucide/file-text
+status: active
+---
+
 # EP-0000: Tur Enhancement Proposals
 
 | Field       | Value                     |
@@ -47,6 +54,13 @@ careful consideration. EPs provide a structured way to:
 ## Template
 
 ```markdown
+---
+title: "EP-XXXX: Title"
+description: "One-sentence summary of the proposal — used in navigation and search."
+icon: lucide/<icon-name>
+status: draft
+---
+
 # EP-XXXX: Title
 
 | Field | Value |
