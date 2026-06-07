@@ -567,6 +567,33 @@ def tired(
         raise typer.Exit(code=1)
 
 
+@app.command()
+def verify(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+):
+    """Verify the cryptographic integrity of all memory files (EP-0106)."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+
+        console.print(f"Verifying memory integrity for persona '{active_id}'...")
+        failures = memory_manager.verify_integrity()
+        if failures:
+            console.print('[bold red]TAMPERED STATE: Cryptographic verification failed![/bold red]')
+            for path, error in failures:
+                console.print(f'  [red]File:[/red] {path}')
+                console.print(f'  [red]Reason:[/red] {error}')
+            raise typer.Exit(code=1)
+
+        console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
+    except Exception as e:
+        console.print(f'[bold red]TAMPERED STATE: {e}[/bold red]')
+        raise typer.Exit(code=1)
+
+
 def main():
     app()
 

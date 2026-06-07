@@ -147,6 +147,52 @@ class MemoryManager:
         memories.sort(key=lambda x: x.timestamp)
         return memories
 
+    def verify_integrity(self) -> list[tuple[Path, str]]:
+        """
+        EP-0106: Merkle Memory.
+        Iterates through all .yaml files in the active and archived memory banks,
+        recomputes the SHA-256 hashes of their contents, and asserts they match their filenames.
+        Returns a list of tuples containing (file_path, error_reason) for any failures.
+        """
+        failures = []
+        directories = [self.local_dir, self.global_dir, self.local_archive_dir, self.global_archive_dir]
+        for directory in directories:
+            if not directory.exists():
+                continue
+            for file_path in directory.glob('*.yaml'):
+                if not file_path.is_file():
+                    continue
+                try:
+                    with open(file_path, encoding='utf-8') as f:
+                        data = yaml.safe_load(f)
+
+                    if not data or not isinstance(data, dict):
+                        failures.append((file_path, 'Invalid YAML structure or empty file'))
+                        continue
+
+                    stored_id = data.get('id', '')
+                    if not stored_id:
+                        failures.append((file_path, "Missing 'id' field in YAML"))
+                        continue
+
+                    expected_suffix = f'_{stored_id}.yaml'
+                    if not file_path.name.endswith(expected_suffix):
+                        failures.append((file_path, f'Filename does not match stored ID: {stored_id}'))
+                        continue
+
+                    test_data = data.copy()
+                    if 'id' in test_data:
+                        del test_data['id']
+                    if 'status' in test_data:
+                        del test_data['status']
+
+                    recomputed_mem = Memory(**test_data)
+                    if recomputed_mem.id != stored_id:
+                        failures.append((file_path, f'Computed hash {recomputed_mem.id} does not match stored ID {stored_id}'))
+                except Exception as e:
+                    failures.append((file_path, f'Failed to parse or hash memory: {e}'))
+        return failures
+
     @staticmethod
     def _load_file(file_path: Path) -> Memory | None:
         try:

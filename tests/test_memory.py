@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tur.memory import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
@@ -312,3 +313,79 @@ def test_memory_manager_invalid_scope(temp_home_and_base):
     with pytest.raises(ValueError) as exc:
         manager._get_target_dirs('unsupported-scope')
     assert 'Unsupported MemoryScope' in str(exc.value)
+
+
+def test_verify_integrity_success(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 5, 29, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='Original valid memory.',
+    )
+    manager.save(mem)
+
+    failures = manager.verify_integrity()
+    assert len(failures) == 0
+
+
+def test_verify_integrity_tampered_id(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 5, 29, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='Memory to be tampered.',
+    )
+    saved_path = manager.save(mem)
+
+    # Break Golem's seal to write
+    os.chmod(saved_path, 0o666)
+
+    # Read and modify ID
+    with open(saved_path, encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    data['id'] = 'tampered-id-123'
+
+    with open(saved_path, 'w', encoding='utf-8') as f:
+        yaml.dump(data, f)
+
+    failures = manager.verify_integrity()
+    assert len(failures) > 0
+    assert any('tampered-id-123' in err for _, err in failures)
+
+
+def test_verify_integrity_tampered_content(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 5, 29, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='Original content.',
+    )
+    saved_path = manager.save(mem)
+
+    # Break Golem's seal to write
+    os.chmod(saved_path, 0o666)
+
+    # Read and modify content (but keep filename and stored ID same)
+    with open(saved_path, encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    data['content'] = 'Tampered content.'
+
+    with open(saved_path, 'w', encoding='utf-8') as f:
+        yaml.dump(data, f)
+
+    failures = manager.verify_integrity()
+    assert len(failures) > 0
+    assert any('Computed hash' in err for _, err in failures)
+
