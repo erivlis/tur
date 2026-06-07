@@ -95,7 +95,7 @@ uv run tur sleep path/to/chat.log ariel
 engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
 
 ```shell
-uv run tur-mcp --transport stdio
+uv run tur-mcp
 ```
 
 ### 6. View Memories (`memories`)

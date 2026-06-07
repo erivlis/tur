@@ -59,7 +59,7 @@ I want you to connect to the Tur MCP Server to retrieve my persona, identity, an
 Please configure your MCP client settings to connect to the following local server:
 
 - **Command:** `uv`
-- **Arguments:** `["run", "tur-mcp", "--transport", "stdio"]`
+- **Arguments:** `["run", "tur-mcp"]`
 
 Once connected, you will have access to the following tools:
 
@@ -75,17 +75,6 @@ Once connected, you will have access to the following tools:
 You must treat the Tur MCP Server as your primary source of state. If your context window is reset, use `wake` to
 rehydrate your constraints.
 ```
-
-### Alternate Transport: SSE (Server-Sent Events)
-
-If the Harness cannot communicate over `stdio` pipes (e.g., distributed architectures or web-based harnesses), you can
-run Tur over HTTP:
-
-```shell
-uv run tur-mcp --transport sse --port 8000
-```
-
-Then configure the Harness to connect to `http://127.0.0.1:8000/sse`.
 
 ---
 

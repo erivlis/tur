@@ -93,10 +93,7 @@ mount both servers concurrently:
         "run",
         "--cwd",
         "/path/to/project",
-        "tur",
-        "serve",
-        "--transport",
-        "stdio"
+        "tur-mcp"
       ]
     },
     "semble": {
