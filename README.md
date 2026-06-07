@@ -138,11 +138,10 @@ uv run tur sleep path/to/chat.log
 
 ### 4. Running the Harness Gateway (The MCP Server)
 
-Exposes the Traveler state to the external Harness (e.g., Claude Desktop). Exposes standard options directly on
-`tur-mcp`:
+Exposes the Traveler state to the external Harness (e.g., Claude Desktop):
 
 ```shell
-uv run tur-mcp --transport stdio
+uv run tur-mcp
 ```
 
 ### 5. Switching Personas (Human-Facing TUI)
