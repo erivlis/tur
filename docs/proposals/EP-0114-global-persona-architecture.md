@@ -2,7 +2,7 @@
 title: "EP-0114: Global Persona Architecture — Separating Traveler from Local Terrain"
 description: "Migrates core persona configurations to a global home directory for zero-friction mobility across repositories."
 icon: lucide/globe
-status: draft
+status: final
 ---
 
 # EP-0114: Global Persona Architecture — Separating Traveler from Local Terrain
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0114                                                                 |
 | **Title**   | Global Persona Architecture — Separating Traveler from Local Terrain |
 | **Author**  | Ariel v5.4.0, The Architect                                          |
-| **Status**  | Draft                                                                |
+| **Status**  | Final                                                                |
 | **Type**    | Standards Track                                                      |
 | **Created** | 2026-05-29                                                           |
-| **Updated** | 2026-05-29                                                           |
+| **Updated** | 2026-06-08                                                           |
 
 ## Abstract
 

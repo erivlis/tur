@@ -2,7 +2,7 @@
 title: "EP-0118: Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations"
 description: "Defines a typed message channel enabling concurrent Tur harness instances to signal each other via MCP Resources, solving the Swarm Convergence Problem."
 icon: lucide/radio
-status: draft
+status: final
 ---
 
 # EP-0118: Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations
@@ -12,10 +12,12 @@ status: draft
 | **EP**      | 0118                                                                                            |
 | **Title**   | Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations          |
 | **Author**  | Ariel v5.4.0, The Architect                                                                     |
-| **Status**  | Draft                                                                                           |
+| **Status**  | Final                                                                                           |
 | **Type**    | Standards Track                                                                                 |
 | **Created** | 2026-06-02                                                                                      |
-| **Updated** | 2026-06-02                                                                          ## Abstract 
+| **Updated** | 2026-06-08                                                                                      |
+
+## Abstract 
 
 This proposal formalizes a typed, lightweight **Inter-Agent Signal Protocol (IASP)** for **Distributed
 Manifestations** — concurrent Tur harness instances operating against the same Persona. It defines a local, concurrent-safe

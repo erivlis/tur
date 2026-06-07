@@ -2,7 +2,7 @@
 title: "EP-0104: Federated Knowledge (Universal vs. Incarnational Memory)"
 description: "Separates a Persona's universal knowledge from project-specific context in a federated two-tiered system."
 icon: lucide/database
-status: active
+status: final
 ---
 
 # EP-0104: Federated Knowledge (Universal vs. Incarnational Memory)
@@ -12,10 +12,10 @@ status: active
 | **EP**      | 0104                                                     |
 | **Title**   | Federated Knowledge (Universal vs. Incarnational Memory) |
 | **Author**  | The Architect                                            |
-| **Status**  | Active                                                   |
+| **Status**  | Final                                                    |
 | **Type**    | Standards Track                                          |
 | **Created** | 2026-04-12                                               |
-| **Updated** | 2026-04-18                                               |
+| **Updated** | 2026-06-08                                               |
 
 ## Abstract
 

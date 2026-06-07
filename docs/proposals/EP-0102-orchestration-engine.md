@@ -2,7 +2,7 @@
 title: "EP-0102: The Tur Orchestration Engine (MCP + ACP + Skills)"
 description: "Transforms Tur from a static prompt compiler into a distributed, multi-tenant agent operating system."
 icon: lucide/cpu
-status: active
+status: deferred
 ---
 
 # EP-0102: The Tur Orchestration Engine (MCP + ACP + Skills)
@@ -12,10 +12,10 @@ status: active
 | **EP**      | 0102                         |
 | **Title**   | The Tur Orchestration Engine |
 | **Author**  | The Architect                |
-| **Status**  | Active                       |
+| **Status**  | Deferred                     |
 | **Type**    | Standards Track              |
 | **Created** | 2026-04-12                   |
-| **Updated** | 2026-04-12                   |
+| **Updated** | 2026-06-08                   |
 
 ## Abstract
 
@@ -56,12 +56,11 @@ Allow Tur to dynamically ingest remote markdown files (Skills) into a Persona's 
 
 Tur implements a dual-sided MCP architecture.
 
-**2a. Tur as an MCP Server (Implemented)**
+**2a. Tur as an MCP Server (Superseded by EP-0105)**
 
 * **Mechanism:** Tur exposes its internal state and memory management to external LLMs/IDEs (e.g., Cursor, Claude
   Desktop) via a standard JSON-RPC stdio interface (`tur.mcp_server`).
-* **Tools Exposed:** `tur_wake`, `tur_compile`, `tur_memorize`, `tur_telemetry`, `tur_forget`, `tur_list_memories`,
-  `tur_list_personas`.
+* **Tools Exposed:** Originally proposed `tur_wake`, `tur_compile`, `tur_memorize`, etc. These have been refactored and superseded by the Ontological Porcelain API (`status`, `wake`, `learn`, `note`, `sleep`, `recall`, etc.) specified in [EP-0105](file:///C:/dev/erivlis/tur/docs/proposals/EP-0105-mcp-sdk-integration.md).
 * **Result:** Other agents can autonomously read Tur constitutions and inject permanent memories.
 
 **2b. Tur as an MCP Client (Pending)**
@@ -87,12 +86,15 @@ function without MCP/ACP configuration. The core `.tur/` schema requires a new m
 ## Reference Implementation
 
 * **Tur MCP Server:** Implemented in `src/tur/mcp_server.py`. Registered via `mcp-server-tur` executable in
-  `pyproject.toml`.
+  `pyproject.toml`. Refactored under [EP-0105](file:///C:/dev/erivlis/tur/docs/proposals/EP-0105-mcp-sdk-integration.md).
 * **Skill Ingestion:** Partially implemented (Manual string ingestion supported via CLI and `tur_memorize` MCP tool).
 * **ACP Swarm:** Pending prototyping.
 
 ## Change Log
 
+* **2026-06-08:**
+    * Updated Status to Deferred (parked for later consideration).
+    * Noted that Section 2a ("Tur as an MCP Server") is superseded by [EP-0105](file:///C:/dev/erivlis/tur/docs/proposals/EP-0105-mcp-sdk-integration.md) (FastMCP SDK integration & Ontological Porcelain).
 * **2026-04-12:**
     * Initial Draft.
     * Updated Status to Active.

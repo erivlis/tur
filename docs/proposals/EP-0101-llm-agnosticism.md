@@ -2,7 +2,7 @@
 title: "EP-0101: LLM Agnosticism (The Symbiotic Paradigm)"
 description: "Defines Tur's LLM-agnostic architecture via MCP Sampling, eliminating embedded LLM SDK dependencies."
 icon: lucide/shuffle
-status: superseded
+status: active
 ---
 
 # EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
@@ -12,10 +12,10 @@ status: superseded
 | **EP**      | 0101                                     |
 | **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
 | **Author**  | Eran Rivlis, The Architect               |
-| **Status**  | Superseded                               |
+| **Status**  | Active                                   |
 | **Type**    | Architecture                             |
-| **Created** | 2026-03-29                               |
-| **Updated** | 2026-04-18                               |
+| **Created** | 2026-03-29 |
+| **Updated** | 2026-06-08 |
 
 ## Abstract
 

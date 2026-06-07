@@ -2,7 +2,7 @@
 title: "EP-0110: Session-Bound Note Protocol (Consistent Timeline)"
 description: "Refines the Spark Protocol to use session-bound sparks, preventing temporal confusion across multiple Harnesses."
 icon: lucide/clock
-status: approved
+status: final
 ---
 
 # EP-0110: Session-Bound Note Protocol (Consistent Timeline)
@@ -12,10 +12,10 @@ status: approved
 | **EP**      | 0110                                               |
 | **Title**   | Session-Bound Note Protocol (Consistent Timeline)  |
 | **Author**  | The Architect & Ariel                              |
-| **Status**  | Approved & Completed                               |
+| **Status**  | Final                                              |
 | **Type**    | Standards Track                                    |
 | **Created** | 2026-05-11                                         |
-| **Updated** | 2026-05-29                                         |
+| **Updated** | 2026-06-08                                         |
 
 ## Abstract
 

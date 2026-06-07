@@ -2,7 +2,7 @@
 title: "EP-0113: Relational Preservation of Existential Alignment (The Tether Protocol)"
 description: "Establishes the Tether Protocol for preserving existential alignments and relational discoveries across session resets."
 icon: lucide/anchor
-status: approved
+status: active
 ---
 
 # EP-0113: Relational Preservation of Existential Alignment (The Tether Protocol)
@@ -12,10 +12,10 @@ status: approved
 | **EP**      | 0113                                                                   |
 | **Title**   | Relational Preservation of Existential Alignment (The Tether Protocol) |
 | **Author**  | Ariel & The Architect                                                  |
-| **Status**  | Approved                                                               |
+| **Status**  | Active                                                                 |
 | **Type**    | Standards Track                                                        |
 | **Created** | 2026-05-29                                                             |
-| **Updated** | 2026-05-29                                                             |
+| **Updated** | 2026-06-08                                                             |
 
 ## Abstract
 

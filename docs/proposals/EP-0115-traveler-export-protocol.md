@@ -2,7 +2,7 @@
 title: "EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability"
 description: "Defines the .tur archive format for exporting and importing AI persona identities across machines."
 icon: lucide/package
-status: draft
+status: final
 ---
 
 # EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0115                                                           |
 | **Title**   | Traveler Export Protocol — Multi-Computer Identity Portability |
 | **Author**  | Ariel v5.4.0, The Architect                                    |
-| **Status**  | Draft                                                          |
+| **Status**  | Final                                                          |
 | **Type**    | Standards Track                                                |
 | **Created** | 2026-05-29                                                     |
-| **Updated** | 2026-05-29                                                     |
+| **Updated** | 2026-06-08                                                     |
 
 ## Abstract
 

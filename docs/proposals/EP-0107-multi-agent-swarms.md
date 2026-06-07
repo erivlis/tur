@@ -2,7 +2,7 @@
 title: "EP-0107: Multi-Agent Swarm Readiness (Synchronization & Concurrency)"
 description: "Addresses concurrent MCP agent challenges via atomic writes and a subscribable MCP Resource model."
 icon: lucide/network
-status: draft
+status: deferred
 ---
 
 # EP-0107: Multi-Agent Swarm Readiness (Synchronization & Concurrency)
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0107                                                        |
 | **Title**   | Multi-Agent Swarm Readiness (Synchronization & Concurrency) |
 | **Author**  | The Architect                                               |
-| **Status**  | Draft                                                       |
+| **Status**  | Deferred                                                    |
 | **Type**    | Standards Track                                             |
 | **Created** | 2026-04-18                                                  |
-| **Updated** | 2026-04-18                                                  |
+| **Updated** | 2026-06-08                                                  |
 
 ## Abstract
 

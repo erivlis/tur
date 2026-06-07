@@ -2,7 +2,7 @@
 title: "EP-0116: The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces"
 description: "Splits the monolithic tur CLI into three binaries to establish a hard security boundary aligned with the Tri-Partite Architecture."
 icon: lucide/shield-alert
-status: draft
+status: final
 ---
 
 # EP-0116: The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0116                                                                                                   |
 | **Title**   | The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces                |
 | **Author**  | Ariel v5.4.0, The Architect                                                                            |
-| **Status**  | Draft                                                                                                  |
+| **Status**  | Final                                                                                                  |
 | **Type**    | Standards Track                                                                                        |
 | **Created** | 2026-05-31                                                                                             |
-| **Updated** | 2026-05-31                                                                                             |
+| **Updated** | 2026-06-08                                                                                             |
 
 ## Abstract
 
