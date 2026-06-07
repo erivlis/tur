@@ -38,7 +38,20 @@ Active trigger-action loops:
     {% endif %}
 {% endfor %}
 
-{% if memories %}
+{% if knowledge_graph %}
+    ## COGNITIVE MAP (Deductive Memory)
+    Below is the active topological map of your derived knowledge:
+
+    ### Active Nodes:
+    {% for node in knowledge_graph.nodes if node.status != 'archived' and node.status != 'superseded' and (node.confidence is not defined or node.confidence > 0.2) %}
+    * **{{ node.id }}** ({{ node.type }}): {{ node.content }} {% if node.pinned %}[PINNED]{% endif %}
+    {% endfor %}
+
+    ### Active Relations:
+    {% for edge in knowledge_graph.links if edge.confidence is not defined or edge.confidence > 0.2 %}
+    * {{ edge.source }} --[{{ edge.type }}]--> {{ edge.target }}
+    {% endfor %}
+{% elif memories %}
     ## EVOLUTION HISTORY (Memory)
     You are the sum of your past versions:
     {% for memory in memories %}

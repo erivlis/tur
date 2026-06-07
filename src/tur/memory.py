@@ -33,10 +33,12 @@ class MemoryManager:
         else:
             self.local_dir = base_dir / 'memories'
         self.local_archive_dir = self.local_dir / 'archive'
+        self.local_subsumed_dir = self.local_dir.parent / 'subsumed'
 
         # Calculate the global equivalent: ~/.tur/personas/<uuid>
         self.global_dir = Path.home() / '.tur' / 'personas' / persona_id / 'memories'
         self.global_archive_dir = self.global_dir / 'archive'
+        self.global_subsumed_dir = self.global_dir.parent / 'subsumed'
 
         self._ensure_dirs()
 
@@ -44,8 +46,10 @@ class MemoryManager:
         """Creates the necessary directory structures for both local and global memory banks."""
         self.local_dir.mkdir(parents=True, exist_ok=True)
         self.local_archive_dir.mkdir(parents=True, exist_ok=True)
+        self.local_subsumed_dir.mkdir(parents=True, exist_ok=True)
         self.global_dir.mkdir(parents=True, exist_ok=True)
         self.global_archive_dir.mkdir(parents=True, exist_ok=True)
+        self.global_subsumed_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path, Path]:
         """
@@ -122,6 +126,41 @@ class MemoryManager:
         # os.replace is atomic across the same filesystem
         os.replace(source_path, target_path)
 
+    def subsume(self, memory_id: str):
+        """
+        Moves a memory to the subsumed directory (compacted but still recoverable).
+        Searches both the local and global federated banks.
+        """
+        files = list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+        target_subsumed = self.local_subsumed_dir
+
+        if not files:
+            files = list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+            target_subsumed = self.global_subsumed_dir
+
+        if not files:
+            raise FileNotFoundError(f'No memory found across federated banks with ID: {memory_id}')
+
+        source_path = files[0]
+        target_path = target_subsumed / source_path.name
+        os.replace(source_path, target_path)
+
+    def load_subsumed(self) -> list[Memory]:
+        """
+        Loads all subsumed memories from both local and global subsumed directories.
+        """
+        memories = []
+        directories = [self.local_subsumed_dir, self.global_subsumed_dir]
+        for directory in directories:
+            if directory.exists():
+                for file_path in directory.glob('*.yaml'):
+                    if file_path.is_file():
+                        mem = self._load_file(file_path)
+                        if mem:
+                            memories.append(mem)
+        memories.sort(key=lambda x: x.timestamp)
+        return memories
+
     def load_all(self, include_archived: bool = False) -> list[Memory]:
         """
         Retrieves all memories by merging the local and global memory banks (Federation).
@@ -150,12 +189,19 @@ class MemoryManager:
     def verify_integrity(self) -> list[tuple[Path, str]]:
         """
         EP-0106: Merkle Memory.
-        Iterates through all .yaml files in the active and archived memory banks,
+        Iterates through all .yaml files in the active, archived and subsumed memory banks,
         recomputes the SHA-256 hashes of their contents, and asserts they match their filenames.
         Returns a list of tuples containing (file_path, error_reason) for any failures.
         """
         failures = []
-        directories = [self.local_dir, self.global_dir, self.local_archive_dir, self.global_archive_dir]
+        directories = [
+            self.local_dir,
+            self.global_dir,
+            self.local_archive_dir,
+            self.global_archive_dir,
+            self.local_subsumed_dir,
+            self.global_subsumed_dir,
+        ]
         for directory in directories:
             if not directory.exists():
                 continue

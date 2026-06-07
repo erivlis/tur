@@ -152,7 +152,16 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
         else:
             epilogue_content = compile_session_notes(persona_dir, None)
 
-    return SessionState(persona=persona, user=user, memories=memories, epilogue=epilogue_content)
+    kg_path = persona_dir / 'knowledge_graph.yaml'
+    kg_data = None
+    if kg_path.exists():
+        try:
+            with open(kg_path, encoding='utf-8') as f:
+                kg_data = yaml.safe_load(f)
+        except Exception:
+            pass
+
+    return SessionState(persona=persona, user=user, memories=memories, epilogue=epilogue_content, knowledge_graph=kg_data)
 
 
 def db_retry(max_retries=5, initial_delay=0.05, backoff_factor=2.0):

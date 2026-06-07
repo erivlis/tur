@@ -325,21 +325,10 @@ def recall(query: str) -> str:
     Args:
         query: The topic or concept to search for in past memories.
     """
+    from tur.recall import topological_recall
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
-    manager = MemoryManager(base_dir=persona_dir)
-    mems = manager.load_all(include_archived=False)
-
-    # Very basic substring search for now (L1 Event Log).
-    # Will be upgraded to semantic graph traversal under EP-0103.
-    query_lower = query.lower()
-    results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
-
-    if not results:
-        return f"No memories found matching query: '{query}'"
-
-    mem_list = [{'id': str(m.id), 'type': m.type.value, 'content': m.content} for m in results]
-    return json.dumps(mem_list, indent=2)
+    return topological_recall(query, persona_dir)
 
 
 @mcp.tool()

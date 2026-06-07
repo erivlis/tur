@@ -60,3 +60,34 @@ def test_compile_persona_renders_all_fields():
     assert 'Contemplative' in prompt
     assert 'Testing ensures reliability.' in prompt
     assert 'Keep the light burning.' in prompt
+
+
+def test_compile_persona_renders_knowledge_graph():
+    persona = Persona(
+        name='Ariel',
+        aleph='To manifest clarity in the infinite garden.',
+        principles=[],
+        protocols=[],
+        speech_modulations=[],
+    )
+    user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
+    kg_data = {
+        "directed": True,
+        "multigraph": False,
+        "graph": {},
+        "nodes": [
+            {"id": "node-1", "type": "Fact", "content": "Knowledge graph is active.", "status": "active", "confidence": 1.0, "pinned": True}
+        ],
+        "links": [
+            {"source": "node-1", "target": "node-2", "type": "precedes", "confidence": 1.0}
+        ]
+    }
+    state = SessionState(persona=persona, user=user, memories=[], epilogue=None, knowledge_graph=kg_data)
+    prompt = compile_persona(state)
+
+    assert "COGNITIVE MAP" in prompt
+    assert "node-1" in prompt
+    assert "Fact" in prompt
+    assert "Knowledge graph is active." in prompt
+    assert "node-1 --[precedes]--> node-2" in prompt
+    assert "EVOLUTION HISTORY" not in prompt

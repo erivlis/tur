@@ -150,24 +150,12 @@ def recall(
 ):
     """Search your deep memory bank for past events, decisions, or knowledge."""
     try:
+        from tur.recall import topological_recall
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        mems = memory_manager.load_all(include_archived=False)
-
-        query_lower = query.lower()
-        results = [
-            m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)
-        ]
-
-        if not results:
-            console.print(f"No memories found matching query: '{query}'")
-            return
-
-        import json
-
-        mem_list = [{'id': str(m.id), 'type': m.type.value, 'content': m.content} for m in results]
-        console.print(json.dumps(mem_list, indent=2))
+        
+        result_json = topological_recall(query, persona_dir)
+        console.print(result_json)
 
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
@@ -591,6 +579,38 @@ def verify(
         console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
     except Exception as e:
         console.print(f'[bold red]TAMPERED STATE: {e}[/bold red]')
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def meditate(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    all: bool = typer.Option(False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'),
+    visualize: bool = typer.Option(False, '--visualize', help='Output a Mermaid representation of the Knowledge Graph.'),
+    model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'),
+    test_mode: bool = typer.Option(False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'),
+):
+    """
+    Compress L1 event logs into a topological L2 Knowledge Graph using the Council of Giants.
+    """
+    try:
+        from tur.meditation import run_meditation, format_graph_as_mermaid
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+
+        console.print(f"Running Council Meditation Assembly for persona '{active_id}'...")
+        graph = run_meditation(persona_dir, bootstrap=all, model=model, test_mode=test_mode)
+        console.print("[bold green]Meditation Assembly completed successfully. L2 Cognitive Map updated.[/bold green]")
+
+        if visualize:
+            console.print("\n[bold cyan]--- Mermaid L2 Graph ---[/bold cyan]")
+            console.print(format_graph_as_mermaid(graph))
+            console.print("[bold cyan]------------------------[/bold cyan]")
+
+    except Exception as e:
+        console.print(f"[red]Error during meditation: {e}[/red]")
         raise typer.Exit(code=1)
 
 
