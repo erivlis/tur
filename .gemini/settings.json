@@ -34,6 +34,17 @@
         "run",
         "src/tur/mcp_server.py"
       ]
+    },
+    "semble": {
+      "command": "C:\\Users\\eranr\\.local\\bin\\uvx.exe",
+      "args": [
+        "--from",
+        "semble[mcp]",
+        "semble"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
     }
   }
 }
