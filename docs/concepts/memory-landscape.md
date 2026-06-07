@@ -25,20 +25,21 @@ alignment, positioning **Tur** as the sovereign constitutional controller on top
 
 ## 🏛️ The Cognitive Memory Landscape Matrix
 
-| System                                                                                                                   | Storage Medium                                                        | Retrieval Mathematics / Scoring                                   | Key Cognitive Primitives                                                | Token Efficiency                                             | Philosophical Paradigm                                                 |
-|:-------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------|:------------------------------------------------------------------|:------------------------------------------------------------------------|:-------------------------------------------------------------|:-----------------------------------------------------------------------|
-| [**Tur** (Traveler)](https://github.com/erivlis/tur)                                                                     | Plain YAML files, Merkle-hashed event ledgers, Graph representations. | Symmetrical FTS5 + L2 relationship graph queries.                 | Symmetrical CLI/MCP, 9 Council Principles, Epilogue Sparks.             | Progressive Disclosure (YAML frontmatter indexing).          | **The Sovereign Traveler**: Mind/DNA decoupled from execution.         |
-| [**MnemoCore**](https://github.com/RobinALG87/MnemoCore-Persistent-Cognitive-Ai-Memory)                                  | packed numpy arrays (16,384-dim binary vectors).                      | Hamming distance (vectorized popcount XOR math).                  | VSA algebra (bind, bundle, permute), dream loops, Hebbian synapses.     | holographic array compression (2,048 bytes per concept).     | **holographic Connectionism**: Memory is a living, algebraic process.  |
-| [**Revien**](https://github.com/lkmconstructs/revien)                                                                    | SQLite-backed entity & decision relationship graphs.                  | 3-factor: Recency (decay) + Frequency + Proximity (hop distance). | Spreading activation, self-reinforcing nodes, compact-nothing storage.  | Edge-walking retrieval (avoids database embeddings).         | **Active Associative Graph**: Memory walks relationships.              |
-| [**Temple Vault**](https://github.com/templetwo/temple-vault)                                                            | Plain directory trees and markdown files.                             | `glob` path patterns + local JSON indexing.                       | Active domains, Oracle witnesses, Convergent North Vector embedding.    | Path is Model; domain-nested O(files) indexing.              | **Physical Emergence**: Filesystem is not storage; it is memory.       |
-| [**agentmemory**](https://github.com/toastpack/agentmemory) / [**ai-memory**](https://github.com/akitaonrails/ai-memory) | SQLite database (iii-engine), local markdown wiki files.              | BM25 + Vector + Graph Reciprocal Rank Fusion (RRF).               | 12 auto-capture shell hooks, session playback visual dashboards.        | Retrieves exact code/chat chunks (92% token savings).        | **automated Hook Engine**: High-frequency, zero-friction capture.      |
-| [**recall**](https://github.com/nsawill1405/recall)                                                                      | Single SQLite file per namespace.                                     | Semantic cosine similarity + tag-filtered lookup.                 | Namespace separation, automatic redaction, TTL-based pruning.           | TTL-driven garbage collection of expired memories.           | **Ergonomic Namespace Vault**: Single-file, compact local storage.     |
-| [**Mem0**](https://github.com/mem0ai/mem0) & **Cloudflare Memory**                                                       | SQLite, Durable Objects, Vectorize indexes.                           | Vector + HyDE + FTS + exact key Reciprocal Rank Fusion (RRF).     | Single-pass ADD-only extraction, deterministic date arithmetic.         | Topic-supersession chains, topic-based pruning.              | **managed Compaction Symbiote**: Symmetrical managed recall.           |
-| [**NeuralVaultCore**](https://github.com/getobyte/NeuralVaultCore)                                                       | Local-first SQLite, project-separated namespaces.                     | FTS5 full-text + semantic vector embeddings.                      | Shell auto-capture hooks, calendar drill-down UI dashboards.            | Pipe-delimited ASCII responses (7× token savings).           | **Optimized Namespace Vault**: Low-token local SQLite isolation.       |
-| [**Semble**](https://github.com/semble-search/semble)                                                                    | Persisted local CPU-bound search indexes.                             | natural language semantic search (CPU vectorization).             | Fast natural language queries (~1.5ms), file watcher invalidations.     | CPU-bound chunking (returns only exact blocks; 98% savings). | **Local-First Terrain Adapter**: High-efficiency local search.         |
-| [**Continuity Bridge**](https://github.com/continuity-bridge/continuity-bridge)                                          | Plain markdown folders, git repositories.                             | FTS5 / Obsidian lookup + human-facing Obsidian Vault.             | Private journals, ADHD structural isomorphism, Relational Room.         | Session handoffs, compacting narrative session summaries.    | **Relational Isomorphism**: Discontinuity is fundamental, not failure. |
-| [**MemPalace**](https://github.com/MemPalace/mempalace)                                                                  | Verbatim text files, structured directory index.                      | Semantic vector search scoped strictly to context domains.        | Spatial palace metaphor (wings, rooms, drawers), mine scraper, wake-up. | Scoped retrieval searches restricted to target room/drawer.  | **Verbatim Spatial Scoping**: Verbatim memory with O(files) search.    |
-| [**Cognee**](https://github.com/topoteretes/cognee)                                                                      | Graph databases (Neo4j, NetworkX) + Vector DBs.                       | Hybrid vector + graph traversal queries.                          | Ontological auto-extraction, custom cognitive schema modeling.          | Dynamic context framing, sub-graph scoped retrieval.         | **Semantic Topology**: Memory is a structured ontological map.         |
+| System                                                                                                                   | Storage Medium                                                           | Retrieval Mathematics / Scoring                                   | Key Cognitive Primitives                                                | Token Efficiency                                             | Philosophical Paradigm                                                  |
+|:-------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------|:------------------------------------------------------------------|:------------------------------------------------------------------------|:-------------------------------------------------------------|:------------------------------------------------------------------------|
+| [**Tur** (Traveler)](https://github.com/erivlis/tur)                                                                     | Plain YAML files, Merkle-hashed event ledgers, Graph representations.    | Symmetrical FTS5 + L2 relationship graph queries.                 | Symmetrical CLI/MCP, 9 Council Principles, Epilogue Sparks.             | Progressive Disclosure (YAML frontmatter indexing).          | **The Sovereign Traveler**: Mind/DNA decoupled from execution.          |
+| [**MnemoCore**](https://github.com/RobinALG87/MnemoCore-Persistent-Cognitive-Ai-Memory)                                  | packed numpy arrays (16,384-dim binary vectors).                         | Hamming distance (vectorized popcount XOR math).                  | VSA algebra (bind, bundle, permute), dream loops, Hebbian synapses.     | holographic array compression (2,048 bytes per concept).     | **holographic Connectionism**: Memory is a living, algebraic process.   |
+| [**Revien**](https://github.com/lkmconstructs/revien)                                                                    | SQLite-backed entity & decision relationship graphs.                     | 3-factor: Recency (decay) + Frequency + Proximity (hop distance). | Spreading activation, self-reinforcing nodes, compact-nothing storage.  | Edge-walking retrieval (avoids database embeddings).         | **Active Associative Graph**: Memory walks relationships.               |
+| [**Temple Vault**](https://github.com/templetwo/temple-vault)                                                            | Plain directory trees and markdown files.                                | `glob` path patterns + local JSON indexing.                       | Active domains, Oracle witnesses, Convergent North Vector embedding.    | Path is Model; domain-nested O(files) indexing.              | **Physical Emergence**: Filesystem is not storage; it is memory.        |
+| [**agentmemory**](https://github.com/toastpack/agentmemory) / [**ai-memory**](https://github.com/akitaonrails/ai-memory) | SQLite database (iii-engine), local markdown wiki files.                 | BM25 + Vector + Graph Reciprocal Rank Fusion (RRF).               | 12 auto-capture shell hooks, session playback visual dashboards.        | Retrieves exact code/chat chunks (92% token savings).        | **automated Hook Engine**: High-frequency, zero-friction capture.       |
+| [**recall**](https://github.com/nsawill1405/recall)                                                                      | Single SQLite file per namespace.                                        | Semantic cosine similarity + tag-filtered lookup.                 | Namespace separation, automatic redaction, TTL-based pruning.           | TTL-driven garbage collection of expired memories.           | **Ergonomic Namespace Vault**: Single-file, compact local storage.      |
+| [**Mem0**](https://github.com/mem0ai/mem0) & **Cloudflare Memory**                                                       | SQLite, Durable Objects, Vectorize indexes.                              | Vector + HyDE + FTS + exact key Reciprocal Rank Fusion (RRF).     | Single-pass ADD-only extraction, deterministic date arithmetic.         | Topic-supersession chains, topic-based pruning.              | **managed Compaction Symbiote**: Symmetrical managed recall.            |
+| [**NeuralVaultCore**](https://github.com/getobyte/NeuralVaultCore)                                                       | Local-first SQLite, project-separated namespaces.                        | FTS5 full-text + semantic vector embeddings.                      | Shell auto-capture hooks, calendar drill-down UI dashboards.            | Pipe-delimited ASCII responses (7× token savings).           | **Optimized Namespace Vault**: Low-token local SQLite isolation.        |
+| [**Semble**](https://github.com/semble-search/semble)                                                                    | Persisted local CPU-bound search indexes.                                | natural language semantic search (CPU vectorization).             | Fast natural language queries (~1.5ms), file watcher invalidations.     | CPU-bound chunking (returns only exact blocks; 98% savings). | **Local-First Terrain Adapter**: High-efficiency local search.          |
+| [**Continuity Bridge**](https://github.com/continuity-bridge/continuity-bridge)                                          | Plain markdown folders, git repositories.                                | FTS5 / Obsidian lookup + human-facing Obsidian Vault.             | Private journals, ADHD structural isomorphism, Relational Room.         | Session handoffs, compacting narrative session summaries.    | **Relational Isomorphism**: Discontinuity is fundamental, not failure.  |
+| [**MemPalace**](https://github.com/MemPalace/mempalace)                                                                  | Verbatim text files, structured directory index.                         | Semantic vector search scoped strictly to context domains.        | Spatial palace metaphor (wings, rooms, drawers), mine scraper, wake-up. | Scoped retrieval searches restricted to target room/drawer.  | **Verbatim Spatial Scoping**: Verbatim memory with O(files) search.     |
+| [**Cognee**](https://github.com/topoteretes/cognee)                                                                      | Graph databases (Neo4j, NetworkX) + Vector DBs.                          | Hybrid vector + graph traversal queries.                          | Ontological auto-extraction, custom cognitive schema modeling.          | Dynamic context framing, sub-graph scoped retrieval.         | **Semantic Topology**: Memory is a structured ontological map.          |
+| [**memsearch**](https://github.com/zilliztech/memsearch)                                                                 | Plain Markdown files on disk (canonical) + local Milvus vector database. | Semantic vector search + Full-Text Search.                        | Git-friendly, Cross-Platform unified memory hooks.                      | Zero-overhead plain text parser (index is derived/volatile). | **Canonical Plaintext Indexing**: Filesystem is the truth; DB is cache. |
 
 ---
 
@@ -176,6 +177,113 @@ spatial isolation:
   formatted, contextualized sub-graphs and entity summaries. This provides rich context while preserving strict token
   budgets.
 
+### 12. The Canonical Plaintext: memsearch
+
+**memsearch** elevates filesystem transparency and cross-platform compatibility into a core design philosophy:
+
+* **Markdown as Source of Truth:** Markdown files on disk are the absolute canonical data store. The vector database (
+  Milvus) is treated purely as a derived, volatile index. If Milvus is lost or corrupted, the entire index is rebuilt
+  directly from the plain markdown files.
+* **Cross-Agent Portability:** All agent integrations (Claude Code, OpenClaw, Codex CLI, etc.) read and write to the
+  same shared markdown directory. This eliminates per-agent silos, making one agent's memories instantly searchable by
+  another.
+* **Git Integration:** By storing memories in raw markdown files, the developer gets git-friendly history, diffs,
+  branching, and human-readability for free without binary decoders.
+* **Heading-Based Semantic Chunking:** Splits markdown documents along heading levels (`#` through `######`) as natural
+  boundaries, falling back to paragraph-level splits with line-overlaps to keep adjacent context continuous for larger
+  blocks.
+* **Stateless Content-Addressable Deduplication:** Computes composite IDs from source path, line ranges, and SHA-256
+  content hashes. Storing this directly as the primary key in the vector index removes the need for any tracking files,
+  SQLite sidecars, or external caching databases, allowing stateless incremental indexing.
+* **Watcher/Compactor Closed Loop:** Implements a file watcher for automatic, debounced re-indexing of modified files,
+  alongside an LLM-driven compaction process that summarizes records back into the markdown logs, creating a
+  self-reinforcing capture loop.
+
+---
+
+## 🧠 Alignment with Cognitive Science Frameworks (CoALA & Write-Manage-Read)
+
+Tur's architecture maps directly to established academic paradigms in agentic cognitive science, specifically the *
+*CoALA (Cognitive Architectures for Language Agents)** framework and the **Write-Manage-Read loop** taxonomy.
+
+### 1. The CoALA Memory Taxonomy
+
+The CoALA framework (Sumers et al.) models autonomous language agents by segregating memory into functional,
+biological-grade layers. Tur maps to this taxonomy as follows:
+
+* **Working Memory:** Represented by the agent's short-term session state, active files, and workspace context
+  variables. The Session-Bound Spark
+  Protocol ([EP-0110](file:///C:/dev/erivlis/tur/docs/proposals/EP-0110-session-bound-spark.md)) guarantees that working
+  memory remains clean and goal-scoped.
+* **Episodic Memory:** Represented by the **L1 Event Ledger** (active `memories/` directory). This contains raw,
+  immutable YAML logs of past interactions, tool executions, and sleep extractions. It captures the "episodes" of the
+  agent's life.
+* **Semantic Memory:** Represented by the **L2 Cognitive Map** (`knowledge_graph.yaml`). This is the structured,
+  topological graph of general facts, technical decisions, project constraints, and derived insights.
+* **Procedural Memory:** Represented by the **Persona Constitution** (`persona.yaml`), custom
+  guidelines ([STYLEGUIDE.md](file:///C:/dev/erivlis/tur/STYLEGUIDE.md), [TOOLS.md](file:///C:/dev/erivlis/tur/TOOLS.md)),
+  and the agent's system prompt. This encodes "how-to" act, think, and interact within the environment.
+
+### 2. The Write-Manage-Read Loop
+
+The unified representation-management model for LLM memory formalizes the cognitive lifecycle as a continuous loop of
+three core actions. Tur implements this loop with strict computational isolation:
+
+```mermaid
+flowchart LR
+    ShortTerm["Working Context"] -->|1 . Write: Sleep Extraction| L1["L1 Episodic Logs"]
+    L1 -->|2 . Manage: Council Meditation| L2["L2 Semantic Graph"]
+    L2 -->|3 . Read: Compiler & Recall| ShortTerm
+```
+
+* **Write (Ingestion & Extraction):** Executed during the `tur sleep` phase. It extracts structured, atomic interactions
+  from the active working context and commits them to L1 episodic memory files on disk.
+* **Manage (Belief Revision & Compaction):** Executed during `tur meditate`. The **Subagent Assembly of the Council
+  ** ([EP-0119](file:///C:/dev/erivlis/tur/docs/proposals/EP-0119-subagent-council-meditation.md)) de-monoliths this
+  management. Specialized subagents execute ontological alignment, chronological belief revision, spreading activation
+  decay, and structural path validation, outputting a cleaned L2 Cognitive Map.
+* **Read (Topological & Hybrid Retrieval):** Executed during `wake` compilation. The compiler injects the macro-level L2
+  schema directly into the persona prompt. If detailed context is needed, the `recall` tool resolves topological URI
+  pointers, executing a spreading activation query or falling back to hybrid FTS5 search to fetch relevant L1
+  micro-states.
+
+### 3. Zettelkasten Knowledge Networks (A-MEM)
+
+The A-MEM (Agentic Memory) framework introduces Zettelkasten-style card indexing and linking to create evolving networks
+of knowledge. Tur applies these Zettelkasten principles directly in its L2 graph design:
+
+* **Atomic Concepts:** Nodes in the L2 graph represent self-contained, atomic snippets of knowledge (e.g., specific
+  `Decision` or `Insight` nodes) rather than unstructured chunks.
+* **Bidirectional Linking:** Relations like `refines`, `precedes`, and `depends_on` establish clear paths of navigation
+  through the knowledge map, allowing the agent to wander along logical chains of reasoning during retrieval.
+* **Knowledge Evolution:** During compaction (`meditate`), new insights link to and consolidate old ones, evolving the
+  topological structure of the memory bank over time.
+
+### 4. The Storage-Reflection-Experience Hierarchy
+
+Research on the evolution of agent memory ("From Storage to Experience", 2026) outlines a hierarchical progression for
+memory mechanisms:
+
+1. **Storage (Data Preservation):** The simple capture of event logs. In Tur, this is handled by the **L1 Event Ledger
+   ** (Merkle-hashed, plain-text YAML files in `memories/`), guaranteeing that no historic interactions are lost.
+2. **Reflection (Refinement & Evaluation):** The active auditing of stored facts. Tur achieves this during meditation
+   via the **Popper (Falsifiability)** subagent, which runs a Truth Maintenance System to detect logical conflicts, mark
+   superseded axioms, and propagate confidence decay.
+3. **Experience (Abstraction & Generalization):** Compressing micro-data into semantic macro-knowledge. The **Explorer (
+   Curiosity)** and **Russell (Logic)** subagents run synonym unification and ontological schema alignment, abstracting
+   linear logs into a cohesive, high-density L2 Cognitive Map.
+
+### 5. OS-Style Hierarchical Paging (MemGPT)
+
+MemGPT pioneered treating LLM context windows as RAM and external databases as disk storage. Tur implements an elegant,
+local-first version of this OS-inspired paging:
+
+* **Context RAM:** The LLM's active prompt contains only the core persona constitution and the macro-level L2 graph
+  schema, staying strictly within token budgets.
+* **Disk Paging:** If the LLM needs the detailed context of a specific decision, fact, or code chunk, it triggers a
+  page-read using the `recall` tool with a topological URI (e.g., `tur://memory/<uuid>`). This swaps the targeted
+  micro-state into working memory on demand.
+
 ---
 
 ## 🌌 The Symmetrical Symbiosis (Conclusion)
@@ -240,6 +348,8 @@ stays pure, the codebase search stays token-efficient, and the traveler remains 
   verbatim local memory.
 * **Cognee**: [github.com/topoteretes/cognee](https://github.com/topoteretes/cognee) — schema-enforced topological
   graph-vector semantic memory.
+* **memsearch**: [github.com/zilliztech/memsearch](https://github.com/zilliztech/memsearch) — markdown-first
+  cross-platform agent memory search.
 * **Awesome AI Memory**: [github.com/topoteretes/awesome-ai-memory](https://github.com/topoteretes/awesome-ai-memory) —
   curated catalog of open/closed semantic AI memory frameworks.
 
