@@ -1,3 +1,9 @@
+## v0.4.1 (2026-06-07)
+
+### Refactor
+
+- Simplify MCP server startup by removing transport options
+
 ## v0.4.0 (2026-06-02)
 
 ### Feat
