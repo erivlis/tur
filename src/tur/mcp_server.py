@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -51,7 +51,7 @@ from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
 
 @asynccontextmanager
-async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
+async def server_lifespan(server: FastMCP) -> AsyncGenerator[dict]:
     """Lifecycle hook for startup and graceful shutdown."""
     print('Starting Tur MCP Server (Ontological Porcelain) on stdio...', file=sys.stderr)
     try:
@@ -506,19 +506,11 @@ def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
     return res
 
 
-def main(transport: Literal['stdio', 'sse'] = 'stdio', port: int = 8000):
+def main():
     """Entry point for the MCP server."""
     try:
-        match transport:
-            case 'sse':
-                print(f'Starting SSE server on port {port}...', file=sys.stderr)
-                mcp.settings.port = port
-            case 'stdio':
-                print('Starting stdio server...', file=sys.stderr)
-            case _:
-                raise ValueError(f"Transport '{transport}' is not supported. Must be 'stdio' or 'sse'.")
-
-        mcp.run(transport=transport)
+        print('Starting stdio server...', file=sys.stderr)
+        mcp.run(transport='stdio')
     except KeyboardInterrupt:
         # Architecture Note (The Golem Protocol):
         # We must catch KeyboardInterrupt at this synchronous top-level boundary.

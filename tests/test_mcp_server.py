@@ -118,18 +118,8 @@ def test_mcp_server_main(monkeypatch):
     mock_run = MagicMock()
     monkeypatch.setattr(mcp_server.mcp, 'run', mock_run)
 
-    # Test stdio transport
-    mcp_server.main(transport='stdio')
+    mcp_server.main()
     mock_run.assert_called_with(transport='stdio')
-
-    # Test sse transport
-    mcp_server.main(transport='sse', port=9999)
-    mock_run.assert_called_with(transport='sse')
-    assert mcp_server.mcp.settings.port == 9999
-
-    # Test invalid transport
-    with pytest.raises(ValueError):
-        mcp_server.main(transport='invalid')
 
 
 def test_mcp_server_main_keyboard_interrupt(monkeypatch):
@@ -139,7 +129,7 @@ def test_mcp_server_main_keyboard_interrupt(monkeypatch):
     monkeypatch.setattr(mcp_server.mcp, 'run', raise_kb_interrupt)
 
     with pytest.raises(SystemExit) as exc:
-        mcp_server.main(transport='stdio')
+        mcp_server.main()
     assert exc.value.code == 0
 
 

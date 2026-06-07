@@ -63,10 +63,10 @@ def test_mcp_serve_mocked(mock_workspace, monkeypatch):
     mock_mcp_main = MagicMock()
     monkeypatch.setattr(mcp_server, 'main', mock_mcp_main)
 
-    result = runner.invoke(mcp_app, ['--transport', 'stdio'])
+    result = runner.invoke(mcp_app, [])
     assert result.exit_code == 0
     assert 'Starting Tur MCP server' in result.stdout
-    mock_mcp_main.assert_called_once_with(transport='stdio', port=8000)
+    mock_mcp_main.assert_called_once_with()
 
 
 def test_mcp_serve_error(mock_workspace, monkeypatch):
@@ -77,7 +77,7 @@ def test_mcp_serve_error(mock_workspace, monkeypatch):
 
     monkeypatch.setattr(mcp_server, 'main', raise_err)
 
-    result = runner.invoke(mcp_app, ['--transport', 'stdio'])
+    result = runner.invoke(mcp_app, [])
     assert result.exit_code == 1
     assert 'Error starting server: Failure launching server' in result.stdout
 
@@ -91,83 +91,3 @@ def test_mcp_module_main(monkeypatch):
         runpy.run_module('tur.cli.mcp', run_name='__main__')
 
     assert exc.value.code == 0
-
-
-@pytest.fixture(scope='module')
-def sse_server():
-    """Fixture to start and stop the Tur MCP server for SSE transport testing."""
-    import socket
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('127.0.0.1', 0))
-        port = s.getsockname()[1]
-    command = ['uv', 'run', 'python', '-m', 'tur.cli.mcp', '--transport', 'sse', '--port', str(port)]
-
-    env = os.environ.copy()
-    env['PYTHONUNBUFFERED'] = '1'
-    # Ensure any active persona state can be found if needed by the server
-    try:
-        from pathlib import Path
-
-        import yaml
-
-        state_path = Path('.tur/state.yaml')
-        if state_path.exists():
-            with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.safe_load(f)
-            active_id = state_data.get('active_persona_id')
-            if active_id:
-                env['TUR_ACTIVE_PERSONA_ID'] = active_id
-    except Exception:
-        pass
-
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
-
-    try:
-        captured = []
-        # Wait up to 30 seconds for Uvicorn's startup message
-        start_time = time.time()
-        ready = False
-        while time.time() - start_time < 30:
-            if process.poll() is not None:
-                remaining, _ = process.communicate(timeout=1)
-                captured.append(remaining)
-                raise RuntimeError('Server process failed to start:\n' + ''.join(captured))
-
-            # Non-blocking read (or brief block)
-            try:
-                line = process.stdout.readline()
-                if line:
-                    captured.append(line)
-                    if 'Uvicorn running on' in line or 'Uvicorn running' in line:
-                        ready = True
-                        break
-            except Exception:
-                pass
-            time.sleep(0.1)
-
-        if not ready:
-            raise RuntimeError('Server process exited or failed to signal readiness:\n' + ''.join(captured))
-
-        yield f'http://127.0.0.1:{port}'
-
-    finally:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=5)
-
-
-def test_sse_server_responds(sse_server):
-    """Tests if the SSE server starts and responds to a GET request on the /sse endpoint."""
-    try:
-        response = requests.get(f'{sse_server}/sse', stream=True, timeout=3)
-        assert response.status_code == 200
-        assert 'text/event-stream' in response.headers.get('content-type', '')
-    except requests.exceptions.ReadTimeout:
-        # A successful timeout on stream proves the connection was held open
-        pass
-    except requests.exceptions.RequestException as e:
-        pytest.fail(f'Failed to connect to the SSE server: {e}')
