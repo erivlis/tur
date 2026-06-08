@@ -76,7 +76,14 @@ def test_compile_persona_renders_knowledge_graph():
         "multigraph": False,
         "graph": {},
         "nodes": [
-            {"id": "node-1", "type": "Fact", "content": "Knowledge graph is active.", "status": "active", "confidence": 1.0, "pinned": True}
+            {
+                "id": "node-1",
+                "type": "Fact",
+                "content": "Knowledge graph is active.",
+                "status": "active",
+                "confidence": 1.0,
+                "pinned": True,
+            }
         ],
         "links": [
             {"source": "node-1", "target": "node-2", "type": "precedes", "confidence": 1.0}

@@ -5,7 +5,11 @@ import yaml
 
 from tur.models import PersonaIndex, SystemState
 from tur.paths import resolve_personas_base_dir
-from tur.tui import select_persona_wizard
+
+
+def select_persona_wizard(index):
+    from tur.tui import select_persona_wizard as real_wizard
+    return real_wizard(index)
 
 
 def get_active_persona_id(identifier: str | None = None) -> str:

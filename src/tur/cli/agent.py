@@ -5,7 +5,7 @@ from uuid import UUID
 import typer
 import yaml
 
-from tur import dreaming, persona, session
+from tur import persona, session
 from tur.cli.common import console
 from tur.compiler import compile_persona
 from tur.memory import MemoryManager
@@ -153,7 +153,7 @@ def recall(
         from tur.recall import topological_recall
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
-        
+
         result_json = topological_recall(query, persona_dir)
         console.print(result_json)
 
@@ -248,8 +248,7 @@ def status(
 
         # --- Memory count ---
         memory_manager = MemoryManager(base_dir=persona_dir)
-        memories = memory_manager.load_all()
-        memory_count = len(memories)
+        memory_count = memory_manager.count_all()
 
         # --- Render ---
         table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
@@ -306,6 +305,7 @@ def sleep(
         console.print(f'Extracting insights using {model}... (Dreaming)')
 
         try:
+            from tur import dreaming
             count = dreaming.perform_sleep_dreaming(
                 log_content=Path(log_path).read_text(encoding='utf-8'),
                 active_id=active_id,
@@ -562,6 +562,7 @@ def verify(
     ),
 ):
     """Verify the cryptographic integrity of all memory files (EP-0106)."""
+    failures = None
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
@@ -574,35 +575,47 @@ def verify(
             for path, error in failures:
                 console.print(f'  [red]File:[/red] {path}')
                 console.print(f'  [red]Reason:[/red] {error}')
-            raise typer.Exit(code=1)
-
-        console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
+        else:
+            console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
     except Exception as e:
         console.print(f'[bold red]TAMPERED STATE: {e}[/bold red]')
         raise typer.Exit(code=1)
 
+    if failures:
+        raise typer.Exit(code=1)
+
 
 @app.command()
-def meditate(
+def introspect(
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
-    all: bool = typer.Option(False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'),
-    visualize: bool = typer.Option(False, '--visualize', help='Output a Mermaid representation of the Knowledge Graph.'),
-    model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'),
-    test_mode: bool = typer.Option(False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'),
+    all: bool = typer.Option(
+        False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'
+    ),
+    visualize: bool = typer.Option(
+        False, '--visualize', help='Output a Mermaid representation of the Knowledge Graph.'
+    ),
+    model: str = typer.Option(
+        'gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'
+    ),
+    test_mode: bool = typer.Option(
+        False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'
+    ),
 ):
     """
     Compress L1 event logs into a topological L2 Knowledge Graph using the Council of Giants.
     """
     try:
-        from tur.meditation import run_meditation, format_graph_as_mermaid
+        from tur.introspection import format_graph_as_mermaid, run_introspection
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
 
-        console.print(f"Running Council Meditation Assembly for persona '{active_id}'...")
-        graph = run_meditation(persona_dir, bootstrap=all, model=model, test_mode=test_mode)
-        console.print("[bold green]Meditation Assembly completed successfully. L2 Cognitive Map updated.[/bold green]")
+        console.print(f"Running Council Introspection Assembly for persona '{active_id}'...")
+        graph = run_introspection(persona_dir, bootstrap=all, model=model, test_mode=test_mode)
+        console.print(
+            "[bold green]Introspection Assembly completed successfully. L2 Cognitive Map updated.[/bold green]"
+        )
 
         if visualize:
             console.print("\n[bold cyan]--- Mermaid L2 Graph ---[/bold cyan]")
@@ -610,7 +623,7 @@ def meditate(
             console.print("[bold cyan]------------------------[/bold cyan]")
 
     except Exception as e:
-        console.print(f"[red]Error during meditation: {e}[/red]")
+        console.print(f"[red]Error during introspection: {e}[/red]")
         raise typer.Exit(code=1)
 
 

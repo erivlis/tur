@@ -118,7 +118,7 @@ def status() -> dict:
 
         # Memory count
         memory_manager = MemoryManager(base_dir=persona_dir)
-        memory_count = len(memory_manager.load_all())
+        memory_count = memory_manager.count_all()
 
         res = {
             'persona_name': persona_name,

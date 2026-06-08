@@ -417,23 +417,23 @@ def test_agent_verify_success(mock_workspace):
 def test_agent_verify_failure(mock_workspace):
     # Save a memory
     runner.invoke(agent_app, ['learn', 'To be tampered memory.'])
-    
+
     # Locate the saved memory file and tamper it
     persona_dir = Path('.tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262')
     memories_dir = persona_dir / 'memories'
     yaml_files = list(memories_dir.glob('*.yaml'))
     assert len(yaml_files) == 1
-    
+
     # Break Golem's seal to write
     os.chmod(yaml_files[0], 0o666)
-    
+
     # Read and tamper
     with open(yaml_files[0], encoding='utf-8') as f:
         data = yaml.safe_load(f)
     data['content'] = 'Tampered content.'
     with open(yaml_files[0], 'w', encoding='utf-8') as f:
         yaml.dump(data, f)
-        
+
     result = runner.invoke(agent_app, ['verify'])
     assert result.exit_code == 1
     assert 'TAMPERED STATE' in result.stdout

@@ -13,6 +13,11 @@ from uuid import UUID
 
 import yaml
 
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
+
 from tur.memory import MemoryManager
 from tur.models import (
     Note,
@@ -60,7 +65,7 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
     if index_path.exists():
         with open(index_path, encoding='utf-8') as f:
             try:
-                data = yaml.safe_load(f) or {}
+                data = yaml.load(f, Loader=SafeLoader) or {}
                 return SessionIndex(**data)
             except Exception:
                 pass
@@ -93,7 +98,7 @@ def get_active_session_id() -> str | None:
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.safe_load(f)
+                state_data = yaml.load(f, Loader=SafeLoader)
             state_obj = SystemState(**state_data)
         except Exception:
             pass
@@ -115,7 +120,7 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     if session_file.exists():
         try:
             with open(session_file, encoding='utf-8') as f:
-                notes_data = yaml.safe_load(f)
+                notes_data = yaml.load(f, Loader=SafeLoader)
             session_notes = SessionNotes(**notes_data)
             if session_notes.notes:
                 sorted_notes = sorted(session_notes.notes, key=lambda x: x.timestamp, reverse=True)
@@ -132,7 +137,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     file_path = persona_dir / 'persona.yaml'
 
     with open(file_path, encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+        data = yaml.load(f, Loader=SafeLoader)
 
     persona = Persona(**data)
     user = get_user_profile()
@@ -157,11 +162,17 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     if kg_path.exists():
         try:
             with open(kg_path, encoding='utf-8') as f:
-                kg_data = yaml.safe_load(f)
+                kg_data = yaml.load(f, Loader=SafeLoader)
         except Exception:
             pass
 
-    return SessionState(persona=persona, user=user, memories=memories, epilogue=epilogue_content, knowledge_graph=kg_data)
+    return SessionState(
+        persona=persona,
+        user=user,
+        memories=memories,
+        epilogue=epilogue_content,
+        knowledge_graph=kg_data,
+    )
 
 
 def db_retry(max_retries=5, initial_delay=0.05, backoff_factor=2.0):
@@ -429,7 +440,7 @@ def start_session_logic(
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.safe_load(f)
+                state_data = yaml.load(f, Loader=SafeLoader)
             state_obj = SystemState(**state_data)
             state_obj.active_session_id = session_id
         except Exception:
@@ -557,7 +568,7 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_obj = SystemState(**yaml.safe_load(f))
+                state_obj = SystemState(**yaml.load(f, Loader=SafeLoader))
             if state_obj.active_session_id == session_id:
                 state_obj.active_session_id = None
             with open(state_path, 'w', encoding='utf-8') as f:
@@ -905,7 +916,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         if session_file.exists():
             try:
                 with open(session_file, encoding='utf-8') as f:
-                    notes_data = yaml.safe_load(f)
+                    notes_data = yaml.load(f, Loader=SafeLoader)
                 session_notes = SessionNotes(**notes_data)
                 notes_list = session_notes.notes
             except Exception:

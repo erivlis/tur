@@ -5,6 +5,11 @@ from pathlib import Path
 
 import yaml
 
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
+
 from tur.models import Memory, MemoryScope
 from tur.paths import is_global_path
 
@@ -186,6 +191,22 @@ class MemoryManager:
         memories.sort(key=lambda x: x.timestamp)
         return memories
 
+    def count_all(self, include_archived: bool = False) -> int:
+        """
+        Counts all memories in the federated storage without loading them (for performance).
+        """
+        directories = [self.local_dir, self.global_dir]
+        if include_archived:
+            directories.extend([self.local_archive_dir, self.global_archive_dir])
+
+        count = 0
+        for directory in directories:
+            if directory.exists():
+                for file_path in directory.glob('*.yaml'):
+                    if file_path.is_file():
+                        count += 1
+        return count
+
     def verify_integrity(self) -> list[tuple[Path, str]]:
         """
         EP-0106: Merkle Memory.
@@ -210,7 +231,7 @@ class MemoryManager:
                     continue
                 try:
                     with open(file_path, encoding='utf-8') as f:
-                        data = yaml.safe_load(f)
+                        data = yaml.load(f, Loader=SafeLoader)
 
                     if not data or not isinstance(data, dict):
                         failures.append((file_path, 'Invalid YAML structure or empty file'))
@@ -234,7 +255,12 @@ class MemoryManager:
 
                     recomputed_mem = Memory(**test_data)
                     if recomputed_mem.id != stored_id:
-                        failures.append((file_path, f'Computed hash {recomputed_mem.id} does not match stored ID {stored_id}'))
+                        failures.append(
+                            (
+                                file_path,
+                                f'Computed hash {recomputed_mem.id} does not match stored ID {stored_id}',
+                            )
+                        )
                 except Exception as e:
                     failures.append((file_path, f'Failed to parse or hash memory: {e}'))
         return failures
@@ -243,7 +269,7 @@ class MemoryManager:
     def _load_file(file_path: Path) -> Memory | None:
         try:
             with open(file_path, encoding='utf-8') as f:
-                data = yaml.safe_load(f)
+                data = yaml.load(f, Loader=SafeLoader)
                 # If the legacy file has 'status', ignore it so Pydantic doesn't throw a ValidationError
                 if 'status' in data:
                     del data['status']

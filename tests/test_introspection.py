@@ -1,23 +1,25 @@
 import os
 from datetime import datetime
 from pathlib import Path
+
+import networkx as nx
 import pytest
 import yaml
-import networkx as nx
 from typer.testing import CliRunner
 
+from tur.cli.agent import app
+from tur.introspection import (
+    BaconSubagent,
+    NoetherSubagent,
+    PopperSubagent,
+    SymmetryError,
+    TamperedStateError,
+    format_graph_as_mermaid,
+    run_introspection,
+)
 from tur.memory import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
-from tur.meditation import (
-    run_meditation,
-    TamperedStateError,
-    SymmetryError,
-    BaconSubagent,
-    PopperSubagent,
-    NoetherSubagent,
-    format_graph_as_mermaid
-)
-from tur.cli.agent import app
+
 
 @pytest.fixture
 def temp_workspace(tmp_path, monkeypatch):
@@ -89,7 +91,7 @@ def test_bacon_integrity_verification(temp_workspace):
 
 
 def test_popper_tms_propagation(temp_workspace):
-    _, persona_dir = temp_workspace
+    _, _persona_dir = temp_workspace
 
     # Build a small dependency graph
     graph = nx.DiGraph()
@@ -100,7 +102,7 @@ def test_popper_tms_propagation(temp_workspace):
 
     # Popper subagent TMS pass
     popper = PopperSubagent()
-    
+
     # Mark B as superseded/invalid
     graph.nodes["node-b"]["status"] = "superseded"
     graph.nodes["node-b"]["confidence"] = 0.0
@@ -141,7 +143,7 @@ def test_noether_symmetry_conservation(temp_workspace):
     noether.run(graph, context)
 
 
-def test_run_meditation_test_mode(temp_workspace):
+def test_run_introspection_test_mode(temp_workspace):
     _, persona_dir = temp_workspace
     memory_manager = MemoryManager(base_dir=persona_dir)
 
@@ -154,7 +156,7 @@ def test_run_meditation_test_mode(temp_workspace):
     memory_manager.save(mem)
 
     # In test_mode, Russell subagent bypasses GenAI call and extracts stub nodes
-    graph = run_meditation(persona_dir, bootstrap=True, test_mode=True)
+    graph = run_introspection(persona_dir, bootstrap=True, test_mode=True)
     assert graph.number_of_nodes() == 1
 
     # Verify L2 graph was saved
@@ -166,29 +168,29 @@ def test_run_meditation_test_mode(temp_workspace):
     assert len(memory_manager.load_subsumed()) == 1
 
 
-def test_meditate_cli_command(temp_workspace):
-    tmp_path, persona_dir = temp_workspace
+def test_introspect_cli_command(temp_workspace):
+    _tmp_path, persona_dir = temp_workspace
     memory_manager = MemoryManager(base_dir=persona_dir)
 
     mem = Memory(
         timestamp=datetime(2026, 6, 8, 12, 0, 0),
         type=MemoryType.INSIGHT,
         scope=MemoryScope.INCARNATION,
-        content="Testing meditation cli.",
+        content="Testing introspection cli.",
     )
     memory_manager.save(mem)
 
     runner = CliRunner()
-    result = runner.invoke(app, ["meditate", "--all", "--test-mode", "--visualize"])
+    result = runner.invoke(app, ["introspect", "--all", "--test-mode", "--visualize"])
     assert result.exit_code == 0
-    assert "Meditation Assembly completed successfully" in result.output
+    assert "Introspection Assembly completed successfully" in result.output
     assert "Mermaid L2 Graph" in result.output
 
 
 def test_topological_recall_spreading_activation(temp_workspace):
     import json
     _, persona_dir = temp_workspace
-    
+
     # 1. Setup a topological graph
     graph = nx.DiGraph()
     # node-a --precedes--> node-b --depends_on--> node-c
@@ -203,11 +205,11 @@ def test_topological_recall_spreading_activation(temp_workspace):
         yaml.dump(nx.node_link_data(graph), f)
 
     from tur.recall import topological_recall
-    
+
     # Query for "first" should match node-a, and spreading activation should include node-b (1 hop) and node-c (2 hops)
     res_json = topological_recall("first", persona_dir)
     res_data = json.loads(res_json)
-    
+
     # Should contain all three nodes due to spreading activation
     node_ids = [n["id"] for n in res_data]
     assert "node-a" in node_ids
@@ -223,12 +225,12 @@ def test_topological_recall_spreading_activation(temp_workspace):
 
 def test_shannon_processes_and_flushes_access_log(temp_workspace):
     _, persona_dir = temp_workspace
-    
+
     graph = nx.DiGraph()
     graph.add_node("node-a", type="Fact", content="A", status="active", confidence=0.8, retrieval_count=0)
     graph.add_node("node-b", type="Fact", content="B", status="active", confidence=0.8, retrieval_count=0)
     graph.add_node("node-c", type="Fact", content="C", status="active", confidence=0.8, retrieval_count=0)
-    
+
     kg_path = persona_dir / "knowledge_graph.yaml"
     with open(kg_path, "w", encoding="utf-8") as f:
         yaml.dump(nx.node_link_data(graph), f)
@@ -237,7 +239,7 @@ def test_shannon_processes_and_flushes_access_log(temp_workspace):
     with open(log_path, "w", encoding="utf-8") as f:
         f.write("node-a\nnode-a\n")
 
-    run_meditation(persona_dir, bootstrap=False, test_mode=True)
+    run_introspection(persona_dir, bootstrap=False, test_mode=True)
 
     assert not log_path.exists()
 

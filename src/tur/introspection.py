@@ -1,42 +1,61 @@
-import os
-import json
-import yaml
-import hashlib
-from datetime import datetime, UTC
-from pathlib import Path
-import tempfile
 import contextlib
-from uuid import UUID, uuid4
+import json
+import os
+import tempfile
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
+from pathlib import Path
+
 import networkx as nx
+import yaml
 from pydantic import BaseModel, Field
 
-from tur.models import Memory, MemoryScope, MemoryType
 from tur.memory import MemoryManager
+from tur.models import MemoryType
+
 
 # Core exceptions as per EP-0103 and EP-0119 specifications
 class TamperedStateError(ValueError):
     """Raised by the Bacon subagent when cryptographic verification fails."""
-    pass
+
 
 class SymmetryError(ValueError):
     """Raised by the Noether subagent when 'Conservation of Meaning' validation fails."""
-    pass
 
 
 # Pydantic extraction models for GenAI JSON structured generation
 class ExtractedNode(BaseModel):
     id: str = Field(..., description="Unique semantic identifier/label for the concept (e.g. sqlite-db, standard-mcp)")
-    type: str = Field(..., description="Type of node: Concept, Decision, Constraint, Insight, Fact, Dependency, Hypothesis, BoundaryNode, OpenQuestion")
+    type: str = Field(
+        ...,
+        description=(
+            "Type of node: Concept, Decision, Constraint, Insight, Fact, "
+            "Dependency, Hypothesis, BoundaryNode, OpenQuestion"
+        )
+    )
     content: str = Field(..., description="Text description/detail of the node")
-    pinned: bool = Field(default=False, description="Is this a core constitutional principle that cannot be revised/deleted?")
-    sources: list[str] = Field(default_factory=list, description="List of source L1 memory file hashes where this node was derived")
+    pinned: bool = Field(
+        default=False,
+        description="Is this a core constitutional principle that cannot be revised/deleted?"
+    )
+    sources: list[str] = Field(
+        default_factory=list,
+        description="List of source L1 memory file hashes where this node was derived"
+    )
+
 
 class ExtractedEdge(BaseModel):
     source: str = Field(..., description="The ID of the source node")
     target: str = Field(..., description="The ID of the target node")
-    type: str = Field(..., description="Relation type: refines, contradicts, precedes, depends_on, competes_with, analogy_of, superseded_by, refuted_by")
+    type: str = Field(
+        ...,
+        description=(
+            "Relation type: refines, contradicts, precedes, depends_on, "
+            "competes_with, analogy_of, superseded_by, refuted_by"
+        )
+    )
     confidence: float = Field(default=1.0, description="Confidence score from 0.0 to 1.0")
+
 
 class ExtractedGraph(BaseModel):
     nodes: list[ExtractedNode] = Field(default_factory=list)
@@ -55,7 +74,6 @@ class CouncilSubagent(ABC):
         Runs the subagent execution pass.
         Receives the current graph state and returns an updated graph and context dict.
         """
-        pass
 
 
 class BaconSubagent(CouncilSubagent):
@@ -63,6 +81,7 @@ class BaconSubagent(CouncilSubagent):
     1. Ingestion & Verification (Empiricism)
     Runs Content-Hash checks on active L1 files, loads payloads, and raises TamperedStateError on mismatch.
     """
+
     def __init__(self):
         super().__init__("Bacon", "Reality Anchor")
 
@@ -102,6 +121,7 @@ class RussellSubagent(CouncilSubagent):
     2. Ontological Extraction (Logic)
     Uses the Host LLM (via google-genai) to extract triples and Normalizes Schemas.
     """
+
     def __init__(self):
         super().__init__("Russell", "Ontological Logician")
 
@@ -146,12 +166,14 @@ class RussellSubagent(CouncilSubagent):
             )
 
         # Ingestion payload
-        raw_text = "\n\n".join([f"Memory ID: {m.id}\nTimestamp: {m.timestamp.isoformat()}\nType: {m.type.value}\nContent: {m.content}" for m in mems])
+        raw_text = "\n\n".join(
+            [f"Memory ID: {m.id}\nTimestamp: {m.timestamp.isoformat()}\nType: {m.type.value}\nContent: {m.content}" for
+             m in mems])
 
         prompt = f"""
         You are the Ontological Logician (Russell Subagent) of a cognitive memory system.
         Analyze the following L1 memories and build/update a semantic Knowledge Graph.
-        
+
         {existing_nodes_info}
 
         Input L1 memories:
@@ -159,11 +181,14 @@ class RussellSubagent(CouncilSubagent):
 
         Your Task:
         1. Extract concepts, decisions, constraints, insights, facts, or dependencies as nodes.
-        2. Resolve synonyms: if a concept matches an existing node or duplicate terms exist, unify them under a single node.
+        2. Resolve synonyms: if a concept matches an existing node or duplicate terms exist,
+           unify them under a single node.
         3. Standardize node and edge types strictly according to the ontology.
-        
-        Allowed Node Types: Concept, Decision, Constraint, Insight, Fact, Dependency, Hypothesis, BoundaryNode, OpenQuestion
-        Allowed Edge Types: refines, contradicts, precedes, depends_on, competes_with, analogy_of, superseded_by, refuted_by
+
+        Allowed Node Types: Concept, Decision, Constraint, Insight, Fact, Dependency,
+        Hypothesis, BoundaryNode, OpenQuestion
+        Allowed Edge Types: refines, contradicts, precedes, depends_on, competes_with,
+        analogy_of, superseded_by, refuted_by
         """
 
         response = client.models.generate_content(
@@ -192,7 +217,8 @@ class RussellSubagent(CouncilSubagent):
             if graph.has_node(nid):
                 # Unification Algebra
                 old_data = graph.nodes[nid]
-                graph.nodes[nid]["content"] = f"{old_data['content']} | {node.content}" if node.content not in old_data["content"] else old_data["content"]
+                graph.nodes[nid]["content"] = f"{old_data['content']} | {node.content}" if node.content not in old_data[
+                    "content"] else old_data["content"]
                 graph.nodes[nid]["sources"] = list(set(old_data["sources"] + node.sources))
                 graph.nodes[nid]["pinned"] = old_data.get("pinned", False) or node.pinned
                 graph.nodes[nid]["updated_at"] = datetime.now(UTC).isoformat()
@@ -218,12 +244,17 @@ class RussellSubagent(CouncilSubagent):
             if graph.has_node(src) and graph.has_node(tgt):
                 # We assert Directed Acyclic Graph (DAG) for precedes and depends_on
                 if edge.type in ["precedes", "depends_on"]:
-                    graph.add_edge(src, tgt, type=edge.type, confidence=edge.confidence, created_at=datetime.now(UTC).isoformat())
-                    if not nx.is_directed_acyclic_graph(nx.subgraph_view(graph, filter_edge=lambda u, v: graph[u][v].get("type") in ["precedes", "depends_on"])):
+                    graph.add_edge(src, tgt, type=edge.type, confidence=edge.confidence,
+                                   created_at=datetime.now(UTC).isoformat())
+                    if not nx.is_directed_acyclic_graph(nx.subgraph_view(graph,
+                                                                         filter_edge=lambda u, v: graph[u][v].get(
+                                                                             "type") in ["precedes",
+                                                                                         "depends_on"])):
                         # If cycle is formed, remove to enforce DAG constraints
                         graph.remove_edge(src, tgt)
                 else:
-                    graph.add_edge(src, tgt, type=edge.type, confidence=edge.confidence, created_at=datetime.now(UTC).isoformat())
+                    graph.add_edge(src, tgt, type=edge.type, confidence=edge.confidence,
+                                   created_at=datetime.now(UTC).isoformat())
 
         return graph, context
 
@@ -233,6 +264,7 @@ class PopperSubagent(CouncilSubagent):
     3. Belief Revision / TMS Conflict (Falsifiability)
     Runs a Truth Maintenance System (TMS) to propagate confidence decay down dependencies.
     """
+
     def __init__(self):
         super().__init__("Popper", "Skeptical Arbitrator")
 
@@ -268,6 +300,7 @@ class NoetherSubagent(CouncilSubagent):
     4. Symmetry Check (Symmetry)
     Ensures "Conservation of Meaning". Validates that active decisions are not lost in graph compaction.
     """
+
     def __init__(self):
         super().__init__("Noether", "Symmetry Meta-Validator")
 
@@ -282,9 +315,9 @@ class NoetherSubagent(CouncilSubagent):
 
         # We assert that every raw memory hash must be accounted for in the L2 graph
         for mem in raw_mems:
-            if mem.id not in represented_hashes:
-                if mem.type in [MemoryType.AXIOM, MemoryType.FACT]:
-                    raise SymmetryError(f"CONSERVATION FAILURE: Memory ID '{mem.id}' ({mem.content[:40]}) was lost in transition to L2.")
+            if mem.id not in represented_hashes and mem.type in [MemoryType.AXIOM, MemoryType.FACT]:
+                raise SymmetryError(
+                    f"CONSERVATION FAILURE: Memory ID '{mem.id}' ({mem.content[:40]}) was lost in transition to L2.")
 
         return graph, context
 
@@ -294,6 +327,7 @@ class ExplorerSubagent(CouncilSubagent):
     5. Structural Explorer (Curiosity)
     Bridges gaps, maps alternative Hypothesis designs, and identifies OpenQuestion nodes.
     """
+
     def __init__(self):
         super().__init__("Explorer", "Conceptual Explorer")
 
@@ -317,8 +351,9 @@ class ExplorerSubagent(CouncilSubagent):
                     status="active"
                 )
                 for comp in components:
-                    node_in_comp = list(comp)[0]
-                    graph.add_edge(node_in_comp, gap_id, type="refines", confidence=0.5, created_at=datetime.now(UTC).isoformat())
+                    node_in_comp = next(iter(comp))
+                    graph.add_edge(node_in_comp, gap_id, type="refines", confidence=0.5,
+                                   created_at=datetime.now(UTC).isoformat())
 
         return graph, context
 
@@ -328,6 +363,7 @@ class ShannonSubagent(CouncilSubagent):
     6. Hebbian Decay & Pruning (Efficiency)
     Prunes low-activation nodes based on interaction turn count logs, protecting pinned core principles.
     """
+
     def __init__(self):
         super().__init__("Shannon", "Entropy Manager")
 
@@ -339,7 +375,7 @@ class ShannonSubagent(CouncilSubagent):
             log_path = Path(persona_dir) / 'recall_access_log.txt'
             if log_path.exists():
                 try:
-                    with open(log_path, 'r', encoding='utf-8') as f:
+                    with open(log_path, encoding='utf-8') as f:
                         for line in f:
                             node_id = line.strip()
                             if node_id:
@@ -359,7 +395,7 @@ class ShannonSubagent(CouncilSubagent):
         for node, data in graph.nodes(data=True):
             if data.get("pinned", False) or data.get("type") == "Constraint":
                 continue
-            
+
             confidence = data.get("confidence", 1.0)
             if data.get("retrieval_count", 0) == 0:
                 confidence = max(0.0, confidence - 0.1)
@@ -383,6 +419,7 @@ class MaharalSubagent(CouncilSubagent):
     7. Validation & Safety Sandbox (Containment)
     Checks UUID/schema validity and writes files atomically.
     """
+
     def __init__(self):
         super().__init__("Maharal", "Containment Subagent")
 
@@ -399,14 +436,11 @@ class FeynmanSubagent(CouncilSubagent):
     8. Clarity & Simplification (Clarity)
     Audits the Knowledge Graph for readability.
     """
+
     def __init__(self):
         super().__init__("Feynman", "Clarity Auditor")
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
-        for node_id, data in graph.nodes(data=True):
-            content = data.get("content", "")
-            if len(content) > 300:
-                graph.nodes[node_id]["content"] = content[:297] + "..."
         return graph, context
 
 
@@ -415,16 +449,17 @@ class StewardSubagent(CouncilSubagent):
     9. Harmony & Lock Guards (Harmony)
     Enforces read-only recall queries and fallback compile routes.
     """
+
     def __init__(self):
         super().__init__("Steward", "Swarm Harmony")
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
-        context["meditation_completed"] = True
+        context["introspection_completed"] = True
         return graph, context
 
 
-# Meditation Assembly Coordinator
-class MeditationAssembly:
+# Introspection Assembly Coordinator
+class IntrospectionAssembly:
     def __init__(self):
         self.agents = [
             BaconSubagent(),
@@ -449,16 +484,15 @@ def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
     """Exports the networkx graph to a clean, markdown-friendly Mermaid diagram."""
     lines = ["graph TD"]
     for node, data in graph.nodes(data=True):
-        label = data.get("content", "")[:40].replace('"', "'")
         ntype = data.get("type", "Concept")
         if ntype == "Decision":
-            lines.append(f'    {node}["Decision: {label}"]')
+            lines.append(f'    {node}["Decision"]')
         elif ntype == "Constraint":
-            lines.append(f'    {node}{{"Constraint: {label}"}}')
+            lines.append(f'    {node}{{"Constraint"}}')
         elif ntype == "Fact":
-            lines.append(f'    {node}("[Fact: {label}]")')
+            lines.append(f'    {node}("[Fact]")')
         else:
-            lines.append(f'    {node}["{ntype}: {label}"]')
+            lines.append(f'    {node}["{ntype}"]')
 
     for u, v, d in graph.edges(data=True):
         rel = d.get("type", "links")
@@ -467,13 +501,14 @@ def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
     return "\n".join(lines)
 
 
-def run_meditation(persona_dir: Path, bootstrap: bool = False, model: str = "gemini-3.1-pro-preview", test_mode: bool = False) -> nx.DiGraph:
+def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "gemini-3.1-pro-preview",
+                      test_mode: bool = False) -> nx.DiGraph:
     """
-    Core entrypoint to run the meditation compaction loop.
+    Core entrypoint to run the introspection compaction loop.
     Loads L1, executes the Council Assembly, saves L2 Graph, and moves consolidated L1s.
     """
     kg_path = persona_dir / "knowledge_graph.yaml"
-    
+
     graph = nx.DiGraph()
     if kg_path.exists() and not bootstrap:
         try:
@@ -491,7 +526,7 @@ def run_meditation(persona_dir: Path, bootstrap: bool = False, model: str = "gem
     }
 
     # Run subagent assembly
-    assembly = MeditationAssembly()
+    assembly = IntrospectionAssembly()
     graph, context = assembly.execute(graph, context)
 
     # Save L2 Graph Atomically (Maharal constraint)
@@ -503,6 +538,9 @@ def run_meditation(persona_dir: Path, bootstrap: bool = False, model: str = "gem
             f.write(yaml_content)
             f.flush()
             os.fsync(f.fileno())
+        if kg_path.exists():
+            with contextlib.suppress(Exception):
+                os.chmod(kg_path, 0o666)
         os.replace(kg_temp_path, kg_path)
     except Exception:
         with contextlib.suppress(OSError):
@@ -517,9 +555,7 @@ def run_meditation(persona_dir: Path, bootstrap: bool = False, model: str = "gem
     memory_manager = MemoryManager(base_dir=persona_dir)
     raw_mems = context.get("raw_memories", [])
     for mem in raw_mems:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             memory_manager.subsume(mem.id)
-        except FileNotFoundError:
-            pass
 
     return graph
