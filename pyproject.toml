@@ -54,6 +54,7 @@ mcp = [
 dev = [
     "commitizen>=4.10.0",
     "pipdeptree",
+    "pyinstrument>=5.1.2",
     "ruff",
     "ty",
     "uv",
