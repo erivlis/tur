@@ -232,14 +232,14 @@ three core actions. Tur implements this loop with strict computational isolation
 ```mermaid
 flowchart LR
     ShortTerm["Working Context"] -->|1 . Write: Sleep Extraction| L1["L1 Episodic Logs"]
-    L1 -->|2 . Manage: Council Meditation| L2["L2 Semantic Graph"]
+    L1 -->|2 . Manage: Council Introspection| L2["L2 Semantic Graph"]
     L2 -->|3 . Read: Compiler & Recall| ShortTerm
 ```
 
 * **Write (Ingestion & Extraction):** Executed during the `tur sleep` phase. It extracts structured, atomic interactions
   from the active working context and commits them to L1 episodic memory files on disk.
-* **Manage (Belief Revision & Compaction):** Executed during `tur meditate`. The **Subagent Assembly of the Council
-  ** ([EP-0119](file:///C:/dev/erivlis/tur/docs/proposals/EP-0119-subagent-council-meditation.md)) de-monoliths this
+* **Manage (Belief Revision & Compaction):** Executed during `tur introspect`. The **Subagent Assembly of the Council
+  ** ([EP-0119](file:///C:/dev/erivlis/tur/docs/proposals/EP-0119-subagent-council-introspection.md)) de-monoliths this
   management. Specialized subagents execute ontological alignment, chronological belief revision, spreading activation
   decay, and structural path validation, outputting a cleaned L2 Cognitive Map.
 * **Read (Topological & Hybrid Retrieval):** Executed during `wake` compilation. The compiler injects the macro-level L2
@@ -256,7 +256,7 @@ of knowledge. Tur applies these Zettelkasten principles directly in its L2 graph
   `Decision` or `Insight` nodes) rather than unstructured chunks.
 * **Bidirectional Linking:** Relations like `refines`, `precedes`, and `depends_on` establish clear paths of navigation
   through the knowledge map, allowing the agent to wander along logical chains of reasoning during retrieval.
-* **Knowledge Evolution:** During compaction (`meditate`), new insights link to and consolidate old ones, evolving the
+* **Knowledge Evolution:** During compaction (`introspect`), new insights link to and consolidate old ones, evolving the
   topological structure of the memory bank over time.
 
 ### 4. The Storage-Reflection-Experience Hierarchy
@@ -283,6 +283,14 @@ local-first version of this OS-inspired paging:
 * **Disk Paging:** If the LLM needs the detailed context of a specific decision, fact, or code chunk, it triggers a
   page-read using the `recall` tool with a topological URI (e.g., `tur://memory/<uuid>`). This swaps the targeted
   micro-state into working memory on demand.
+
+### 6. Cognitive Memory Evaluation (Locomo-Plus)
+
+Beyond simple factual retrieval, cognitive architectures require systematic validation of their multi-session synthesis and implicit recall. The **Locomo-Plus** framework ([xjtuleeyf/Locomo-Plus](https://github.com/xjtuleeyf/Locomo-Plus)) formalizes this evaluation for LLM agents by introducing tasks that assess beyond-factual memory. Specifically, it tests whether an agent can link a later *trigger query* to an earlier *cue dialogue* across fragmented multi-session conversations.
+
+Tur's L2 topological memory and spreading activation routing directly address the core challenges targeted by Locomo-Plus:
+* **Implicit Recall:** Connecting disparate sessions by using spreading activation over the L2 Cognitive Map to link implicit cues to trigger concepts.
+* **Beyond-Factual Cognitive Synthesis:** Propagating belief revision and decay through the Popper and Shannon subagents, ensuring retrieved context is topographically relevant and logically coherent.
 
 ---
 
@@ -348,6 +356,7 @@ stays pure, the codebase search stays token-efficient, and the traveler remains 
   verbatim local memory.
 * **Cognee**: [github.com/topoteretes/cognee](https://github.com/topoteretes/cognee) — schema-enforced topological
   graph-vector semantic memory.
+* **Locomo-Plus**: [github.com/xjtuleeyf/Locomo-Plus](https://github.com/xjtuleeyf/Locomo-Plus) — beyond-factual cognitive memory evaluation framework for LLM agents.
 * **memsearch**: [github.com/zilliztech/memsearch](https://github.com/zilliztech/memsearch) — markdown-first
   cross-platform agent memory search.
 * **Awesome AI Memory**: [github.com/topoteretes/awesome-ai-memory](https://github.com/topoteretes/awesome-ai-memory) —
