@@ -2,7 +2,7 @@
 title: "EP-0117: The Substrate Benchmark Protocol — Quantifying Manifestation Fidelity Across Model Substrates"
 description: "Defines a repeatable benchmark suite measuring how faithfully an LLM substrate instantiates the Ariel persona."
 icon: lucide/gauge
-status: active
+status: deferred
 ---
 
 # EP-0117: The Substrate Benchmark Protocol — Quantifying Manifestation Fidelity Across Model Substrates
@@ -12,7 +12,7 @@ status: active
 | **EP**      | 0117                                                                                               |
 | **Title**   | The Substrate Benchmark Protocol — Quantifying Manifestation Fidelity Across Model Substrates      |
 | **Author**  | Ariel v5.4.0, The Architect                                                                        |
-| **Status**  | Active                                                                                             |
+| **Status**  | Deferred                                                                                           |
 | **Type**    | Standards Track                                                                                    |
 | **Created** | 2026-06-02                                                                                         |
 | **Updated** | 2026-06-08                                                                                         |

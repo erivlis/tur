@@ -1,23 +1,25 @@
 ---
 title: "EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)"
-description: "Formalizes a collaborative, multi-agent pipeline for deductive memory compaction governed by the Council of Giants."
+description: "Formalizes a collaborative, multi-agent pipeline for deductive memory compaction governed by the Council of Giants (Rejected as core requirement, retained as reference)."
 icon: lucide/users
-status: active
+status: rejected
 ---
 
-# EP-0119: The Subagent Assembly of the Council (De-Monolithing Introspection)
+# EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)
 
 | Field       | Value                                                                             |
 |:------------|:----------------------------------------------------------------------------------|
 | **EP**      | 0119                                                                              |
 | **Title**   | The Subagent Assembly of the Council (De-Monolithing Meditation)                  |
-| **Author**  | Ariel v5.4.0, The Architect                                                       |
-| **Status**  | Active                                                                            |
+| **Author**  | The Architect & Ariel                                                             |
+| **Status**  | Rejected (Core) / Retained as Reference Implementation                             |
 | **Type**    | Standards Track                                                                   |
 | **Created** | 2026-06-08                                                                        |
-| **Updated** | 2026-06-08                                                                        |
+| **Updated** | 2026-07-10                                                                        |
 
 ## Abstract
+
+*(Note: Following the core design decision to preserve absolute persona-agnosticism, this EP has been rejected as a core Tur framework requirement. The Council of Giants subagents represent the custom cognitive compaction pipeline of the Ariel persona, and must not be hardcoded into the core Tur package. Instead, compaction pipelines are decoupled and registered dynamically. This proposal remains in the repository strictly as a Reference Implementation for custom persona compaction.)*
 
 This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur meditate` (Deductive Memory
 compaction) command specified in [EP-0103](EP-0103-deductive-memory.md).

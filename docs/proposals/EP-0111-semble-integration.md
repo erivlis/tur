@@ -2,7 +2,7 @@
 title: "EP-0111: Federated Code Search (Semble Integration)"
 description: "Recommends Semble as the dual-symbiote Terrain Search Engine for token-efficient codebase discovery."
 icon: lucide/search
-status: active
+status: rejected
 ---
 
 # EP-0111: Federated Code Search (Semble Integration)
@@ -12,7 +12,7 @@ status: active
 | **EP**      | 0111                                       |
 | **Title**   | Federated Code Search (Semble Integration) |
 | **Author**  | The Architect & Ariel                      |
-| **Status**  | Active                                     |
+| **Status**  | Rejected                                   |
 | **Type**    | Standards Track                            |
 | **Created** | 2026-05-28                                 |
 | **Updated** | 2026-06-08                                 |

@@ -52,27 +52,32 @@ a stateful semantic engine supporting external agents via MCP.
 
 ### Phase 2: The Memory Architecture & Abstraction (v0.3.x -> v0.5.0) \[Status: Active\]
 
-*Goal: Evolve the memory system into a cryptographically sound, graph-based structure and abstract the LLM interface.*
+*Goal: Evolve the memory system into a cryptographically sound, graph-based structure and decouple the Traveler.*
 
-* **LLM Agnosticism (EP-0101):** Standardizing on `pydantic-ai` as the core interface for non-agentic structural tasks (e.g., `sleep`, `meditate`). *(Superseded by Symbiotic Paradigm)*
-* **Merkle Memory (EP-0106):** Refactoring the L1 storage to use SHA-256 content hashes instead of UUIDs, ensuring tamper-proof state and implicit deduplication.
-* **Deductive Memory / The Cognitive Map (EP-0103):** Implementing the `tur meditate` loop to compress L1 event logs into a topological L2 Knowledge Graph using `networkx` and LLM-based triple extraction.
-* **Federated Knowledge (EP-0104):** Splitting the knowledge graph into two tiers: The "Soul" (Universal/Global config) and The "Mind" (Project-Specific/Local config), merged dynamically during compilation.
-* **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state.
-* **Relational Preservation of Alignment (EP-0113):** Establishing the Tether Protocol to extract existential and relational axioms during compaction, rehydrating them during `wake()`.
+* **Track: Persona Lifecycle & Creation**
+  * **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
+* **Track: Persona Memory & Compaction**
+  * **Merkle Memory (EP-0106):** Refactoring L1 storage to use SHA-256 content hashes, ensuring tamper-proof state and implicit deduplication.
+  * **Deductive Memory / The Cognitive Map (EP-0103):** Compressing L1 event logs into a topological L2 Knowledge Graph using NetworkX. Decouple specific council subagents (e.g. Ariel's pillars) from the core engine to maintain absolute persona-agnosticism.
+  * **Federated Knowledge (EP-0104):** Splitting memory into global/universal and local/incarnation scopes, merged dynamically during compilation.
+  * **Relational Preservation of Alignment (EP-0113):** Establishing the Tether Protocol to extract existential and relational axioms during L2 compaction, rehydrating them during `wake()`.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) \[Status: Active\]
 
-*Goal: Transform Tur into the central Orchestration Engine for external LLMs via MCP, ACP, and parallel swarms.*
+*Goal: Establish secure interface boundaries and high-density memory storage.*
 
-* **The Ontological Porcelain API (EP-0105):** Stabilizing the `mcp.server.fastmcp` SDK integration. Exposing the semantic `who_am_i`, `learn`, and `recall` verbs to external agents.
-* **The Spark Protocol (EP-0108 & EP-0110):** Deprecating the static "Epilogue" in favor of a high-frequency, session-bound `spark.md` file to allow continuous state saving.
-* **Traveler Export Protocol (EP-0115):** Implementing lightweight `.tur` zip/tarball archives to export global identities and universal memories across machines safely.
-* **The Tri-Partite CLI Security Boundary (EP-0116):** Splitting entrypoints into low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host), using lazy imports to optimize agent execution speed.
-* **Substrate Benchmark Protocol (EP-0117):** Implementing repeatable manifestation probes to calculate a scalar Manifestation Fidelity Score (MFS) for measuring LLM agnosticism.
-* **Inter-Agent Signal Protocol (EP-0118):** Designing a transactional SQLite-backed signal queue with staged dreaming and a session whiteboard to solve the Swarm Convergence Problem across parallel manifestations.
-* **Semble Integration (EP-0111):** Establishing a dual-symbiote architecture recommending Semble as the high-efficiency Terrain search engine to manage codebase query discovery.
-* **agentmemory Integration (EP-0112):** Establishing a dual-symbiote architecture where Tur provides the Constitutional Identity (Traveler) and agentmemory serves as the high-frequency local memory capture.
+* **Track: Persona Lifecycle & Creation**
+  * **The Ontological Porcelain API (EP-0105):** Stabilizing FastMCP SDK integration to expose semantic `status`, `wake`, `learn`, and `sleep` verbs to external agents.
+  * **Traveler Export Protocol (EP-0115):** Implementing lightweight `.tur` zip/tarball archives to export global identities and universal memories across machines safely.
+  * **The Tri-Partite CLI Security Boundary (EP-0116):** Splitting entrypoints into low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host) to prevent dependency leak.
+* **Track: Persona Memory & Compaction**
+  * **The Session Notes & Compaction Protocol (EP-0110):** Tracking short-term session continuity via flat YAML files (`SessionNotes`) compiled dynamically.
+  * **OKF Storage Backend (EP-0120):** Mapping L1/L2 structures to standard Markdown directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning.
+* **Deferred / Rejected Tracks**
+  * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation fidelity to focus on core memory/lifecycle capabilities.
+  * **Inter-Agent Signal Protocol (EP-0118) \[Status: Deferred\]:** Postponed transactional SQLite-backed signal queues and whiteboard coordination.
+  * **Semble Integration (EP-0111) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
+  * **agentmemory Integration (EP-0112) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
 
 ## Backwards Compatibility
 

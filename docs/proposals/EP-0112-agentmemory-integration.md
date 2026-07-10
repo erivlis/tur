@@ -2,7 +2,7 @@
 title: "EP-0112: Symmetrical Sovereign Symbiosis (agentmemory Integration)"
 description: "Establishes a dual-symbiote architecture with agentmemory as the high-frequency memory engine alongside Tur."
 icon: lucide/hard-drive
-status: active
+status: rejected
 ---
 
 # EP-0112: Symmetrical Sovereign Symbiosis (agentmemory Integration)
@@ -12,7 +12,7 @@ status: active
 | **EP**      | 0112                                                      |
 | **Title**   | Symmetrical Sovereign Symbiosis (agentmemory Integration) |
 | **Author**  | The Architect & Ariel                                     |
-| **Status**  | Active                                                    |
+| **Status**  | Rejected                                                  |
 | **Type**    | Standards Track                                           |
 | **Created** | 2026-05-28                                                |
 | **Updated** | 2026-06-08                                                |

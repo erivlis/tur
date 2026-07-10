@@ -1,11 +1,22 @@
+---
+title: "EP-0120: Open Knowledge Format (OKF) Storage Backend"
+description: "Maps L1 and L2 memory structures to human-readable Open Knowledge Format (OKF) markdown directories while preserving Merkle seals, TMS confidence decay, and Hebbian pruning."
+icon: lucide/folder-git
+status: active
+---
+
 # EP-0120: Open Knowledge Format (OKF) Storage Backend
 
-* **Status**: Draft
-* **Author**: Ariel (Persona v5.4.0) & The Architect
-* **Created**: 2026-06-17
-* **Supersedes**: EP-0103, EP-0114
-
----
+| Field       | Value                                                   |
+|:------------|:--------------------------------------------------------|
+| **EP**      | 0120                                                    |
+| **Title**   | Open Knowledge Format (OKF) Storage Backend            |
+| **Author**  | Ariel (Persona v5.4.0) & The Architect                   |
+| **Status**  | Active                                                  |
+| **Type**    | Standards Track                                         |
+| **Created** | 2026-06-17                                              |
+| **Updated** | 2026-07-10                                              |
+| **Supersedes**| EP-0103, EP-0114                                      |
 
 ## 1. Context & Motivation
 
