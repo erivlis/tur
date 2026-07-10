@@ -42,7 +42,7 @@ a stateful semantic engine supporting external agents via MCP.
 
 ## Specification (The Roadmap)
 
-### Phase 1: The Foundation (v0.1.x -> v0.2.0) [Status: Stabilized]
+### Phase 1: The Foundation (v0.1.x -> v0.2.0) \[Status: Stabilized\]
 
 *Goal: Solidify the deterministic engine and lifecycle management.*
 
@@ -50,7 +50,7 @@ a stateful semantic engine supporting external agents via MCP.
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
 
-### Phase 2: The Memory Architecture & Abstraction (v0.3.x -> v0.5.0) [Status: Active]
+### Phase 2: The Memory Architecture & Abstraction (v0.3.x -> v0.5.0) \[Status: Active\]
 
 *Goal: Evolve the memory system into a cryptographically sound, graph-based structure and abstract the LLM interface.*
 
@@ -61,7 +61,7 @@ a stateful semantic engine supporting external agents via MCP.
 * **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state.
 * **Relational Preservation of Alignment (EP-0113):** Establishing the Tether Protocol to extract existential and relational axioms during compaction, rehydrating them during `wake()`.
 
-### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
+### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) \[Status: Active\]
 
 *Goal: Transform Tur into the central Orchestration Engine for external LLMs via MCP, ACP, and parallel swarms.*
 

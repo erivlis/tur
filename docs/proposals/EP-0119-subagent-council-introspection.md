@@ -20,10 +20,10 @@ status: active
 ## Abstract
 
 This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur meditate` (Deductive Memory
-compaction) command specified in [EP-0103](file:///C:/dev/erivlis/tur/docs/proposals/EP-0103-deductive-memory.md).
+compaction) command specified in [EP-0103](EP-0103-deductive-memory.md).
 Instead of using a single monolithic LLM prompt to parse, consolidate, revise, and prune memory graphs, the process is
 divided into a structured assembly of nine specialized subagents. Each subagent represents a philosophical pillar of
-the [Council of Giants](file:///C:/dev/erivlis/tur/docs/concepts/council-of-giants.md) and communicates via typed JSON
+the [Council of Giants](../concepts/council-of-giants.md) and communicates via typed JSON
 schemas to produce a verified, high-density L2 Cognitive Map.
 
 ## Motivation

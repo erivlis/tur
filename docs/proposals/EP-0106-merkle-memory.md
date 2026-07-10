@@ -95,7 +95,7 @@ When `tur meditate` (EP-0103) runs, it performs a "considered cleaning" of the L
 
 1. It identifies ontologically equivalent memories (e.g., Hash_A "User likes Python" at 10am; Hash_B "User likes Python"
    at 11am).
-2. It generates a new synthesized memory (Hash_C "User likes Python" tags: [coding, scripting]).
+2. It generates a new synthesized memory (Hash_C "User likes Python" tags: \[coding, scripting\]).
 3. Hash_C populates its `links` array with `tur://memory/<Hash_A>` and `tur://memory/<Hash_B>`.
 4. Hash_A and Hash_B are atomically `os.replace`'d into the L0 `archive/` directory.
 5. **Result:** Hash_C is now the active L1 memory. It provides a cryptographically verifiable chain of thought back to

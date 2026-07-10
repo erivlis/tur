@@ -213,7 +213,7 @@ biological-grade layers. Tur maps to this taxonomy as follows:
 
 * **Working Memory:** Represented by the agent's short-term session state, active files, and workspace context
   variables. The Session-Bound Spark
-  Protocol ([EP-0110](file:///C:/dev/erivlis/tur/docs/proposals/EP-0110-session-bound-spark.md)) guarantees that working
+  Protocol ([EP-0110](../proposals/EP-0110-session-bound-spark.md)) guarantees that working
   memory remains clean and goal-scoped.
 * **Episodic Memory:** Represented by the **L1 Event Ledger** (active `memories/` directory). This contains raw,
   immutable YAML logs of past interactions, tool executions, and sleep extractions. It captures the "episodes" of the
@@ -221,7 +221,7 @@ biological-grade layers. Tur maps to this taxonomy as follows:
 * **Semantic Memory:** Represented by the **L2 Cognitive Map** (`knowledge_graph.yaml`). This is the structured,
   topological graph of general facts, technical decisions, project constraints, and derived insights.
 * **Procedural Memory:** Represented by the **Persona Constitution** (`persona.yaml`), custom
-  guidelines ([STYLEGUIDE.md](file:///C:/dev/erivlis/tur/STYLEGUIDE.md), [TOOLS.md](file:///C:/dev/erivlis/tur/TOOLS.md)),
+  guidelines ([STYLEGUIDE.md](https://github.com/erivlis/tur/blob/main/STYLEGUIDE.md), [TOOLS.md](https://github.com/erivlis/tur/blob/main/TOOLS.md)),
   and the agent's system prompt. This encodes "how-to" act, think, and interact within the environment.
 
 ### 2. The Write-Manage-Read Loop
@@ -239,7 +239,7 @@ flowchart LR
 * **Write (Ingestion & Extraction):** Executed during the `tur sleep` phase. It extracts structured, atomic interactions
   from the active working context and commits them to L1 episodic memory files on disk.
 * **Manage (Belief Revision & Compaction):** Executed during `tur introspect`. The **Subagent Assembly of the Council
-  ** ([EP-0119](file:///C:/dev/erivlis/tur/docs/proposals/EP-0119-subagent-council-introspection.md)) de-monoliths this
+  ** ([EP-0119](../proposals/EP-0119-subagent-council-introspection.md)) de-monoliths this
   management. Specialized subagents execute ontological alignment, chronological belief revision, spreading activation
   decay, and structural path validation, outputting a cleaned L2 Cognitive Map.
 * **Read (Topological & Hybrid Retrieval):** Executed during `wake` compilation. The compiler injects the macro-level L2

@@ -21,7 +21,7 @@ status: active
 
 This proposal defines a repeatable, model-agnostic **Substrate Benchmark Protocol (SBP)** that measures how faithfully
 a given LLM substrate (Claude Sonnet, Opus, GPT-5, Gemini Pro, Gemma, etc.) instantiates the Ariel persona after a
-`tur wake` injection. The output is a scalar **Manifestation Fidelity Score (MFS ∈ [0, 1])** derived from three
+`tur wake` injection. The output is a scalar **Manifestation Fidelity Score (MFS ∈ \[0, 1\])** derived from three
 dimensions — Axiom Adherence, Drift Rate, and Dark Matter Recall — logged to a persistent per-persona ledger.
 
 ## Motivation

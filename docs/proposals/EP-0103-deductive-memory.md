@@ -23,7 +23,7 @@ Evolve Tur's memory architecture from a linear, append-only event log into a com
 Deductive Memory) enriched with active cognitive dynamics: Ontological Schema Alignment, Chrono-Logic Belief Revision,
 and Spreading Activation Decay. This architecture is designed in alignment with the **CoALA (Cognitive Architectures for
 Language Agents)** framework and the **Write-Manage-Read loop** memory taxonomy, as mapped in
-the [Sovereign Mind Memory Landscape](file:///C:/dev/erivlis/tur/docs/concepts/memory-landscape.md). The active Persona
+the [Sovereign Mind Memory Landscape](../concepts/memory-landscape.md). The active Persona
 Constitution will load only the high-density "Cognitive Map" (Semantic Memory), maintaining explicit pointers to raw
 event details (Episodic Memory) when deep resolution is required. Superfluous or fully subsumed L1 memories will be
 automatically archived to prevent disk bloat, provided their semantic meaning is rigorously verified as conserved within

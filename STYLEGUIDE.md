@@ -26,6 +26,7 @@ To maintain a consistent codebase, we use the following tools for linting and fo
   docstring format.
 * **Logging**: Use the `loguru` library for all logging.
 * **Complexity**: Aim to keep the cyclomatic complexity of functions at or below 15, as configured in `ruff`.
+* **Float Equality**: When comparing values to float values use `math.isclose`.
 
 ## Test Style
 
@@ -40,7 +41,7 @@ Tests are written using the `pytest` framework.
 
 ## Documentation Style
 
-Project documentation is generated using `mkdocs` with the `mkdocs-material` theme.
+Project documentation is generated using `properdocs` with the `mkdocs-materialx` theme.
 
 * **Format**: All documentation is written in Markdown and formatted with `mdformat`.
 * **Admonitions**: Use admonitions to highlight specific information. For example:

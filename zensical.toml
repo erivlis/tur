@@ -52,7 +52,8 @@ nav = [
         "proposals/EP-0116-split-cli.md",
         "proposals/EP-0117-substrate-benchmark.md",
         "proposals/EP-0118-inter-agent-signal-protocol.md",
-        "proposals/EP-0119-subagent-council-meditation.md"
+        "proposals/EP-0119-subagent-council-introspection.md",
+        "proposals/EP-0120-okf-storage-backend.md"
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
