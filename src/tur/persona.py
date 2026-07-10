@@ -39,6 +39,13 @@ def get_active_persona_id(identifier: str | None = None) -> str:
                 return str(state_obj.active_persona_id)
 
     # If we're here, no default is set, so we launch the selector TUI
+    import sys
+    if not sys.stdin.isatty() and not os.environ.get('PYTEST_CURRENT_TEST'):
+        raise ValueError(
+            "No active persona set and stdin is not a TTY (headless mode). "
+            "Please set the 'TUR_ACTIVE_PERSONA_ID' environment variable or run 'tur-adm' first."
+        )
+
     base_dir = resolve_personas_base_dir()
     index_path = base_dir / 'personas.yaml'
     if not index_path.exists():

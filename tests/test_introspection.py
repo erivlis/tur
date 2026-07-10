@@ -253,3 +253,40 @@ def test_shannon_processes_and_flushes_access_log(temp_workspace):
     assert updated_graph.nodes["node-c"]["confidence"] == pytest.approx(0.7)
 
 
+def test_popper_belief_revision_conflict_resolution():
+    graph = nx.DiGraph()
+    # node-a is older, node-b is newer
+    graph.add_node("node-a", type="Fact", content="Python is slow", status="active", confidence=1.0, created_at="2026-05-01T10:00:00Z")
+    graph.add_node("node-b", type="Fact", content="Python is fast", status="active", confidence=1.0, created_at="2026-05-01T11:00:00Z")
+    graph.add_node("node-c", type="Insight", content="Thus, we must avoid Python", status="active", confidence=1.0, created_at="2026-05-01T12:00:00Z")
+
+    # Add relationships
+    graph.add_edge("node-a", "node-b", type="contradicts")
+    graph.add_edge("node-c", "node-a", type="depends_on")
+
+    # Run Popper Subagent
+    subagent = PopperSubagent()
+    updated_graph, _ = subagent.run(graph, {})
+
+    # node-a should be superseded because it is older than node-b
+    assert updated_graph.nodes["node-a"]["status"] == "superseded"
+    assert updated_graph.nodes["node-a"]["confidence"] == 0.0
+
+    # node-b should remain active
+    assert updated_graph.nodes["node-b"]["status"] == "active"
+    assert updated_graph.nodes["node-b"]["confidence"] == 1.0
+
+    # A superseded_by edge should have been created u -> v
+    assert updated_graph.has_edge("node-a", "node-b")
+    assert updated_graph["node-a"]["node-b"]["type"] == "superseded_by"
+
+    # node-c depends on node-a, so it should be deactivated recursively
+    assert updated_graph.nodes["node-c"]["status"] == "superseded"
+    assert updated_graph.nodes["node-c"]["confidence"] == 0.0
+
+    # A refuted_by edge should record the trace: c refuted_by a
+    assert updated_graph.has_edge("node-c", "node-a")
+    assert updated_graph["node-c"]["node-a"]["type"] == "refuted_by"
+
+
+

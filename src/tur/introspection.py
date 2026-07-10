@@ -269,8 +269,49 @@ class PopperSubagent(CouncilSubagent):
         super().__init__("Popper", "Skeptical Arbitrator")
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
-        # Propagate deactivation recursively: if a node is superseded or confidence == 0,
-        # propagate decay down its 'depends_on' edges
+        # 1. Resolve direct conflicts (contradicts, superseded_by, refuted_by)
+        for u, v, d in list(graph.edges(data=True)):
+            edge_type = d.get("type")
+            if edge_type == "superseded_by":
+                # u is superseded by v
+                if graph.nodes.get(v, {}).get("status") == "active" and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0:
+                    if graph.nodes[u].get("status") != "superseded":
+                        graph.nodes[u]["status"] = "superseded"
+                        graph.nodes[u]["confidence"] = 0.0
+                        graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
+            elif edge_type == "refuted_by":
+                # u is refuted by v
+                if graph.nodes.get(v, {}).get("status") == "active" and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0:
+                    if graph.nodes[u].get("status") != "superseded":
+                        graph.nodes[u]["status"] = "superseded"
+                        graph.nodes[u]["confidence"] = 0.0
+                        graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
+            elif edge_type == "contradicts":
+                # u and v contradict each other. Resolve by created_at timestamp.
+                u_data = graph.nodes.get(u)
+                v_data = graph.nodes.get(v)
+                if u_data and v_data and u_data.get("status") == "active" and v_data.get("status") == "active":
+                    try:
+                        u_time = datetime.fromisoformat(u_data.get("created_at", ""))
+                        v_time = datetime.fromisoformat(v_data.get("created_at", ""))
+                    except Exception:
+                        u_time = datetime.min.replace(tzinfo=UTC)
+                        v_time = datetime.min.replace(tzinfo=UTC)
+
+                    if u_time < v_time:
+                        # u is older, supersede u by v
+                        graph.nodes[u]["status"] = "superseded"
+                        graph.nodes[u]["confidence"] = 0.0
+                        graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
+                        graph.add_edge(u, v, type="superseded_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
+                    else:
+                        # v is older, supersede v by u
+                        graph.nodes[v]["status"] = "superseded"
+                        graph.nodes[v]["confidence"] = 0.0
+                        graph.nodes[v]["updated_at"] = datetime.now(UTC).isoformat()
+                        graph.add_edge(v, u, type="superseded_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
+
+        # 2. Propagate deactivation recursively down 'depends_on' edges
         visited = set()
 
         def propagate_decay(node_id):
@@ -279,13 +320,16 @@ class PopperSubagent(CouncilSubagent):
             visited.add(node_id)
             node_data = graph.nodes[node_id]
 
-            # If node is inactive/superseded, propagate to descendants
+            # If node is inactive/superseded, propagate to dependents
             if node_data.get("status") == "superseded" or node_data.get("confidence", 1.0) <= 0.0:
                 dependents = [u for u, v, d in graph.edges(data=True) if v == node_id and d.get("type") == "depends_on"]
                 for dep in dependents:
                     graph.nodes[dep]["confidence"] = 0.0
                     graph.nodes[dep]["status"] = "superseded"
                     graph.nodes[dep]["updated_at"] = datetime.now(UTC).isoformat()
+                    # Record trace edge refuted_by
+                    if not graph.has_edge(dep, node_id) or graph[dep][node_id].get("type") != "refuted_by":
+                        graph.add_edge(dep, node_id, type="refuted_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
                     propagate_decay(dep)
 
         # Run TMS propagation on all nodes

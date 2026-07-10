@@ -101,7 +101,7 @@ def test_memory_manager_save_and_load_user(temp_home_and_base):
 
     saved_path = manager.save(mem)
     assert saved_path.exists()
-    assert str(local_base) in str(saved_path)
+    assert str(_fake_home) in str(saved_path)
 
     loaded_memories = manager.load_all()
     assert len(loaded_memories) == 1

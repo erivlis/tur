@@ -61,9 +61,9 @@ class MemoryManager:
         Determines the correct filesystem path based on the MemoryScope (Federation).
         """
         match scope:
-            case MemoryScope.UNIVERSAL | MemoryScope.PERSONA:
+            case MemoryScope.UNIVERSAL | MemoryScope.PERSONA | MemoryScope.USER:
                 return self.global_dir, self.global_archive_dir
-            case MemoryScope.INCARNATION | MemoryScope.USER:
+            case MemoryScope.INCARNATION:
                 return self.local_dir, self.local_archive_dir
             case _:
                 raise ValueError(f'Unsupported MemoryScope: {scope}')
