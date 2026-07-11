@@ -134,3 +134,9 @@ packages = ["src/tur"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/tur", "src/tur/.agents", "README.md", "LICENSE"]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
