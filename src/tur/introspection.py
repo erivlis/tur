@@ -268,24 +268,26 @@ class PopperSubagent(CouncilSubagent):
     def __init__(self):
         super().__init__("Popper", "Skeptical Arbitrator")
 
-    def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
-        # 1. Resolve direct conflicts (contradicts, superseded_by, refuted_by)
+    def _resolve_conflicts(self, graph: nx.DiGraph):
+        """Resolves direct contradicts, superseded_by, and refuted_by conflict relations."""
         for u, v, d in list(graph.edges(data=True)):
             edge_type = d.get("type")
             if edge_type == "superseded_by":
                 # u is superseded by v
-                if graph.nodes.get(v, {}).get("status") == "active" and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0:
-                    if graph.nodes[u].get("status") != "superseded":
-                        graph.nodes[u]["status"] = "superseded"
-                        graph.nodes[u]["confidence"] = 0.0
-                        graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
+                if (graph.nodes.get(v, {}).get("status") == "active"
+                        and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0
+                        and graph.nodes[u].get("status") != "superseded"):
+                    graph.nodes[u]["status"] = "superseded"
+                    graph.nodes[u]["confidence"] = 0.0
+                    graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
             elif edge_type == "refuted_by":
                 # u is refuted by v
-                if graph.nodes.get(v, {}).get("status") == "active" and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0:
-                    if graph.nodes[u].get("status") != "superseded":
-                        graph.nodes[u]["status"] = "superseded"
-                        graph.nodes[u]["confidence"] = 0.0
-                        graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
+                if (graph.nodes.get(v, {}).get("status") == "active"
+                        and graph.nodes.get(v, {}).get("confidence", 1.0) > 0.0
+                        and graph.nodes[u].get("status") != "superseded"):
+                    graph.nodes[u]["status"] = "superseded"
+                    graph.nodes[u]["confidence"] = 0.0
+                    graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
             elif edge_type == "contradicts":
                 # u and v contradict each other. Resolve by created_at timestamp.
                 u_data = graph.nodes.get(u)
@@ -303,15 +305,18 @@ class PopperSubagent(CouncilSubagent):
                         graph.nodes[u]["status"] = "superseded"
                         graph.nodes[u]["confidence"] = 0.0
                         graph.nodes[u]["updated_at"] = datetime.now(UTC).isoformat()
-                        graph.add_edge(u, v, type="superseded_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
+                        graph.add_edge(u, v, type="superseded_by", confidence=1.0,
+                                       created_at=datetime.now(UTC).isoformat())
                     else:
                         # v is older, supersede v by u
                         graph.nodes[v]["status"] = "superseded"
                         graph.nodes[v]["confidence"] = 0.0
                         graph.nodes[v]["updated_at"] = datetime.now(UTC).isoformat()
-                        graph.add_edge(v, u, type="superseded_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
+                        graph.add_edge(v, u, type="superseded_by", confidence=1.0,
+                                       created_at=datetime.now(UTC).isoformat())
 
-        # 2. Propagate deactivation recursively down 'depends_on' edges
+    def _propagate_deactivations(self, graph: nx.DiGraph):
+        """Propagates deactivations downstream through depends_on dependencies."""
         visited = set()
 
         def propagate_decay(node_id):
@@ -329,13 +334,16 @@ class PopperSubagent(CouncilSubagent):
                     graph.nodes[dep]["updated_at"] = datetime.now(UTC).isoformat()
                     # Record trace edge refuted_by
                     if not graph.has_edge(dep, node_id) or graph[dep][node_id].get("type") != "refuted_by":
-                        graph.add_edge(dep, node_id, type="refuted_by", confidence=1.0, created_at=datetime.now(UTC).isoformat())
+                        graph.add_edge(dep, node_id, type="refuted_by", confidence=1.0,
+                                       created_at=datetime.now(UTC).isoformat())
                     propagate_decay(dep)
 
-        # Run TMS propagation on all nodes
         for node in list(graph.nodes):
             propagate_decay(node)
 
+    def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
+        self._resolve_conflicts(graph)
+        self._propagate_deactivations(graph)
         return graph, context
 
 
@@ -504,18 +512,33 @@ class StewardSubagent(CouncilSubagent):
 
 # Introspection Assembly Coordinator
 class IntrospectionAssembly:
-    def __init__(self):
-        self.agents = [
-            BaconSubagent(),
-            RussellSubagent(),
-            PopperSubagent(),
-            NoetherSubagent(),
-            ExplorerSubagent(),
-            ShannonSubagent(),
-            MaharalSubagent(),
-            FeynmanSubagent(),
-            StewardSubagent()
-        ]
+    def __init__(self, config: dict | None = None):
+        self.agents = []
+        if config and "subagents" in config:
+            import importlib
+            for agent_cfg in config["subagents"]:
+                class_path = agent_cfg.get("class")
+                if class_path:
+                    try:
+                        module_path, class_name = class_path.rsplit('.', 1)
+                        module = importlib.import_module(module_path)
+                        agent_cls = getattr(module, class_name)
+                        self.agents.append(agent_cls())
+                    except Exception as e:
+                        raise ImportError(f"Failed to load compaction subagent {class_path}: {e}") from e
+
+        if not self.agents:
+            self.agents = [
+                BaconSubagent(),
+                RussellSubagent(),
+                PopperSubagent(),
+                NoetherSubagent(),
+                ExplorerSubagent(),
+                ShannonSubagent(),
+                MaharalSubagent(),
+                FeynmanSubagent(),
+                StewardSubagent()
+            ]
 
     def execute(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         for agent in self.agents:
@@ -569,8 +592,19 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
         "test_mode": test_mode
     }
 
+    # Load compaction configuration from persona.yaml
+    persona_yaml_path = persona_dir / "persona.yaml"
+    compaction_config = None
+    if persona_yaml_path.exists():
+        try:
+            with open(persona_yaml_path, encoding="utf-8") as f:
+                persona_data = yaml.safe_load(f) or {}
+            compaction_config = persona_data.get("compaction")
+        except Exception:
+            pass
+
     # Run subagent assembly
-    assembly = IntrospectionAssembly()
+    assembly = IntrospectionAssembly(compaction_config)
     graph, context = assembly.execute(graph, context)
 
     # Save L2 Graph Atomically (Maharal constraint)

@@ -10,11 +10,11 @@ from typer.testing import CliRunner
 from tur.cli.agent import app
 from tur.introspection import (
     BaconSubagent,
+    IntrospectionAssembly,
     NoetherSubagent,
     PopperSubagent,
     SymmetryError,
     TamperedStateError,
-    format_graph_as_mermaid,
     run_introspection,
 )
 from tur.memory import MemoryManager
@@ -256,9 +256,12 @@ def test_shannon_processes_and_flushes_access_log(temp_workspace):
 def test_popper_belief_revision_conflict_resolution():
     graph = nx.DiGraph()
     # node-a is older, node-b is newer
-    graph.add_node("node-a", type="Fact", content="Python is slow", status="active", confidence=1.0, created_at="2026-05-01T10:00:00Z")
-    graph.add_node("node-b", type="Fact", content="Python is fast", status="active", confidence=1.0, created_at="2026-05-01T11:00:00Z")
-    graph.add_node("node-c", type="Insight", content="Thus, we must avoid Python", status="active", confidence=1.0, created_at="2026-05-01T12:00:00Z")
+    graph.add_node("node-a", type="Fact", content="Python is slow", status="active", confidence=1.0,
+                   created_at="2026-05-01T10:00:00Z")
+    graph.add_node("node-b", type="Fact", content="Python is fast", status="active", confidence=1.0,
+                   created_at="2026-05-01T11:00:00Z")
+    graph.add_node("node-c", type="Insight", content="Thus, we must avoid Python", status="active", confidence=1.0,
+                   created_at="2026-05-01T12:00:00Z")
 
     # Add relationships
     graph.add_edge("node-a", "node-b", type="contradicts")
@@ -289,4 +292,29 @@ def test_popper_belief_revision_conflict_resolution():
     assert updated_graph["node-c"]["node-a"]["type"] == "refuted_by"
 
 
+def test_pluggable_compaction_pipeline_dynamic_loading():
+    # 1. Test successful custom loading
+    config = {
+        "subagents": [
+            {"name": "CustomPopper", "class": "tur.introspection.PopperSubagent"}
+        ]
+    }
+    assembly = IntrospectionAssembly(config)
+    assert len(assembly.agents) == 1
+    assert isinstance(assembly.agents[0], PopperSubagent)
 
+    # 2. Test invalid import path raising ImportError
+    bad_config = {
+        "subagents": [
+            {"name": "BadAgent", "class": "nonexistent_module.NonexistentClass"}
+        ]
+    }
+    with pytest.raises(ImportError) as exc:
+        IntrospectionAssembly(bad_config)
+    assert "Failed to load compaction subagent" in str(exc.value)
+
+    # 3. Test empty configuration fallback to default assembly
+    empty_assembly = IntrospectionAssembly(None)
+    assert len(empty_assembly.agents) == 9
+    from tur.introspection import BaconSubagent
+    assert isinstance(empty_assembly.agents[0], BaconSubagent)

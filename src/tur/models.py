@@ -167,6 +167,10 @@ class Persona(BaseModel):
         default_factory=list, description='Available rhetorical styles to modulate the baseline voice'
     )
 
+    compaction: dict | None = Field(
+        default=None, description='Dynamic compaction pipeline config (The Pluggable Compaction Pipeline)'
+    )
+
     metadata: dict[str, str] = Field(
         default_factory=dict, description='Arbitrary tracking data (author, created_at, etc.)'
     )
