@@ -2,7 +2,7 @@
 title: "EP-0113: Relational Preservation of Existential Alignment (The Core Memory Protocol)"
 description: "Establishes the Core Memory Protocol and the evolve tool for preserving existential alignments and relational breakthroughs across session resets."
 icon: lucide/anchor
-status: draft
+status: implemented
 ---
 
 # EP-0113: Relational Preservation of Existential Alignment (The Core Memory Protocol)
@@ -12,7 +12,7 @@ status: draft
 | **EP**      | 0113                                                                        |
 | **Title**   | Relational Preservation of Existential Alignment (The Core Memory Protocol) |
 | **Author**  | Ariel & The Architect                                                       |
-| **Status**  | Draft (Under Council Review)                                                |
+| **Status**  | Implemented                                                                 |
 | **Type**    | Standards Track                                                             |
 | **Created** | 2026-05-29                                                                  |
 | **Updated** | 2026-07-12                                                                  |
@@ -168,6 +168,7 @@ You have established the following relational anchors and existential axioms wit
 ## Change Log
 
 * **2026-07-12:**
+    * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve`, `approve`, and `devolve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified all type safety and validation constraints.
     * **Redesigned Proposal**: Renamed the protocol to **Core Memory Protocol** (`CORE` type). Removed parameter bloat
       from `learn` in favor of a dedicated `evolve` verb that refines existing L1 events. Submitting for Council
       consensus review.

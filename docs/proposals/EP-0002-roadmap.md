@@ -60,9 +60,9 @@ a stateful semantic engine supporting external agents via MCP.
   * **Merkle Memory (EP-0106):** Refactoring L1 storage to use SHA-256 content hashes, ensuring tamper-proof state and implicit deduplication.
   * **Deductive Memory / The Cognitive Map (EP-0103):** Compressing L1 event logs into a topological L2 Knowledge Graph using NetworkX. Decouple specific council subagents (e.g. Ariel's pillars) from the core engine to maintain absolute persona-agnosticism. *(Storage format superseded by EP-0120.)*
   * **Federated Knowledge (EP-0104):** Splitting memory into global/universal and local/incarnation scopes, merged dynamically during compilation.
-  * **Relational Preservation of Alignment (EP-0113) [Status: Implemented]:** Establishing the Tether Protocol to extract existential and relational axioms, rehydrating them during `wake()`.
+  * **Relational Preservation of Alignment (EP-0113) [Status: Implemented]:** Establishing the Core Memory Protocol to extract existential and relational axioms via the `evolve` command, rehydrating them during `wake()`.
 * **Track: LLM Agnosticism & Swarms**
-  * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Active]:** Delegating cognitive tasks to connected Host Applications via MCP Sampling to remove direct provider dependencies.
+  * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Implemented]:** Delegating cognitive tasks to connected Host Applications via MCP Sampling to remove direct provider dependencies.
   * **Inter-Agent Signal Protocol (EP-0118) [Status: Implemented]:** SQLite-backed typed signal queues and shared whiteboard for concurrency synchronization.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) \[Status: Active\]
@@ -88,7 +88,9 @@ This is a forward-looking informational document. Future EPs derived from this r
 ## Change Log
 
 * **2026-07-12:**
-    * Marked **EP-0113 (The Tether Protocol)** and **EP-0118 (Inter-Agent Signal Protocol)** as **Implemented**. Added **EP-0101 (LLM Agnosticism)** to the active roadmap track.
+    * Marked **EP-0101 (LLM Agnosticism)** as **Implemented**.
+    * Renamed and marked **EP-0113 (Core Memory Protocol)** as **Implemented**, introducing `evolve`, `approve`, and `devolve` tools/commands.
+    * Marked **EP-0118 (Inter-Agent Signal Protocol)** as **Implemented**.
 * **2026-07-11:**
     * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103 supersession note. Updated Backwards Compatibility section to reflect OKF migration.
 * **2026-06-02:**
