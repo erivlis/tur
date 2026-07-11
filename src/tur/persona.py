@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-import yaml
+from tur._helpers import yaml_safe_load
 
 from tur.models import PersonaIndex, SystemState
 from tur.paths import resolve_personas_base_dir
@@ -30,7 +30,7 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.safe_load(f)
+                state_data = yaml_safe_load(f)
             state_obj = SystemState(**state_data)
         except Exception:
             pass
@@ -52,7 +52,7 @@ def get_active_persona_id(identifier: str | None = None) -> str:
         raise FileNotFoundError('No personas found. Please run `tur init` to create one.')
 
     with open(index_path, encoding='utf-8') as f:
-        index = PersonaIndex(**yaml.safe_load(f))
+        index = PersonaIndex(**yaml_safe_load(f))
 
     if not index.personas:
         import typer
@@ -62,8 +62,8 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     new_active_id = select_persona_wizard(index)
     if not new_active_id:
         import typer
-
-        raise typer.Exit('No persona selected. Aborting.')
+        typer.echo('No persona selected. Aborting.', err=True)
+        raise typer.Exit(code=1)
 
     return new_active_id
 
@@ -79,7 +79,7 @@ def get_persona_path(identifier: str) -> Path:
         raise FileNotFoundError('No personas.yaml index found. Please run migration or init.')
 
     with open(index_path, encoding='utf-8') as f:
-        index_data = yaml.safe_load(f)
+        index_data = yaml_safe_load(f)
         index = PersonaIndex(**index_data)
 
     for entry in index.personas:

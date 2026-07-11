@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import yaml
+from tur._helpers import yaml_safe_load
 
 from tur.models import UserProfile
 
@@ -20,7 +20,7 @@ def get_user_profile() -> UserProfile:
 
     if config_path:
         with open(config_path, encoding='utf-8') as f:
-            user_data = yaml.safe_load(f)
+            user_data = yaml_safe_load(f)
         return UserProfile(**user_data)
     else:
         # Fallback to a default user if no config is found

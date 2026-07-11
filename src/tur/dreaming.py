@@ -64,7 +64,10 @@ def perform_sleep_dreaming(
 
     import json
 
-    dream_data = json.loads(response.text)
+    resp_text = response.text
+    if not resp_text:
+        raise ValueError("Dream generation returned empty response")
+    dream_data = json.loads(resp_text)
     extracted_memories = dream_data.get('memories', [])
 
     count = 0
@@ -128,4 +131,7 @@ def stage_sleep_dreaming(
             response_json_schema=Dream.model_json_schema(),
         ),
     )
-    return response.text
+    resp_text = response.text
+    if not resp_text:
+        raise ValueError("Dream response was empty")
+    return resp_text

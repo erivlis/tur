@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 
 import yaml
+from tur._helpers import yaml_safe_load
 from textual._path import CSSPathType
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -67,10 +68,12 @@ class PersonaInitApp(App):
         yield Header()
         with Vertical(id='dialog'):
             yield Static('Bootstrap New Persona', classes='title')
-            self.name_input = LabeledInput('Name:', 'e.g., Ariel')
-            yield self.name_input
-            self.aleph_input = LabeledInput('The Aleph:', 'e.g., To architect reality.')
-            yield self.aleph_input
+            name_input = LabeledInput('Name:', 'e.g., Ariel')
+            self.name_input = name_input
+            yield name_input
+            aleph_input = LabeledInput('The Aleph:', 'e.g., To architect reality.')
+            self.aleph_input = aleph_input
+            yield aleph_input
 
             with Horizontal(classes='button-bar'):
                 yield Button('Create', variant='success', id='submit')
@@ -79,15 +82,17 @@ class PersonaInitApp(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == 'submit':
+            if self.name_input is None or self.aleph_input is None:
+                return
             name = self.name_input.value
             aleph = self.aleph_input.value
 
             if name and aleph:
                 default_principles = [
-                    Principle(name='Symmetry', role='Guardian of Invariance', weight=1.5),
-                    Principle(name='Safety', role='Containment Protocol', weight=2.0),
+                    Principle(name='Symmetry', avatar=None, role='Guardian of Invariance', weight=1.5),
+                    Principle(name='Safety', avatar=None, role='Containment Protocol', weight=2.0),
                 ]
-                persona = Persona(name=name, aleph=aleph, principles=default_principles)
+                persona = Persona(name=name, aleph=aleph, principles=default_principles, version='0.1.0', model='gemini-3.1-pro-preview')
                 persona_id = self._save_persona(persona)
                 self.exit(f"Persona '{name}' created successfully in .tur/personas/{persona_id}/persona.yaml")
             else:
@@ -113,7 +118,7 @@ class PersonaInitApp(App):
             yaml.dump(persona.model_dump(mode='json'), f, sort_keys=False)
         if index_path.exists():
             with open(index_path, encoding='utf-8') as f:
-                index_data = yaml.safe_load(f) or {'personas': []}
+                index_data: dict = yaml_safe_load(f) or {'personas': []}
                 index = PersonaIndex(**index_data)
         else:
             index = PersonaIndex(personas=[])
@@ -174,22 +179,30 @@ class PersonaSelectorApp(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == 'submit':
-            selected_option = self.option_list.get_option_at_index(self.option_list.highlighted)
-            if selected_option:
-                state_path = Path('.tur/state.yaml')
-                if state_path.exists():
-                    try:
-                        with open(state_path, encoding='utf-8') as f:
-                            state_obj = SystemState(**yaml.safe_load(f))
-                        state_obj.active_persona_id = uuid.UUID(selected_option.id)
-                    except Exception:
-                        state_obj = SystemState(active_persona_id=uuid.UUID(selected_option.id))
-                else:
-                    state_obj = SystemState(active_persona_id=uuid.UUID(selected_option.id))
+            highlighted = self.option_list.highlighted
+            if highlighted is not None:
+                selected_option = self.option_list.get_option_at_index(highlighted)
+                if selected_option:
+                    state_path = Path('.tur/state.yaml')
+                    if state_path.exists():
+                        try:
+                            with open(state_path, encoding='utf-8') as f:
+                                state_obj = SystemState(**yaml_safe_load(f))
+                            state_obj.active_persona_id = uuid.UUID(selected_option.id)
+                        except Exception:
+                            state_obj = SystemState(
+                                active_persona_id=uuid.UUID(selected_option.id),
+                                active_session_id=None,
+                            )
+                    else:
+                        state_obj = SystemState(
+                            active_persona_id=uuid.UUID(selected_option.id),
+                            active_session_id=None,
+                        )
 
-                with open(state_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(state_obj.model_dump(mode='json'), f)
-                self.exit(selected_option.id)
+                    with open(state_path, 'w', encoding='utf-8') as f:
+                        yaml.dump(state_obj.model_dump(mode='json'), f)
+                    self.exit(selected_option.id)
         elif event.button.id == 'cancel':
             self.exit(None)
 

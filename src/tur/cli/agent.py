@@ -4,6 +4,7 @@ from uuid import UUID
 
 import typer
 import yaml
+from tur._helpers import yaml_safe_load
 
 from tur import persona, session
 from tur.cli.common import console
@@ -70,7 +71,7 @@ def wake(
         if state_path.exists():
             try:
                 with open(state_path, encoding='utf-8') as f:
-                    state_data = yaml.safe_load(f)
+                    state_data = yaml_safe_load(f)
                 state_obj = SystemState(**state_data)
                 changed = False
                 if state_obj.active_persona_id != UUID(active_id):
@@ -201,7 +202,7 @@ def status(
         if persona_yaml.exists():
             try:
                 with open(persona_yaml, encoding='utf-8') as f:
-                    pdata = yaml.safe_load(f)
+                    pdata = yaml_safe_load(f)
                 persona_name = pdata.get('name', active_id)
                 persona_version = pdata.get('version', 'unknown')
             except Exception:
@@ -228,7 +229,7 @@ def status(
             if notes_yaml_path.exists():
                 try:
                     with open(notes_yaml_path, encoding='utf-8') as f:
-                        notes_data = yaml.safe_load(f)
+                        notes_data = yaml_safe_load(f)
                     session_notes = SessionNotes(**notes_data)
                     note_count = len(session_notes.notes)
                     if session_notes.notes:

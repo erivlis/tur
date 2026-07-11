@@ -7,16 +7,14 @@ import re
 import sqlite3
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, TypeVar, cast
 from uuid import UUID
 
 import yaml
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
+from tur._helpers import yaml_safe_load
 
 from tur.memory import MemoryManager
 from tur.models import (
@@ -65,11 +63,11 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
     if index_path.exists():
         with open(index_path, encoding='utf-8') as f:
             try:
-                data = yaml.load(f, Loader=SafeLoader) or {}
+                data: dict = yaml_safe_load(f) or {}
                 return SessionIndex(**data)
             except Exception:
                 pass
-    return SessionIndex()
+    return SessionIndex(active_session_id=None, sessions=[])
 
 
 def save_session_index(persona_dir: Path, index: SessionIndex):
@@ -98,7 +96,7 @@ def get_active_session_id() -> str | None:
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.load(f, Loader=SafeLoader)
+                state_data = yaml_safe_load(f)
             state_obj = SystemState(**state_data)
         except Exception:
             pass
@@ -120,7 +118,7 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     if session_file.exists():
         try:
             with open(session_file, encoding='utf-8') as f:
-                notes_data = yaml.load(f, Loader=SafeLoader)
+                notes_data = yaml_safe_load(f)
             session_notes = SessionNotes(**notes_data)
             if session_notes.notes:
                 sorted_notes = sorted(session_notes.notes, key=lambda x: x.timestamp, reverse=True)
@@ -137,7 +135,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     file_path = persona_dir / 'persona.yaml'
 
     with open(file_path, encoding='utf-8') as f:
-        data = yaml.load(f, Loader=SafeLoader)
+        data = yaml_safe_load(f)
 
     persona = Persona(**data)
     user = get_user_profile()
@@ -162,7 +160,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     if kg_path.exists():
         try:
             with open(kg_path, encoding='utf-8') as f:
-                kg_data = yaml.load(f, Loader=SafeLoader)
+                kg_data = yaml_safe_load(f)
         except Exception:
             pass
 
@@ -175,13 +173,18 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     )
 
 
-def db_retry(max_retries=5, initial_delay=0.05, backoff_factor=2.0):
-    def decorator(func):
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def db_retry(
+    max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: float = 2.0
+) -> Callable[[F], F]:
+    def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             delay = initial_delay
             last_err = None
-            for attempt in range(max_retries):
+            for _ in range(max_retries):
                 try:
                     return func(*args, **kwargs)
                 except sqlite3.OperationalError as e:
@@ -191,9 +194,11 @@ def db_retry(max_retries=5, initial_delay=0.05, backoff_factor=2.0):
                         delay *= backoff_factor
                     else:
                         raise
-            raise last_err or sqlite3.OperationalError('Database busy timeout exceeded.')
+            raise last_err or sqlite3.OperationalError(
+                'Database busy timeout exceeded.'
+            )
 
-        return wrapper
+        return cast(F, wrapper)
 
     return decorator
 
@@ -440,7 +445,7 @@ def start_session_logic(
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_data = yaml.load(f, Loader=SafeLoader)
+                state_data = yaml_safe_load(f)
             state_obj = SystemState(**state_data)
             state_obj.active_session_id = session_id
         except Exception:
@@ -568,7 +573,7 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
-                state_obj = SystemState(**yaml.load(f, Loader=SafeLoader))
+                state_obj = SystemState(**yaml_safe_load(f))
             if state_obj.active_session_id == session_id:
                 state_obj.active_session_id = None
             with open(state_path, 'w', encoding='utf-8') as f:
@@ -609,7 +614,7 @@ def signal_logic(
         raise ValueError(f"RateLimitError: Agent '{sender}' exceeded rate limit of 10 signals per minute.")
 
     payload = f'{sender}|{recipient}|{type_}|{content}'
-    timestamp_str = datetime.utcnow().isoformat()
+    timestamp_str = datetime.now(timezone.utc).isoformat()
     signal_id = hashlib.sha256(f'{payload}|{timestamp_str}|{uuid.uuid4().hex}'.encode()).hexdigest()
 
     with conn:
@@ -837,7 +842,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
     with conn:
         cursor = conn.cursor()
         payload = f'{agent_id}|*|sleep_event|Consensus reached. Swarm sleeping.'
-        sig_id = hashlib.sha256(f'{payload}|{datetime.utcnow().isoformat()}|{uuid.uuid4().hex}'.encode()).hexdigest()
+        sig_id = hashlib.sha256(f'{payload}|{datetime.now(timezone.utc).isoformat()}|{uuid.uuid4().hex}'.encode()).hexdigest()
         conn.execute(
             """
                      INSERT INTO signals (id, sender, recipient, type, content)
@@ -884,7 +889,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
                         'dreaming',
                         'consolidated',
                     ],
-                    content=mem_data.get('content') if isinstance(mem_data, dict) else mem_data.content,
+                    content=(mem_data.get('content') if isinstance(mem_data, dict) else mem_data.content) or '',
                     source_session=session_id,
                 )
                 memory_manager.save(memory)
@@ -916,7 +921,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         if session_file.exists():
             try:
                 with open(session_file, encoding='utf-8') as f:
-                    notes_data = yaml.load(f, Loader=SafeLoader)
+                    notes_data = yaml_safe_load(f)
                 session_notes = SessionNotes(**notes_data)
                 notes_list = session_notes.notes
             except Exception:
@@ -933,7 +938,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
         if existing_entry:
             existing_entry.updated_at = datetime.now()
         else:
-            new_entry = SessionEntry(id=resolved_session_id)
+            new_entry = SessionEntry(id=resolved_session_id, status='active')
             index.sessions.append(new_entry)
         save_session_index(persona_dir, index)
 

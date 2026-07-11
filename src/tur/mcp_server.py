@@ -30,6 +30,7 @@ from tur.dreaming import perform_sleep_dreaming  # noqa: E402
 from tur.memory import MemoryManager  # noqa: E402
 from tur.models import Memory, MemoryScope, MemoryType, SessionNotes  # noqa: E402
 from tur.persona import get_active_persona_id, get_persona_path  # noqa: E402
+from tur._helpers import yaml_safe_load  # noqa: E402
 from tur.session import (  # noqa: E402
     ack_signals_logic,
     end_session_logic,
@@ -75,7 +76,6 @@ def status() -> dict:
     Returns a dict with keys: persona_name, persona_id, persona_version,
     session_id, session_status, note_count, latest_note, memory_count.
     """
-    import yaml
 
     try:
         active_id = get_active_persona_id()
@@ -87,7 +87,7 @@ def status() -> dict:
         persona_yaml_path = persona_dir / 'persona.yaml'
         if persona_yaml_path.exists():
             with open(persona_yaml_path, encoding='utf-8') as f:
-                pdata = yaml.safe_load(f)
+                pdata = yaml_safe_load(f)
             persona_name = pdata.get('name', active_id)
             persona_version = pdata.get('version', 'unknown')
 
@@ -105,7 +105,7 @@ def status() -> dict:
             notes_yaml_path = get_session_file(persona_dir, session_id)
             if notes_yaml_path.exists():
                 with open(notes_yaml_path, encoding='utf-8') as f:
-                    notes_data = yaml.safe_load(f)
+                    notes_data = yaml_safe_load(f)
                 session_notes = SessionNotes(**notes_data)
                 note_count = len(session_notes.notes)
                 if session_notes.notes:
@@ -240,7 +240,7 @@ def learn(
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
-    memory = Memory(type=mem_type, scope=mem_scope, tags=['mcp', 'agent'], content=content)
+    memory = Memory(type=mem_type, scope=mem_scope, tags=['mcp', 'agent'], content=content, source_session=None)
     saved_path = manager.save(memory)
     return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
 
@@ -340,7 +340,6 @@ def telemetry(identifier: str | None = None) -> dict:
         identifier: The name or UUID of the persona. If omitted, uses the default.
     """
     try:
-        import yaml
 
         from tur.models import Persona, SessionState
         from tur.user import get_user_profile
@@ -350,13 +349,13 @@ def telemetry(identifier: str | None = None) -> dict:
         file_path = persona_dir / 'persona.yaml'
 
         with open(file_path, encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+            data = yaml_safe_load(f)
 
         persona_obj = Persona(**data)
 
         # Mock state for compilation measurement
         user_profile = get_user_profile()
-        state = SessionState(persona=persona_obj, user=user_profile, memories=[])
+        state = SessionState(persona=persona_obj, user=user_profile, memories=[], epilogue=None, knowledge_graph=None)
         system_prompt = compile_persona(state)
 
         telemetry_engine = CognitiveTelemetry()

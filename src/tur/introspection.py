@@ -3,15 +3,19 @@ import json
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
-
+from typing import cast
 import networkx as nx
 import yaml
+
+from tur._helpers import yaml_safe_load
 from pydantic import BaseModel, Field
 
 from tur.memory import MemoryManager
 from tur.models import MemoryType
+
+UTC = timezone.utc
 
 
 # Core exceptions as per EP-0103 and EP-0119 specifications
@@ -200,15 +204,19 @@ class RussellSubagent(CouncilSubagent):
             ),
         )
 
+        resp_text = response.text
+        if not resp_text:
+            raise ValueError("Empty response from LLM")
+
         try:
-            extracted = ExtractedGraph.model_validate_json(response.text)
+            extracted = ExtractedGraph.model_validate_json(resp_text)
         except Exception as e:
             # Fallback to manual parsing if Pydantic validation of LLM output fails
             try:
-                data = json.loads(response.text)
+                data = json.loads(resp_text)
                 extracted = ExtractedGraph(**data)
             except Exception:
-                raise ValueError(f"Failed to parse LLM graph output: {e}. Output: {response.text}")
+                raise ValueError(f"Failed to parse LLM graph output: {e}. Output: {resp_text}")
 
         # Update NetworkX Graph based on extraction
         # Merge new nodes and consolidate synonyms
@@ -246,10 +254,12 @@ class RussellSubagent(CouncilSubagent):
                 if edge.type in ["precedes", "depends_on"]:
                     graph.add_edge(src, tgt, type=edge.type, confidence=edge.confidence,
                                    created_at=datetime.now(UTC).isoformat())
-                    if not nx.is_directed_acyclic_graph(nx.subgraph_view(graph,
-                                                                         filter_edge=lambda u, v: graph[u][v].get(
-                                                                             "type") in ["precedes",
-                                                                                         "depends_on"])):
+                    if not nx.is_directed_acyclic_graph(
+                            nx.subgraph_view(
+                                graph,
+                                filter_edge=lambda u, v: graph[u][v].get("type") in ["precedes", "depends_on"]
+                            )
+                    ):
                         # If cycle is formed, remove to enforce DAG constraints
                         graph.remove_edge(src, tgt)
                 else:
@@ -270,7 +280,8 @@ class PopperSubagent(CouncilSubagent):
 
     def _resolve_conflicts(self, graph: nx.DiGraph):
         """Resolves direct contradicts, superseded_by, and refuted_by conflict relations."""
-        for u, v, d in list(graph.edges(data=True)):
+        for u, v in list(graph.edges):
+            d = graph.edges[u, v]
             edge_type = d.get("type")
             if edge_type == "superseded_by":
                 # u is superseded by v
@@ -327,7 +338,8 @@ class PopperSubagent(CouncilSubagent):
 
             # If node is inactive/superseded, propagate to dependents
             if node_data.get("status") == "superseded" or node_data.get("confidence", 1.0) <= 0.0:
-                dependents = [u for u, v, d in graph.edges(data=True) if v == node_id and d.get("type") == "depends_on"]
+                dependents = [u for u, v in graph.edges if
+                              v == node_id and graph.edges[u, v].get("type") == "depends_on"]
                 for dep in dependents:
                     graph.nodes[dep]["confidence"] = 0.0
                     graph.nodes[dep]["status"] = "superseded"
@@ -385,7 +397,7 @@ class ExplorerSubagent(CouncilSubagent):
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Connect isolated parts or add OpenQuestion placeholder if we find structural holes
-        sub_g = nx.subgraph_view(graph, filter_node=lambda n: graph.nodes[n].get("type") != "Dependency")
+        sub_g = cast(nx.DiGraph, nx.subgraph_view(graph, filter_node=lambda n: graph.nodes[n].get("type") != "Dependency"))
         if not nx.is_weakly_connected(sub_g) and sub_g.number_of_nodes() > 1:
             components = list(nx.weakly_connected_components(sub_g))
             gap_id = "exploration-horizon-gap"
@@ -561,7 +573,8 @@ def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
         else:
             lines.append(f'    {node}["{ntype}"]')
 
-    for u, v, d in graph.edges(data=True):
+    for u, v in graph.edges:
+        d = graph.edges[u, v]
         rel = d.get("type", "links")
         lines.append(f"    {u} -->|{rel}| {v}")
 
@@ -597,11 +610,7 @@ def load_l2_graph_from_okf(persona_dir: Path) -> nx.DiGraph | None:
             yaml_part = parts[1]
             body_part = parts[2].strip()
 
-            try:
-                from yaml import CSafeLoader as SafeLoader
-            except ImportError:
-                from yaml import SafeLoader
-            data = yaml.load(yaml_part, Loader=SafeLoader)
+            data = yaml_safe_load(yaml_part)
 
             node_id = file_path.stem
 
@@ -748,7 +757,7 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
         if graph is None and kg_path.exists():
             try:
                 with open(kg_path, encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
+                    data = yaml_safe_load(f)
                 graph = nx.node_link_graph(data)
             except Exception:
                 graph = None
@@ -769,7 +778,7 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
     if persona_yaml_path.exists():
         try:
             with open(persona_yaml_path, encoding="utf-8") as f:
-                persona_data = yaml.safe_load(f) or {}
+                persona_data: dict = yaml_safe_load(f) or {}
             compaction_config = persona_data.get("compaction")
         except Exception:
             pass
@@ -784,7 +793,7 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
         graph_data = nx.node_link_data(graph)
         yaml_content = yaml.dump(graph_data, sort_keys=False)
         with open(kg_temp_fd, "w", encoding="utf-8") as f:
-            f.write(yaml_content)
+            f.write(str(yaml_content))
             f.flush()
             os.fsync(f.fileno())
         if kg_path.exists():

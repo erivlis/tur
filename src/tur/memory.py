@@ -1,15 +1,13 @@
 import contextlib
 import os
 import tempfile
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import yaml
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
+from tur._helpers import yaml_safe_load
 
 from tur.models import Memory, MemoryLink, MemoryScope, MemoryType
 from tur.paths import is_global_path
@@ -92,7 +90,7 @@ class MemoryManager:
         )
 
         # Format as OKF Markdown with YAML frontmatter
-        frontmatter = {
+        frontmatter: dict[str, Any] = {
             'type': 'L1 Memory',
             'title': f'Memory {memory.id[:8]}',
             'description': desc,
@@ -142,14 +140,14 @@ class MemoryManager:
         """
         # Search for the file in the local bank first
         files = (
-            list(self.local_dir.glob(f'*_{memory_id}.md'))
-            + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+                list(self.local_dir.glob(f'*_{memory_id}.md'))
+                + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
         )
         # Legacy search in parent memories/ folder
         if not files:
             files = (
-                list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
-                + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+                    list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
+                    + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
             )
 
         target_archive = self.local_archive_dir
@@ -157,13 +155,13 @@ class MemoryManager:
         # If not found locally, search the global bank
         if not files:
             files = (
-                list(self.global_dir.glob(f'*_{memory_id}.md'))
-                + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+                    list(self.global_dir.glob(f'*_{memory_id}.md'))
+                    + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
             )
             if not files:
                 files = (
-                    list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
-                    + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                        list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
+                        + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
                 )
             target_archive = self.global_archive_dir
 
@@ -182,27 +180,27 @@ class MemoryManager:
         Searches both the local and global federated banks.
         """
         files = (
-            list(self.local_dir.glob(f'*_{memory_id}.md'))
-            + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+                list(self.local_dir.glob(f'*_{memory_id}.md'))
+                + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
         )
         # Legacy search in parent memories/ folder
         if not files:
             files = (
-                list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
-                + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+                    list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
+                    + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
             )
 
         target_subsumed = self.local_subsumed_dir
 
         if not files:
             files = (
-                list(self.global_dir.glob(f'*_{memory_id}.md'))
-                + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+                    list(self.global_dir.glob(f'*_{memory_id}.md'))
+                    + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
             )
             if not files:
                 files = (
-                    list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
-                    + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                        list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
+                        + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
                 )
             target_subsumed = self.global_subsumed_dir
 
@@ -288,10 +286,10 @@ class MemoryManager:
                     return 'Invalid OKF structure'
                 yaml_part = parts[1]
                 body_part = parts[2].strip()
-                data = yaml.load(yaml_part, Loader=SafeLoader)
+                data = yaml_safe_load(yaml_part)
                 stored_id = data.get('hash', '')
             else:
-                data = yaml.load(content, Loader=SafeLoader)
+                data = yaml_safe_load(content)
                 stored_id = data.get('id', '')
                 body_part = data.get('content', '')
 
@@ -312,7 +310,7 @@ class MemoryManager:
                 links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
 
                 recomputed_mem = Memory(
-                    timestamp=datetime.fromisoformat(data.get('timestamp')),
+                    timestamp=datetime.fromisoformat(str(data.get('timestamp'))),
                     type=MemoryType(type_val),
                     scope=MemoryScope(scope_val),
                     tags=data.get('tags', []),
@@ -387,7 +385,7 @@ class MemoryManager:
                     return None
                 yaml_part = parts[1]
                 body_part = parts[2].strip()
-                data = yaml.load(yaml_part, Loader=SafeLoader)
+                data = yaml_safe_load(yaml_part)
 
                 scope_val = data.get('scope', '').lower()
                 type_val = data.get('memory_type', '').lower()
@@ -396,7 +394,7 @@ class MemoryManager:
 
                 return Memory(
                     id=data.get('hash', ''),
-                    timestamp=datetime.fromisoformat(data.get('timestamp')),
+                    timestamp=datetime.fromisoformat(str(data.get('timestamp'))),
                     type=MemoryType(type_val),
                     scope=MemoryScope(scope_val),
                     tags=data.get('tags', []),
@@ -406,7 +404,7 @@ class MemoryManager:
                 )
 
             # Legacy YAML file load fallback
-            data = yaml.load(content, Loader=SafeLoader)
+            data = yaml_safe_load(content)
             if 'status' in data:
                 del data['status']
             return Memory(**data)

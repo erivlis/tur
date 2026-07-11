@@ -2,12 +2,8 @@ import json
 from pathlib import Path
 
 import networkx as nx
-import yaml
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
+from tur._helpers import yaml_safe_load
 
 
 def _l1_fallback_search(query: str, persona_dir: Path) -> str:
@@ -70,7 +66,7 @@ def topological_recall(query: str, persona_dir: Path) -> str:
 
         try:
             with open(kg_path, encoding='utf-8') as f:
-                data = yaml.load(f, Loader=SafeLoader)
+                data = yaml_safe_load(f)
             graph = nx.node_link_graph(data)
         except Exception:
             # Fallback if graph is corrupted

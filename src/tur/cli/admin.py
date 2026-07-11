@@ -42,6 +42,7 @@ from uuid import UUID
 
 import typer
 import yaml
+from tur._helpers import yaml_safe_load
 from rich import box
 from rich.panel import Panel
 from rich.table import Table
@@ -96,7 +97,7 @@ def persona_list():
             console.print('[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]')
             return
         with open(index_path, encoding='utf-8') as f:
-            index_data = yaml.safe_load(f) or {'personas': []}
+            index_data = yaml_safe_load(f) or {'personas': []}
         index = PersonaIndex(**index_data)
 
         table = Table(title='Persona Registry', box=box.SIMPLE)
@@ -124,7 +125,7 @@ def persona_view(identifier: str = typer.Argument(..., help='The name or UUID of
             console.print(f"[red]Error: persona.yaml not found for '{active_id}'[/red]")
             return
         with open(persona_yaml, encoding='utf-8') as f:
-            pdata = yaml.safe_load(f) or {}
+            pdata: dict = yaml_safe_load(f) or {}
 
         table = Table(box=box.SIMPLE, show_header=False)
         table.add_column('Key', style='bold cyan')
@@ -171,7 +172,7 @@ def persona_switch():
             console.print('[red]No personas found. Please run `tur-adm persona init` to create one.[/red]')
             raise ValueError('No personas found. Please run `tur-adm persona init` to create one.')  # noqa: TRY301
         with open(index_path, encoding='utf-8') as f:
-            index_data = yaml.safe_load(f)
+            index_data = yaml_safe_load(f)
         index = PersonaIndex(**index_data)
         if not index.personas:
             console.print('[red]No personas available to select. Please run `tur-adm persona init`.[/red]')
@@ -206,9 +207,12 @@ def persona_export(
             persona_yaml_path = persona_dir / 'persona.yaml'
             if persona_yaml_path.exists():
                 with open(persona_yaml_path, encoding='utf-8') as f:
-                    persona_data = yaml.safe_load(f) or {}
+                    persona_data: dict = yaml_safe_load(f) or {}
                 persona_data.setdefault('id', persona_uuid)
-                yaml_bytes = yaml.dump(persona_data, sort_keys=False).encode('utf-8')
+                yaml_str = yaml.dump(persona_data, sort_keys=False)
+                if not isinstance(yaml_str, str):
+                    raise ValueError("Failed to dump yaml as string")
+                yaml_bytes = yaml_str.encode('utf-8')
                 info = tarfile.TarInfo(name='persona.yaml')
                 info.size = len(yaml_bytes)
                 tar.addfile(info, io.BytesIO(yaml_bytes))
@@ -253,7 +257,7 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
                 raise ValueError('Invalid archive: persona.yaml is missing.')  # noqa: TRY301
 
             with open(persona_yaml, encoding='utf-8') as f:
-                persona_data = yaml.safe_load(f)
+                persona_data = yaml_safe_load(f)
 
             persona_id = persona_data.get('id')
             persona_name = persona_data.get('name', 'Unnamed Import')
@@ -290,7 +294,7 @@ def persona_import(archive_path: Path = typer.Argument(..., help='The filepath t
             index_path = global_base / 'personas.yaml'
             if index_path.exists():
                 with open(index_path, encoding='utf-8') as f:
-                    index_data = yaml.safe_load(f) or {'personas': []}
+                    index_data: dict = yaml_safe_load(f) or {'personas': []}
                 index = PersonaIndex(**index_data)
             else:
                 index = PersonaIndex(personas=[])
@@ -501,7 +505,7 @@ def session_note(
             return
 
         with open(notes_yaml_path, encoding='utf-8') as f:
-            notes_data = yaml.safe_load(f)
+            notes_data = yaml_safe_load(f)
         session_notes = SessionNotes(**notes_data)
 
         if note_index < 1 or note_index > len(session_notes.notes):
