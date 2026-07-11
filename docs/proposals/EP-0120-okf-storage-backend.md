@@ -2,31 +2,31 @@
 title: "EP-0120: Open Knowledge Format (OKF) Storage Backend"
 description: "Maps L1 and L2 memory structures to human-readable Open Knowledge Format (OKF) markdown directories while preserving Merkle seals, TMS confidence decay, and Hebbian pruning."
 icon: lucide/folder-git
-status: active
+status: implemented
 ---
 
 # EP-0120: Open Knowledge Format (OKF) Storage Backend
 
-| Field       | Value                                                   |
-|:------------|:--------------------------------------------------------|
-| **EP**      | 0120                                                    |
-| **Title**   | Open Knowledge Format (OKF) Storage Backend            |
-| **Author**  | Ariel (Persona v5.4.0) & The Architect                   |
-| **Status**  | Active                                                  |
-| **Type**    | Standards Track                                         |
-| **Created** | 2026-06-17                                              |
-| **Updated** | 2026-07-10                                              |
-| **Supersedes**| EP-0103, EP-0114                                      |
+| Field          | Value                                       |
+|:---------------|:--------------------------------------------|
+| **EP**         | 0120                                        |
+| **Title**      | Open Knowledge Format (OKF) Storage Backend |
+| **Author**     | Ariel (Persona v5.4.0) & The Architect      |
+| **Status**     | Implemented                                 |
+| **Type**       | Standards Track                             |
+| **Created**    | 2026-06-17                                  |
+| **Updated**    | 2026-07-11                                  |
+| **Supersedes** | EP-0103, EP-0114                            |
 
 ## 1. Context & Motivation
 
-Currently, Tur manages memory at two layers:
+Prior to this proposal, Tur managed memory at two layers:
 1. **L1 Event Logs**: Stored as individual `.yaml` files containing serialized Pydantic memory objects under `.tur/personas/<uuid>/memories/`.
 2. **L2 Knowledge Graph**: Compiled by `src/tur/introspection.py` and stored as a centralized, monolithic `knowledge_graph.yaml` containing a serialized NetworkX node-link structure.
 
-While this architecture guarantees consistency and facilitates mathematical operations (such as cycle detection and spreading activation), it lacks **human-editability** and **portability**. A developer cannot easily inspect or surgically modify individual concepts or memory fragments without custom tools.
+While this architecture guaranteed consistency and facilitated mathematical operations (such as cycle detection and spreading activation), it lacked **human-editability** and **portability**. A developer could not easily inspect or surgically modify individual concepts or memory fragments without custom tools.
 
-The **Open Knowledge Format (OKF)** offers a human- and agent-friendly, vendor-neutral structure of markdown files with YAML frontmatter. By adapting Tur to use OKF as its underlying storage medium, we unlock native Git-based tracking, Obsidian/Notion interoperability, and absolute tool agnosticism, while retaining Tur's advanced cognitive safety protocols (TMS, cryptographic validation, and Hebbian pruning).
+The **Open Knowledge Format (OKF)** offers a human- and agent-friendly, vendor-neutral structure of markdown files with YAML frontmatter. By adapting Tur to use OKF as its underlying storage medium, we unlocked native Git-based tracking, Obsidian/Notion interoperability, and absolute tool agnosticism, while retaining Tur's advanced cognitive safety protocols (TMS, cryptographic validation, and Hebbian pruning).
 
 ---
 
@@ -170,6 +170,13 @@ flowchart TD
 
 ## 6. Migration Strategy
 
-1. **Dual-Backend Phase**: Maintain the NetworkX parser but add an OKF exporter that saves a copy of the graph as a directory of Markdown documents during the introspection compile step.
-2. **Read-Through Adapter**: Transition the `topological_recall` in `src/tur/recall.py` to read from the OKF directory if it exists, falling back to `knowledge_graph.yaml`.
-3. **Full Deprecation**: Deprecate the centralized `.yaml` graph format once directory traversal speeds are optimized (e.g., using a fast Rust-based parser or caching the NetworkX graph in memory during active sessions).
+1. ~~**Dual-Backend Phase**: Maintain the NetworkX parser but add an OKF exporter that saves a copy of the graph as a directory of Markdown documents during the introspection compile step.~~ ✅ Completed (v0.5.0)
+2. ~~**Read-Through Adapter**: Transition the `topological_recall` in `src/tur/recall.py` to read from the OKF directory if it exists, falling back to `knowledge_graph.yaml`.~~ ✅ Completed (v0.5.0)
+3. **Full Deprecation**: Deprecate the centralized `.yaml` graph format once directory traversal speeds are optimized (e.g., using a fast Rust-based parser or caching the NetworkX graph in memory during active sessions). *(In progress — the read-through adapter still falls back to `knowledge_graph.yaml` for pre-migration personas.)*
+
+## Change Log
+
+* **2026-07-11:**
+    * Status changed to **Implemented**. L1 OKF writer (`MemoryManager`) and L2 OKF loader/saver (`load_l2_graph_from_okf` / `save_l2_graph_to_okf`) are live in `src/tur/memory.py` and `src/tur/introspection.py`. Read-through adapter in `src/tur/recall.py` dynamically loads from OKF concepts directory, falling back to legacy `knowledge_graph.yaml`.
+    * Standardized all YAML deserialization across the codebase to `yaml_safe_load` in `src/tur/_helpers.py` (CSafeLoader-optimized).
+    * Full static type safety achieved across all source files (0 errors in pyrefly, zuban, ty).

@@ -2,20 +2,25 @@
 title: "EP-0103: Deductive Memory (The Cognitive Map)"
 description: "Evolves Tur's memory architecture from a linear event log into a compressed, topological Knowledge Graph."
 icon: lucide/brain
-status: active
+status: superseded
 ---
 
 # EP-0103: Deductive Memory (The Cognitive Map)
 
-| Field       | Value                                |
-|:------------|:-------------------------------------|
-| **EP**      | 0103                                 |
-| **Title**   | Deductive Memory (The Cognitive Map) |
-| **Author**  | The Architect                        |
-| **Status**  | Active                               |
-| **Type**    | Standards Track                      |
-| **Created** | 2026-04-12                           |
-| **Updated** | 2026-06-08                           |
+| Field             | Value                                |
+|:------------------|:-------------------------------------|
+| **EP**            | 0103                                 |
+| **Title**         | Deductive Memory (The Cognitive Map) |
+| **Author**        | The Architect                        |
+| **Status**        | Superseded (by EP-0120)              |
+| **Type**          | Standards Track                      |
+| **Created**       | 2026-04-12                           |
+| **Updated**       | 2026-07-11                           |
+| **Superseded-By** | EP-0120                              |
+
+> [!IMPORTANT]
+> **This proposal has been superseded by [EP-0120 (OKF Storage Backend)](EP-0120-okf-storage-backend.md).**
+> The cognitive architecture (Council Assembly, TMS, Hebbian decay, spreading activation) defined here remains canonical. However, the physical storage format (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories. Refer to EP-0120 for the current storage specification.
 
 ## Abstract
 
@@ -221,6 +226,8 @@ The `tur meditate` command will be implemented as a two-stage pipeline:
 
 ## Change Log
 
+* **2026-07-11:**
+    * Status changed to **Superseded** by EP-0120. The cognitive architecture (Council Assembly, subagent pipeline, TMS belief revision, spreading activation, Hebbian decay) remains canonical, but the physical storage layer (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories under `concepts/active/` and `concepts/archive/`.
 * **2026-06-08:**
     * Expanded proposal with advanced cognitive primitives: Ontological Schema Alignment, Chrono-Logic Belief Revision,
       Spreading Activation Decay, and Hybrid Retrieval fallback following architectural research.

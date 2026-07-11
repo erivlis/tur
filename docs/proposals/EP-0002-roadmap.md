@@ -15,7 +15,7 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-04-18      |
+| **Updated** | 2026-07-11      |
 
 ## Abstract
 
@@ -46,7 +46,7 @@ a stateful semantic engine supporting external agents via MCP.
 
 *Goal: Solidify the deterministic engine and lifecycle management.*
 
-* **Robust Memory Management:** Basic `sleep` / `wake` cycle and L1 `.yaml` event logs.
+* **Robust Memory Management:** Basic `sleep` / `wake` cycle and L1 event logs (now OKF Markdown files per EP-0120).
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
 
@@ -58,7 +58,7 @@ a stateful semantic engine supporting external agents via MCP.
   * **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
 * **Track: Persona Memory & Compaction**
   * **Merkle Memory (EP-0106):** Refactoring L1 storage to use SHA-256 content hashes, ensuring tamper-proof state and implicit deduplication.
-  * **Deductive Memory / The Cognitive Map (EP-0103):** Compressing L1 event logs into a topological L2 Knowledge Graph using NetworkX. Decouple specific council subagents (e.g. Ariel's pillars) from the core engine to maintain absolute persona-agnosticism.
+  * **Deductive Memory / The Cognitive Map (EP-0103):** Compressing L1 event logs into a topological L2 Knowledge Graph using NetworkX. Decouple specific council subagents (e.g. Ariel's pillars) from the core engine to maintain absolute persona-agnosticism. *(Storage format superseded by EP-0120.)*
   * **Federated Knowledge (EP-0104):** Splitting memory into global/universal and local/incarnation scopes, merged dynamically during compilation.
   * **Relational Preservation of Alignment (EP-0113):** Establishing the Tether Protocol to extract existential and relational axioms during L2 compaction, rehydrating them during `wake()`.
 
@@ -72,7 +72,7 @@ a stateful semantic engine supporting external agents via MCP.
   * **The Tri-Partite CLI Security Boundary (EP-0116):** Splitting entrypoints into low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host) to prevent dependency leak.
 * **Track: Persona Memory & Compaction**
   * **The Session Notes & Compaction Protocol (EP-0110):** Tracking short-term session continuity via flat YAML files (`SessionNotes`) compiled dynamically.
-  * **OKF Storage Backend (EP-0120):** Mapping L1/L2 structures to standard Markdown directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning.
+  * **OKF Storage Backend (EP-0120) [Status: Implemented]:** Mapped L1/L2 structures to standard Markdown directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning. Centralized YAML deserialization via `yaml_safe_load` in `tur._helpers`.
 * **Deferred / Rejected Tracks**
   * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation fidelity to focus on core memory/lifecycle capabilities.
   * **Inter-Agent Signal Protocol (EP-0118) \[Status: Deferred\]:** Postponed transactional SQLite-backed signal queues and whiteboard coordination.
@@ -81,10 +81,12 @@ a stateful semantic engine supporting external agents via MCP.
 
 ## Backwards Compatibility
 
-This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific compatibility concerns (e.g., the `tur migrate` command required for upgrading event logs to SQLite).
+This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific compatibility concerns. Legacy `knowledge_graph.yaml` files are still read via a fallback adapter (EP-0120 Phase 2), ensuring backwards compatibility during the OKF transition.
 
 ## Change Log
 
+* **2026-07-11:**
+    * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103 supersession note. Updated Backwards Compatibility section to reflect OKF migration.
 * **2026-06-02:**
     * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**, **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review consensus.
 * **2026-05-28:**
