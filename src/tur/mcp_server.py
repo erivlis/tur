@@ -336,31 +336,6 @@ def approve(memory_id: str) -> str:
     return f"Core Memory '{matching_mem.id[:8]}' approved and activated successfully."
 
 
-@mcp.tool()
-def devolve(memory_id: str) -> str:
-    """
-    Archive/deactivate a Core Memory, marking it as superseded or falsified.
-
-    Args:
-        memory_id(str): The ID of the Core Memory to devolve/deactivate.
-    """
-    active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
-    manager = MemoryManager(base_dir=persona_dir)
-
-    all_mems = manager.load_all()
-    matching_mem = None
-    for m in all_mems:
-        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
-            matching_mem = m
-            break
-
-    if not matching_mem:
-        return f"Error: No Core memory found matching ID '{memory_id}'"
-
-    matching_mem.status = 'superseded'
-    manager.save(matching_mem)
-    return f"Core Memory '{matching_mem.id[:8]}' successfully devolved (marked as superseded)."
 
 
 @mcp.tool()

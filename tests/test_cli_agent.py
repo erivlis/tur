@@ -481,8 +481,3 @@ def test_agent_core_memory_evolution_flow(mock_workspace):
     approve_res = runner.invoke(agent_app, ['approve', core_id[:8]])
     assert approve_res.exit_code == 0
     assert 'approved and activated successfully' in approve_res.stdout
-
-    # 4. Devolve/Supersede the Core memory
-    devolve_res = runner.invoke(agent_app, ['devolve', core_id[:8]])
-    assert devolve_res.exit_code == 0
-    assert 'successfully devolved (marked as superseded)' in devolve_res.stdout

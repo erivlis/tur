@@ -168,7 +168,7 @@ You have established the following relational anchors and existential axioms wit
 ## Change Log
 
 * **2026-07-12:**
-    * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve`, `approve`, and `devolve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified all type safety and validation constraints.
+    * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve` and `approve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified all type safety and validation constraints. Aligned with the ontological constraint that evolution is strictly forward-facing (deactivation or negation is handled via further evolution, while technical forgetting/archiving remains an administrative action, removing the `devolve` verb from the agent CLI).
     * **Redesigned Proposal**: Renamed the protocol to **Core Memory Protocol** (`CORE` type). Removed parameter bloat
       from `learn` in favor of a dedicated `evolve` verb that refines existing L1 events. Submitting for Council
       consensus review.

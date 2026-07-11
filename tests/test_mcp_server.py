@@ -377,7 +377,3 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
     # 3. Approve
     approve_res = mcp_server.approve(memory_id=core_id)
     assert 'approved and activated successfully' in approve_res
-
-    # 4. Devolve
-    devolve_res = mcp_server.devolve(memory_id=core_id)
-    assert 'successfully devolved (marked as superseded)' in devolve_res

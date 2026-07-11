@@ -748,44 +748,6 @@ def approve(
         raise typer.Exit(code=1)
 
 
-@app.command()
-def devolve(
-        memory_id: str = typer.Argument(..., help='The ID of the Core Memory to devolve/deactivate.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
-):
-    """Archive/deactivate a Core Memory, marking it as superseded or falsified."""
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        persona_dir = persona.get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        all_mems = memory_manager.load_all()
-    except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
-
-    matching_mem = None
-    for m in all_mems:
-        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
-            matching_mem = m
-            break
-
-    if not matching_mem:
-        console.print(f"[red]Error: No Core memory found matching ID '{memory_id}'[/red]")
-        raise typer.Exit(code=1)
-
-    try:
-        # Deactivate by changing status to superseded
-        matching_mem.status = 'superseded'
-        memory_manager.save(matching_mem)
-        console.print(
-            f"[green]Core Memory '{matching_mem.id[:8]}' successfully devolved (marked as superseded).[/green]"
-        )
-
-    except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
 
 
 def main():
