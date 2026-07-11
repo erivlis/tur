@@ -1,3 +1,16 @@
+## v0.5.0 (2026-07-11)
+
+### Feat
+
+- Adds pluggable compaction pipeline for introspection.
+- implement EP-0103 deductive memory and EP-0119 subagent council meditation
+- Adds `verify` command to check memory integrity.
+
+### Refactor
+
+- Updates Popper conflict, persona headless, and user memory scope.
+- Uses CSafeLoader for YAML and renames meditation to introspection.
+
 ## v0.4.1 (2026-06-07)
 
 ### Refactor
