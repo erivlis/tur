@@ -2,7 +2,7 @@
 title: "EP-0101: LLM Agnosticism (The Symbiotic Paradigm)"
 description: "Defines Tur's LLM-agnostic architecture via MCP Sampling, eliminating embedded LLM SDK dependencies."
 icon: lucide/shuffle
-status: active
+status: implemented
 ---
 
 # EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
@@ -12,10 +12,10 @@ status: active
 | **EP**      | 0101                                     |
 | **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
 | **Author**  | Eran Rivlis, The Architect               |
-| **Status**  | Active                                   |
+| **Status**  | Implemented                              |
 | **Type**    | Architecture                             |
-| **Created** | 2026-03-29 |
-| **Updated** | 2026-06-08 |
+| **Created** | 2026-03-29                               |
+| **Updated** | 2026-07-12                               |
 
 ## Abstract
 
@@ -75,6 +75,9 @@ Object) triples and hand them back to me."*
 
 ## Change Log
 
+* **2026-07-12:**
+    * **Status changed to Implemented.**
+    * Created `run_async`, `_mcp_sample`, and `_clean_json_response` helper utilities in `tur._helpers`. Refactored `perform_sleep_dreaming` and `stage_sleep_dreaming` in `dreaming.py` and `RussellSubagent.run` in `introspection.py` to seamlessly request LLM inference from connected MCP clients via `ctx.sample()` when `mcp_context` is available, while retaining a local provider fallback when run offline via CLI.
 * **2026-04-18:**
     * **Status changed to Superseded.**
     * Completely rewrote the EP to reflect the architectural pivot. Tur will not embed `pydantic-ai`; it will rely on
