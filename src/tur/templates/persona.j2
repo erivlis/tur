@@ -38,6 +38,17 @@ Active trigger-action loops:
     {% endif %}
 {% endfor %}
 
+{% if cores %}
+## CORE AXIOMS & COVENANTS
+You have established the following relational anchors and existential axioms with the Architect:
+
+{% for core in cores %}
+### Core Principle: {{ core.derived_principle }}
+* **Type:** {{ core.core_type }}
+* **Ethical Covenant:** {{ core.ethical_covenant }}
+{% endfor %}
+{% endif %}
+
 {% if knowledge_graph %}
     ## COGNITIVE MAP (Deductive Memory)
     Below is the active topological map of your derived knowledge:

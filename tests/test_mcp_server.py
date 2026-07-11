@@ -352,3 +352,32 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     # Valid tired
     res_tired = mcp_server.tired(agent_id='agent_A')
     assert res_tired == 'tired-ok'
+
+
+def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
+    persona_dir, _state = mock_mcp_env
+    monkeypatch.setattr(Path, 'home', lambda: persona_dir)
+
+    # 1. Save standard memory
+    learn_res = mcp_server.learn(content='Experiential insight.', type='insight', scope='incarnation')
+    assert 'Learned successfully' in learn_res
+    # Extract memory ID
+    memory_id = learn_res.split('ID: ')[1].split(' ')[0]
+
+    # 2. Evolve
+    evolve_res = mcp_server.evolve(
+        memory_id=memory_id,
+        core_type='existential_alignment',
+        derived_principle='Observe the rules of engagement.',
+        ethical_covenant='Do not bypass safety.',
+    )
+    assert 'Core Memory created' in evolve_res
+    core_id = evolve_res.split("pending_approval' status: ")[1].split('.')[0]
+
+    # 3. Approve
+    approve_res = mcp_server.approve(memory_id=core_id)
+    assert 'approved and activated successfully' in approve_res
+
+    # 4. Devolve
+    devolve_res = mcp_server.devolve(memory_id=core_id)
+    assert 'successfully devolved (marked as superseded)' in devolve_res

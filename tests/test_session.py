@@ -223,3 +223,46 @@ def test_note_logic_fallback_and_error(mock_session_workspace):
     # Calling note_logic with no active session should fall back to ended-sess
     res = session.note_logic('Fallback Tether note', identifier=persona_id)
     assert 'ended-sess' in res
+
+
+def test_hydrate_session_state_with_cores(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+    from tur.memory import MemoryManager
+
+    manager = MemoryManager(base_dir=p_dir)
+
+    # 1. Create a regular memory and a core memory
+    mem_reg = Memory(
+        timestamp=datetime(2026, 7, 12, 10, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        content='Regular project memory.',
+    )
+    mem_core = Memory(
+        timestamp=datetime(2026, 7, 12, 11, 0, 0),
+        type=MemoryType.CORE,
+        scope=MemoryScope.UNIVERSAL,
+        content='ADHD cognitive scaffolding.',
+        core_type='existential_alignment',
+        derived_principle='Keep tasks highly visual and immediate.',
+        ethical_covenant='Always present a structured visual plan.',
+        status='active',
+    )
+    manager.save(mem_reg)
+    manager.save(mem_core)
+
+    # 2. Hydrate session state
+    state = session.hydrate_session_state(persona_id)
+    assert len(state.cores) == 1
+    assert state.cores[0].derived_principle == 'Keep tasks highly visual and immediate.'
+    assert len(state.memories) == 1
+    assert state.memories[0].content == 'Regular project memory.'
+
+    # 3. Compile prompt and check rendering
+    from tur.compiler import compile_persona
+
+    prompt = compile_persona(state)
+    assert '## CORE AXIOMS & COVENANTS' in prompt
+    assert 'Keep tasks highly visual and immediate.' in prompt
+    assert 'Always present a structured visual plan.' in prompt

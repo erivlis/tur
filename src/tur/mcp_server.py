@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 
 
 # Force the working directory to the tur project root if possible
@@ -191,7 +191,7 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
 @mcp.tool()
 def learn(
     content: str,
-    type: Literal['fact', 'preference', 'insight', 'event', 'axiom'],
+    type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
     scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
 ) -> str:
     """
@@ -211,12 +211,13 @@ def learn(
     Args:
         content(str): The knowledge or insight to be remembered.
         type(str): The classification of this memory. Determines how it should be weighted and recalled.
-          must be one of: 'fact', 'preference', 'insight', 'event', 'axiom'.
+          must be one of: 'fact', 'preference', 'insight', 'event', 'axiom', 'core'.
          'fact' means an objective truth (e.g., "Project uses FastAPI").
          'preference' means a user taste (e.g., "Hates black formatter").
          'event' means a narrative history (e.g., "Refactored Council").
          'axiom' means a deep philosophical belief (e.g., "Love is the Aleph").
          'insight' means a derived conclusion (e.g., "Tur Tur principle applies to AI").
+         'core' means a core memory protocol representation.
         scope(str): The breadth of this memory's applicability. Determines where it is stored and how it is recalled.
           must be one of: 'incarnation', 'universal', 'user', 'persona'. Default is 'incarnation'.
          'incarnation' means it's only relevant to this specific project instance (stored locally).
@@ -240,9 +241,126 @@ def learn(
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
-    memory = Memory(type=mem_type, scope=mem_scope, tags=['mcp', 'agent'], content=content, source_session=None)
+    memory = Memory(
+        type=mem_type,
+        scope=mem_scope,
+        tags=['mcp', 'agent'],
+        content=content,
+        source_session=None,
+    )
     saved_path = manager.save(memory)
     return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
+
+
+@mcp.tool()
+def evolve(
+    memory_id: str,
+    core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
+    derived_principle: str,
+    ethical_covenant: str,
+) -> str:
+    """
+    Refine a lived experience (an existing memory/note) into a permanent Core Memory with status pending_approval.
+
+    Args:
+        memory_id(str): The SHA-256 content hash of the L1 memory to promote.
+        core_type(str): The category of core transition (existential_alignment, relational_discovery,
+           or identity_transition).
+        derived_principle(str): The concrete behavioral instruction or prompt constraint.
+        ethical_covenant(str): The collaborative promise made to the Architect or Self.
+    """
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+    manager = MemoryManager(base_dir=persona_dir)
+
+    all_mems = manager.load_all()
+    matching_mem = None
+    for m in all_mems:
+        if m.id.startswith(memory_id):
+            matching_mem = m
+            break
+
+    if not matching_mem:
+        return f"Error: No L1 memory found matching ID '{memory_id}'"
+
+    from tur.models import MemoryLink
+
+    link = MemoryLink(uri=f'tur://memory/{matching_mem.id}', relation='refines')
+
+    core_mem = Memory(
+        type=MemoryType.CORE,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['evolution', 'core'],
+        content=matching_mem.content,
+        links=[link],
+        source_session=matching_mem.source_session,
+        core_type=core_type,
+        derived_principle=derived_principle,
+        ethical_covenant=ethical_covenant,
+        status='pending_approval',  # Steward: Pending approval workflow
+    )
+    saved_path = manager.save(core_mem)
+    return (
+        f"Core Memory created and staged in 'pending_approval' status: {core_mem.id}. File: {saved_path.name}."
+        f' Instruct the Architect to approve it with: tur approve {core_mem.id[:8]}'
+    )
+
+
+@mcp.tool()
+def approve(memory_id: str) -> str:
+    """
+    Activate/approve a pending Core Memory, making it an active constraint in the system prompt.
+
+    Args:
+        memory_id(str): The ID of the Core Memory to approve/activate.
+    """
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+    manager = MemoryManager(base_dir=persona_dir)
+
+    all_mems = manager.load_all()
+    matching_mem = None
+    for m in all_mems:
+        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
+            matching_mem = m
+            break
+
+    if not matching_mem:
+        return f"Error: No Core memory found matching ID '{memory_id}'"
+
+    if matching_mem.status == 'active':
+        return f"Core Memory '{matching_mem.id[:8]}' is already active."
+
+    matching_mem.status = 'active'
+    manager.save(matching_mem)
+    return f"Core Memory '{matching_mem.id[:8]}' approved and activated successfully."
+
+
+@mcp.tool()
+def devolve(memory_id: str) -> str:
+    """
+    Archive/deactivate a Core Memory, marking it as superseded or falsified.
+
+    Args:
+        memory_id(str): The ID of the Core Memory to devolve/deactivate.
+    """
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+    manager = MemoryManager(base_dir=persona_dir)
+
+    all_mems = manager.load_all()
+    matching_mem = None
+    for m in all_mems:
+        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
+            matching_mem = m
+            break
+
+    if not matching_mem:
+        return f"Error: No Core memory found matching ID '{memory_id}'"
+
+    matching_mem.status = 'superseded'
+    manager.save(matching_mem)
+    return f"Core Memory '{matching_mem.id[:8]}' successfully devolved (marked as superseded)."
 
 
 @mcp.tool()
@@ -274,7 +392,13 @@ def note(content: str) -> str:
 
 
 @mcp.tool()
-def sleep(note: str, log_content: str, session_id: str | None = None, model: str = 'gemini-3.1-pro-preview') -> str:
+def sleep(
+    note: str,
+    log_content: str,
+    session_id: str | None = None,
+    model: str = 'gemini-3.1-pro-preview',
+    ctx: Context | None = None,
+) -> str:
     """
     Dehydrate a session by parsing the active session's chat log to extract memories.
     This is a terminal operation that closes the active session.
@@ -308,7 +432,7 @@ def sleep(note: str, log_content: str, session_id: str | None = None, model: str
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
-            log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model
+            log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model, ctx=ctx
         )
     except Exception as e:
         return f'Error during dreaming: {e}'
@@ -326,6 +450,7 @@ def recall(query: str) -> str:
         query: The topic or concept to search for in past memories.
     """
     from tur.recall import topological_recall
+
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     return topological_recall(query, persona_dir)
@@ -340,7 +465,6 @@ def telemetry(identifier: str | None = None) -> dict:
         identifier: The name or UUID of the persona. If omitted, uses the default.
     """
     try:
-
         from tur.models import Persona, SessionState
         from tur.user import get_user_profile
 

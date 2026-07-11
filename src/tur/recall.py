@@ -9,15 +9,11 @@ from tur._helpers import yaml_safe_load
 def _l1_fallback_search(query: str, persona_dir: Path) -> str:
     """Fallback search over raw L1 memories."""
     from tur.memory import MemoryManager
+
     manager = MemoryManager(base_dir=persona_dir)
     mems = manager.load_all(include_archived=False)
     query_lower = query.lower()
-    results = [
-        m
-        for m in mems
-        if query_lower in m.content.lower()
-        or any(query_lower in tag.lower() for tag in m.tags)
-    ]
+    results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
     if not results:
         return f"No memories found matching query: '{query}'"
     mem_list = [{'id': str(m.id), 'type': m.type.value, 'content': m.content} for m in results]
@@ -33,7 +29,7 @@ def _spread_activation(graph: nx.DiGraph, matched_nodes: list[str]) -> set[str]:
     for node in matched_nodes:
         neighbors = list(graph.successors(node)) + list(graph.predecessors(node))
         for n in neighbors:
-            if graph.nodes[n].get("status") not in ["archived", "superseded"]:
+            if graph.nodes[n].get('status') not in ['archived', 'superseded']:
                 hop1.add(n)
     activated_nodes.update(hop1)
 
@@ -42,7 +38,7 @@ def _spread_activation(graph: nx.DiGraph, matched_nodes: list[str]) -> set[str]:
     for node in hop1:
         neighbors = list(graph.successors(node)) + list(graph.predecessors(node))
         for n in neighbors:
-            if graph.nodes[n].get("status") not in ["archived", "superseded"]:
+            if graph.nodes[n].get('status') not in ['archived', 'superseded']:
                 hop2.add(n)
     activated_nodes.update(hop2)
 
@@ -77,9 +73,9 @@ def topological_recall(query: str, persona_dir: Path) -> str:
 
     # 1. Retrieve relevant nodes via substring search
     for node, ndata in graph.nodes(data=True):
-        if ndata.get("status") in ["archived", "superseded"]:
+        if ndata.get('status') in ['archived', 'superseded']:
             continue
-        content = ndata.get("content", "").lower()
+        content = ndata.get('content', '').lower()
         if query_lower in node.lower() or query_lower in content:
             matched_nodes.append(node)
 
@@ -94,7 +90,7 @@ def topological_recall(query: str, persona_dir: Path) -> str:
     try:
         with open(log_path, 'a', encoding='utf-8') as f:
             for node in activated_nodes:
-                f.write(f"{node}\n")
+                f.write(f'{node}\n')
     except Exception:
         pass
 
@@ -102,10 +98,6 @@ def topological_recall(query: str, persona_dir: Path) -> str:
     results = []
     for node in activated_nodes:
         ndata = graph.nodes[node]
-        results.append({
-            'id': node,
-            'type': ndata.get('type', 'Concept'),
-            'content': ndata.get('content', '')
-        })
+        results.append({'id': node, 'type': ndata.get('type', 'Concept'), 'content': ndata.get('content', '')})
 
     return json.dumps(results, indent=2)

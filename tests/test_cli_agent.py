@@ -1,13 +1,12 @@
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 import yaml
 from typer.testing import CliRunner
 
-from tur import dreaming, persona, session, user
+from tur import dreaming, persona, session
 from tur.cli.agent import app as agent_app
 
 runner = CliRunner()
@@ -432,7 +431,7 @@ def test_agent_verify_failure(mock_workspace):
         content = f.read()
 
     parts = content.split('---', 2)
-    new_content = f"---{parts[1]}---\n\nTampered content.\n"
+    new_content = f'---{parts[1]}---\n\nTampered content.\n'
 
     with open(md_files[0], 'w', encoding='utf-8') as f:
         f.write(new_content)
@@ -441,3 +440,49 @@ def test_agent_verify_failure(mock_workspace):
     assert result.exit_code == 1
     assert 'TAMPERED STATE' in result.stdout
 
+
+def test_agent_core_memory_evolution_flow(mock_workspace):
+    # 1. Save standard memory first
+    runner.invoke(agent_app, ['learn', 'Our collaborative workflow preference.'])
+
+    # Find the memory ID
+    persona_dir = Path('.tur/personas/7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    memories_dir = persona_dir / 'memories' / 'active'
+    md_files = list(memories_dir.glob('*.md'))
+    assert len(md_files) == 1
+    memory_id = md_files[0].name.split('_')[-1].split('.')[0]
+
+    # 2. Evolve the memory into a Core memory
+    evolve_res = runner.invoke(
+        agent_app,
+        [
+            'evolve',
+            memory_id[:8],
+            '--core-type',
+            'relational_discovery',
+            '--principle',
+            'Always format code blocks with line counts.',
+            '--covenant',
+            'Ensure visual parity in plan reviews.',
+        ],
+    )
+    assert evolve_res.exit_code == 0
+    assert "Core Memory created and staged in 'pending_approval' status" in evolve_res.stdout
+
+    # Find the new Core Memory ID
+    global_memories_dir = (
+        Path.home() / '.tur' / 'personas' / '7544202e-92f5-40ce-adfb-e4b0eae6c262' / 'memories' / 'active'
+    )
+    core_files = [f for f in global_memories_dir.glob('*.md') if 'core' in f.name]
+    assert len(core_files) == 1
+    core_id = core_files[0].name.split('_')[-1].split('.')[0]
+
+    # 3. Approve the Core memory
+    approve_res = runner.invoke(agent_app, ['approve', core_id[:8]])
+    assert approve_res.exit_code == 0
+    assert 'approved and activated successfully' in approve_res.stdout
+
+    # 4. Devolve/Supersede the Core memory
+    devolve_res = runner.invoke(agent_app, ['devolve', core_id[:8]])
+    assert devolve_res.exit_code == 0
+    assert 'successfully devolved (marked as superseded)' in devolve_res.stdout

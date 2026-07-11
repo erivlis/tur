@@ -82,11 +82,7 @@ class MemoryManager:
         filename = f'{memory.timestamp.strftime("%Y%m%d_%H%M%S")}_{memory.type.value}_{memory.id}.md'
         file_path = target_dir / filename
 
-        desc = (
-            f'{memory.type.value.capitalize()}: {memory.content.splitlines()[0][:100]}'
-            if memory.content
-            else ''
-        )
+        desc = f'{memory.type.value.capitalize()}: {memory.content.splitlines()[0][:100]}' if memory.content else ''
 
         # Format as OKF Markdown with YAML frontmatter
         frontmatter: dict[str, Any] = {
@@ -104,8 +100,18 @@ class MemoryManager:
         if memory.source_session:
             frontmatter['source_session'] = memory.source_session
 
+        # Core Memory fields (EP-0113)
+        if memory.core_type:
+            frontmatter['core_type'] = memory.core_type
+        if memory.derived_principle:
+            frontmatter['derived_principle'] = memory.derived_principle
+        if memory.ethical_covenant:
+            frontmatter['ethical_covenant'] = memory.ethical_covenant
+        if memory.status:
+            frontmatter['status'] = memory.status
+
         yaml_part = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
-        okf_content = f"---\n{yaml_part}---\n\n{memory.content}\n"
+        okf_content = f'---\n{yaml_part}---\n\n{memory.content}\n'
 
         # Atomic Write Pattern (to prevent multi-agent collision under EP-0102/EP-0106)
         # 1. Write to a temporary file in the same directory
@@ -119,6 +125,9 @@ class MemoryManager:
                 os.fsync(f.fileno())  # Guarantee disk flush
 
             # Atomic replace (POSIX)
+            if file_path.exists():
+                with contextlib.suppress(Exception):
+                    os.chmod(file_path, 0o666)
             os.replace(tmp_path_str, file_path)
         except Exception:
             # Clean up the temp file if the atomic rename fails
@@ -138,29 +147,21 @@ class MemoryManager:
         Searches both the local and global federated banks.
         """
         # Search for the file in the local bank first
-        files = (
-                list(self.local_dir.glob(f'*_{memory_id}.md'))
-                + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
-        )
+        files = list(self.local_dir.glob(f'*_{memory_id}.md')) + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
         # Legacy search in parent memories/ folder
         if not files:
-            files = (
-                    list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
-                    + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+            files = list(self.local_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
+                self.local_dir.parent.glob(f'*_{memory_id}.md')
             )
 
         target_archive = self.local_archive_dir
 
         # If not found locally, search the global bank
         if not files:
-            files = (
-                    list(self.global_dir.glob(f'*_{memory_id}.md'))
-                    + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
-            )
+            files = list(self.global_dir.glob(f'*_{memory_id}.md')) + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
             if not files:
-                files = (
-                        list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
-                        + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                files = list(self.global_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
+                    self.global_dir.parent.glob(f'*_{memory_id}.md')
                 )
             target_archive = self.global_archive_dir
 
@@ -178,28 +179,20 @@ class MemoryManager:
         Moves a memory to the subsumed directory (compacted but still recoverable).
         Searches both the local and global federated banks.
         """
-        files = (
-                list(self.local_dir.glob(f'*_{memory_id}.md'))
-                + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
-        )
+        files = list(self.local_dir.glob(f'*_{memory_id}.md')) + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
         # Legacy search in parent memories/ folder
         if not files:
-            files = (
-                    list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
-                    + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+            files = list(self.local_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
+                self.local_dir.parent.glob(f'*_{memory_id}.md')
             )
 
         target_subsumed = self.local_subsumed_dir
 
         if not files:
-            files = (
-                    list(self.global_dir.glob(f'*_{memory_id}.md'))
-                    + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
-            )
+            files = list(self.global_dir.glob(f'*_{memory_id}.md')) + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
             if not files:
-                files = (
-                        list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
-                        + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                files = list(self.global_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
+                    self.global_dir.parent.glob(f'*_{memory_id}.md')
                 )
             target_subsumed = self.global_subsumed_dir
 
@@ -296,7 +289,7 @@ class MemoryManager:
                 return 'Invalid structure or empty file'
 
             if not stored_id:
-                return "Missing ID/hash in file"
+                return 'Missing ID/hash in file'
 
             expected_suffix = f'_{stored_id}.md' if file_path.suffix == '.md' else f'_{stored_id}.yaml'
             if not file_path.name.endswith(expected_suffix):
@@ -316,13 +309,15 @@ class MemoryManager:
                     content=body_part,
                     links=links,
                     source_session=data.get('source_session'),
+                    core_type=data.get('core_type'),
+                    derived_principle=data.get('derived_principle'),
+                    ethical_covenant=data.get('ethical_covenant'),
+                    status=data.get('status', 'active'),
                 )
             else:
                 test_data = data.copy()
                 if 'id' in test_data:
                     del test_data['id']
-                if 'status' in test_data:
-                    del test_data['status']
                 recomputed_mem = Memory(**test_data)
 
             if recomputed_mem.id != stored_id:
@@ -400,6 +395,10 @@ class MemoryManager:
                     content=body_part,
                     links=links,
                     source_session=data.get('source_session'),
+                    core_type=data.get('core_type'),
+                    derived_principle=data.get('derived_principle'),
+                    ethical_covenant=data.get('ethical_covenant'),
+                    status=data.get('status', 'active'),
                 )
 
             # Legacy YAML file load fallback

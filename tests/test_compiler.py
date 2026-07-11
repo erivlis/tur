@@ -72,29 +72,27 @@ def test_compile_persona_renders_knowledge_graph():
     )
     user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
     kg_data = {
-        "directed": True,
-        "multigraph": False,
-        "graph": {},
-        "nodes": [
+        'directed': True,
+        'multigraph': False,
+        'graph': {},
+        'nodes': [
             {
-                "id": "node-1",
-                "type": "Fact",
-                "content": "Knowledge graph is active.",
-                "status": "active",
-                "confidence": 1.0,
-                "pinned": True,
+                'id': 'node-1',
+                'type': 'Fact',
+                'content': 'Knowledge graph is active.',
+                'status': 'active',
+                'confidence': 1.0,
+                'pinned': True,
             }
         ],
-        "links": [
-            {"source": "node-1", "target": "node-2", "type": "precedes", "confidence": 1.0}
-        ]
+        'links': [{'source': 'node-1', 'target': 'node-2', 'type': 'precedes', 'confidence': 1.0}],
     }
     state = SessionState(persona=persona, user=user, memories=[], epilogue=None, knowledge_graph=kg_data)
     prompt = compile_persona(state)
 
-    assert "COGNITIVE MAP" in prompt
-    assert "node-1" in prompt
-    assert "Fact" in prompt
-    assert "Knowledge graph is active." in prompt
-    assert "node-1 --[precedes]--> node-2" in prompt
-    assert "EVOLUTION HISTORY" not in prompt
+    assert 'COGNITIVE MAP' in prompt
+    assert 'node-1' in prompt
+    assert 'Fact' in prompt
+    assert 'Knowledge graph is active.' in prompt
+    assert 'node-1 --[precedes]--> node-2' in prompt
+    assert 'EVOLUTION HISTORY' not in prompt

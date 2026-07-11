@@ -210,8 +210,7 @@ def persona_export(
                     persona_data: dict = yaml_safe_load(f) or {}
                 persona_data.setdefault('id', persona_uuid)
                 yaml_str = yaml.dump(persona_data, sort_keys=False)
-                if not isinstance(yaml_str, str):
-                    raise ValueError("Failed to dump yaml as string")
+                assert isinstance(yaml_str, str)
                 yaml_bytes = yaml_str.encode('utf-8')
                 info = tarfile.TarInfo(name='persona.yaml')
                 info.size = len(yaml_bytes)

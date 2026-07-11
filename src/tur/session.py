@@ -18,6 +18,7 @@ import yaml
 from tur._helpers import yaml_safe_load
 from tur.memory import MemoryManager
 from tur.models import (
+    MemoryType,
     Note,
     Persona,
     SessionEntry,
@@ -140,7 +141,9 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     persona = Persona(**data)
     user = get_user_profile()
     memory_manager = MemoryManager(base_dir=persona_dir)
-    memories = memory_manager.load_all()
+    all_memories = memory_manager.load_all()
+    cores = [m for m in all_memories if m.type == MemoryType.CORE and m.status == 'active']
+    memories = [m for m in all_memories if m.type != MemoryType.CORE]
 
     resolved_session_id = session_id or get_active_session_id()
 
@@ -168,6 +171,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
         persona=persona,
         user=user,
         memories=memories,
+        cores=cores,
         epilogue=epilogue_content,
         knowledge_graph=kg_data,
     )
@@ -176,9 +180,7 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-def db_retry(
-        max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: float = 2.0
-) -> Callable[[F], F]:
+def db_retry(max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: float = 2.0) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -194,9 +196,7 @@ def db_retry(
                         delay *= backoff_factor
                     else:
                         raise
-            raise last_err or sqlite3.OperationalError(
-                'Database busy timeout exceeded.'
-            )
+            raise last_err or sqlite3.OperationalError('Database busy timeout exceeded.')
 
         return cast(F, wrapper)
 
@@ -400,11 +400,11 @@ def update_heartbeat(session_id: str, agent_id: str):
 
 
 def start_session_logic(
-        session_id: str,
-        agent_id: str | None = None,
-        harness_conversation_id: str | None = None,
-        identifier: str | None = None,
-        previous_session_id: str | None = None,
+    session_id: str,
+    agent_id: str | None = None,
+    harness_conversation_id: str | None = None,
+    identifier: str | None = None,
+    previous_session_id: str | None = None,
 ) -> str:
     """
     Creates the flat session YAML file and sets up/registers the manifestation
@@ -586,11 +586,11 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
 
 @db_retry()
 def signal_logic(
-        session_id: str,
-        sender: str,
-        recipient: str,
-        content: str,
-        type_: str = 'inform',
+    session_id: str,
+    sender: str,
+    recipient: str,
+    content: str,
+    type_: str = 'inform',
 ) -> str:
     """Sends a message signal transactionally, validating boundaries and rate-limits."""
     if not re.match(r'^[a-zA-Z0-9_\.-]+$', sender):
@@ -640,9 +640,9 @@ def signal_logic(
 
 @db_retry()
 def read_signals_logic(
-        session_id: str,
-        agent_id: str,
-        unread_only: bool = True,
+    session_id: str,
+    agent_id: str,
+    unread_only: bool = True,
 ) -> list[dict]:
     """Peeks incoming signals matching caller handle or dot subagent namespaces."""
     conn = get_db_connection(session_id)
@@ -685,9 +685,9 @@ def read_signals_logic(
 
 @db_retry()
 def ack_signals_logic(
-        session_id: str,
-        agent_id: str,
-        signal_ids: list[str],
+    session_id: str,
+    agent_id: str,
+    signal_ids: list[str],
 ) -> str:
     """Acknowledges signals by registering read entries in the signal_reads table."""
     conn = get_db_connection(session_id)
@@ -715,10 +715,10 @@ def ack_signals_logic(
 
 @db_retry()
 def write_whiteboard_logic(
-        session_id: str,
-        key: str,
-        value: str,
-        updated_by: str,
+    session_id: str,
+    key: str,
+    value: str,
+    updated_by: str,
 ) -> str:
     """Writes key-value state parameters to the shared session whiteboard."""
     conn = get_db_connection(session_id)
@@ -744,8 +744,8 @@ def write_whiteboard_logic(
 
 @db_retry()
 def read_whiteboard_logic(
-        session_id: str,
-        key: str,
+    session_id: str,
+    key: str,
 ) -> str | None:
     """Reads state parameters from the shared session whiteboard."""
     conn = get_db_connection(session_id)

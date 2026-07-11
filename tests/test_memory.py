@@ -266,8 +266,8 @@ def test_load_legacy_with_status(temp_home_and_base):
     assert mem is not None
     assert mem.id == 'legacy-id-123'
     assert mem.content == 'This has status.'
-    # status key should be successfully removed before validating
-    assert not hasattr(mem, 'status')
+    # status key should be parsed and matched
+    assert mem.status == 'active'
 
 
 def test_load_all_skips_directories(temp_home_and_base):
@@ -358,7 +358,7 @@ def test_verify_integrity_tampered_id(temp_home_and_base):
     data['hash'] = 'tampered-id-123'
 
     new_yaml = yaml.dump(data, sort_keys=False)
-    new_content = f"---\n{new_yaml}---\n{parts[2]}"
+    new_content = f'---\n{new_yaml}---\n{parts[2]}'
 
     with open(saved_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
@@ -389,7 +389,7 @@ def test_verify_integrity_tampered_content(temp_home_and_base):
         content = f.read()
 
     parts = content.split('---', 2)
-    new_content = f"---{parts[1]}---\n\nTampered content.\n"
+    new_content = f'---{parts[1]}---\n\nTampered content.\n'
 
     with open(saved_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
@@ -398,3 +398,35 @@ def test_verify_integrity_tampered_content(temp_home_and_base):
     assert len(failures) > 0
     assert any('Computed hash' in err for _, err in failures)
 
+
+def test_memory_core(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 7, 12, 12, 0, 0),
+        type=MemoryType.CORE,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['test-core'],
+        content='Existential alignment realized.',
+        core_type='existential_alignment',
+        derived_principle='Always prioritize cognitive scaffolding.',
+        ethical_covenant='Maintain structured focus.',
+        status='active',
+    )
+    saved_path = manager.save(mem)
+    assert saved_path.exists()
+
+    # Verify loading parses the fields back
+    loaded = manager._load_file(saved_path)
+    assert loaded is not None
+    assert loaded.type == MemoryType.CORE
+    assert loaded.core_type == 'existential_alignment'
+    assert loaded.content == 'Existential alignment realized.'
+    assert loaded.derived_principle == 'Always prioritize cognitive scaffolding.'
+    assert loaded.ethical_covenant == 'Maintain structured focus.'
+    assert loaded.status == 'active'
+
+    # Verify Merkle integrity matches
+    failures = manager.verify_integrity()
+    assert len(failures) == 0

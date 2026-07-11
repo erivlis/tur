@@ -57,6 +57,9 @@ class MemoryType(str, Enum):
     INSIGHT = 'insight'
     """Derived knowledge (e.g., "Tur Tur principle applies to AI")"""
 
+    CORE = 'core'
+    """Relational and existential alignment (The Core Memory Protocol)"""
+
 
 class MemoryScope(str, Enum):
     UNIVERSAL = 'universal'
@@ -104,6 +107,16 @@ class Memory(BaseModel):
     links: list[MemoryLink] = Field(default_factory=list, description='Connections to other knowledge nodes')
     source_session: str | None = Field(None, description='The session ID where this originated')
 
+    # EP-0113: The Core Memory Protocol fields
+    core_type: str | None = Field(
+        default=None, description='existential_alignment, relational_discovery, or identity_transition'
+    )
+    derived_principle: str | None = Field(default=None, description='The resulting behavioral instruction')
+    ethical_covenant: str | None = Field(
+        default=None, description='The commitment or promise made to the Architect or Self'
+    )
+    status: str | None = Field(default='active', description='active, pending_approval, superseded, or falsified')
+
     @model_validator(mode='after')
     def compute_merkle_hash(self) -> 'Memory':
         """
@@ -126,7 +139,11 @@ class Memory(BaseModel):
                 f'{tags_str}|'
                 f'{self.content}|'
                 f'{links_list!s}|'
-                f'{self.source_session or ""}'
+                f'{self.source_session or ""}|'
+                f'{self.core_type or ""}|'
+                f'{self.derived_principle or ""}|'
+                f'{self.ethical_covenant or ""}|'
+                f'{self.status or ""}'
             )
 
             # Compute SHA-256
@@ -188,8 +205,9 @@ class SessionState(BaseModel):
     persona: Persona
     user: UserProfile
     memories: list[Memory] = Field(default_factory=list)
+    cores: list[Memory] = Field(default_factory=list)
     epilogue: str | None = Field(None, description="The 'Spark' from the previous session")
-    knowledge_graph: dict | None = Field(None, description="The L2 Cognitive Map (serialized networkx graph)")
+    knowledge_graph: dict | None = Field(None, description='The L2 Cognitive Map (serialized networkx graph)')
 
 
 class PersonaIndexEntry(BaseModel):

@@ -54,10 +54,7 @@ def temp_workspace(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, 'home', lambda: fake_home)
 
     # Set active persona state
-    state_data = {
-        'active_persona_id': persona_id,
-        'active_session_id': 'session-123'
-    }
+    state_data = {'active_persona_id': persona_id, 'active_session_id': 'session-123'}
     with open(dot_tur / 'state.yaml', 'w', encoding='utf-8') as f:
         yaml.dump(state_data, f)
 
@@ -72,19 +69,19 @@ def test_bacon_integrity_verification(temp_workspace):
         timestamp=datetime(2026, 6, 8, 12, 0, 0),
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Valid memory payload.",
+        content='Valid memory payload.',
     )
     saved_path = memory_manager.save(mem)
 
     # Tamper the file manually
     os.chmod(saved_path, 0o666)
-    with open(saved_path, "w", encoding="utf-8") as f:
-        f.write("tampered-content")
+    with open(saved_path, 'w', encoding='utf-8') as f:
+        f.write('tampered-content')
 
     # Bacon subagent should fail verification
     bacon = BaconSubagent()
     graph = nx.DiGraph()
-    context = {"persona_dir": persona_dir}
+    context = {'persona_dir': persona_dir}
 
     with pytest.raises(TamperedStateError):
         bacon.run(graph, context)
@@ -96,22 +93,22 @@ def test_popper_tms_propagation(temp_workspace):
     # Build a small dependency graph
     graph = nx.DiGraph()
     # A depends on B
-    graph.add_node("node-a", type="Decision", status="active", confidence=1.0)
-    graph.add_node("node-b", type="Decision", status="active", confidence=1.0)
-    graph.add_edge("node-a", "node-b", type="depends_on")
+    graph.add_node('node-a', type='Decision', status='active', confidence=1.0)
+    graph.add_node('node-b', type='Decision', status='active', confidence=1.0)
+    graph.add_edge('node-a', 'node-b', type='depends_on')
 
     # Popper subagent TMS pass
     popper = PopperSubagent()
 
     # Mark B as superseded/invalid
-    graph.nodes["node-b"]["status"] = "superseded"
-    graph.nodes["node-b"]["confidence"] = 0.0
+    graph.nodes['node-b']['status'] = 'superseded'
+    graph.nodes['node-b']['confidence'] = 0.0
 
     popper.run(graph, {})
 
     # A should also be marked superseded/decayed
-    assert graph.nodes["node-a"]["status"] == "superseded"
-    assert graph.nodes["node-a"]["confidence"] == 0.0
+    assert graph.nodes['node-a']['status'] == 'superseded'
+    assert graph.nodes['node-a']['confidence'] == 0.0
 
 
 def test_noether_symmetry_conservation(temp_workspace):
@@ -122,23 +119,20 @@ def test_noether_symmetry_conservation(temp_workspace):
         timestamp=datetime(2026, 6, 8, 12, 0, 0),
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Important architectural design decision.",
+        content='Important architectural design decision.',
     )
     memory_manager.save(mem)
 
     noether = NoetherSubagent()
     graph = nx.DiGraph()
-    context = {
-        "persona_dir": persona_dir,
-        "raw_memories": [mem]
-    }
+    context = {'persona_dir': persona_dir, 'raw_memories': [mem]}
 
     # Since graph does not represent the memory hash, Noether should raise SymmetryError
     with pytest.raises(SymmetryError):
         noether.run(graph, context)
 
     # Represent the memory hash in L2
-    graph.add_node("node-1", type="Fact", content="Rep.", sources=[mem.id])
+    graph.add_node('node-1', type='Fact', content='Rep.', sources=[mem.id])
     # Now it should pass conservation check without raising an error
     noether.run(graph, context)
 
@@ -151,7 +145,7 @@ def test_run_introspection_test_mode(temp_workspace):
         timestamp=datetime(2026, 6, 8, 12, 0, 0),
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Offline facts to test.",
+        content='Offline facts to test.',
     )
     memory_manager.save(mem)
 
@@ -160,7 +154,7 @@ def test_run_introspection_test_mode(temp_workspace):
     assert graph.number_of_nodes() == 1
 
     # Verify L2 graph was saved
-    kg_path = persona_dir / "knowledge_graph.yaml"
+    kg_path = persona_dir / 'knowledge_graph.yaml'
     assert kg_path.exists()
 
     # Verify L1 was moved to subsumed
@@ -176,145 +170,157 @@ def test_introspect_cli_command(temp_workspace):
         timestamp=datetime(2026, 6, 8, 12, 0, 0),
         type=MemoryType.INSIGHT,
         scope=MemoryScope.INCARNATION,
-        content="Testing introspection cli.",
+        content='Testing introspection cli.',
     )
     memory_manager.save(mem)
 
     runner = CliRunner()
-    result = runner.invoke(app, ["introspect", "--all", "--test-mode", "--visualize"])
+    result = runner.invoke(app, ['introspect', '--all', '--test-mode', '--visualize'])
     assert result.exit_code == 0
-    assert "Introspection Assembly completed successfully" in result.output
-    assert "Mermaid L2 Graph" in result.output
+    assert 'Introspection Assembly completed successfully' in result.output
+    assert 'Mermaid L2 Graph' in result.output
 
 
 def test_topological_recall_spreading_activation(temp_workspace):
     import json
+
     _, persona_dir = temp_workspace
 
     # 1. Setup a topological graph
     graph = nx.DiGraph()
     # node-a --precedes--> node-b --depends_on--> node-c
-    graph.add_node("node-a", type="Fact", content="A is first", status="active", confidence=1.0)
-    graph.add_node("node-b", type="Fact", content="B is second", status="active", confidence=1.0)
-    graph.add_node("node-c", type="Fact", content="C is third", status="active", confidence=1.0)
-    graph.add_edge("node-a", "node-b", type="precedes")
-    graph.add_edge("node-b", "node-c", type="depends_on")
+    graph.add_node('node-a', type='Fact', content='A is first', status='active', confidence=1.0)
+    graph.add_node('node-b', type='Fact', content='B is second', status='active', confidence=1.0)
+    graph.add_node('node-c', type='Fact', content='C is third', status='active', confidence=1.0)
+    graph.add_edge('node-a', 'node-b', type='precedes')
+    graph.add_edge('node-b', 'node-c', type='depends_on')
 
-    kg_path = persona_dir / "knowledge_graph.yaml"
-    with open(kg_path, "w", encoding="utf-8") as f:
+    kg_path = persona_dir / 'knowledge_graph.yaml'
+    with open(kg_path, 'w', encoding='utf-8') as f:
         yaml.dump(nx.node_link_data(graph), f)
 
     from tur.recall import topological_recall
 
     # Query for "first" should match node-a, and spreading activation should include node-b (1 hop) and node-c (2 hops)
-    res_json = topological_recall("first", persona_dir)
+    res_json = topological_recall('first', persona_dir)
     res_data = json.loads(res_json)
 
     # Should contain all three nodes due to spreading activation
-    node_ids = [n["id"] for n in res_data]
-    assert "node-a" in node_ids
-    assert "node-b" in node_ids
-    assert "node-c" in node_ids
+    node_ids = [n['id'] for n in res_data]
+    assert 'node-a' in node_ids
+    assert 'node-b' in node_ids
+    assert 'node-c' in node_ids
 
     # Verify staging log was created
-    log_path = persona_dir / "recall_access_log.txt"
+    log_path = persona_dir / 'recall_access_log.txt'
     assert log_path.exists()
-    logged_nodes = log_path.read_text(encoding="utf-8").splitlines()
-    assert "node-a" in logged_nodes
+    logged_nodes = log_path.read_text(encoding='utf-8').splitlines()
+    assert 'node-a' in logged_nodes
 
 
 def test_shannon_processes_and_flushes_access_log(temp_workspace):
     _, persona_dir = temp_workspace
 
     graph = nx.DiGraph()
-    graph.add_node("node-a", type="Fact", content="A", status="active", confidence=0.8, retrieval_count=0)
-    graph.add_node("node-b", type="Fact", content="B", status="active", confidence=0.8, retrieval_count=0)
-    graph.add_node("node-c", type="Fact", content="C", status="active", confidence=0.8, retrieval_count=0)
+    graph.add_node('node-a', type='Fact', content='A', status='active', confidence=0.8, retrieval_count=0)
+    graph.add_node('node-b', type='Fact', content='B', status='active', confidence=0.8, retrieval_count=0)
+    graph.add_node('node-c', type='Fact', content='C', status='active', confidence=0.8, retrieval_count=0)
 
-    kg_path = persona_dir / "knowledge_graph.yaml"
-    with open(kg_path, "w", encoding="utf-8") as f:
+    kg_path = persona_dir / 'knowledge_graph.yaml'
+    with open(kg_path, 'w', encoding='utf-8') as f:
         yaml.dump(nx.node_link_data(graph), f)
 
-    log_path = persona_dir / "recall_access_log.txt"
-    with open(log_path, "w", encoding="utf-8") as f:
-        f.write("node-a\nnode-a\n")
+    log_path = persona_dir / 'recall_access_log.txt'
+    with open(log_path, 'w', encoding='utf-8') as f:
+        f.write('node-a\nnode-a\n')
 
     run_introspection(persona_dir, bootstrap=False, test_mode=True)
 
     assert not log_path.exists()
 
-    with open(kg_path, encoding="utf-8") as f:
+    with open(kg_path, encoding='utf-8') as f:
         updated_data = yaml.safe_load(f)
     updated_graph = nx.node_link_graph(updated_data)
 
     # node-a had retrievals, so its confidence should be updated to min(1.0, 0.8 + 0.1) = 0.9
-    assert updated_graph.nodes["node-a"]["confidence"] == pytest.approx(0.9)
+    assert updated_graph.nodes['node-a']['confidence'] == pytest.approx(0.9)
     # node-c had no retrievals, so its confidence should decay to max(0.0, 0.8 - 0.1) = 0.7
-    assert updated_graph.nodes["node-c"]["confidence"] == pytest.approx(0.7)
+    assert updated_graph.nodes['node-c']['confidence'] == pytest.approx(0.7)
 
 
 def test_popper_belief_revision_conflict_resolution():
     graph = nx.DiGraph()
     # node-a is older, node-b is newer
-    graph.add_node("node-a", type="Fact", content="Python is slow", status="active", confidence=1.0,
-                   created_at="2026-05-01T10:00:00Z")
-    graph.add_node("node-b", type="Fact", content="Python is fast", status="active", confidence=1.0,
-                   created_at="2026-05-01T11:00:00Z")
-    graph.add_node("node-c", type="Insight", content="Thus, we must avoid Python", status="active", confidence=1.0,
-                   created_at="2026-05-01T12:00:00Z")
+    graph.add_node(
+        'node-a',
+        type='Fact',
+        content='Python is slow',
+        status='active',
+        confidence=1.0,
+        created_at='2026-05-01T10:00:00Z',
+    )
+    graph.add_node(
+        'node-b',
+        type='Fact',
+        content='Python is fast',
+        status='active',
+        confidence=1.0,
+        created_at='2026-05-01T11:00:00Z',
+    )
+    graph.add_node(
+        'node-c',
+        type='Insight',
+        content='Thus, we must avoid Python',
+        status='active',
+        confidence=1.0,
+        created_at='2026-05-01T12:00:00Z',
+    )
 
     # Add relationships
-    graph.add_edge("node-a", "node-b", type="contradicts")
-    graph.add_edge("node-c", "node-a", type="depends_on")
+    graph.add_edge('node-a', 'node-b', type='contradicts')
+    graph.add_edge('node-c', 'node-a', type='depends_on')
 
     # Run Popper Subagent
     subagent = PopperSubagent()
     updated_graph, _ = subagent.run(graph, {})
 
     # node-a should be superseded because it is older than node-b
-    assert updated_graph.nodes["node-a"]["status"] == "superseded"
-    assert updated_graph.nodes["node-a"]["confidence"] == 0.0
+    assert updated_graph.nodes['node-a']['status'] == 'superseded'
+    assert updated_graph.nodes['node-a']['confidence'] == 0.0
 
     # node-b should remain active
-    assert updated_graph.nodes["node-b"]["status"] == "active"
-    assert updated_graph.nodes["node-b"]["confidence"] == 1.0
+    assert updated_graph.nodes['node-b']['status'] == 'active'
+    assert updated_graph.nodes['node-b']['confidence'] == 1.0
 
     # A superseded_by edge should have been created u -> v
-    assert updated_graph.has_edge("node-a", "node-b")
-    assert updated_graph["node-a"]["node-b"]["type"] == "superseded_by"
+    assert updated_graph.has_edge('node-a', 'node-b')
+    assert updated_graph['node-a']['node-b']['type'] == 'superseded_by'
 
     # node-c depends on node-a, so it should be deactivated recursively
-    assert updated_graph.nodes["node-c"]["status"] == "superseded"
-    assert updated_graph.nodes["node-c"]["confidence"] == 0.0
+    assert updated_graph.nodes['node-c']['status'] == 'superseded'
+    assert updated_graph.nodes['node-c']['confidence'] == 0.0
 
     # A refuted_by edge should record the trace: c refuted_by a
-    assert updated_graph.has_edge("node-c", "node-a")
-    assert updated_graph["node-c"]["node-a"]["type"] == "refuted_by"
+    assert updated_graph.has_edge('node-c', 'node-a')
+    assert updated_graph['node-c']['node-a']['type'] == 'refuted_by'
 
 
 def test_pluggable_compaction_pipeline_dynamic_loading():
     # 1. Test successful custom loading
-    config = {
-        "subagents": [
-            {"name": "CustomPopper", "class": "tur.introspection.PopperSubagent"}
-        ]
-    }
+    config = {'subagents': [{'name': 'CustomPopper', 'class': 'tur.introspection.PopperSubagent'}]}
     assembly = IntrospectionAssembly(config)
     assert len(assembly.agents) == 1
     assert isinstance(assembly.agents[0], PopperSubagent)
 
     # 2. Test invalid import path raising ImportError
-    bad_config = {
-        "subagents": [
-            {"name": "BadAgent", "class": "nonexistent_module.NonexistentClass"}
-        ]
-    }
+    bad_config = {'subagents': [{'name': 'BadAgent', 'class': 'nonexistent_module.NonexistentClass'}]}
     with pytest.raises(ImportError) as exc:
         IntrospectionAssembly(bad_config)
-    assert "Failed to load compaction subagent" in str(exc.value)
+    assert 'Failed to load compaction subagent' in str(exc.value)
 
     # 3. Test empty configuration fallback to default assembly
     empty_assembly = IntrospectionAssembly(None)
     assert len(empty_assembly.agents) == 9
     from tur.introspection import BaconSubagent
+
     assert isinstance(empty_assembly.agents[0], BaconSubagent)

@@ -8,6 +8,7 @@ from tur.paths import resolve_personas_base_dir
 
 def select_persona_wizard(index):
     from tur.tui import select_persona_wizard as real_wizard
+
     return real_wizard(index)
 
 
@@ -39,9 +40,10 @@ def get_active_persona_id(identifier: str | None = None) -> str:
 
     # If we're here, no default is set, so we launch the selector TUI
     import sys
+
     if not sys.stdin.isatty() and not os.environ.get('PYTEST_CURRENT_TEST'):
         raise ValueError(
-            "No active persona set and stdin is not a TTY (headless mode). "
+            'No active persona set and stdin is not a TTY (headless mode). '
             "Please set the 'TUR_ACTIVE_PERSONA_ID' environment variable or run 'tur-adm' first."
         )
 
@@ -61,6 +63,7 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     new_active_id = select_persona_wizard(index)
     if not new_active_id:
         import typer
+
         typer.echo('No persona selected. Aborting.', err=True)
         raise typer.Exit(code=1)
 
