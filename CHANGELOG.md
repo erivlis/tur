@@ -1,3 +1,13 @@
+## v0.7.0 (2026-07-12)
+
+### Feat
+
+- **EP-0113**: Implements Core Memory Protocol (EP-0113) for persona axioms and CLI.
+
+### Refactor
+
+- **EP-0113**: Removes `devolve` command and tool, favoring forward-only evolution.
+
 ## v0.6.0 (2026-07-11)
 
 ### Feat
