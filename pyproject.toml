@@ -53,11 +53,14 @@ mcp = [
 [dependency-groups]
 dev = [
     "commitizen>=4.10.0",
+    "library-skills",
     "pipdeptree",
     "pyinstrument>=5.1.2",
+    "pyrefly",
     "ruff",
     "ty",
     "uv",
+    "zuban"
 ]
 docs = [
     "zensical",
@@ -130,4 +133,4 @@ line-length = 120
 packages = ["src/tur"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/tur", "README.md", "LICENSE"]
+include = ["src/tur", "src/tur/.agents", "README.md", "LICENSE"]
