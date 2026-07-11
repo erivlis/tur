@@ -27,10 +27,11 @@ def test_memory_manager_init_and_dirs(temp_home_and_base):
     fake_home, local_base = temp_home_and_base
     manager = MemoryManager(base_dir=local_base)
 
-    assert manager.local_dir == local_base / 'memories'
+    assert manager.local_dir == local_base / 'memories' / 'active'
     assert manager.local_archive_dir == local_base / 'memories' / 'archive'
-    assert manager.global_dir == fake_home / '.tur' / 'personas' / local_base.name / 'memories'
-    assert manager.global_archive_dir == manager.global_dir / 'archive'
+    assert manager.local_subsumed_dir == local_base / 'memories' / 'subsumed'
+    assert manager.global_dir == fake_home / '.tur' / 'personas' / local_base.name / 'memories' / 'active'
+    assert manager.global_archive_dir == manager.global_dir.parent / 'archive'
 
     assert manager.local_dir.exists()
     assert manager.local_archive_dir.exists()
@@ -302,7 +303,7 @@ def test_memory_manager_global_path_init(temp_home_and_base):
     global_base.mkdir(parents=True, exist_ok=True)
 
     manager = MemoryManager(base_dir=global_base)
-    assert manager.local_dir == Path.cwd() / '.tur' / 'personas' / 'global-uuid' / 'memories'
+    assert manager.local_dir == Path.cwd() / '.tur' / 'personas' / 'global-uuid' / 'memories' / 'active'
 
 
 def test_memory_manager_invalid_scope(temp_home_and_base):
@@ -348,13 +349,19 @@ def test_verify_integrity_tampered_id(temp_home_and_base):
     # Break Golem's seal to write
     os.chmod(saved_path, 0o666)
 
-    # Read and modify ID
+    # Read and modify ID in OKF frontmatter
     with open(saved_path, encoding='utf-8') as f:
-        data = yaml.safe_load(f)
-    data['id'] = 'tampered-id-123'
+        content = f.read()
+
+    parts = content.split('---', 2)
+    data = yaml.safe_load(parts[1])
+    data['hash'] = 'tampered-id-123'
+
+    new_yaml = yaml.dump(data, sort_keys=False)
+    new_content = f"---\n{new_yaml}---\n{parts[2]}"
 
     with open(saved_path, 'w', encoding='utf-8') as f:
-        yaml.dump(data, f)
+        f.write(new_content)
 
     failures = manager.verify_integrity()
     assert len(failures) > 0
@@ -377,13 +384,15 @@ def test_verify_integrity_tampered_content(temp_home_and_base):
     # Break Golem's seal to write
     os.chmod(saved_path, 0o666)
 
-    # Read and modify content (but keep filename and stored ID same)
+    # Read and modify content
     with open(saved_path, encoding='utf-8') as f:
-        data = yaml.safe_load(f)
-    data['content'] = 'Tampered content.'
+        content = f.read()
+
+    parts = content.split('---', 2)
+    new_content = f"---{parts[1]}---\n\nTampered content.\n"
 
     with open(saved_path, 'w', encoding='utf-8') as f:
-        yaml.dump(data, f)
+        f.write(new_content)
 
     failures = manager.verify_integrity()
     assert len(failures) > 0

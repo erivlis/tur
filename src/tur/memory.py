@@ -1,6 +1,7 @@
 import contextlib
 import os
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -10,7 +11,7 @@ try:
 except ImportError:
     from yaml import SafeLoader
 
-from tur.models import Memory, MemoryScope
+from tur.models import Memory, MemoryLink, MemoryScope, MemoryType
 from tur.paths import is_global_path
 
 
@@ -18,6 +19,7 @@ class MemoryManager:
     """
     Manages the 'Memory Bank' for a specific Persona.
     Handles atomicity, immutability, retrieval, and Federation (Universal vs. Incarnational).
+    Transitions L1 memory storage to Open Knowledge Format (OKF) Markdown files.
     """
 
     def __init__(self, base_dir: Path):
@@ -34,16 +36,19 @@ class MemoryManager:
         persona_id = base_dir.name
 
         if is_global_path(base_dir):
-            self.local_dir = Path.cwd() / '.tur' / 'personas' / persona_id / 'memories'
+            local_memories = Path.cwd() / '.tur' / 'personas' / persona_id / 'memories'
         else:
-            self.local_dir = base_dir / 'memories'
-        self.local_archive_dir = self.local_dir / 'archive'
-        self.local_subsumed_dir = self.local_dir.parent / 'subsumed'
+            local_memories = base_dir / 'memories'
+
+        self.local_dir = local_memories / 'active'
+        self.local_archive_dir = local_memories / 'archive'
+        self.local_subsumed_dir = local_memories / 'subsumed'
 
         # Calculate the global equivalent: ~/.tur/personas/<uuid>
-        self.global_dir = Path.home() / '.tur' / 'personas' / persona_id / 'memories'
-        self.global_archive_dir = self.global_dir / 'archive'
-        self.global_subsumed_dir = self.global_dir.parent / 'subsumed'
+        global_memories = Path.home() / '.tur' / 'personas' / persona_id / 'memories'
+        self.global_dir = global_memories / 'active'
+        self.global_archive_dir = global_memories / 'archive'
+        self.global_subsumed_dir = global_memories / 'subsumed'
 
         self._ensure_dirs()
 
@@ -72,16 +77,38 @@ class MemoryManager:
         """
         Saves a Memory to an immutable file in the federated storage using atomic POSIX writes.
         Routes to ~/.tur (Universal) or ./.tur (Incarnational) based on scope.
-        Returns the path to the saved file.
+        Returns the path to the saved file as an OKF Markdown file.
         """
         target_dir, _ = self._get_target_dirs(memory.scope)
 
-        # Filename: timestamp_type_id.yaml
-        filename = f'{memory.timestamp.strftime("%Y%m%d_%H%M%S")}_{memory.type.value}_{memory.id}.yaml'
+        # Filename: timestamp_type_id.md
+        filename = f'{memory.timestamp.strftime("%Y%m%d_%H%M%S")}_{memory.type.value}_{memory.id}.md'
         file_path = target_dir / filename
 
-        # We dump the raw model to ensure full fidelity
-        yaml_content = yaml.dump(memory.model_dump(mode='json'), sort_keys=False)
+        desc = (
+            f'{memory.type.value.capitalize()}: {memory.content.splitlines()[0][:100]}'
+            if memory.content
+            else ''
+        )
+
+        # Format as OKF Markdown with YAML frontmatter
+        frontmatter = {
+            'type': 'L1 Memory',
+            'title': f'Memory {memory.id[:8]}',
+            'description': desc,
+            'tags': memory.tags,
+            'timestamp': memory.timestamp.isoformat(),
+            'scope': memory.scope.value.upper(),
+            'memory_type': memory.type.value.upper(),
+            'hash': memory.id,
+        }
+        if memory.links:
+            frontmatter['links'] = [link.model_dump() for link in memory.links]
+        if memory.source_session:
+            frontmatter['source_session'] = memory.source_session
+
+        yaml_part = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+        okf_content = f"---\n{yaml_part}---\n\n{memory.content}\n"
 
         # Atomic Write Pattern (to prevent multi-agent collision under EP-0102/EP-0106)
         # 1. Write to a temporary file in the same directory
@@ -90,7 +117,7 @@ class MemoryManager:
         fd, tmp_path_str = tempfile.mkstemp(dir=target_dir, prefix=f'{filename}.tmp.')
         try:
             with open(fd, 'w', encoding='utf-8') as f:
-                f.write(yaml_content)
+                f.write(okf_content)
                 f.flush()
                 os.fsync(f.fileno())  # Guarantee disk flush
 
@@ -114,12 +141,30 @@ class MemoryManager:
         Searches both the local and global federated banks.
         """
         # Search for the file in the local bank first
-        files = list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+        files = (
+            list(self.local_dir.glob(f'*_{memory_id}.md'))
+            + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+        )
+        # Legacy search in parent memories/ folder
+        if not files:
+            files = (
+                list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
+                + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+            )
+
         target_archive = self.local_archive_dir
 
         # If not found locally, search the global bank
         if not files:
-            files = list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+            files = (
+                list(self.global_dir.glob(f'*_{memory_id}.md'))
+                + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+            )
+            if not files:
+                files = (
+                    list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
+                    + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                )
             target_archive = self.global_archive_dir
 
         if not files:
@@ -136,11 +181,29 @@ class MemoryManager:
         Moves a memory to the subsumed directory (compacted but still recoverable).
         Searches both the local and global federated banks.
         """
-        files = list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+        files = (
+            list(self.local_dir.glob(f'*_{memory_id}.md'))
+            + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
+        )
+        # Legacy search in parent memories/ folder
+        if not files:
+            files = (
+                list(self.local_dir.parent.glob(f'*_{memory_id}.yaml'))
+                + list(self.local_dir.parent.glob(f'*_{memory_id}.md'))
+            )
+
         target_subsumed = self.local_subsumed_dir
 
         if not files:
-            files = list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+            files = (
+                list(self.global_dir.glob(f'*_{memory_id}.md'))
+                + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
+            )
+            if not files:
+                files = (
+                    list(self.global_dir.parent.glob(f'*_{memory_id}.yaml'))
+                    + list(self.global_dir.parent.glob(f'*_{memory_id}.md'))
+                )
             target_subsumed = self.global_subsumed_dir
 
         if not files:
@@ -156,13 +219,21 @@ class MemoryManager:
         """
         memories = []
         directories = [self.local_subsumed_dir, self.global_subsumed_dir]
+
+        # Legacy directories
+        legacy_local_subsumed = self.local_dir.parent.parent / 'subsumed'
+        legacy_global_subsumed = self.global_dir.parent.parent / 'subsumed'
+        directories.extend([legacy_local_subsumed, legacy_global_subsumed])
+
+        loaded_ids = set()
         for directory in directories:
             if directory.exists():
-                for file_path in directory.glob('*.yaml'):
+                for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
                     if file_path.is_file():
                         mem = self._load_file(file_path)
-                        if mem:
+                        if mem and mem.id not in loaded_ids:
                             memories.append(mem)
+                            loaded_ids.add(mem.id)
         memories.sort(key=lambda x: x.timestamp)
         return memories
 
@@ -172,20 +243,29 @@ class MemoryManager:
         """
         memories = []
 
-        # Load from both tiers
+        # Load from active and legacy memories folders
         directories = [self.local_dir, self.global_dir]
+        directories.extend([self.local_dir.parent, self.global_dir.parent])
+
         if include_archived:
             directories.extend([self.local_archive_dir, self.global_archive_dir])
 
+        loaded_ids = set()
         for directory in directories:
             if directory.exists():
-                for file_path in directory.glob('*.yaml'):
+                for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
                     if file_path.is_file():
+                        # Safety: skip directories if named like search patterns
+                        # Ensure we only load files from memories/active, memories/archive, or legacy memories/*.yaml
+                        parent_name = file_path.parent.name
+                        is_legacy = parent_name == 'memories' and file_path.suffix == '.yaml'
+                        if parent_name not in ['active', 'archive', 'subsumed'] and not is_legacy:
+                            continue
+
                         mem = self._load_file(file_path)
-                        if mem:
-                            # Note (EP-0106): The `status` field was removed from the Memory model.
-                            # Status is now implicitly defined by which directory this file was found in.
+                        if mem and mem.id not in loaded_ids:
                             memories.append(mem)
+                            loaded_ids.add(mem.id)
 
         # Sort combined federated timeline by timestamp
         memories.sort(key=lambda x: x.timestamp)
@@ -195,22 +275,70 @@ class MemoryManager:
         """
         Counts all memories in the federated storage without loading them (for performance).
         """
-        directories = [self.local_dir, self.global_dir]
-        if include_archived:
-            directories.extend([self.local_archive_dir, self.global_archive_dir])
+        return len(self.load_all(include_archived=include_archived))
 
-        count = 0
-        for directory in directories:
-            if directory.exists():
-                for file_path in directory.glob('*.yaml'):
-                    if file_path.is_file():
-                        count += 1
-        return count
+    def _verify_file_integrity(self, file_path: Path) -> str | None:
+        try:
+            with open(file_path, encoding='utf-8') as f:
+                content = f.read()
+
+            if content.startswith('---'):
+                parts = content.split('---', 2)
+                if len(parts) < 3:
+                    return 'Invalid OKF structure'
+                yaml_part = parts[1]
+                body_part = parts[2].strip()
+                data = yaml.load(yaml_part, Loader=SafeLoader)
+                stored_id = data.get('hash', '')
+            else:
+                data = yaml.load(content, Loader=SafeLoader)
+                stored_id = data.get('id', '')
+                body_part = data.get('content', '')
+
+            if not data or not isinstance(data, dict):
+                return 'Invalid structure or empty file'
+
+            if not stored_id:
+                return "Missing ID/hash in file"
+
+            expected_suffix = f'_{stored_id}.md' if file_path.suffix == '.md' else f'_{stored_id}.yaml'
+            if not file_path.name.endswith(expected_suffix):
+                return f'Filename does not match stored ID: {stored_id}'
+
+            if content.startswith('---'):
+                scope_val = data.get('scope', '').lower()
+                type_val = data.get('memory_type', '').lower()
+                links_data = data.get('links', [])
+                links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
+
+                recomputed_mem = Memory(
+                    timestamp=datetime.fromisoformat(data.get('timestamp')),
+                    type=MemoryType(type_val),
+                    scope=MemoryScope(scope_val),
+                    tags=data.get('tags', []),
+                    content=body_part,
+                    links=links,
+                    source_session=data.get('source_session'),
+                )
+            else:
+                test_data = data.copy()
+                if 'id' in test_data:
+                    del test_data['id']
+                if 'status' in test_data:
+                    del test_data['status']
+                recomputed_mem = Memory(**test_data)
+
+            if recomputed_mem.id != stored_id:
+                return f'Computed hash {recomputed_mem.id} does not match stored ID {stored_id}'
+        except Exception as e:
+            return f'Failed to parse or hash memory: {e}'
+        else:
+            return None
 
     def verify_integrity(self) -> list[tuple[Path, str]]:
         """
         EP-0106: Merkle Memory.
-        Iterates through all .yaml files in the active, archived and subsumed memory banks,
+        Iterates through all .md and .yaml files in the active, archived and subsumed memory banks,
         recomputes the SHA-256 hashes of their contents, and asserts they match their filenames.
         Returns a list of tuples containing (file_path, error_reason) for any failures.
         """
@@ -222,58 +350,66 @@ class MemoryManager:
             self.global_archive_dir,
             self.local_subsumed_dir,
             self.global_subsumed_dir,
+            self.local_dir.parent,
+            self.global_dir.parent,
+            self.local_dir.parent.parent / 'subsumed',
+            self.global_dir.parent.parent / 'subsumed',
         ]
+
+        seen_paths = set()
         for directory in directories:
             if not directory.exists():
                 continue
-            for file_path in directory.glob('*.yaml'):
-                if not file_path.is_file():
+            for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
+                if not file_path.is_file() or file_path in seen_paths:
                     continue
-                try:
-                    with open(file_path, encoding='utf-8') as f:
-                        data = yaml.load(f, Loader=SafeLoader)
+                seen_paths.add(file_path)
 
-                    if not data or not isinstance(data, dict):
-                        failures.append((file_path, 'Invalid YAML structure or empty file'))
-                        continue
+                parent_name = file_path.parent.name
+                is_legacy = parent_name == 'memories' and file_path.suffix == '.yaml'
+                if parent_name not in ['active', 'archive', 'subsumed'] and not is_legacy:
+                    continue
 
-                    stored_id = data.get('id', '')
-                    if not stored_id:
-                        failures.append((file_path, "Missing 'id' field in YAML"))
-                        continue
-
-                    expected_suffix = f'_{stored_id}.yaml'
-                    if not file_path.name.endswith(expected_suffix):
-                        failures.append((file_path, f'Filename does not match stored ID: {stored_id}'))
-                        continue
-
-                    test_data = data.copy()
-                    if 'id' in test_data:
-                        del test_data['id']
-                    if 'status' in test_data:
-                        del test_data['status']
-
-                    recomputed_mem = Memory(**test_data)
-                    if recomputed_mem.id != stored_id:
-                        failures.append(
-                            (
-                                file_path,
-                                f'Computed hash {recomputed_mem.id} does not match stored ID {stored_id}',
-                            )
-                        )
-                except Exception as e:
-                    failures.append((file_path, f'Failed to parse or hash memory: {e}'))
+                error_reason = self._verify_file_integrity(file_path)
+                if error_reason:
+                    failures.append((file_path, error_reason))
         return failures
 
     @staticmethod
     def _load_file(file_path: Path) -> Memory | None:
         try:
             with open(file_path, encoding='utf-8') as f:
-                data = yaml.load(f, Loader=SafeLoader)
-                # If the legacy file has 'status', ignore it so Pydantic doesn't throw a ValidationError
-                if 'status' in data:
-                    del data['status']
-                return Memory(**data)
+                content = f.read()
+
+            if content.startswith('---'):
+                parts = content.split('---', 2)
+                if len(parts) < 3:
+                    return None
+                yaml_part = parts[1]
+                body_part = parts[2].strip()
+                data = yaml.load(yaml_part, Loader=SafeLoader)
+
+                scope_val = data.get('scope', '').lower()
+                type_val = data.get('memory_type', '').lower()
+                links_data = data.get('links', [])
+                links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
+
+                return Memory(
+                    id=data.get('hash', ''),
+                    timestamp=datetime.fromisoformat(data.get('timestamp')),
+                    type=MemoryType(type_val),
+                    scope=MemoryScope(scope_val),
+                    tags=data.get('tags', []),
+                    content=body_part,
+                    links=links,
+                    source_session=data.get('source_session'),
+                )
+
+            # Legacy YAML file load fallback
+            data = yaml.load(content, Loader=SafeLoader)
+            if 'status' in data:
+                del data['status']
+            return Memory(**data)
         except Exception:
             return None
 

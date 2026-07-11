@@ -568,6 +568,172 @@ def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
     return "\n".join(lines)
 
 
+def load_l2_graph_from_okf(persona_dir: Path) -> nx.DiGraph | None:
+    """Loads L2 concept nodes and edges from individual OKF markdown files."""
+    active_dir = persona_dir / "concepts" / "active"
+    archive_dir = persona_dir / "concepts" / "archive"
+
+    if not active_dir.exists() and not archive_dir.exists():
+        return None
+
+    active_files = list(active_dir.glob("*.md"))
+    archive_files = list(archive_dir.glob("*.md"))
+
+    if not active_files and not archive_files:
+        return None
+
+    graph = nx.DiGraph()
+    edges_to_add = []
+
+    for file_path in active_files + archive_files:
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                content = f.read()
+            if not content.startswith("---"):
+                continue
+            parts = content.split("---", 2)
+            if len(parts) < 3:
+                continue
+            yaml_part = parts[1]
+            body_part = parts[2].strip()
+
+            try:
+                from yaml import CSafeLoader as SafeLoader
+            except ImportError:
+                from yaml import SafeLoader
+            data = yaml.load(yaml_part, Loader=SafeLoader)
+
+            node_id = file_path.stem
+
+            content_str = body_part
+            if content_str.startswith("# Details"):
+                lines = content_str.splitlines()
+                if len(lines) > 2 and lines[0].strip() == "# Details":
+                    content_str = "\n".join(lines[2:]).strip()
+
+            attrs = {
+                "type": data.get("node_type", "Concept"),
+                "content": content_str,
+                "pinned": bool(data.get("pinned", False)),
+                "sources": data.get("sources", []),
+                "created_at": data.get("timestamp", datetime.now(UTC).isoformat()),
+                "updated_at": data.get("timestamp", datetime.now(UTC).isoformat()),
+                "confidence": float(data.get("confidence", 1.0)),
+                "retrieval_count": int(data.get("retrieval_count", 0)),
+                "status": data.get("status", "active")
+            }
+
+            graph.add_node(node_id, **attrs)
+
+            relations = data.get("relations", [])
+            for rel in relations:
+                target_path = rel.get("target", "")
+                target_id = target_path.split("/")[-1].replace(".md", "")
+                edges_to_add.append((
+                    node_id,
+                    target_id,
+                    {
+                        "type": rel.get("type", "links"),
+                        "confidence": float(rel.get("confidence", 1.0)),
+                        "created_at": rel.get("created_at", datetime.now(UTC).isoformat())
+                    }
+                ))
+        except Exception:
+            continue
+
+    for u, v, attrs in edges_to_add:
+        if graph.has_node(u) and graph.has_node(v):
+            graph.add_edge(u, v, **attrs)
+
+    return graph
+
+
+def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
+    """Saves every L2 concept node to its own OKF file under active or archive concepts folders."""
+    active_dir = persona_dir / "concepts" / "active"
+    archive_dir = persona_dir / "concepts" / "archive"
+
+    active_dir.mkdir(parents=True, exist_ok=True)
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean up existing files in OKF folders
+    for f in active_dir.glob("*.md"):
+        with contextlib.suppress(Exception):
+            os.chmod(f, 0o666)
+            f.unlink()
+    for f in archive_dir.glob("*.md"):
+        with contextlib.suppress(Exception):
+            os.chmod(f, 0o666)
+            f.unlink()
+
+    for node in graph.nodes:
+        node_data = graph.nodes[node]
+        confidence = float(node_data.get("confidence", 1.0))
+        status = node_data.get("status", "active")
+
+        if status in ["archived", "superseded"] or confidence <= 0.2:
+            target_dir = archive_dir
+            final_status = status if status in ["archived", "superseded"] else "archived"
+        else:
+            target_dir = active_dir
+            final_status = "active"
+
+        relations = []
+        for successor in graph.successors(node):
+            edge_data = graph.edges[node, successor]
+            succ_data = graph.nodes[successor]
+            succ_confidence = float(succ_data.get("confidence", 1.0))
+            succ_status = succ_data.get("status", "active")
+
+            if succ_status in ["archived", "superseded"] or succ_confidence <= 0.2:
+                target_path = f"/concepts/archive/{successor}.md"
+            else:
+                target_path = f"/concepts/active/{successor}.md"
+
+            relations.append({
+                "target": target_path,
+                "type": edge_data.get("type", "links"),
+                "confidence": float(edge_data.get("confidence", 1.0)),
+                "created_at": edge_data.get("created_at", datetime.now(UTC).isoformat())
+            })
+
+        frontmatter = {
+            "type": "L2 Concept",
+            "title": node.replace("-", " ").title(),
+            "description": node_data.get("content", "").splitlines()[0][:100] if node_data.get("content") else "",
+            "tags": node_data.get("tags", []),
+            "timestamp": node_data.get("updated_at", datetime.now(UTC).isoformat()),
+            "node_type": node_data.get("type", "Concept"),
+            "sources": node_data.get("sources", []),
+            "confidence": confidence,
+            "retrieval_count": int(node_data.get("retrieval_count", 0)),
+            "pinned": bool(node_data.get("pinned", False)),
+            "status": final_status
+        }
+        if relations:
+            frontmatter["relations"] = relations
+
+        yaml_part = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+        body = f"# Details\n\n{node_data.get('content', '')}\n"
+        okf_content = f"---\n{yaml_part}---\n\n{body}"
+
+        file_path = target_dir / f"{node}.md"
+
+        fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=f"{node}.tmp.")
+        try:
+            with open(fd, "w", encoding="utf-8") as f:
+                f.write(okf_content)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, file_path)
+            with contextlib.suppress(Exception):
+                os.chmod(file_path, 0o444)
+        except Exception:
+            with contextlib.suppress(OSError):
+                os.remove(tmp_path)
+            raise
+
+
 def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "gemini-3.1-pro-preview",
                       test_mode: bool = False) -> nx.DiGraph:
     """
@@ -576,18 +742,23 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
     """
     kg_path = persona_dir / "knowledge_graph.yaml"
 
-    graph = nx.DiGraph()
-    if kg_path.exists() and not bootstrap:
-        try:
-            with open(kg_path, encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-            graph = nx.node_link_graph(data)
-        except Exception:
-            graph = nx.DiGraph()
+    graph = None
+    if not bootstrap:
+        graph = load_l2_graph_from_okf(persona_dir)
+        if graph is None and kg_path.exists():
+            try:
+                with open(kg_path, encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+                graph = nx.node_link_graph(data)
+            except Exception:
+                graph = None
+
+    if graph is None:
+        graph = nx.DiGraph()
 
     context = {
         "persona_dir": persona_dir,
-        "bootstrap": bootstrap or (not kg_path.exists()),
+        "bootstrap": bootstrap or (not kg_path.exists() and not (persona_dir / "concepts").exists()),
         "model": model,
         "test_mode": test_mode
     }
@@ -628,6 +799,9 @@ def run_introspection(persona_dir: Path, bootstrap: bool = False, model: str = "
     # Golem's Seal: lock L2 file permissions to read-only
     with contextlib.suppress(Exception):
         os.chmod(kg_path, 0o444)
+
+    # Save L2 Graph as OKF files (EP-0120)
+    save_l2_graph_to_okf(graph, persona_dir)
 
     # Compaction Handoff: move subsumed L1 files
     memory_manager = MemoryManager(base_dir=persona_dir)

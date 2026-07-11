@@ -55,21 +55,26 @@ def _spread_activation(graph: nx.DiGraph, matched_nodes: list[str]) -> set[str]:
 
 def topological_recall(query: str, persona_dir: Path) -> str:
     """
-    Upgraded recall logic under EP-0103.
+    Upgraded recall logic under EP-0103 / EP-0120.
     Searches the L2 knowledge graph, propagates spreading activation (2 hops),
     stages access metrics in a transient append-only log, and falls back to L1 if L2 is missing.
     """
-    kg_path = persona_dir / 'knowledge_graph.yaml'
-    if not kg_path.exists():
-        return _l1_fallback_search(query, persona_dir)
+    from tur.introspection import load_l2_graph_from_okf
 
-    try:
-        with open(kg_path, encoding='utf-8') as f:
-            data = yaml.load(f, Loader=SafeLoader)
-        graph = nx.node_link_graph(data)
-    except Exception:
-        # Fallback if graph is corrupted
-        return _l1_fallback_search(query, persona_dir)
+    graph = load_l2_graph_from_okf(persona_dir)
+
+    if graph is None:
+        kg_path = persona_dir / 'knowledge_graph.yaml'
+        if not kg_path.exists():
+            return _l1_fallback_search(query, persona_dir)
+
+        try:
+            with open(kg_path, encoding='utf-8') as f:
+                data = yaml.load(f, Loader=SafeLoader)
+            graph = nx.node_link_graph(data)
+        except Exception:
+            # Fallback if graph is corrupted
+            return _l1_fallback_search(query, persona_dir)
 
     query_lower = query.lower()
     matched_nodes = []
