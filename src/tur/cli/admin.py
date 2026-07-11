@@ -42,12 +42,12 @@ from uuid import UUID
 
 import typer
 import yaml
-from tur._helpers import yaml_safe_load
 from rich import box
 from rich.panel import Panel
 from rich.table import Table
 
 from tur import persona, session, tui
+from tur._helpers import yaml_safe_load
 from tur.cli.common import console, require_human
 from tur.memory import MemoryManager
 from tur.models import (

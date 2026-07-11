@@ -3,7 +3,6 @@ import uuid
 from pathlib import Path
 
 import yaml
-from tur._helpers import yaml_safe_load
 from textual._path import CSSPathType
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -12,6 +11,7 @@ from textual.widget import Widget
 from textual.widgets import Button, Footer, Header, Input, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
+from tur._helpers import yaml_safe_load
 from tur.models import Persona, PersonaIndex, PersonaIndexEntry, Principle, SystemState
 
 
@@ -53,10 +53,10 @@ class PersonaInitApp(App):
     """A Textual app to bootstrap a new persona."""
 
     def __init__(
-        self,
-        driver_class: type[Driver] | None = None,
-        css_path: CSSPathType | None = None,
-        watch_css: bool = False,
+            self,
+            driver_class: type[Driver] | None = None,
+            css_path: CSSPathType | None = None,
+            watch_css: bool = False,
     ):
         super().__init__(driver_class, css_path, watch_css)
         self.aleph_input = None
@@ -92,7 +92,11 @@ class PersonaInitApp(App):
                     Principle(name='Symmetry', avatar=None, role='Guardian of Invariance', weight=1.5),
                     Principle(name='Safety', avatar=None, role='Containment Protocol', weight=2.0),
                 ]
-                persona = Persona(name=name, aleph=aleph, principles=default_principles, version='0.1.0', model='gemini-3.1-pro-preview')
+                persona = Persona(name=name,
+                                  aleph=aleph,
+                                  principles=default_principles,
+                                  version='0.1.0',
+                                  model='gemini-3.1-pro-preview')
                 persona_id = self._save_persona(persona)
                 self.exit(f"Persona '{name}' created successfully in .tur/personas/{persona_id}/persona.yaml")
             else:

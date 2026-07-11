@@ -1,3 +1,14 @@
+## v0.6.0 (2026-07-11)
+
+### Feat
+
+- Adds Tur agent skill that guides Tur persona framework interactions.
+- Updates L1 memory and L2 concept storage to OKF Markdown.
+
+### Refactor
+
+- Centralizes YAML loading with a new `yaml_safe_load` helper.
+
 ## v0.5.0 (2026-07-11)
 
 ### Feat

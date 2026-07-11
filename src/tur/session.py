@@ -7,15 +7,15 @@ import re
 import sqlite3
 import time
 import uuid
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
 from uuid import UUID
 
 import yaml
 
 from tur._helpers import yaml_safe_load
-
 from tur.memory import MemoryManager
 from tur.models import (
     Note,
@@ -177,7 +177,7 @@ F = TypeVar('F', bound=Callable[..., Any])
 
 
 def db_retry(
-    max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: float = 2.0
+        max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: float = 2.0
 ) -> Callable[[F], F]:
     def decorator(func: F) -> F:
         @functools.wraps(func)
@@ -389,22 +389,22 @@ def update_heartbeat(session_id: str, agent_id: str):
     with conn:
         conn.execute(
             """
-                     UPDATE agents
-                     SET last_heartbeat = CURRENT_TIMESTAMP
-                     WHERE id = ?
-                       AND (run_token = ? OR status != 'active')
-                     """,
+            UPDATE agents
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE id = ?
+              AND (run_token = ? OR status != 'active')
+            """,
             (agent_id, run_token),
         )
     conn.close()
 
 
 def start_session_logic(
-    session_id: str,
-    agent_id: str | None = None,
-    harness_conversation_id: str | None = None,
-    identifier: str | None = None,
-    previous_session_id: str | None = None,
+        session_id: str,
+        agent_id: str | None = None,
+        harness_conversation_id: str | None = None,
+        identifier: str | None = None,
+        previous_session_id: str | None = None,
 ) -> str:
     """
     Creates the flat session YAML file and sets up/registers the manifestation
@@ -491,19 +491,19 @@ def start_session_logic(
                 if stored_token == run_token:
                     cursor.execute(
                         """
-                                   UPDATE agents
-                                   SET last_heartbeat = CURRENT_TIMESTAMP
-                                   WHERE id = ?
-                                   """,
+                        UPDATE agents
+                        SET last_heartbeat = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                        """,
                         (agent_id,),
                     )
                 else:
                     cursor.execute(
                         """
-                                   SELECT (strftime('%s', 'now') - strftime('%s', last_heartbeat)) as diff
-                                   FROM agents
-                                   WHERE id = ?
-                                   """,
+                        SELECT (strftime('%s', 'now') - strftime('%s', last_heartbeat)) as diff
+                        FROM agents
+                        WHERE id = ?
+                        """,
                         (agent_id,),
                     )
                     diff_row = cursor.fetchone()
@@ -512,12 +512,12 @@ def start_session_logic(
                     if diff > 15:
                         cursor.execute(
                             """
-                                       UPDATE agents
-                                       SET status         = 'active',
-                                           last_heartbeat = CURRENT_TIMESTAMP,
-                                           run_token      = ?
-                                       WHERE id = ?
-                                       """,
+                            UPDATE agents
+                            SET status         = 'active',
+                                last_heartbeat = CURRENT_TIMESTAMP,
+                                run_token      = ?
+                            WHERE id = ?
+                            """,
                             (run_token, agent_id),
                         )
                     else:
@@ -525,20 +525,20 @@ def start_session_logic(
             else:
                 cursor.execute(
                     """
-                               UPDATE agents
-                               SET status         = 'active',
-                                   last_heartbeat = CURRENT_TIMESTAMP,
-                                   run_token      = ?
-                               WHERE id = ?
-                               """,
+                    UPDATE agents
+                    SET status         = 'active',
+                        last_heartbeat = CURRENT_TIMESTAMP,
+                        run_token      = ?
+                    WHERE id = ?
+                    """,
                     (run_token, agent_id),
                 )
         else:
             cursor.execute(
                 """
-                           INSERT INTO agents (id, harness, substrate, status, run_token)
-                           VALUES (?, ?, ?, 'active', ?)
-                           """,
+                INSERT INTO agents (id, harness, substrate, status, run_token)
+                VALUES (?, ?, ?, 'active', ?)
+                """,
                 (agent_id, harness_name, substrate_name, run_token),
             )
 
@@ -586,11 +586,11 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
 
 @db_retry()
 def signal_logic(
-    session_id: str,
-    sender: str,
-    recipient: str,
-    content: str,
-    type_: str = 'inform',
+        session_id: str,
+        sender: str,
+        recipient: str,
+        content: str,
+        type_: str = 'inform',
 ) -> str:
     """Sends a message signal transactionally, validating boundaries and rate-limits."""
     if not re.match(r'^[a-zA-Z0-9_\.-]+$', sender):
@@ -602,10 +602,10 @@ def signal_logic(
     cursor = conn.cursor()
     cursor.execute(
         """
-                   SELECT COUNT(*) as count
-                   FROM signals
-                   WHERE sender = ? AND timestamp > datetime('now', '-60 seconds')
-                   """,
+        SELECT COUNT(*) as count
+        FROM signals
+        WHERE sender = ? AND timestamp > datetime('now', '-60 seconds')
+        """,
         (sender,),
     )
     count_row = cursor.fetchone()
@@ -620,17 +620,17 @@ def signal_logic(
     with conn:
         conn.execute(
             """
-                     INSERT INTO signals (id, sender, recipient, type, content)
-                     VALUES (?, ?, ?, ?, ?)
-                     """,
+            INSERT INTO signals (id, sender, recipient, type, content)
+            VALUES (?, ?, ?, ?, ?)
+            """,
             (signal_id, sender, recipient, type_, content),
         )
         conn.execute(
             """
-                     UPDATE agents
-                     SET last_heartbeat = CURRENT_TIMESTAMP
-                     WHERE id = ?
-                     """,
+            UPDATE agents
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
             (sender,),
         )
 
@@ -640,9 +640,9 @@ def signal_logic(
 
 @db_retry()
 def read_signals_logic(
-    session_id: str,
-    agent_id: str,
-    unread_only: bool = True,
+        session_id: str,
+        agent_id: str,
+        unread_only: bool = True,
 ) -> list[dict]:
     """Peeks incoming signals matching caller handle or dot subagent namespaces."""
     conn = get_db_connection(session_id)
@@ -672,10 +672,10 @@ def read_signals_logic(
     with conn:
         conn.execute(
             """
-                     UPDATE agents
-                     SET last_heartbeat = CURRENT_TIMESTAMP
-                     WHERE id = ?
-                     """,
+            UPDATE agents
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
             (agent_id,),
         )
 
@@ -685,9 +685,9 @@ def read_signals_logic(
 
 @db_retry()
 def ack_signals_logic(
-    session_id: str,
-    agent_id: str,
-    signal_ids: list[str],
+        session_id: str,
+        agent_id: str,
+        signal_ids: list[str],
 ) -> str:
     """Acknowledges signals by registering read entries in the signal_reads table."""
     conn = get_db_connection(session_id)
@@ -695,18 +695,18 @@ def ack_signals_logic(
         for sig_id in signal_ids:
             conn.execute(
                 """
-                         INSERT
-                         OR IGNORE INTO signal_reads (signal_id, agent_id)
+                INSERT
+                OR IGNORE INTO signal_reads (signal_id, agent_id)
                 VALUES (?, ?)
-                         """,
+                """,
                 (sig_id, agent_id),
             )
         conn.execute(
             """
-                     UPDATE agents
-                     SET last_heartbeat = CURRENT_TIMESTAMP
-                     WHERE id = ?
-                     """,
+            UPDATE agents
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
             (agent_id,),
         )
     conn.close()
@@ -715,10 +715,10 @@ def ack_signals_logic(
 
 @db_retry()
 def write_whiteboard_logic(
-    session_id: str,
-    key: str,
-    value: str,
-    updated_by: str,
+        session_id: str,
+        key: str,
+        value: str,
+        updated_by: str,
 ) -> str:
     """Writes key-value state parameters to the shared session whiteboard."""
     conn = get_db_connection(session_id)
@@ -732,10 +732,10 @@ def write_whiteboard_logic(
         )
         conn.execute(
             """
-                     UPDATE agents
-                     SET last_heartbeat = CURRENT_TIMESTAMP
-                     WHERE id = ?
-                     """,
+            UPDATE agents
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
             (updated_by,),
         )
     conn.close()
@@ -744,8 +744,8 @@ def write_whiteboard_logic(
 
 @db_retry()
 def read_whiteboard_logic(
-    session_id: str,
-    key: str,
+        session_id: str,
+        key: str,
 ) -> str | None:
     """Reads state parameters from the shared session whiteboard."""
     conn = get_db_connection(session_id)
@@ -774,12 +774,12 @@ def read_notes_logic(session_id: str, limit: int = 50) -> list[dict]:
     cursor = conn.cursor()
     cursor.execute(
         """
-                   SELECT id, sender, recipient, type, content, timestamp, sequence
-                   FROM signals
-                   WHERE recipient = '*'
-                   ORDER BY sequence ASC
-                       LIMIT ?
-                   """,
+        SELECT id, sender, recipient, type, content, timestamp, sequence
+        FROM signals
+        WHERE recipient = '*'
+        ORDER BY sequence ASC
+            LIMIT ?
+        """,
         (limit,),
     )
     rows = cursor.fetchall()
@@ -826,10 +826,10 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         cursor = conn.cursor()
         cursor.execute(
             """
-                       SELECT COUNT(*) as count
-                       FROM agents
-                       WHERE id != ? AND status = 'active' AND last_heartbeat > datetime('now', '-300 seconds')
-                       """,
+            SELECT COUNT(*) as count
+            FROM agents
+            WHERE id != ? AND status = 'active' AND last_heartbeat > datetime('now', '-300 seconds')
+            """,
             (agent_id,),
         )
         count_row = cursor.fetchone()
@@ -842,12 +842,14 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
     with conn:
         cursor = conn.cursor()
         payload = f'{agent_id}|*|sleep_event|Consensus reached. Swarm sleeping.'
-        sig_id = hashlib.sha256(f'{payload}|{datetime.now(timezone.utc).isoformat()}|{uuid.uuid4().hex}'.encode()).hexdigest()
+        sig_id = hashlib.sha256(
+            f'{payload}|{datetime.now(timezone.utc).isoformat()}|{uuid.uuid4().hex}'.encode()
+        ).hexdigest()
         conn.execute(
             """
-                     INSERT INTO signals (id, sender, recipient, type, content)
-                     VALUES (?, ?, '*', 'sleep_event', 'Consensus reached. Swarm sleeping.')
-                     """,
+            INSERT INTO signals (id, sender, recipient, type, content)
+            VALUES (?, ?, '*', 'sleep_event', 'Consensus reached. Swarm sleeping.')
+            """,
             (sig_id, agent_id),
         )
         conn.execute("UPDATE agents SET status = 'sleeping'")

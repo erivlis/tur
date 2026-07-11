@@ -4,9 +4,9 @@ from uuid import UUID
 
 import typer
 import yaml
-from tur._helpers import yaml_safe_load
 
 from tur import persona, session
+from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.compiler import compile_persona
 from tur.memory import MemoryManager

@@ -1,13 +1,12 @@
 import functools
 import sys
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 import typer
 from rich.console import Console
 
 console = Console()
-
-
-from typing import Any, Callable, TypeVar, cast
 
 F = TypeVar('F', bound=Callable[..., Any])
 

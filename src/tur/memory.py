@@ -8,7 +8,6 @@ from typing import Any
 import yaml
 
 from tur._helpers import yaml_safe_load
-
 from tur.models import Memory, MemoryLink, MemoryScope, MemoryType
 from tur.paths import is_global_path
 

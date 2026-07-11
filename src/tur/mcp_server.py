@@ -25,12 +25,12 @@ _ensure_project_root()
 # Defer imports until AFTER the working directory is set to ensure they resolve correctly,
 # even if this script is launched from a different CWD.
 
+from tur._helpers import yaml_safe_load  # noqa: E402
 from tur.compiler import compile_persona  # noqa: E402
 from tur.dreaming import perform_sleep_dreaming  # noqa: E402
 from tur.memory import MemoryManager  # noqa: E402
 from tur.models import Memory, MemoryScope, MemoryType, SessionNotes  # noqa: E402
 from tur.persona import get_active_persona_id, get_persona_path  # noqa: E402
-from tur._helpers import yaml_safe_load  # noqa: E402
 from tur.session import (  # noqa: E402
     ack_signals_logic,
     end_session_logic,

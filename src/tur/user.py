@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from tur._helpers import yaml_safe_load
-
 from tur.models import UserProfile
 
 

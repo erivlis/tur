@@ -6,12 +6,12 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import cast
+
 import networkx as nx
 import yaml
-
-from tur._helpers import yaml_safe_load
 from pydantic import BaseModel, Field
 
+from tur._helpers import yaml_safe_load
 from tur.memory import MemoryManager
 from tur.models import MemoryType
 
@@ -397,7 +397,10 @@ class ExplorerSubagent(CouncilSubagent):
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Connect isolated parts or add OpenQuestion placeholder if we find structural holes
-        sub_g = cast(nx.DiGraph, nx.subgraph_view(graph, filter_node=lambda n: graph.nodes[n].get("type") != "Dependency"))
+        sub_g = cast(
+            nx.DiGraph,
+            nx.subgraph_view(graph, filter_node=lambda n: graph.nodes[n].get("type") != "Dependency")
+        )
         if not nx.is_weakly_connected(sub_g) and sub_g.number_of_nodes() > 1:
             components = list(nx.weakly_connected_components(sub_g))
             gap_id = "exploration-horizon-gap"
