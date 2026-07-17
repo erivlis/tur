@@ -324,3 +324,80 @@ def test_pluggable_compaction_pipeline_dynamic_loading():
     from tur.introspection import BaconSubagent
 
     assert isinstance(empty_assembly.agents[0], BaconSubagent)
+
+
+def test_harness_delegation_error_cli(temp_workspace, monkeypatch):
+    """Test that introspect command gracefully delegates when GEMINI_API_KEY is missing."""
+    from tur.introspection import HarnessDelegationError
+
+    _, persona_dir = temp_workspace
+    memory_manager = MemoryManager(base_dir=persona_dir)
+
+    mem = Memory(
+        timestamp=datetime(2026, 6, 8, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        content='Test delegation fact.',
+    )
+    memory_manager.save(mem)
+
+    # Ensure GEMINI_API_KEY is not in env and test_mode is False
+    monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+
+    runner = CliRunner()
+    result = runner.invoke(app, ['introspect', '--all'])
+
+    assert result.exit_code == 0
+    assert '# TUR DELEGATION: Council Introspection Request' in result.output
+    assert 'No local `GEMINI_API_KEY` was found in the environment' in result.output
+    assert 'Test delegation fact.' in result.output
+    assert 'uv run python -c' in result.output
+
+
+def test_relationship_signature_constraints(temp_workspace):
+    """Test that RussellSubagent rejects invalid edges that violate signature constraints."""
+    from tur.introspection import ExtractedEdge, ExtractedGraph, RussellSubagent
+
+    graph = nx.DiGraph()
+    graph.add_node('decision-a', type='Decision', content='First decision', status='active', confidence=1.0)
+    graph.add_node('concept-b', type='Concept', content='General concept', status='active', confidence=1.0)
+
+    # precedes from Decision to Concept should be rejected
+    # refines between Decision and Concept should be rejected
+    extracted = ExtractedGraph(
+        nodes=[],
+        edges=[
+            ExtractedEdge(source='decision-a', target='concept-b', type='precedes', confidence=1.0),
+            ExtractedEdge(source='decision-a', target='concept-b', type='refines', confidence=1.0),
+        ]
+    )
+
+    subagent = RussellSubagent()
+    updated_graph, _ = subagent._merge_extracted_graph(graph, extracted, {})
+
+    # Neither of the invalid edges should be added to the graph
+    assert not updated_graph.has_edge('decision-a', 'concept-b')
+
+
+def test_tms_propagation_on_refines(temp_workspace):
+    """Test that PopperSubagent deactivates refiners when the refined node is superseded."""
+    from tur.introspection import PopperSubagent
+
+    graph = nx.DiGraph()
+    # node-a refines node-b
+    graph.add_node('node-a', type='Concept', content='Specific concept', status='active', confidence=1.0)
+    graph.add_node('node-b', type='Concept', content='Base concept', status='active', confidence=1.0)
+    graph.add_edge('node-a', 'node-b', type='refines')
+
+    # Deactivate the base concept
+    graph.nodes['node-b']['status'] = 'superseded'
+    graph.nodes['node-b']['confidence'] = 0.0
+
+    subagent = PopperSubagent()
+    subagent._propagate_deactivations(graph)
+
+    # Refiner node-a should also be deactivated
+    assert graph.nodes['node-a']['status'] == 'superseded'
+    assert graph.nodes['node-a']['confidence'] == 0.0
+
+

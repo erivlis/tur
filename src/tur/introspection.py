@@ -5,7 +5,7 @@ import tempfile
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import networkx as nx
 import yaml
@@ -25,6 +25,14 @@ class TamperedStateError(ValueError):
 
 class SymmetryError(ValueError):
     """Raised by the Noether subagent when 'Conservation of Meaning' validation fails."""
+
+
+class HarnessDelegationError(ValueError):
+    """Raised when introspection must be delegated to the Harness due to lack of API key."""
+    def __init__(self, prompt: str):
+        super().__init__(prompt)
+        self.prompt = prompt
+
 
 
 # Pydantic extraction models for GenAI JSON structured generation
@@ -203,7 +211,81 @@ class RussellSubagent(CouncilSubagent):
                             status='active',
                         )
                     return graph, context
-                raise ValueError('GEMINI_API_KEY environment variable not set.')
+
+                # Construct detailed delegation instruction prompt for the Harness
+                current_time = datetime.now(UTC).isoformat()
+                persona_dir = context.get('persona_dir')
+                persona_uuid = persona_dir.name if persona_dir else '<uuid>'
+
+                instructions = f"""# TUR DELEGATION: Council Introspection Request
+
+No local `GEMINI_API_KEY` was found in the environment. Since you (the Harness) are an autonomous agent
+with file-writing and execution tools, you must execute the Introspection Assembly yourself.
+
+Please follow these instructions to process the active L1 memories and update the L2 Cognitive Map:
+
+## 1. Input L1 Memories to Process:
+{raw_text}
+
+## 2. Existing L2 Nodes in Graph (for reference/synonym-merging):
+{existing_nodes_info or "None"}
+
+## 3. Allowed Types:
+- Allowed Node Types:
+  Concept, Decision, Constraint, Insight, Fact, Dependency, Hypothesis, BoundaryNode, OpenQuestion
+- Allowed Edge Types (Relations):
+  refines, contradicts, precedes, depends_on, competes_with, analogy_of, superseded_by, refuted_by
+
+## 4. OKF Markdown File Schema:
+For each new or updated node, write (or update) a file named:
+`.tur/personas/{persona_uuid}/concepts/active/<node_id>.md`
+(or `archive/<node_id>.md` if status is superseded/archived).
+
+The file MUST use this exact format (YAML frontmatter + body):
+---
+type: L2 Concept
+title: Node Title (Title Case)
+description: Brief one-line description
+timestamp: {current_time}
+node_type: <One of the Allowed Node Types>
+sources:
+  - <L1 Memory ID/Hash>
+confidence: 1.0
+pinned: false
+status: active
+relations:
+  - target: /concepts/active/<target_node_id>.md
+    type: <One of the Allowed Edge Types>
+    confidence: 1.0
+    created_at: {current_time}
+---
+# Details
+
+<Detailed explanation/content of the concept>
+
+## 5. Execution Steps for the Harness:
+1. Extract concepts/relations from the L1 memories, merging with existing nodes if they are synonyms.
+2. Write/update the OKF files under `.tur/personas/{persona_uuid}/concepts/active/` (or `archive/`).
+3. Move the processed L1 memory files from:
+   `.tur/personas/{persona_uuid}/memories/`
+   to `.tur/personas/{persona_uuid}/memories/subsumed/`.
+4. Rebuild the `knowledge_graph.yaml` file by running this exact command in the workspace root:
+   `uv run python -c "
+from pathlib import Path
+import networkx as nx
+import yaml
+from tur.introspection import load_l2_graph_from_okf
+p = Path('.tur/personas/{persona_uuid}')
+g = load_l2_graph_from_okf(p)
+Path(p / 'knowledge_graph.yaml').write_text(
+    yaml.dump(nx.node_link_data(g), sort_keys=False),
+    encoding='utf-8'
+)
+"`
+
+Please perform these modifications directly. Once done, print a completion message.
+"""
+                raise HarnessDelegationError(instructions)
 
             from google import genai
             from google.genai import types
@@ -274,6 +356,19 @@ class RussellSubagent(CouncilSubagent):
             tgt = edge.target.strip().lower().replace(' ', '-')
             # Enforce relationship signatures
             if graph.has_node(src) and graph.has_node(tgt):
+                src_type = graph.nodes[src].get('type')
+                tgt_type = graph.nodes[tgt].get('type')
+
+                # EP-0103 Signature constraints:
+                # 1. precedes can only connect Decision and Fact nodes
+                if edge.type == 'precedes' and not (
+                    src_type in ['Decision', 'Fact'] and tgt_type in ['Decision', 'Fact']
+                ):
+                    continue
+                # 2. refines only connects nodes of the same type
+                if edge.type == 'refines' and src_type != tgt_type:
+                    continue
+
                 # We assert Directed Acyclic Graph (DAG) for precedes and depends_on
                 if edge.type in ['precedes', 'depends_on']:
                     graph.add_edge(
@@ -358,7 +453,7 @@ class PopperSubagent(CouncilSubagent):
                         )
 
     def _propagate_deactivations(self, graph: nx.DiGraph):
-        """Propagates deactivations downstream through depends_on dependencies."""
+        """Propagates deactivations downstream through depends_on and refines dependencies."""
         visited = set()
 
         def propagate_decay(node_id):
@@ -370,7 +465,9 @@ class PopperSubagent(CouncilSubagent):
             # If node is inactive/superseded, propagate to dependents
             if node_data.get('status') == 'superseded' or node_data.get('confidence', 1.0) <= 0.0:
                 dependents = [
-                    u for u, v in graph.edges if v == node_id and graph.edges[u, v].get('type') == 'depends_on'
+                    u
+                    for u, v in graph.edges
+                    if v == node_id and graph.edges[u, v].get('type') in ['depends_on', 'refines']
                 ]
                 for dep in dependents:
                     graph.nodes[dep]['confidence'] = 0.0
@@ -786,7 +883,11 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
 
 
 def run_introspection(
-    persona_dir: Path, bootstrap: bool = False, model: str = 'gemini-3.1-pro-preview', test_mode: bool = False
+    persona_dir: Path,
+    bootstrap: bool = False,
+    model: str = 'gemini-3.1-pro-preview',
+    test_mode: bool = False,
+    mcp_context: Any = None,
 ) -> nx.DiGraph:
     """
     Core entrypoint to run the introspection compaction loop.
@@ -813,7 +914,9 @@ def run_introspection(
         'bootstrap': bootstrap or (not kg_path.exists() and not (persona_dir / 'concepts').exists()),
         'model': model,
         'test_mode': test_mode,
+        'mcp_context': mcp_context,
     }
+
 
     # Load compaction configuration from persona.yaml
     persona_yaml_path = persona_dir / 'persona.yaml'

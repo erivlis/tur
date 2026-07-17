@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 from collections.abc import AsyncGenerator
@@ -190,9 +189,9 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
 
 @mcp.tool()
 def learn(
-    content: str,
-    type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
-    scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
+        content: str,
+        type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
+        scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
@@ -254,10 +253,10 @@ def learn(
 
 @mcp.tool()
 def evolve(
-    memory_id: str,
-    core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
-    derived_principle: str,
-    ethical_covenant: str,
+        memory_id: str,
+        core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
+        derived_principle: str,
+        ethical_covenant: str,
 ) -> str:
     """
     Refine a lived experience (an existing memory/note) into a permanent Core Memory with status pending_approval.
@@ -336,6 +335,37 @@ def approve(memory_id: str) -> str:
     return f"Core Memory '{matching_mem.id[:8]}' approved and activated successfully."
 
 
+@mcp.tool()
+def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
+    """
+    Compress L1 event logs into the L2 Cognitive Map using the Council Assembly pipeline.
+    This runs the full introspection compaction loop (EP-0103), consolidating raw memories
+    into a topological knowledge graph.
+
+    Args:
+        bootstrap: If True, force full recompilation from scratch (loads active and subsumed memories).
+                   If False (default), performs incremental update on the existing graph.
+    """
+    from tur.introspection import format_graph_as_mermaid, run_introspection
+
+    try:
+        persona_id = get_active_persona_id()
+        persona_dir = get_persona_path(persona_id)
+
+        graph = run_introspection(persona_dir, bootstrap=bootstrap, mcp_context=ctx)
+
+        node_count = graph.number_of_nodes()
+        edge_count = graph.number_of_edges()
+        mermaid = format_graph_as_mermaid(graph)
+    except Exception as e:
+        return f"Error during Council Introspection: {e}"
+    else:
+        return (
+            f"Council Introspection complete. "
+            f"L2 Cognitive Map: {node_count} nodes, {edge_count} edges.\n\n"
+            f"```mermaid\n{mermaid}\n```"
+        )
+
 
 
 @mcp.tool()
@@ -368,11 +398,11 @@ def note(content: str) -> str:
 
 @mcp.tool()
 def sleep(
-    note: str,
-    log_content: str,
-    session_id: str | None = None,
-    model: str = 'gemini-3.1-pro-preview',
-    ctx: Context | None = None,
+        note: str,
+        log_content: str,
+        session_id: str | None = None,
+        model: str = 'gemini-3.1-pro-preview',
+        ctx: Context | None = None,
 ) -> str:
     """
     Dehydrate a session by parsing the active session's chat log to extract memories.

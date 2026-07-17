@@ -613,10 +613,10 @@ def introspect(
         ),
 ):
     """
-    Compress L1 event logs into a topological L2 Knowledge Graph using the Council of Giants.
+    Compress L1 memories into the L2 Cognitive Map. Runs the Council Assembly pipeline (EP-0103).
     """
     try:
-        from tur.introspection import format_graph_as_mermaid, run_introspection
+        from tur.introspection import HarnessDelegationError, format_graph_as_mermaid, run_introspection
 
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
@@ -632,6 +632,9 @@ def introspect(
             console.print(format_graph_as_mermaid(graph))
             console.print('[bold cyan]------------------------[/bold cyan]')
 
+    except HarnessDelegationError as e:
+        console.print(e.prompt)
+        raise typer.Exit(code=0)
     except Exception as e:
         console.print(f'[red]Error during introspection: {e}[/red]')
         raise typer.Exit(code=1)
@@ -746,8 +749,6 @@ def approve(
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
-
-
 
 
 def main():

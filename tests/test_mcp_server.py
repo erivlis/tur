@@ -377,3 +377,23 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
     # 3. Approve
     approve_res = mcp_server.approve(memory_id=core_id)
     assert 'approved and activated successfully' in approve_res
+
+
+def test_mcp_introspect(mock_mcp_env, monkeypatch):
+    """Test the introspect MCP tool runs the introspection pipeline."""
+    import networkx as nx
+
+    import tur.introspection
+
+    _persona_dir, _state = mock_mcp_env
+
+    # Mock run_introspection to avoid executing the full LLM pipeline in tests
+    stub_graph = nx.DiGraph()
+    stub_graph.add_node('test-node', type='Fact', content='Test fact', status='active', confidence=1.0)
+
+    monkeypatch.setattr(tur.introspection, 'run_introspection', lambda *args, **kwargs: stub_graph)
+
+    result = mcp_server.introspect(bootstrap=True)
+    assert 'Council Introspection complete' in result
+    assert '1 nodes' in result
+    assert 'mermaid' in result
