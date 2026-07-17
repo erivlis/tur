@@ -69,7 +69,7 @@ The `MemoryManager` will distinguish between two layers of storage:
 * **L2 (The Cognitive Map - Derived Index):** A graph structure stored in `knowledge_graph.yaml` containing consolidated
   nodes, typed relation edges, and tracking metadata. L2 acts as a derived, volatile index. If the knowledge graph file
   is lost, corrupted, or out of sync, it can be fully rebuilt/recompiled at any time from the L1 event log via a
-  bootstrap compilation loop (`tur meditate --all`) scanning active and subsumed folders.
+  bootstrap compilation loop (`tur introspect --all`) scanning active and subsumed folders.
 
 ### 2. Standardized Ontological Schema & Node Consolidation
 
@@ -137,7 +137,7 @@ Pathways in the knowledge graph are reinforced based on retrieval:
 
 * **Read-Only recall:** The `recall` tool is strictly read-only to prevent write collisions and locking contention in
   multi-agent swarms. Access counts are staged in a transient append-only log and flushed during single-threaded
-  `meditate` or `sleep` loops.
+  `introspect` or `sleep` loops.
 * **Spreading Activation Attenuation:** Querying a node via `recall` boosts the activation weight of adjacent nodes up
   to 2 hops away, applying a dampening factor ($\alpha = 0.5$) per hop to prevent dense hub-induced prompt inflation.
 * **Interaction-Based Decay:** To prevent amnesia during inactive wall-clock periods, decay is calculated using
@@ -152,20 +152,20 @@ Vector searches (from `agentmemory` or `semble`) are aligned with the topologica
     2. Map these hits back to their corresponding L2 node UUIDs.
     3. Expand the context window by reading the sub-graph connected to these anchor nodes.
 
-### 7. The Consolidate / Meditate Loop (Conservation of Meaning)
+### 7. The Consolidate / Introspect Loop (Conservation of Meaning)
 
-Introduce a new CLI command (`tur meditate`) that acts as a background compressor. It will operate in two modes:
+Introduce a new CLI command (`tur introspect`) that acts as a background compressor. It will operate in two modes:
 
-**7a. Bootstrap Mode (`tur meditate --all`)**
+**7a. Bootstrap Mode (`tur introspect --all`)**
 
-* **Trigger:** The user runs `tur meditate --all`, or runs `tur meditate` when no `knowledge_graph.yaml` exists.
+* **Trigger:** The user runs `tur introspect --all`, or runs `tur introspect` when no `knowledge_graph.yaml` exists.
 * **Input:** All active `memories/` and subsumed `memories/subsumed/` L1 files.
 * **Action:** Reconstructs the L2 Cognitive Map from scratch, consolidating duplicate nodes.
 * **Output:** A new `knowledge_graph.yaml` file. Moves active L1 files to `memories/subsumed/`.
 
-**7b. Incremental Update Mode (`tur meditate`)**
+**7b. Incremental Update Mode (`tur introspect`)**
 
-* **Trigger:** The user runs `tur meditate` when a `knowledge_graph.yaml` already exists.
+* **Trigger:** The user runs `tur introspect` when a `knowledge_graph.yaml` already exists.
 * **Input:** The existing L2 `knowledge_graph.yaml` and new L1 files since the last meditation.
 * **Action:** Integrates the new topology, resolves contradictions, propagates decays, and consolidates nodes.
 * **Output:** An updated `knowledge_graph.yaml`. Moves newly consolidated active L1 files to `memories/subsumed/`.
@@ -195,19 +195,19 @@ Modify `src/tur/compiler.py`:
 
 ## Backwards Compatibility
 
-* **Data Preservation:** Existing L1 `.yaml` files remain untouched until explicitly subsumed by the `meditate` loop.
+* **Data Preservation:** Existing L1 `.yaml` files remain untouched until explicitly subsumed by the `introspect` loop.
   Archiving is non-destructive.
 * **Model Schema:** `models.py` already supports a generic `uri` string in `MemoryLink`. The new `tur://knowledge/...`
   schemas can be adopted without breaking changes to the underlying Pydantic validation.
-* **Migration:** A one-time `tur meditate --all` command can bootstrap the initial Cognitive Map from an existing,
+* **Migration:** A one-time `tur introspect --all` command can bootstrap the initial Cognitive Map from an existing,
   bloated memory bank.
 
 ## Reference Implementation
 
-The `tur meditate` command will be implemented as a two-stage pipeline:
+The `tur introspect` command will be implemented as a two-stage pipeline:
 
 1. **Cognitive Engine (Host LLM-based Fact Extraction via Sampling):**
-    * The `tur meditate` command will execute an MCP `CreateMessage` request to the connected Host Application.
+    * The `tur introspect` command will execute an MCP `CreateMessage` request to the connected Host Application.
     * It will read all raw text content from the L1 `memories/` directory and send it in the request payload.
     * The Host LLM's task is to extract every atomic, verifiable statement as a structured
       `(Subject, Predicate, Object)`
@@ -226,6 +226,11 @@ The `tur meditate` command will be implemented as a two-stage pipeline:
 
 ## Change Log
 
+* **2026-07-18:**
+    * CLI surface implemented: `tur introspect` (with `--all` for bootstrap mode, `--visualize` for Mermaid output).
+    * MCP tool `introspect(bootstrap, ctx)` added to the Ontological Porcelain API, fully wired to route extraction through the MCP host/harness using MCP Sampling rather than calling the Google GenAI library directly.
+    * Implemented **Harness Delegation Protocol** in CLI mode: when run without a local `GEMINI_API_KEY`, `tur introspect` prints a structured delegation prompt requesting the Harness agent to perform the file modifications (writing OKF files and compiling the graph) on its behalf, exiting cleanly with code 0.
+    * Full Council Assembly pipeline (9 subagents) wired and operational.
 * **2026-07-11:**
     * Status changed to **Superseded** by EP-0120. The cognitive architecture (Council Assembly, subagent pipeline, TMS belief revision, spreading activation, Hebbian decay) remains canonical, but the physical storage layer (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories under `concepts/active/` and `concepts/archive/`.
 * **2026-06-08:**
@@ -237,7 +242,7 @@ The `tur meditate` command will be implemented as a two-stage pipeline:
       concerns (Tur = State, Host = Inference).
 * **2026-04-12:**
     * Initial Draft.
-    * Renamed the compression loop command to `tur meditate`.
+    * Renamed the compression loop command to `tur introspect`.
     * Added archival specification for subsumed L1 memories.
     * Added formal URI schema (`tur://knowledge/...`) for L2 entities.
     * Simplified and unified the URI schema for nodes and edges.

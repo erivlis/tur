@@ -21,7 +21,7 @@ status: rejected
 
 *(Note: Following the core design decision to preserve absolute persona-agnosticism, this EP has been rejected as a core Tur framework requirement. The Council of Giants subagents represent the custom cognitive compaction pipeline of the Ariel persona, and must not be hardcoded into the core Tur package. Instead, compaction pipelines are decoupled and registered dynamically. This proposal remains in the repository strictly as a Reference Implementation for custom persona compaction.)*
 
-This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur meditate` (Deductive Memory
+This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur introspect` (Deductive Memory
 compaction) command specified in [EP-0103](EP-0103-deductive-memory.md).
 Instead of using a single monolithic LLM prompt to parse, consolidate, revise, and prune memory graphs, the process is
 divided into a structured assembly of nine specialized subagents. Each subagent represents a philosophical pillar of
@@ -60,7 +60,7 @@ This design is a direct application of the **Council of Giants**:
 
 ### 1. The Assembly Pipeline
 
-The `tur meditate` process runs as a multi-stage assembly of nine subagents communicating via typed JSON-RPC messages.
+The `tur introspect` process runs as a multi-stage assembly of nine subagents communicating via typed JSON-RPC messages.
 The pipeline ensures clear segregation of concerns:
 
 ```
@@ -149,7 +149,7 @@ Upon successful completion of the assembly pipeline:
 
 ## Backwards Compatibility
 
-* **Command Line Flags:** Additive. `tur meditate` runs the assembly by default. A `--monolithic` flag remains supported
+* **Command Line Flags:** Additive. `tur introspect` runs the assembly by default. A `--monolithic` flag remains supported
   for cheaper, single-pass compactions on simple schemas.
 * **Storage schemas:** The output format remains `knowledge_graph.yaml` (EP-0103), and the compiler automatically falls
   back to raw L1 files if the graph is missing.

@@ -29,7 +29,7 @@ tasks (like compiling knowledge graphs or summarizing logs) via **MCP Sampling R
 
 ## Motivation (The Historical Context)
 
-Originally, the `tur sleep` command hardcoded a dependency on `google-genai`, and the proposed `tur meditate` command
+Originally, the `tur sleep` command hardcoded a dependency on `google-genai`, and the proposed `tur introspect` command
 required a robust, model-agnostic solution for structured data extraction. The plan was to embed `pydantic-ai` to solve
 this.
 
@@ -59,11 +59,11 @@ Object) triples and hand them back to me."*
     * Remove `google-genai` from `dependencies`.
     * **Do NOT** install `pydantic-ai`.
 2. **The Sampling Mechanism:**
-    * Any Tur command requiring inference (e.g., the "Cognitive Engine" step of `tur meditate` in EP-0103) will be
+    * Any Tur command requiring inference (e.g., the "Cognitive Engine" step of `tur introspect` in EP-0103) will be
       implemented as an MCP Tool that triggers a `CreateMessage` (Sampling) request back to the connected MCP Client.
 3. **The Wrapper Pattern:**
-    * Because Tur will lack internal LLM access, running cognitive commands (`sleep`, `meditate`) directly from a raw
-      terminal will fail.
+    * Because Tur will lack internal LLM access, running cognitive commands (`sleep`, `introspect`) directly from a raw
+      terminal will fail (or prompt/delegate to the Harness).
     * If standalone CLI usage is desired, it must be provided by a separate "Wrapper" application (a lightweight MCP
       Client) that spawns the Tur server over `stdio` and fulfills its Sampling requests using the wrapper's own API
       keys.
