@@ -1,22 +1,30 @@
+import json
+import os
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import typer
 import yaml
+from rich import box
+from rich.panel import Panel
+from rich.table import Table
 
-from tur import persona, session
+from tur import dreaming, persona, session
 from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.compiler import compile_persona
+from tur.introspection import HarnessDelegationError, format_graph_as_mermaid, run_introspection
 from tur.memory import MemoryManager
 from tur.models import (
     Memory,
+    MemoryLink,
     MemoryScope,
     MemoryType,
     SessionNotes,
     SystemState,
 )
+from tur.recall import topological_recall
 
 app = typer.Typer(
     help='Tur: Persona safe agent runtime.',
@@ -51,10 +59,8 @@ def wake(
         is_auto_started = False
 
         if not resolved_session_id:
-            import uuid
-
             ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-            short_hex = uuid.uuid4().hex[:8]
+            short_hex = uuid4().hex[:8]
             resolved_session_id = f'{ts}_{short_hex}'
             is_auto_started = True
 
@@ -157,7 +163,6 @@ def recall(
 ):
     """Search your deep memory bank for past events, decisions, or knowledge."""
     try:
-        from tur.recall import topological_recall
 
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
@@ -194,9 +199,6 @@ def status(
         ),
 ):
     """Show the current persona, session, and memory status."""
-    from rich import box
-    from rich.panel import Panel
-    from rich.table import Table
 
     try:
         active_id = persona.get_active_persona_id(identifier)
@@ -313,7 +315,6 @@ def sleep(
         console.print(f'Extracting insights using {model}... (Dreaming)')
 
         try:
-            from tur import dreaming
 
             count = dreaming.perform_sleep_dreaming(
                 log_content=Path(log_path).read_text(encoding='utf-8'),
@@ -335,8 +336,6 @@ def sleep(
 
 
 def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
-    import os
-
     # 1. Resolve session_id
     sess_id = session_id_opt or session.get_active_session_id()
     if not sess_id:
@@ -344,7 +343,7 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
         raise typer.Exit(code=1)
 
     # 2. Resolve agent_id
-    env_agent_id = os.environ.get('TUR_AGENT_ID')
+    env_agent_id = os.getenv('TUR_AGENT_ID')
     if (
             agent_id_opt
             and env_agent_id
@@ -377,9 +376,8 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
 
     if not agent_id:
         model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
-        import uuid
 
-        short_hex = uuid.uuid4().hex[:8]
+        short_hex = uuid4().hex[:8]
         agent_id = f'{model_slug}_cli_{short_hex}'
 
     return agent_id, sess_id
@@ -398,11 +396,9 @@ def list_agents(
     try:
         agents = session.list_agents_logic(sess_id)
         if json_mode:
-            import json
 
             console.print(json.dumps(agents, indent=2))
         else:
-            from rich.table import Table
 
             table = Table(title=f'Manifestations in Session {sess_id}')
             table.add_column('Agent ID', style='cyan')
@@ -452,7 +448,6 @@ def read_signals(
         signals = session.read_signals_logic(sess_id, reader_id, unread_only)
 
         if json_mode:
-            import json
 
             console.print(json.dumps(signals, indent=2))
         else:
@@ -615,9 +610,8 @@ def introspect(
     """
     Compress L1 memories into the L2 Cognitive Map. Runs the Council Assembly pipeline (EP-0103).
     """
-    try:
-        from tur.introspection import HarnessDelegationError, format_graph_as_mermaid, run_introspection
 
+    try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
 
@@ -675,7 +669,6 @@ def evolve(
 
     try:
         # Create a link from the new Core memory to the original L1 memory
-        from tur.models import MemoryLink
 
         link = MemoryLink(uri=f'tur://memory/{matching_mem.id}', relation='refines')
 
