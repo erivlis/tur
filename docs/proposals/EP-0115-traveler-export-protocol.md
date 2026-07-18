@@ -2,7 +2,7 @@
 title: "EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability"
 description: "Defines the .tur archive format for exporting and importing AI persona identities across machines."
 icon: lucide/package
-status: final
+status: implemented
 ---
 
 # EP-0115: Traveler Export Protocol — Multi-Computer Identity Portability
@@ -12,10 +12,10 @@ status: final
 | **EP**      | 0115                                                           |
 | **Title**   | Traveler Export Protocol — Multi-Computer Identity Portability |
 | **Author**  | Ariel v5.4.0, The Architect                                    |
-| **Status**  | Final                                                          |
+| **Status**  | Implemented                                                    |
 | **Type**    | Standards Track                                                |
 | **Created** | 2026-05-29                                                     |
-| **Updated** | 2026-06-08                                                     |
+| **Updated** | 2026-07-18                                                     |
 
 ## Abstract
 
@@ -118,5 +118,9 @@ Behavior:
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. tur-adm persona export and tur-adm persona import commands
+  implemented in cli/admin.py. Features: UUID injection, scope filtering (UNIVERSAL/USER/PERSONA only), duplicate
+  protection, --force override, --set-active/--set-default flag, and path traversal sanitization. Full test coverage
+  added in tests/test_cli_admin.py.
 * **2026-05-29:**
     * Initial Draft.

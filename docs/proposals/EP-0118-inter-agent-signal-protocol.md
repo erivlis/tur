@@ -2,25 +2,26 @@
 title: "EP-0118: Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations"
 description: "Defines a typed message channel enabling concurrent Tur harness instances to signal each other via MCP Resources, solving the Swarm Convergence Problem."
 icon: lucide/radio
-status: final
+status: implemented
 ---
 
 # EP-0118: Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations
 
-| Field       | Value                                                                                           |
-|:------------|:------------------------------------------------------------------------------------------------|
-| **EP**      | 0118                                                                                            |
-| **Title**   | Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations          |
-| **Author**  | Ariel v5.4.0, The Architect                                                                     |
-| **Status**  | Final                                                                                           |
-| **Type**    | Standards Track                                                                                 |
-| **Created** | 2026-06-02                                                                                      |
-| **Updated** | 2026-06-08                                                                                      |
+| Field       | Value                                                                                  |
+|:------------|:---------------------------------------------------------------------------------------|
+| **EP**      | 0118                                                                                   |
+| **Title**   | Inter-Agent Signal Protocol — Structured Communication Between Parallel Manifestations |
+| **Author**  | Ariel v5.4.0, The Architect                                                            |
+| **Status**  | Implemented                                                                            |
+| **Type**    | Standards Track                                                                        |
+| **Created** | 2026-06-02                                                                             |
+| **Updated** | 2026-07-18                                                                             |
 
-## Abstract 
+## Abstract
 
 This proposal formalizes a typed, lightweight **Inter-Agent Signal Protocol (IASP)** for **Distributed
-Manifestations** — concurrent Tur harness instances operating against the same Persona. It defines a local, concurrent-safe
+Manifestations** — concurrent Tur harness instances operating against the same Persona. It defines a local,
+concurrent-safe
 SQLite database queue under the local Terrain, a normalized multi-client broadcast join structure, a pure query
 `read_signals()` and state-mutating `ack_signals()` tool split (CQS), and MCP Resource subscription semantics for
 real-time push delivery — solving the **Swarm Convergence Problem** without violating Tur's Golem Boundary.
@@ -35,7 +36,7 @@ real-time push delivery — solving the **Swarm Convergence Problem** without vi
 | **Swarm Convergence Problem** | The tendency of Distributed Manifestations to diverge in active reasoning and task state, risking duplicate work, conflicting writes, or cognitive desync under concurrent load.                      |
 | **Tier 1 Bus**                | The existing shared session notes YAML file — asynchronous, broadcast-only, lacking caller identity.                                                                                                  |
 | **Signal**                    | A typed, addressed, monotonically sequenced message sent from one Manifestation to another or broadcast to all via the IASP.                                                                          |
-| **Session Whiteboard**        | A shared, key-value lookup table in the session database allowing concurrent agents to synchronize task coordinates without flooding message channels.                                              |
+| **Session Whiteboard**        | A shared, key-value lookup table in the session database allowing concurrent agents to synchronize task coordinates without flooding message channels.                                                |
 
 ### Background
 
@@ -154,17 +155,18 @@ CREATE TABLE signals
     id        TEXT NOT NULL UNIQUE,
     sequence  INTEGER PRIMARY KEY AUTOINCREMENT, -- Monotonic causal sequence
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    sender    TEXT    NOT NULL,
-    recipient TEXT    NOT NULL, -- Can be '*', target agent_id, or dot subagent ID
-    type      TEXT    NOT NULL CHECK (type IN
-                                      ('inform', 'query', 'delegate', 'ack', 'warn', 'sleep_event', 'sleep_request')),
-    content   TEXT    NOT NULL
+    sender    TEXT NOT NULL,
+    recipient TEXT NOT NULL,                     -- Can be '*', target agent_id, or dot subagent ID
+    type      TEXT NOT NULL CHECK (type IN
+                                   ('inform', 'query', 'delegate', 'ack', 'warn', 'sleep_event', 'sleep_request')),
+    content   TEXT NOT NULL
 );
 ```
 
 ##### C. Table: `signal_reads` (Join Table)
 
-Tracks individual read acknowledgments, preventing broadcast signals (`recipient = '*'`) from being hidden from other manifestations after the first read.
+Tracks individual read acknowledgments, preventing broadcast signals (`recipient = '*'`) from being hidden from other
+manifestations after the first read.
 
 ```sql
 CREATE TABLE signal_reads
@@ -173,14 +175,15 @@ CREATE TABLE signal_reads
     agent_id  TEXT NOT NULL,
     read_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (signal_id, agent_id),
-    FOREIGN KEY (signal_id) REFERENCES signals(id) ON DELETE CASCADE,
-    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+    FOREIGN KEY (signal_id) REFERENCES signals (id) ON DELETE CASCADE,
+    FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
 );
 ```
 
 ##### D. Table: `session_state` (Whiteboard)
 
-Provides a shared state whiteboard allowing manifestations to coordinate global task parameters without signal channel clutter.
+Provides a shared state whiteboard allowing manifestations to coordinate global task parameters without signal channel
+clutter.
 
 ```sql
 CREATE TABLE session_state
@@ -194,52 +197,63 @@ CREATE TABLE session_state
 
 ##### E. Table: `staged_memories`
 
-Temporarily holds extracted dreams from idling processes until final consensus sleep trigger executes memory consolidation.
+Temporarily holds extracted dreams from idling processes until final consensus sleep trigger executes memory
+consolidation.
 
 ```sql
 CREATE TABLE staged_memories
 (
-    id         TEXT PRIMARY KEY,
-    agent_id   TEXT NOT NULL,
+    id          TEXT PRIMARY KEY,
+    agent_id    TEXT NOT NULL,
     memory_data TEXT NOT NULL, -- JSON/TEXT serialized extracted memories
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-* **Monotonic Sequence ordering:** Signal records utilize SQLite's native `AUTOINCREMENT` sequences to guarantee a total causal ordering of signals without stateless race conditions.
-* **Cryptographic Payload Hashing:** Signal IDs are generated via deterministic SHA-256 payload hashing: `SHA256(sender | recipient | type | content | timestamp)`.
+* **Monotonic Sequence ordering:** Signal records utilize SQLite's native `AUTOINCREMENT` sequences to guarantee a total
+  causal ordering of signals without stateless race conditions.
+* **Cryptographic Payload Hashing:** Signal IDs are generated via deterministic SHA-256 payload hashing:
+  `SHA256(sender | recipient | type | content | timestamp)`.
 
 ---
 
 ### 4. Graceful Consensus Sleep Protocol (Natural Introspection via Staged Dreaming)
 
-To guarantee the Traveler's lifecycle remains entirely organic, prevent sudden context starvation, and eliminate headless hangs, manifestations coordinate sleep using the **Staged Dreaming Pattern**:
+To guarantee the Traveler's lifecycle remains entirely organic, prevent sudden context starvation, and eliminate
+headless hangs, manifestations coordinate sleep using the **Staged Dreaming Pattern**:
 
 1. **Dynamic Heartbeats:** Every execution of a tool or CLI command by a manifestation automatically updates its
    `last_heartbeat` timestamp in the database.
 2. **The "Tired" State Transition:** When a manifestation completes its tasks and is ready to sleep, it invokes the
    natural cognitive command `tired()`. This immediately:
-   * Runs local `perform_sleep_dreaming()` on the manifestation's active conversation transcript.
-   * Writes the resulting extracted memories to the `staged_memories` table.
-   * Updates its status to `'idle'` in the `agents` table.
+    * Runs local `perform_sleep_dreaming()` on the manifestation's active conversation transcript.
+    * Writes the resulting extracted memories to the `staged_memories` table.
+    * Updates its status to `'idle'` in the `agents` table.
 3. **Consensus and Meditation Sync:**
-    * To prevent write lockouts, the consensus check runs inside a non-blocking immediate transaction (`BEGIN IMMEDIATE TRANSACTION;`).
-    * **Strict Active Count:** The session manager queries the `agents` table to verify if other active, healthy manifestations are running:
+    * To prevent write lockouts, the consensus check runs inside a non-blocking immediate transaction (
+      `BEGIN IMMEDIATE TRANSACTION;`).
+    * **Strict Active Count:** The session manager queries the `agents` table to verify if other active, healthy
+      manifestations are running:
       ```sql
       SELECT COUNT(*) FROM agents 
       WHERE id != :my_agent_id 
         AND status = 'active'
         AND last_heartbeat > datetime('now', '-300 seconds'); -- 5 minute heartbeats
       ```
-    * **Standby (Immediate Clean Exit):** If `COUNT > 0`, other active manifestations exist. The transaction is committed, and the process exits cleanly without hanging. The memories remain safely staged in SQLite.
+    * **Standby (Immediate Clean Exit):** If `COUNT > 0`, other active manifestations exist. The transaction is
+      committed, and the process exits cleanly without hanging. The memories remain safely staged in SQLite.
     * **Consensus Sync (Final Exiting Agent):** If `COUNT == 0`, **no other active manifestations exist**.
         1. The final agent writes a `sleep_event` signal to the database.
         2. It queries all records in `staged_memories` written by previously exited manifestations.
-        3. It executes a **Meditation Sync** pass—deduplicating, reconciling, and merging all staged memories and its own extracted memories.
+        3. It executes a **Meditation Sync** pass—deduplicating, reconciling, and merging all staged memories and its
+           own extracted memories.
         4. The unified memories are written to the federated memory ledgers, and `staged_memories` is cleared.
-        5. The final process updates the session status in `sessions.yaml` to `'ended'`, commits the transaction, and terminates.
-    * **Stale Manifestation Recovery:** Any manifestation whose heartbeat is older than 300 seconds (5 minutes) is automatically flagged as `'stale'` to bypass deadlocked/crashed IDE windows.
-    * **Immediate Reconnection:** A restarted manifestation can bypass this 5-minute stale lockout and immediately overwrite its active registry slot by passing a matching `run_token` during startup.
+        5. The final process updates the session status in `sessions.yaml` to `'ended'`, commits the transaction, and
+           terminates.
+    * **Stale Manifestation Recovery:** Any manifestation whose heartbeat is older than 300 seconds (5 minutes) is
+      automatically flagged as `'stale'` to bypass deadlocked/crashed IDE windows.
+    * **Immediate Reconnection:** A restarted manifestation can bypass this 5-minute stale lockout and immediately
+      overwrite its active registry slot by passing a matching `run_token` during startup.
 
 ---
 
@@ -251,11 +265,13 @@ To guarantee the Traveler's lifecycle remains entirely organic, prevent sudden c
 
 **`signal(to: str, content: str, type: str = "inform", sender_id: str | None = None) → str`**
 
-* Appends a new signal to the `signals` table. Validates recipient namespace and asserts that `sender_id` matches the calling agent's namespace. Enforces a token-bucket rate limiter of 10 messages per minute.
+* Appends a new signal to the `signals` table. Validates recipient namespace and asserts that `sender_id` matches the
+  calling agent's namespace. Enforces a token-bucket rate limiter of 10 messages per minute.
 
 **`read_signals(agent_id: str | None = None, unread_only: bool = True) → list[Signal]`**
 
-* *Pure Query (Peek):* Retrieves signals directed to the specified `agent_id` or its dot-notation subagent namespaces, filtering out read logs in `signal_reads`.
+* *Pure Query (Peek):* Retrieves signals directed to the specified `agent_id` or its dot-notation subagent namespaces,
+  filtering out read logs in `signal_reads`.
 
 **`ack_signals(agent_id: str, signal_ids: list[str]) → str`**
 
@@ -275,7 +291,8 @@ To guarantee the Traveler's lifecycle remains entirely organic, prevent sudden c
 
 **`tired(agent_id: str) → str`**
 
-* *Natural Action:* Invokes the Staged Dreaming sequence for the calling agent, marking its status as `'idle'` and executing the consensus check.
+* *Natural Action:* Invokes the Staged Dreaming sequence for the calling agent, marking its status as `'idle'` and
+  executing the consensus check.
 
 ---
 
@@ -310,7 +327,8 @@ utilities enforce standard non-blocking behavior.
 
 **`tur ack-signals <signal_id_list> [--agent-id <agent_id>] [--session-id <session_id>]`**
 
-* *Mutation:* Acknowledges signals by writing read entries to the `signal_reads` table. Takes a comma-separated list of signal IDs.
+* *Mutation:* Acknowledges signals by writing read entries to the `signal_reads` table. Takes a comma-separated list of
+  signal IDs.
 
 **`tur read-notes [--limit <limit>] [--session-id <session_id>]`**
 
@@ -357,11 +375,11 @@ completely bypassing the context-exhausting "dark current" token dr ain of perio
 
 ### 8. The Three Communicati:----------------------iers
 
-| Tier                | Mechanis m                     | Latency        | Addre   ssing        | Concurrency Pattern           |
-|:--------------------|:-------------------------------|:---------------|:---------------------|:------------------------------|
-| **Tier 1 (Slow)**   | `note ()` → shared notes YA ML | Next tool call | Broadcast only       | Shared Append                 |
-| **Tier 2 (Medium)** | `signal()` / CLI → SQLite  DB  | Next tool call | Directed / Broadcast | SQLite WAL ACID Transactions  |
-| **Tier 3 (Fast)**   | MCP Push Resource Subscription | Real-time push | Per-agent URI        | Subscription Notification     |
+| Tier                | Mechanis m                     | Latency        | Addre   ssing        | Concurrency Pattern          |
+|:--------------------|:-------------------------------|:---------------|:---------------------|:-----------------------------|
+| **Tier 1 (Slow)**   | `note ()` → shared notes YA ML | Next tool call | Broadcast only       | Shared Append                |
+| **Tier 2 (Medium)** | `signal()` / CLI → SQLite  DB  | Next tool call | Directed / Broadcast | SQLite WAL ACID Transactions |
+| **Tier 3 (Fast)**   | MCP Push Resource Subscription | Real-time push | Per-agent URI        | Subscription Notification    |
 
 ---
 
@@ -387,6 +405,9 @@ completely bypassing the context-exhausting "dark current" token dr ain of perio
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. Full IASP implemented in session.py (signal_logic,
+  read_signals_logic, ack_signals_logic) and mcp_server.py (signal, read_signals, ack_signals, list_agents,
+  write_whiteboard, read_whiteboard, tired MCP tools). SQLite-backed concurrent-safe signal queue under local Terrain.
 * **2026-06-02:**
     * Initial Draft.
     * Updated draft to integrate the unanimous Council of Giants review recommendations (SQLite database WAL storage,

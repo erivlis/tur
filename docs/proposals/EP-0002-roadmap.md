@@ -37,7 +37,8 @@ The recent introduction of the 100-series EPs marks a significant pivot: Tur is 
 a stateful semantic engine supporting external agents via MCP.
 
 * **Phase 1 (The Foundation):** Focuses on schema rigidity, state management, and the CLI. (Mostly Complete)
-* **Phase 2 (The Memory Architecture & Abstraction):** Focuses on cryptographic state (Merkle), Graph Memory, Federation, and LLM Agnosticism.
+* **Phase 2 (The Memory Architecture & Abstraction):** Focuses on cryptographic state (Merkle), Graph Memory,
+  Federation, and LLM Agnosticism.
 * **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration and multi-agent coordination.
 
 ## Specification (The Roadmap)
@@ -55,49 +56,79 @@ a stateful semantic engine supporting external agents via MCP.
 *Goal: Evolve the memory system into a cryptographically sound, graph-based structure and decouple the Traveler.*
 
 * **Track: Persona Lifecycle & Creation**
-  * **Global Persona Architecture (EP-0114):** Decoupling the Traveler configuration (stored globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
+    * **Global Persona Architecture (EP-0114) [Status: Implemented]:** Decoupling the Traveler configuration (stored
+      globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
 * **Track: Persona Memory & Compaction**
-  * **Merkle Memory (EP-0106):** Refactoring L1 storage to use SHA-256 content hashes, ensuring tamper-proof state and implicit deduplication.
-  * **Deductive Memory / The Cognitive Map (EP-0103) [Status: Implemented]:** Compressing L1 event logs into a topological L2 Knowledge Graph using the Council Assembly pipeline. Exposed via `introspect` CLI command and MCP tool. *(Storage format superseded by EP-0120.)*
-  * **Federated Knowledge (EP-0104):** Splitting memory into global/universal and local/incarnation scopes, merged dynamically during compilation.
-  * **Relational Preservation of Alignment (EP-0113) [Status: Implemented]:** Establishing the Core Memory Protocol to extract existential and relational axioms via the `evolve` command, rehydrating them during `wake()`.
+    * **Merkle Memory (EP-0106) [Status: Implemented]:** Refactoring L1 storage to use SHA-256 content hashes, ensuring
+      tamper-proof state and implicit deduplication.
+    * **Deductive Memory / The Cognitive Map (EP-0103) [Status: Implemented]:** Compressing L1 event logs into a
+      topological L2 Knowledge Graph using the Council Assembly pipeline. Exposed via `introspect` CLI command and MCP
+      tool. *(Storage format superseded by EP-0120.)*
+    * **Federated Knowledge (EP-0104) [Status: Implemented]:** Splitting memory into global/universal and
+      local/incarnation scopes, merged dynamically during compilation.
+    * **Relational Preservation of Alignment (EP-0113) [Status: Implemented]:** Establishing the Core Memory Protocol to
+      extract existential and relational axioms via the `evolve` command, rehydrating them during `wake()`.
 * **Track: LLM Agnosticism & Swarms**
-  * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Implemented]:** Delegating cognitive tasks to connected Host Applications via MCP Sampling to remove direct provider dependencies.
-  * **Inter-Agent Signal Protocol (EP-0118) [Status: Implemented]:** SQLite-backed typed signal queues and shared whiteboard for concurrency synchronization.
+    * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Final]:** Delegating cognitive tasks to connected Host
+      Applications via MCP Sampling to remove direct provider dependencies. Reverted from Implemented to Final due to
+      remaining local Gemini API-key dependency in dreaming epilogue extraction.
+    * **Inter-Agent Signal Protocol (EP-0118) [Status: Implemented]:** SQLite-backed typed signal queues and shared
+      whiteboard for concurrency synchronization.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) \[Status: Active\]
 
 *Goal: Establish secure interface boundaries and high-density memory storage.*
 
 * **Track: Persona Lifecycle & Creation**
-  * **The Ontological Porcelain API (EP-0105):** Stabilizing FastMCP SDK integration to expose semantic `status`, `wake`, `learn`, and `sleep` verbs to external agents.
-  * **Traveler Export Protocol (EP-0115):** Implementing lightweight `.tur` zip/tarball archives to export global identities and universal memories safely.
-  * **The Tri-Partite CLI Security Boundary (EP-0116):** Splitting entrypoints into low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host) to prevent dependency leak.
+    * **The Ontological Porcelain API (EP-0105) [Status: Implemented]:** Stabilizing FastMCP SDK integration to expose
+      semantic `status`, `wake`, `learn`, and `sleep` verbs to external agents.
+    * **Traveler Export Protocol (EP-0115) [Status: Implemented]:** Implementing lightweight `.tur` zip/tarball archives
+      to export global identities and universal memories safely.
+    * **The Tri-Partite CLI Security Boundary (EP-0116) [Status: Implemented]:** Splitting entrypoints into
+      low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host) to prevent dependency
+      leak.
 * **Track: Persona Memory & Compaction**
-  * **The Session Notes & Compaction Protocol (EP-0110) [Status: Implemented]:** Tracking short-term session continuity via flat YAML files (`SessionNotes`) compiled dynamically.
-  * **OKF Storage Backend (EP-0120) [Status: Implemented]:** Mapped L1/L2 structures to standard Markdown directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning. Centralized YAML deserialization via `yaml_safe_load` in `tur._helpers`.
+    * **The Session Notes & Compaction Protocol (EP-0110) [Status: Implemented]:** Tracking short-term session
+      continuity via flat YAML files (`SessionNotes`) compiled dynamically.
+    * **OKF Storage Backend (EP-0120) [Status: Implemented]:** Mapped L1/L2 structures to standard Markdown
+      directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning. Centralized YAML deserialization
+      via `yaml_safe_load` in `tur._helpers`.
 * **Deferred / Rejected Tracks**
-  * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation fidelity to focus on core memory/lifecycle capabilities.
-  * **Semble Integration (EP-0111) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
-  * **agentmemory Integration (EP-0112) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
+    * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation
+      fidelity to focus on core memory/lifecycle capabilities.
+    * **Semble Integration (EP-0111) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
+    * **agentmemory Integration (EP-0112) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
 
 ## Backwards Compatibility
 
-This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific compatibility concerns. Legacy `knowledge_graph.yaml` files are still read via a fallback adapter (EP-0120 Phase 2), ensuring backwards compatibility during the OKF transition.
+This is a forward-looking informational document. Future EPs derived from this roadmap will address their specific
+compatibility concerns. Legacy `knowledge_graph.yaml` files are still read via a fallback adapter (EP-0120 Phase 2),
+ensuring backwards compatibility during the OKF transition.
 
 ## Change Log
+
 * **2026-07-18:**
-    * Marked **EP-0103 (Deductive Memory)** as **Implemented**. CLI command `introspect` and MCP tool now expose the Council Assembly pipeline, fully integrated with MCP Sampling to run extraction within the host harness context.
-    * Marked **EP-0110 (Session Notes)** as **Implemented** (status was already Final).
+    * Promoted **EP-0104 (Federated Knowledge)**, **EP-0105 (Porcelain API)**, **EP-0106 (Merkle Memory)**, **EP-0108 (
+      Spark Protocol)**, **EP-0114 (Global Persona)**, **EP-0115 (Traveler Export)**, **EP-0116 (Split CLI)**, and *
+      *EP-0118 (IASP)** to **Implemented** status.
+    * Reverted **EP-0101 (LLM Agnosticism)** from Implemented to **Final** to track the remaining Gemini coupling gap in
+      `dreaming.py` (addressed in draft **EP-0121**).
+    * Re-opened **EP-0119 (Council Introspection)** as **Draft** to review philosophical tension with
+      persona-agnosticism.
+    * Updated EP-0103 Deductive Memory descriptions to correctly reference the `introspect` CLI command.
     * Removed stale `devolve` reference from EP-0113 changelog entry.
 * **2026-07-12:**
     * Marked **EP-0101 (LLM Agnosticism)** as **Implemented**.
-    * Renamed and marked **EP-0113 (Core Memory Protocol)** as **Implemented**, introducing `evolve` and `approve` tools/commands.
+    * Renamed and marked **EP-0113 (Core Memory Protocol)** as **Implemented**, introducing `evolve` and `approve`
+      tools/commands.
     * Marked **EP-0118 (Inter-Agent Signal Protocol)** as **Implemented**.
 * **2026-07-11:**
-    * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103 supersession note. Updated Backwards Compatibility section to reflect OKF migration.
+    * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103
+      supersession note. Updated Backwards Compatibility section to reflect OKF migration.
 * **2026-06-02:**
-    * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**, **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review consensus.
+    * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**,
+      **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review
+      consensus.
 * **2026-05-28:**
     * Drafted and added **EP-0111 (Semble Integration)** and **EP-0112 (agentmemory Integration)** to Phase 3.
 * **2026-04-18:**
