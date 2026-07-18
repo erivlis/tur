@@ -358,14 +358,13 @@ def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
         edge_count = graph.number_of_edges()
         mermaid = format_graph_as_mermaid(graph)
     except Exception as e:
-        return f"Error during Council Introspection: {e}"
+        return f'Error during Council Introspection: {e}'
     else:
         return (
-            f"Council Introspection complete. "
-            f"L2 Cognitive Map: {node_count} nodes, {edge_count} edges.\n\n"
-            f"```mermaid\n{mermaid}\n```"
+            f'Council Introspection complete. '
+            f'L2 Cognitive Map: {node_count} nodes, {edge_count} edges.\n\n'
+            f'```mermaid\n{mermaid}\n```'
         )
-
 
 
 @mcp.tool()

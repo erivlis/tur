@@ -642,22 +642,15 @@ def introspect(
 
 @app.command()
 def evolve(
-        memory_id: str = typer.Argument(
-            ...,
-            help='The SHA-256 hash or part of the L1 memory ID to promote/refine.'
-        ),
+        memory_id: str = typer.Argument(..., help='The SHA-256 hash or part of the L1 memory ID to promote/refine.'),
         core_type: str = typer.Option(
             'existential_alignment',
             help='The core transition category: existential_alignment, relational_discovery, or identity_transition.',
         ),
-        principle: str = typer.Option(
-            ...,
-            help='The concrete behavioral constraint/instruction (derived principle).'
-        ),
+        principle: str = typer.Option(..., help='The concrete behavioral constraint/instruction (derived principle).'),
         covenant: str = typer.Option(..., help='The ethical commitment/promise to the user or self.'),
         identifier: str | None = typer.Argument(
-            None,
-            help='The name or UUID of the persona. If omitted, uses the default.'
+            None, help='The name or UUID of the persona. If omitted, uses the default.'
         ),
 ):
     """Refine a lived experience (an existing memory or note) into a Core Memory with status pending_approval."""
