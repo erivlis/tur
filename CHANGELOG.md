@@ -1,3 +1,14 @@
+## v0.8.0 (2026-07-18)
+
+### Feat
+
+- **EP-0115**: Enhances persona export/import with new options, security, and memory filtering.
+- **EP-0103**: Adds MCP introspect tool, introspection delegation, and relationship constraints.
+
+### Refactor
+
+- Refactors imports, guards memory loads, and fixes session state.
+
 ## v0.7.0 (2026-07-12)
 
 ### Feat
