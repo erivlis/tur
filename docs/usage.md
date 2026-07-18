@@ -198,8 +198,8 @@ gzip-compressed archive (excluding project-local incarnation-specific memories).
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
-# Export a persona by its name or UUID to a destination file
-uv run tur-adm persona export ariel ariel.tur
+# Export a persona by its name or UUID to a destination file using --output or -o
+uv run tur-adm persona export ariel -o ariel.tur
 ```
 
 ### 15. Import Persona (`import`)
@@ -212,6 +212,9 @@ sanitizes all Member paths prior to extraction to guarantee safety against path 
 ```shell
 # Import a persona from a .tur archive
 uv run tur-adm persona import ariel.tur
+
+# Force overwrite an existing persona and set it as active
+uv run tur-adm persona import ariel.tur --force --set-active
 ```
 
 ## Customization

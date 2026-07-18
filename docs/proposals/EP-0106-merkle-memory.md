@@ -2,7 +2,7 @@
 title: "EP-0106: Merkle Memory (Content-Addressable State)"
 description: "Replaces random UUIDs with SHA-256 content hashes, transforming Tur's memory into a cryptographic Merkle DAG."
 icon: lucide/shield-check
-status: final
+status: implemented
 ---
 
 # EP-0106: Merkle Memory (Content-Addressable State)
@@ -12,10 +12,10 @@ status: final
 | **EP**      | 0106                                      |
 | **Title**   | Merkle Memory (Content-Addressable State) |
 | **Author**  | The Architect                             |
-| **Status**  | Final                                     |
+| **Status**  | Implemented                               |
 | **Type**    | Standards Track                           |
 | **Created** | 2026-04-13                                |
-| **Updated** | 2026-06-08                                |
+| **Updated** | 2026-07-18                                |
 
 ## Abstract
 
@@ -266,6 +266,8 @@ if __name__ == "__main__":
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. SHA-256 content-addressing live in memory.py; Golem's
+  Seal (atomic write + lock) implemented; integrity audit via memory.py MemoryManager.audit_integrity().
 * **2026-04-18:**
     * Added detailed explanation and logic for the standalone `scripts/migrate_to_merkle.py` migration script.
     * Embedded the migration source code directly into the EP for absolute reference.

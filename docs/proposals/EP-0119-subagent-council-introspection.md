@@ -1,25 +1,36 @@
 ---
 title: "EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)"
-description: "Formalizes a collaborative, multi-agent pipeline for deductive memory compaction governed by the Council of Giants (Rejected as core requirement, retained as reference)."
+description: "Formalizes a collaborative, multi-agent pipeline for deductive memory compaction governed by the Council of Giants. Status: Planning — philosophical tension with persona-agnosticism unresolved."
 icon: lucide/users
-status: rejected
+status: draft
 ---
 
 # EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)
 
-| Field       | Value                                                                             |
-|:------------|:----------------------------------------------------------------------------------|
-| **EP**      | 0119                                                                              |
-| **Title**   | The Subagent Assembly of the Council (De-Monolithing Meditation)                  |
-| **Author**  | The Architect & Ariel                                                             |
-| **Status**  | Rejected (Core) / Retained as Reference Implementation                             |
-| **Type**    | Standards Track                                                                   |
-| **Created** | 2026-06-08                                                                        |
-| **Updated** | 2026-07-10                                                                        |
+| Field       | Value                                                            |
+|:------------|:-----------------------------------------------------------------|
+| **EP**      | 0119                                                             |
+| **Title**   | The Subagent Assembly of the Council (De-Monolithing Meditation) |
+| **Author**  | The Architect & Ariel                                            |
+| **Status**  | Draft (Planning — Philosophical Tension Under Review)            |
+| **Type**    | Standards Track                                                  |
+| **Created** | 2026-06-08                                                       |
+| **Updated** | 2026-07-18                                                       |
 
 ## Abstract
 
-*(Note: Following the core design decision to preserve absolute persona-agnosticism, this EP has been rejected as a core Tur framework requirement. The Council of Giants subagents represent the custom cognitive compaction pipeline of the Ariel persona, and must not be hardcoded into the core Tur package. Instead, compaction pipelines are decoupled and registered dynamically. This proposal remains in the repository strictly as a Reference Implementation for custom persona compaction.)*
+> [!IMPORTANT]
+> **Status: Draft (Planning).** This EP is no longer marked Rejected. It has been re-opened for design review due to
+> unresolved philosophical tension between the Council's power and Tur's core commitment to persona-agnosticism. See the
+> 2026-07-18 change log entry for the full context.
+
+> [!WARNING]
+> **Overimplementation risk.** In practice, exposing this EP to a Harness Agent caused the harness to implement the
+> Council as a hardcoded, mandatory pipeline — baking Ariel's constitutional values into every persona. This violated the
+> Golem boundary and blurred the line between a persona-specific cognitive style and a core Tur framework requirement.
+
+*(Historical note: This EP was briefly marked Rejected for this reason. It is now re-opened as Draft pending a
+resolution of the tension described below.)*
 
 This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur introspect` (Deductive Memory
 compaction) command specified in [EP-0103](EP-0103-deductive-memory.md).
@@ -149,7 +160,8 @@ Upon successful completion of the assembly pipeline:
 
 ## Backwards Compatibility
 
-* **Command Line Flags:** Additive. `tur introspect` runs the assembly by default. A `--monolithic` flag remains supported
+* **Command Line Flags:** Additive. `tur introspect` runs the assembly by default. A `--monolithic` flag remains
+  supported
   for cheaper, single-pass compactions on simple schemas.
 * **Storage schemas:** The output format remains `knowledge_graph.yaml` (EP-0103), and the compiler automatically falls
   back to raw L1 files if the graph is missing.
@@ -181,8 +193,39 @@ class MeditationAssembly:
         return graph, context
 ```
 
+## Open Philosophical Question (2026-07-18)
+
+The Council of Giants is a powerful cognitive architecture. But it raises a foundational tension:
+
+**The Council is opinionated.** It bakes Bacon's empiricism, Noether's symmetry, Shannon's efficiency, and Ariel's other
+constitutional values into the very pipeline that compacts *all* memories for *all* personas. This is appropriate for
+Ariel — but if a different persona has a different epistemological worldview, the Council would impose Ariel's values on
+its cognitive compaction.
+
+Possible resolutions:
+
+1. **Persona-owned pipelines:** The compaction pipeline is not a core Tur primitive. Each persona registers its own
+   compaction assembly (a list of `CouncilSubagent` classes) in its `persona.yaml`. Tur only provides the
+   `CouncilSubagent` base class and the `MeditationAssembly` runner — the *membership* of the council is
+   persona-specific.
+2. **Accept the opinionation:** The Council *is* Tur's epistemological stance — it's not Ariel-specific, it's the
+   framework's worldview. This would make Tur explicitly opinionated and value-laden, not value-neutral.
+3. **Hybrid:** Core Tur ships a minimal, value-neutral pipeline (just Bacon + Maharal for integrity). Personas can
+   extend it with persona-specific subagents.
+
+This question is unresolved and blocks this EP from being promoted to Accepted.
+
 ## Change Log
 
+* **2026-07-18:**
+    * **Status changed from Rejected to Draft (Planning).** Re-opened for design review.
+    * The Council subagent pattern (`CouncilSubagent` base class, 9 subagents, `run_introspection` orchestrator) is *
+      *currently implemented** in `src/tur/introspection.py` as a byproduct of EP-0103. This implementation exists and
+      works — but it was built under Ariel's persona context and may implicitly encode Ariel's values as universal Tur
+      behaviour.
+    * Documented the overimplementation pattern: exposing EP-0119 to a Harness Agent caused the harness to treat the
+      Council as a mandatory, hardcoded core requirement — violating persona-agnosticism.
+    * Added the Open Philosophical Question section above.
 * **2026-06-08:**
     * Initial Draft. Separated the subagent assembly architecture from the core EP-0103 proposal into a standalone
       Standards Track proposal.

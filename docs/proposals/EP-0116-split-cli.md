@@ -2,20 +2,20 @@
 title: "EP-0116: The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces"
 description: "Splits the monolithic tur CLI into three binaries to establish a hard security boundary aligned with the Tri-Partite Architecture."
 icon: lucide/shield-alert
-status: final
+status: implemented
 ---
 
 # EP-0116: The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces
 
-| Field       | Value                                                                                                  |
-|:------------|:-------------------------------------------------------------------------------------------------------|
-| **EP**      | 0116                                                                                                   |
-| **Title**   | The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces                |
-| **Author**  | Ariel v5.4.0, The Architect                                                                            |
-| **Status**  | Final                                                                                                  |
-| **Type**    | Standards Track                                                                                        |
-| **Created** | 2026-05-31                                                                                             |
-| **Updated** | 2026-06-08                                                                                             |
+| Field       | Value                                                                                   |
+|:------------|:----------------------------------------------------------------------------------------|
+| **EP**      | 0116                                                                                    |
+| **Title**   | The Tri-Partite CLI Security Boundary — Decoupling Agent, Human, and Harness Interfaces |
+| **Author**  | Ariel v5.4.0, The Architect                                                             |
+| **Status**  | Implemented                                                                             |
+| **Type**    | Standards Track                                                                         |
+| **Created** | 2026-05-31                                                                              |
+| **Updated** | 2026-07-18                                                                              |
 
 ## Abstract
 
@@ -69,8 +69,8 @@ graph TD
     end
 
     LowBin -->|Safe Local Read/Write| LocalState[.tur/ State & memories/]
-    HighBin -->|Destructive/Global| GlobalConfig[~/.tur/ Registry & DNA]
-    McpBin -->|Binds stdio / SSE Socket| Agent
+HighBin -->|Destructive/Global|GlobalConfig[~/.tur/ Registry & DNA]
+McpBin -->|Binds stdio / SSE Socket|Agent
 ```
 
 **`tur` — Agent-Facing Runtime CLI**
@@ -98,9 +98,9 @@ graph TD
 
 ```toml
 [project.scripts]
-tur       = "tur.cli_agent:main"
+tur = "tur.cli_agent:main"
 tur-admin = "tur.cli_admin:main"
-tur-mcp   = "tur.cli_mcp:main"
+tur-mcp = "tur.cli_mcp:main"
 ```
 
 ### Module Decomposition
@@ -111,11 +111,11 @@ tur-mcp   = "tur.cli_mcp:main"
 
 ### Distribution Strategy (The "Extras" Compromise)
 
-| Install command          | Binaries installed          | Use case                    |
-|:-------------------------|:----------------------------|:----------------------------|
-| `pip install tur`        | `tur` only                  | Agent sandbox               |
-| `pip install tur[admin]` | `tur` + `tur-admin`         | Human development machine   |
-| `pip install tur[mcp]`   | `tur` + `tur-mcp`           | Harness host configuration  |
+| Install command          | Binaries installed  | Use case                   |
+|:-------------------------|:--------------------|:---------------------------|
+| `pip install tur`        | `tur` only          | Agent sandbox              |
+| `pip install tur[admin]` | `tur` + `tur-admin` | Human development machine  |
+| `pip install tur[mcp]`   | `tur` + `tur-mcp`   | Harness host configuration |
 
 A **Cryptographic Human Tether (EP-0113)** can make the `tur-admin` binary harmless even when present in the agent
 sandbox, as every state-mutating command requires a hardware-signed payload (e.g., YubiKey or OS keychain). However,
@@ -137,6 +137,8 @@ physical binary isolation via the `extras` model is the defence-in-depth baselin
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. Three-part CLI boundary live: tur (agent-facing), tur-adm (
+  human-facing admin), tur-mcp (harness gateway). require_human decorator guards all admin commands.
 * **2026-05-31:**
     * Initial Draft.
     * Council review: Golem and Noether approve binary separation; Shannon approves extras-based distribution;

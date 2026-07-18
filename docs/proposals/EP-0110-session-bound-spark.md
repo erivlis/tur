@@ -2,20 +2,20 @@
 title: "EP-0110: Session-Bound Note Protocol (Consistent Timeline)"
 description: "Refines the Spark Protocol to use session-bound sparks, preventing temporal confusion across multiple Harnesses."
 icon: lucide/clock
-status: final
+status: implemented
 ---
 
 # EP-0110: Session-Bound Note Protocol (Consistent Timeline)
 
-| Field       | Value                                              |
-|:------------|:---------------------------------------------------|
-| **EP**      | 0110                                               |
-| **Title**   | Session-Bound Note Protocol (Consistent Timeline)  |
-| **Author**  | The Architect & Ariel                              |
-| **Status**  | Final                                              |
-| **Type**    | Standards Track                                    |
-| **Created** | 2026-05-11                                         |
-| **Updated** | 2026-06-08                                         |
+| Field       | Value                                             |
+|:------------|:--------------------------------------------------|
+| **EP**      | 0110                                              |
+| **Title**   | Session-Bound Note Protocol (Consistent Timeline) |
+| **Author**  | The Architect & Ariel                             |
+| **Status**  | Implemented                                       |
+| **Type**    | Standards Track                                   |
+| **Created** | 2026-05-11                                        |
+| **Updated** | 2026-07-18                                        |
 
 ## Abstract
 
@@ -58,31 +58,40 @@ A consistent, coherent timeline is paramount for the Persona's "Continuity of Se
 Each active session stores its timeline in a flat YAML file inside the local workspace's persona directory:
 `.tur/personas/<persona_uuid>/sessions/<session_id>.yaml`
 
-This file is serialized using the `SessionNotes` schema, containing a chronological list of `Note` objects with timestamps and text content.
+This file is serialized using the `SessionNotes` schema, containing a chronological list of `Note` objects with
+timestamps and text content.
 
 ### 2. Session-Bound Notes (The Spark)
 
-Instead of a single mutable global file, harnesses append transient, chronologically ordered notes to the active session's flat YAML file. During runtime or `tur wake`, the system reads the most recent note in the active session to compile the active L2 session context.
+Instead of a single mutable global file, harnesses append transient, chronologically ordered notes to the active
+session's flat YAML file. During runtime or `tur wake`, the system reads the most recent note in the active session to
+compile the active L2 session context.
 
 ### 3. Elimination of Global epilogue.md
 
-The legacy global `epilogue.md` file is fully deprecated and removed. At initialization or wake time, the system dynamically reads the latest session-bound note from the active `<session_id>.yaml` file and exposes it as the active session continuity token.
+The legacy global `epilogue.md` file is fully deprecated and removed. At initialization or wake time, the system
+dynamically reads the latest session-bound note from the active `<session_id>.yaml` file and exposes it as the active
+session continuity token.
 
 ### 4. Session State Management
 
 The following operations govern session lifecycle:
 
 * **`start_session(session_id: str)`**:
-    * **Action:** Initializes the flat YAML session file at `sessions/<session_id>.yaml` if it does not exist, seeding it with an initial startup note.
+    * **Action:** Initializes the flat YAML session file at `sessions/<session_id>.yaml` if it does not exist, seeding
+      it with an initial startup note.
     * **Return:** Confirmation and status of the started session.
 * **`note(content: str)`**:
-    * **Action:** Appends a new chronological `Note` entry (containing the text and current timestamp) to the active `sessions/<session_id>.yaml` file.
+    * **Action:** Appends a new chronological `Note` entry (containing the text and current timestamp) to the active
+      `sessions/<session_id>.yaml` file.
 
 ### 5. Updated `tur wake` Logic
 
 The `tur wake` command will be modified:
 
-* **Action:** Instead of reading a static global file, it will identify the *most recently active session* (resolved via the active session note config). It will read the last note in that session's flat YAML file and use it as the continuity token.
+* **Action:** Instead of reading a static global file, it will identify the *most recently active session* (resolved via
+  the active session note config). It will read the last note in that session's flat YAML file and use it as the
+  continuity token.
 * **Fallback:** If no active sessions or notes are found, it uses the default inspirational axiom.
 
 ## Backwards Compatibility
@@ -91,8 +100,12 @@ The `tur wake` command will be modified:
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. Session-bound note protocol live in session.py (note_logic,
+  compile_session_notes). MCP tool note() and CLI tur note both implemented.
 * **2026-05-29:**
-    * Approved & Completed: Decoupled the single global Sparks into session-bound flat `<session_id>.yaml` (SessionNotes) files, purged all legacy spark files, finalized terminology shift, and fully eliminated the `main.py` monolithic facade in favor of direct sub-domain architecture.
+    * Approved & Completed: Decoupled the single global Sparks into session-bound flat `<session_id>.yaml` (
+      SessionNotes) files, purged all legacy spark files, finalized terminology shift, and fully eliminated the
+      `main.py` monolithic facade in favor of direct sub-domain architecture.
 * **2026-05-11:**
     * Initial Draft created to formalize the Session-Bound Spark Protocol, ensuring a consistent timeline across
       multiple Harnesses.

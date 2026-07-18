@@ -2,7 +2,7 @@
 title: "EP-0101: LLM Agnosticism (The Symbiotic Paradigm)"
 description: "Defines Tur's LLM-agnostic architecture via MCP Sampling, eliminating embedded LLM SDK dependencies."
 icon: lucide/shuffle
-status: implemented
+status: final
 ---
 
 # EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
@@ -12,10 +12,10 @@ status: implemented
 | **EP**      | 0101                                     |
 | **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
 | **Author**  | Eran Rivlis, The Architect               |
-| **Status**  | Implemented                              |
+| **Status**  | Final                                    |
 | **Type**    | Architecture                             |
 | **Created** | 2026-03-29                               |
-| **Updated** | 2026-07-12                               |
+| **Updated** | 2026-07-18                               |
 
 ## Abstract
 
@@ -75,9 +75,20 @@ Object) triples and hand them back to me."*
 
 ## Change Log
 
+* **2026-07-18:**
+    * **Status reverted from Implemented to Final.** The MCP path is correctly agnostic (the harness provides inference
+      via `ctx.sample()` / MCP Sampling), and `introspect` has a `HarnessDelegationError` fallback for CLI usage without
+      an API key. However, `dreaming.py` (`perform_sleep_dreaming`) retains a direct `GEMINI_API_KEY` dependency with no
+      delegation fallback — meaning `tur sleep` and `tur introspect` are not yet symmetrically agnostic.
+    * *Gap:* The two LLM-calling surfaces (MCP sampling vs. CLI delegation) need to be unified into a single,
+      provider-agnostic pattern that generalizes beyond `GEMINI_API_KEY`. This is being formalized as **EP-0121 (
+      Agnostic Harness Interaction Protocol)**.
 * **2026-07-12:**
     * **Status changed to Implemented.**
-    * Created `run_async`, `_mcp_sample`, and `_clean_json_response` helper utilities in `tur._helpers`. Refactored `perform_sleep_dreaming` and `stage_sleep_dreaming` in `dreaming.py` and `RussellSubagent.run` in `introspection.py` to seamlessly request LLM inference from connected MCP clients via `ctx.sample()` when `mcp_context` is available, while retaining a local provider fallback when run offline via CLI.
+    * Created `run_async`, `_mcp_sample`, and `_clean_json_response` helper utilities in `tur._helpers`. Refactored
+      `perform_sleep_dreaming` and `stage_sleep_dreaming` in `dreaming.py` and `RussellSubagent.run` in
+      `introspection.py` to seamlessly request LLM inference from connected MCP clients via `ctx.sample()` when
+      `mcp_context` is available, while retaining a local provider fallback when run offline via CLI.
 * **2026-04-18:**
     * **Status changed to Superseded.**
     * Completely rewrote the EP to reflect the architectural pivot. Tur will not embed `pydantic-ai`; it will rely on

@@ -2,7 +2,7 @@
 title: "EP-0104: Federated Knowledge (Universal vs. Incarnational Memory)"
 description: "Separates a Persona's universal knowledge from project-specific context in a federated two-tiered system."
 icon: lucide/database
-status: final
+status: implemented
 ---
 
 # EP-0104: Federated Knowledge (Universal vs. Incarnational Memory)
@@ -12,10 +12,10 @@ status: final
 | **EP**      | 0104                                                     |
 | **Title**   | Federated Knowledge (Universal vs. Incarnational Memory) |
 | **Author**  | The Architect                                            |
-| **Status**  | Final                                                    |
+| **Status**  | Implemented                                              |
 | **Type**    | Standards Track                                          |
 | **Created** | 2026-04-12                                               |
-| **Updated** | 2026-06-08                                               |
+| **Updated** | 2026-07-18                                               |
 
 ## Abstract
 
@@ -93,6 +93,8 @@ timeline of memories and injects them into the Constitution as before.
 
 ## Change Log
 
+* **2026-07-18:** Status promoted from Final to Implemented. Scopes (UNIVERSAL / INCARNATION / USER / PERSONA)
+  implemented in models.py; memory scope filtering live in memory.py and admin.py export command.
 * **2026-04-18:**
     * Updated Status to Active.
     * Refined specification to focus on the `MemoryManager` routing based on `MemoryScope`.
