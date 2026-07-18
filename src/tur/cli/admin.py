@@ -96,7 +96,7 @@ def persona_list() -> None:
             console.print('[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]')
             return
         with open(index_path, encoding='utf-8') as f:
-            index_data = yaml_safe_load(f) or {'personas': []}
+            index_data: dict = yaml_safe_load(f) or {'personas': []}
         index = PersonaIndex(**index_data)
 
         table = Table(title='Persona Registry', box=box.SIMPLE)
@@ -252,8 +252,12 @@ def persona_export(
                         continue
 
                     mem = memory_manager._load_file(file_path)
+                    # _load_file may return None for invalid/unsupported files; guard before attribute access
+                    if mem is None:
+                        continue
+
                     in_scope = mem.scope in (MemoryScope.UNIVERSAL, MemoryScope.USER, MemoryScope.PERSONA)
-                    if mem and in_scope and mem.id not in seen_memories:
+                    if in_scope and mem.id not in seen_memories:
                         seen_memories.add(mem.id)
                         arcname = f'{arc_prefix}/{file_path.name}'
                         tar.add(file_path, arcname=arcname)
@@ -355,7 +359,7 @@ def persona_import(  # noqa: C901
             # Check index
             index_path = global_home / 'personas.yaml'
             with open(index_path, encoding='utf-8') as f:
-                index_data = yaml_safe_load(f) or {'personas': []}
+                index_data: dict = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
 
             exists_on_disk = dest_dir.exists()
@@ -402,14 +406,14 @@ def persona_import(  # noqa: C901
                 if state_path.exists():
                     try:
                         with open(state_path, encoding='utf-8') as f:
-                            state_data = yaml_safe_load(f) or {}
+                            state_data: dict = yaml_safe_load(f) or {}
                         state_obj = SystemState(**state_data)
                         state_obj.active_persona_id = UUID(persona_id)
                         state_obj.active_session_id = None  # Reset active session on persona switch
                     except Exception:
-                        state_obj = SystemState(active_persona_id=UUID(persona_id))
+                        state_obj = SystemState(active_persona_id=UUID(persona_id), active_session_id=None)
                 else:
-                    state_obj = SystemState(active_persona_id=UUID(persona_id))
+                    state_obj = SystemState(active_persona_id=UUID(persona_id), active_session_id=None)
 
                 with open(state_path, 'w', encoding='utf-8') as f:
                     yaml.dump(state_obj.model_dump(mode='json'), f)
