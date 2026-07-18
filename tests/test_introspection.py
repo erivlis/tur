@@ -328,7 +328,6 @@ def test_pluggable_compaction_pipeline_dynamic_loading():
 
 def test_harness_delegation_error_cli(temp_workspace, monkeypatch):
     """Test that introspect command gracefully delegates when GEMINI_API_KEY is missing."""
-    from tur.introspection import HarnessDelegationError
 
     _, persona_dir = temp_workspace
     memory_manager = MemoryManager(base_dir=persona_dir)
@@ -369,7 +368,7 @@ def test_relationship_signature_constraints(temp_workspace):
         edges=[
             ExtractedEdge(source='decision-a', target='concept-b', type='precedes', confidence=1.0),
             ExtractedEdge(source='decision-a', target='concept-b', type='refines', confidence=1.0),
-        ]
+        ],
     )
 
     subagent = RussellSubagent()
@@ -399,5 +398,3 @@ def test_tms_propagation_on_refines(temp_workspace):
     # Refiner node-a should also be deactivated
     assert graph.nodes['node-a']['status'] == 'superseded'
     assert graph.nodes['node-a']['confidence'] == 0.0
-
-

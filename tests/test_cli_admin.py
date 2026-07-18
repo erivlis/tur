@@ -6,7 +6,7 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from tur import persona, session, tui, user
+from tur import persona, session, tui
 from tur.cli.admin import app as admin_app
 
 runner = CliRunner()
@@ -210,12 +210,34 @@ def test_admin_persona_switch_empty_personas(mock_workspace):
 def test_admin_persona_export_and_import(mock_workspace, tmp_path):
     _ = mock_workspace
     archive_path = Path('ariel.tur')
-    result_export = runner.invoke(admin_app, ['persona', 'export', 'Ariel', str(archive_path)])
+    result_export = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', str(archive_path)])
     assert result_export.exit_code == 0
     assert 'successfully exported' in result_export.stdout
     assert archive_path.exists()
 
-    result_import = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    result_import = runner.invoke(admin_app, ['persona', 'import', str(archive_path), '--set-active'])
+    # First import fails because it already exists
+    assert result_import.exit_code == 1
+    assert 'already exists' in result_import.stdout
+
+    # Now delete from registry and try import again
+    import shutil
+
+    global_home = Path.home() / '.tur'
+    dest_dir = global_home / 'personas' / '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+    if dest_dir.exists():
+        shutil.rmtree(dest_dir)
+    index_path = global_home / 'personas.yaml'
+    if index_path.exists():
+        with open(index_path, encoding='utf-8') as f:
+            idx_data = yaml.safe_load(f) or {'personas': []}
+        idx_data['personas'] = [
+            p for p in idx_data['personas'] if str(p['id']) != '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+        ]
+        with open(index_path, 'w', encoding='utf-8') as f:
+            yaml.dump(idx_data, f)
+
+    result_import = runner.invoke(admin_app, ['persona', 'import', str(archive_path), '--set-active'])
     assert result_import.exit_code == 0
     assert 'successfully imported' in result_import.stdout
 
@@ -227,6 +249,13 @@ def test_admin_persona_export_and_import(mock_workspace, tmp_path):
         global_index = yaml.safe_load(f)
     assert any(p['name'] == 'Ariel' for p in global_index['personas'])
 
+    # Verify set-active worked
+    state_path = Path('.tur/state.yaml')
+    assert state_path.exists()
+    with open(state_path, encoding='utf-8') as f:
+        state_data = yaml.safe_load(f)
+    assert state_data['active_persona_id'] == '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+
 
 def test_admin_persona_export_error(mock_workspace, monkeypatch):
     def mock_raise(*args, **kwargs):
@@ -234,7 +263,7 @@ def test_admin_persona_export_error(mock_workspace, monkeypatch):
 
     monkeypatch.setattr(persona, 'get_persona_path', mock_raise)
 
-    result = runner.invoke(admin_app, ['persona', 'export', 'Ariel', 'ariel.tur'])
+    result = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', 'ariel.tur'])
     assert result.exit_code == 1
     assert 'Error exporting persona: Export failed internally' in result.stdout
 
@@ -455,6 +484,158 @@ def test_admin_persona_import_invalid_uuid(mock_workspace, tmp_path):
     assert 'Registry Failure: Imported ID' in result.stdout
 
 
+def test_admin_persona_import_duplicate_overwrite_prevention(mock_workspace, tmp_path):
+    _ = mock_workspace
+    archive_path = tmp_path / 'ariel.tur'
+
+    # Export persona Ariel
+    result_export = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', str(archive_path)])
+    assert result_export.exit_code == 0
+
+    # Unregister persona so the first import is a clean import
+    import shutil
+
+    _global_home = Path.home() / '.tur'
+    _dest_dir = _global_home / 'personas' / '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+    if _dest_dir.exists():
+        shutil.rmtree(_dest_dir)
+    _index_path = _global_home / 'personas.yaml'
+    if _index_path.exists():
+        with open(_index_path, encoding='utf-8') as _f:
+            _idx = yaml.safe_load(_f) or {'personas': []}
+        _idx['personas'] = [p for p in _idx['personas'] if str(p['id']) != '7544202e-92f5-40ce-adfb-e4b0eae6c262']
+        with open(_index_path, 'w', encoding='utf-8') as _f:
+            yaml.dump(_idx, _f)
+
+    # First import works fine (persona absent from registry)
+    result_import1 = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result_import1.exit_code == 0
+
+    # Second import without --force fails due to duplicate
+    result_import2 = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result_import2.exit_code == 1
+    assert 'already exists' in result_import2.stdout
+
+    # Third import with --force succeeds
+    result_import3 = runner.invoke(admin_app, ['persona', 'import', str(archive_path), '--force'])
+    assert result_import3.exit_code == 0
+
+
+def test_admin_persona_import_duplicate_overwrite_with_short_alias(mock_workspace, tmp_path):
+    _ = mock_workspace
+    archive_path = tmp_path / 'ariel.tur'
+
+    # Export persona Ariel
+    result_export = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', str(archive_path)])
+    assert result_export.exit_code == 0
+
+    # Unregister persona so the first import is a clean import
+    import shutil
+
+    _global_home2 = Path.home() / '.tur'
+    _dest_dir2 = _global_home2 / 'personas' / '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+    if _dest_dir2.exists():
+        shutil.rmtree(_dest_dir2)
+    _index_path2 = _global_home2 / 'personas.yaml'
+    if _index_path2.exists():
+        with open(_index_path2, encoding='utf-8') as _f2:
+            _idx2 = yaml.safe_load(_f2) or {'personas': []}
+        _idx2['personas'] = [p for p in _idx2['personas'] if str(p['id']) != '7544202e-92f5-40ce-adfb-e4b0eae6c262']
+        with open(_index_path2, 'w', encoding='utf-8') as _f2:
+            yaml.dump(_idx2, _f2)
+
+    # First import works fine (persona absent from registry)
+    result_import1 = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result_import1.exit_code == 0
+
+    # Second import without -f fails due to duplicate
+    result_import2 = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result_import2.exit_code == 1
+    assert 'already exists' in result_import2.stdout
+
+    # Third import with -f succeeds
+    result_import3 = runner.invoke(admin_app, ['persona', 'import', str(archive_path), '-f'])
+    assert result_import3.exit_code == 0
+
+
+def test_admin_persona_export_filters_memories(mock_workspace, tmp_path):
+    _ = mock_workspace
+    import tarfile
+
+    from tur.memory import MemoryManager
+    from tur.models import Memory, MemoryScope, MemoryType
+
+    # 1. Setup memories with different scopes
+    persona_dir = persona.get_persona_path('7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    memory_manager = MemoryManager(base_dir=persona_dir)
+
+    inc_mem = Memory(
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        content='This is a project-specific incarnation memory.',
+    )
+    uni_mem = Memory(
+        type=MemoryType.FACT,
+        scope=MemoryScope.UNIVERSAL,
+        content='This is a global universal memory.',
+    )
+    user_mem = Memory(
+        type=MemoryType.FACT,
+        scope=MemoryScope.USER,
+        content='This is a user memory.',
+    )
+    pers_mem = Memory(
+        type=MemoryType.FACT,
+        scope=MemoryScope.PERSONA,
+        content='This is a persona memory.',
+    )
+
+    memory_manager.save(inc_mem)
+    memory_manager.save(uni_mem)
+    memory_manager.save(user_mem)
+    memory_manager.save(pers_mem)
+
+    # 2. Export
+    archive_path = tmp_path / 'filtered.tur'
+    result = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', str(archive_path)])
+    assert result.exit_code == 0
+
+    # 3. Read tar archive and inspect members
+    with tarfile.open(archive_path, 'r:gz') as tar:
+        members = [m.name for m in tar.getmembers()]
+
+        # Check that universal, user, and persona memories are in the archive
+        uni_filename = f'_{uni_mem.id}.md'
+        user_filename = f'_{user_mem.id}.md'
+        pers_filename = f'_{pers_mem.id}.md'
+        inc_filename = f'_{inc_mem.id}.md'
+
+        assert any(uni_filename in m for m in members), f'Universal memory not found in tar: {members}'
+        assert any(user_filename in m for m in members), f'User memory not found in tar: {members}'
+        assert any(pers_filename in m for m in members), f'Persona memory not found in tar: {members}'
+        assert not any(inc_filename in m for m in members), f'Incarnation memory unexpectedly found in tar: {members}'
+
+
+def test_admin_persona_import_missing_uuid(mock_workspace, tmp_path):
+    archive_path = tmp_path / 'missing_uuid.tur'
+    import io
+    import tarfile
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        persona_data = {'name': 'Fake'}  # 'id' is missing
+        yaml_bytes = yaml.dump(persona_data).encode('utf-8')
+        info = tarfile.TarInfo(name='persona.yaml')
+        info.size = len(yaml_bytes)
+
+        tar.addfile(info, io.BytesIO(yaml_bytes))
+
+    result = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result.exit_code == 1
+    # Rich console may wrap long error messages; check for shorter substrings
+    assert 'Registry Failure' in result.stdout
+    assert "canonical 'id'" in result.stdout
+
+
 def test_admin_session_note_invalid_index(mock_workspace):
     # Start session first so notes folder exists
     runner.invoke(admin_app, ['session', 'start', 'session-note-bound-test'])
@@ -589,3 +770,54 @@ def test_admin_session_note_error(mock_workspace, monkeypatch):
     result = runner.invoke(admin_app, ['session', 'note', '1'])
     assert result.exit_code == 1
     assert 'Error viewing session note: Session note view failed' in result.stdout
+
+
+def test_admin_persona_import_symlink_prevention(mock_workspace, tmp_path):
+    archive_path = tmp_path / 'symlink.tur'
+    import io
+    import tarfile
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        info = tarfile.TarInfo(name='persona.yaml')
+        info.type = tarfile.SYMTYPE
+        info.linkname = 'some_target'
+        tar.addfile(info, io.BytesIO(b''))
+
+    result = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result.exit_code == 1
+    assert 'Archive contains a symlink or hardlink' in result.stdout
+
+
+def test_admin_persona_import_hardlink_prevention(mock_workspace, tmp_path):
+    archive_path = tmp_path / 'hardlink.tur'
+    import io
+    import tarfile
+
+    with tarfile.open(archive_path, 'w:gz') as tar:
+        info = tarfile.TarInfo(name='persona.yaml')
+        info.type = tarfile.LNKTYPE
+        info.linkname = 'some_target'
+        tar.addfile(info, io.BytesIO(b''))
+
+    result = runner.invoke(admin_app, ['persona', 'import', str(archive_path)])
+    assert result.exit_code == 1
+    assert 'Archive contains a symlink or hardlink' in result.stdout
+
+
+def test_admin_persona_import_set_default(mock_workspace, tmp_path):
+    _ = mock_workspace
+    archive_path = Path('ariel_default.tur')
+    result_export = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', str(archive_path)])
+    assert result_export.exit_code == 0
+    assert archive_path.exists()
+
+    # Persona already exists in mock registry — use --force to allow reimport
+    result_import = runner.invoke(admin_app, ['persona', 'import', str(archive_path), '--set-default', '--force'])
+    assert result_import.exit_code == 0
+    assert 'successfully imported' in result_import.stdout
+
+    state_path = Path('.tur/state.yaml')
+    assert state_path.exists()
+    with open(state_path, encoding='utf-8') as f:
+        state_data = yaml.safe_load(f)
+    assert state_data['active_persona_id'] == '7544202e-92f5-40ce-adfb-e4b0eae6c262'

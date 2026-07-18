@@ -29,10 +29,10 @@ class SymmetryError(ValueError):
 
 class HarnessDelegationError(ValueError):
     """Raised when introspection must be delegated to the Harness due to lack of API key."""
+
     def __init__(self, prompt: str):
         super().__init__(prompt)
         self.prompt = prompt
-
 
 
 # Pydantic extraction models for GenAI JSON structured generation
@@ -228,7 +228,7 @@ Please follow these instructions to process the active L1 memories and update th
 {raw_text}
 
 ## 2. Existing L2 Nodes in Graph (for reference/synonym-merging):
-{existing_nodes_info or "None"}
+{existing_nodes_info or 'None'}
 
 ## 3. Allowed Types:
 - Allowed Node Types:
@@ -319,7 +319,7 @@ Please perform these modifications directly. Once done, print a completion messa
         return self._merge_extracted_graph(graph, extracted, context)
 
     def _merge_extracted_graph(
-        self, graph: nx.DiGraph, extracted: ExtractedGraph, context: dict
+            self, graph: nx.DiGraph, extracted: ExtractedGraph, context: dict
     ) -> tuple[nx.DiGraph, dict]:
         # Update NetworkX Graph based on extraction
         # Merge new nodes and consolidate synonyms
@@ -362,7 +362,7 @@ Please perform these modifications directly. Once done, print a completion messa
                 # EP-0103 Signature constraints:
                 # 1. precedes can only connect Decision and Fact nodes
                 if edge.type == 'precedes' and not (
-                    src_type in ['Decision', 'Fact'] and tgt_type in ['Decision', 'Fact']
+                        src_type in ['Decision', 'Fact'] and tgt_type in ['Decision', 'Fact']
                 ):
                     continue
                 # 2. refines only connects nodes of the same type
@@ -375,9 +375,9 @@ Please perform these modifications directly. Once done, print a completion messa
                         src, tgt, type=edge.type, confidence=edge.confidence, created_at=datetime.now(UTC).isoformat()
                     )
                     if not nx.is_directed_acyclic_graph(
-                        nx.subgraph_view(
-                            graph, filter_edge=lambda u, v: graph[u][v].get('type') in ['precedes', 'depends_on']
-                        )
+                            nx.subgraph_view(
+                                graph, filter_edge=lambda u, v: graph[u][v].get('type') in ['precedes', 'depends_on']
+                            )
                     ):
                         # If cycle is formed, remove to enforce DAG constraints
                         graph.remove_edge(src, tgt)
@@ -406,9 +406,9 @@ class PopperSubagent(CouncilSubagent):
             if edge_type == 'superseded_by':
                 # u is superseded by v
                 if (
-                    graph.nodes.get(v, {}).get('status') == 'active'
-                    and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
-                    and graph.nodes[u].get('status') != 'superseded'
+                        graph.nodes.get(v, {}).get('status') == 'active'
+                        and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
+                        and graph.nodes[u].get('status') != 'superseded'
                 ):
                     graph.nodes[u]['status'] = 'superseded'
                     graph.nodes[u]['confidence'] = 0.0
@@ -416,9 +416,9 @@ class PopperSubagent(CouncilSubagent):
             elif edge_type == 'refuted_by':
                 # u is refuted by v
                 if (
-                    graph.nodes.get(v, {}).get('status') == 'active'
-                    and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
-                    and graph.nodes[u].get('status') != 'superseded'
+                        graph.nodes.get(v, {}).get('status') == 'active'
+                        and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
+                        and graph.nodes[u].get('status') != 'superseded'
                 ):
                     graph.nodes[u]['status'] = 'superseded'
                     graph.nodes[u]['confidence'] = 0.0
@@ -883,11 +883,11 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
 
 
 def run_introspection(
-    persona_dir: Path,
-    bootstrap: bool = False,
-    model: str = 'gemini-3.1-pro-preview',
-    test_mode: bool = False,
-    mcp_context: Any = None,
+        persona_dir: Path,
+        bootstrap: bool = False,
+        model: str = 'gemini-3.1-pro-preview',
+        test_mode: bool = False,
+        mcp_context: Any = None,
 ) -> nx.DiGraph:
     """
     Core entrypoint to run the introspection compaction loop.
@@ -916,7 +916,6 @@ def run_introspection(
         'test_mode': test_mode,
         'mcp_context': mcp_context,
     }
-
 
     # Load compaction configuration from persona.yaml
     persona_yaml_path = persona_dir / 'persona.yaml'
