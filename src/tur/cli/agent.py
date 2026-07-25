@@ -14,9 +14,10 @@ from tur import dreaming, persona, session
 from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.compiler import compile_persona
-from tur.introspection import HarnessDelegationError, format_graph_as_mermaid, run_introspection
+from tur.introspection import format_graph_as_mermaid, run_introspection
 from tur.memory import MemoryManager
 from tur.models import (
+    HarnessDelegationError,
     Memory,
     MemoryLink,
     MemoryScope,
@@ -325,11 +326,16 @@ def sleep(
 
             console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
 
+        except HarnessDelegationError as e:
+            console.print(e.prompt)
+            raise typer.Exit(code=0)
         except Exception as e:
             console.print(f'[red]Error during dreaming: {e}[/red]')
 
         console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
 
+    except typer.Exit:
+        raise
     except Exception as e:
         console.print(f'[red]Error during sleep: {e}[/red]')
         raise typer.Exit(code=1)

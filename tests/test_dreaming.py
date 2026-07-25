@@ -68,7 +68,12 @@ def test_perform_sleep_dreaming(mock_workspace, monkeypatch):
 
 
 def test_perform_sleep_dreaming_missing_api_key(mock_workspace, monkeypatch):
+    from tur.models import HarnessDelegationError
+
     monkeypatch.delenv('GEMINI_API_KEY', raising=False)
-    with pytest.raises(ValueError) as exc:
+    monkeypatch.delenv('TUR_LLM_API_KEY', raising=False)
+    with pytest.raises(HarnessDelegationError) as exc:
         dreaming.perform_sleep_dreaming(log_content='User: hello', active_id='7544202e-92f5-40ce-adfb-e4b0eae6c262')
-    assert 'GEMINI_API_KEY environment variable not set' in str(exc.value)
+    assert '# TUR DELEGATION: Session Epilogue & Memory Extraction Request' in exc.value.prompt
+    assert 'No local `GEMINI_API_KEY` or `TUR_LLM_API_KEY` was found' in exc.value.prompt
+

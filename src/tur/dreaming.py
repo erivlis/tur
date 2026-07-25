@@ -55,18 +55,57 @@ def perform_sleep_dreaming(
     Do not include markdown wrapper blocks (such as ```json) or any conversational text. Return only the JSON object.
     """
 
-    if ctx is not None:
+    def build_delegation_instructions() -> str:
+        from datetime import datetime, timezone
+        current_time = datetime.now(timezone.utc).isoformat()
+        persona_uuid = persona_dir.name
 
-        async def do_sampling():
-            return await _mcp_sample(ctx, prompt)
+        return f"""# TUR DELEGATION: Session Epilogue & Memory Extraction Request (EP-0121)
 
-        resp_text = run_async(do_sampling())
-    else:
-        # Configure Gemini
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            raise ValueError('GEMINI_API_KEY environment variable not set.')
+No local `GEMINI_API_KEY` or `TUR_LLM_API_KEY` was found in the environment.
+Since you (the Harness) are an autonomous agent with file-writing tools,
+you must execute the memory extraction yourself.
 
+Please parse the chat log below and extract key insights, facts, or axioms into individual OKF memory files.
+
+## 1. Chat Log to Process:
+{log_content}
+
+## 2. Allowed Memory Types & Scopes:
+- Memory Types: fact, preference, insight, axiom, event
+- Memory Scopes: universal, user, persona, incarnation
+
+## 3. OKF Memory File Schema:
+For each extracted memory, write a file named:
+`.tur/personas/{persona_uuid}/memories/active/<timestamp>_<type>_<short_hash>.md`
+
+The file MUST use this exact format (YAML frontmatter + body):
+---
+type: L1 Memory
+timestamp: {current_time}
+memory_type: <One of the Allowed Memory Types>
+scope: <One of the Allowed Memory Scopes>
+tags:
+  - dreaming
+source_session: {session_id or 'unknown'}
+---
+
+<Content of the memory>
+
+Please perform these file modifications directly. Once done, print a completion message.
+"""
+
+    from tur._helpers import require_inference
+    resp_text = require_inference(
+        prompt=prompt,
+        ctx=ctx,
+        task_description="session dreaming extraction",
+        delegation_instructions_builder=build_delegation_instructions,
+    )
+
+    if not resp_text:
+        # Fallback to local Gemini client if API key is present
+        api_key = os.environ.get('TUR_LLM_API_KEY') or os.environ.get('GEMINI_API_KEY')
         from google import genai
         from google.genai import types
 

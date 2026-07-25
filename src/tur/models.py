@@ -274,3 +274,14 @@ class SessionNotes(BaseModel):
     """
 
     notes: list[Note] = Field(default_factory=list, description='Chronological notes.')
+
+
+class HarnessDelegationError(ValueError):
+    """
+    Raised when cognitive inference must be delegated to the Harness due to lack of API key / MCP context (EP-0121).
+    """
+
+    def __init__(self, prompt: str):
+        super().__init__(prompt)
+        self.prompt = prompt
+

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from tur._helpers import yaml_safe_load
 from tur.memory import MemoryManager
-from tur.models import MemoryType
+from tur.models import HarnessDelegationError, MemoryType
 
 UTC = timezone.utc
 
@@ -25,14 +25,6 @@ class TamperedStateError(ValueError):
 
 class SymmetryError(ValueError):
     """Raised by the Noether subagent when 'Conservation of Meaning' validation fails."""
-
-
-class HarnessDelegationError(ValueError):
-    """Raised when introspection must be delegated to the Harness due to lack of API key."""
-
-    def __init__(self, prompt: str):
-        super().__init__(prompt)
-        self.prompt = prompt
 
 
 # Pydantic extraction models for GenAI JSON structured generation

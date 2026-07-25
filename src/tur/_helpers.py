@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import yaml
@@ -69,3 +70,39 @@ def _clean_json_response(resp_text: str) -> str:
             lines = lines[:-1]
         resp_text = '\n'.join(lines).strip()
     return resp_text
+
+
+def require_inference(
+    prompt: str,
+    ctx: Any | None,
+    task_description: str,
+    delegation_instructions_builder: Any | None = None,
+) -> str:
+    """
+    Request LLM inference via the dual-mode Agnostic Harness Interaction Protocol (EP-0121).
+
+    If `ctx` (MCP context) is available, issues a Sampling request to the connected Harness.
+    If `ctx` is None and delegation_instructions_builder is provided, raises HarnessDelegationError
+    with a self-describing delegation prompt.
+    """
+    from tur.models import HarnessDelegationError
+
+    if ctx is not None:
+        async def do_sampling():
+            return await _mcp_sample(ctx, prompt)
+
+        resp_text = run_async(do_sampling())
+        return _clean_json_response(resp_text)
+
+    api_key = os.environ.get('TUR_LLM_API_KEY') or os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        if delegation_instructions_builder is not None:
+            instructions = delegation_instructions_builder()
+            raise HarnessDelegationError(instructions)
+        raise ValueError(
+            f"Inference required for '{task_description}' but neither MCP context "
+            "nor TUR_LLM_API_KEY / GEMINI_API_KEY environment variable was provided."
+        )
+
+    return ""  # Signal caller to perform local provider API call if API key present
+
