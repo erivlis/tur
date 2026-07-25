@@ -175,41 +175,32 @@ class RussellSubagent(CouncilSubagent):
         """
 
         mcp_context = context.get('mcp_context')
-        if mcp_context is not None:
-            from tur._helpers import _clean_json_response, _mcp_sample, run_async
+        api_key = os.environ.get('TUR_LLM_API_KEY') or os.environ.get('GEMINI_API_KEY')
 
-            async def do_sampling():
-                return await _mcp_sample(mcp_context, prompt)
+        # Test mode fallback for mock test suites
+        if mcp_context is None and not api_key and context.get('test_mode'):
+            for mem in mems:
+                node_id = f'concept-{mem.id[:8]}'
+                graph.add_node(
+                    node_id,
+                    type='Fact' if mem.type.value == 'fact' else 'Insight',
+                    content=mem.content,
+                    pinned=False,
+                    sources=[mem.id],
+                    created_at=mem.timestamp.isoformat(),
+                    updated_at=mem.timestamp.isoformat(),
+                    confidence=1.0,
+                    retrieval_count=0,
+                    status='active',
+                )
+            return graph, context
 
-            resp_text = run_async(do_sampling())
-            resp_text = _clean_json_response(resp_text)
-        else:
-            api_key = os.environ.get('GEMINI_API_KEY')
-            if not api_key:
-                # Standard fallback for test suites or offline execution
-                if context.get('test_mode'):
-                    for mem in mems:
-                        node_id = f'concept-{mem.id[:8]}'
-                        graph.add_node(
-                            node_id,
-                            type='Fact' if mem.type.value == 'fact' else 'Insight',
-                            content=mem.content,
-                            pinned=False,
-                            sources=[mem.id],
-                            created_at=mem.timestamp.isoformat(),
-                            updated_at=mem.timestamp.isoformat(),
-                            confidence=1.0,
-                            retrieval_count=0,
-                            status='active',
-                        )
-                    return graph, context
+        def build_delegation_instructions() -> str:
+            current_time = datetime.now(UTC).isoformat()
+            persona_dir = context.get('persona_dir')
+            persona_uuid = persona_dir.name if persona_dir else '<uuid>'
 
-                # Construct detailed delegation instruction prompt for the Harness
-                current_time = datetime.now(UTC).isoformat()
-                persona_dir = context.get('persona_dir')
-                persona_uuid = persona_dir.name if persona_dir else '<uuid>'
-
-                instructions = f"""# TUR DELEGATION: Council Introspection Request
+            return f"""# TUR DELEGATION: Council Introspection Request
 
 No local `GEMINI_API_KEY` was found in the environment. Since you (the Harness) are an autonomous agent
 with file-writing and execution tools, you must execute the Introspection Assembly yourself.
@@ -277,26 +268,18 @@ Path(p / 'knowledge_graph.yaml').write_text(
 
 Please perform these modifications directly. Once done, print a completion message.
 """
-                raise HarnessDelegationError(instructions)
 
-            from google import genai
-            from google.genai import types
+        from tur._helpers import require_inference
+        model = context.get('model', 'gemini-3.1-pro-preview')
 
-            client = genai.Client(api_key=api_key)
-            model = context.get('model', 'gemini-3.1-pro-preview')
-
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type='application/json',
-                    response_json_schema=ExtractedGraph.model_json_schema(),
-                ),
-            )
-
-            resp_text = response.text
-            if not resp_text:
-                raise ValueError('Empty response from LLM')
+        resp_text = require_inference(
+            prompt=prompt,
+            ctx=mcp_context,
+            task_description="council introspection extraction",
+            delegation_instructions_builder=build_delegation_instructions,
+            model=model,
+            response_schema=ExtractedGraph.model_json_schema(),
+        )
 
         try:
             extracted = ExtractedGraph.model_validate_json(resp_text)

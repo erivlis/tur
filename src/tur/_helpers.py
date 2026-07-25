@@ -72,18 +72,49 @@ def _clean_json_response(resp_text: str) -> str:
     return resp_text
 
 
+def _local_gemini_generate(
+    prompt: str,
+    api_key: str,
+    model: str = 'gemini-3.1-pro-preview',
+    response_schema: Any | None = None,
+) -> str:
+    """Helper to execute local Gemini SDK content generation."""
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    config = None
+    if response_schema is not None:
+        config = types.GenerateContentConfig(
+            response_mime_type='application/json',
+            response_json_schema=response_schema,
+        )
+
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=config,
+    )
+    resp_text = response.text
+    if not resp_text:
+        raise ValueError('LLM generation returned empty response')
+    return resp_text
+
+
 def require_inference(
     prompt: str,
     ctx: Any | None,
     task_description: str,
     delegation_instructions_builder: Any | None = None,
+    model: str = 'gemini-3.1-pro-preview',
+    response_schema: Any | None = None,
 ) -> str:
     """
     Request LLM inference via the dual-mode Agnostic Harness Interaction Protocol (EP-0121).
 
     If `ctx` (MCP context) is available, issues a Sampling request to the connected Harness.
-    If `ctx` is None and delegation_instructions_builder is provided, raises HarnessDelegationError
-    with a self-describing delegation prompt.
+    If `ctx` is None and no API key is present, raises HarnessDelegationError with delegation prompt.
+    If an API key is present, executes local provider generation.
     """
     from tur.models import HarnessDelegationError
 
@@ -104,5 +135,12 @@ def require_inference(
             "nor TUR_LLM_API_KEY / GEMINI_API_KEY environment variable was provided."
         )
 
-    return ""  # Signal caller to perform local provider API call if API key present
+    raw_resp = _local_gemini_generate(
+        prompt=prompt,
+        api_key=api_key,
+        model=model,
+        response_schema=response_schema,
+    )
+    return _clean_json_response(raw_resp)
+
 

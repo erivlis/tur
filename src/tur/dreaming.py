@@ -101,27 +101,9 @@ Please perform these file modifications directly. Once done, print a completion 
         ctx=ctx,
         task_description="session dreaming extraction",
         delegation_instructions_builder=build_delegation_instructions,
+        model=model,
+        response_schema=Dream.model_json_schema(),
     )
-
-    if not resp_text:
-        # Fallback to local Gemini client if API key is present
-        api_key = os.environ.get('TUR_LLM_API_KEY') or os.environ.get('GEMINI_API_KEY')
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=api_key)
-
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type='application/json',
-                response_json_schema=Dream.model_json_schema(),
-            ),
-        )
-        resp_text = response.text
-        if not resp_text:
-            raise ValueError('Dream generation returned empty response')
 
     import json
 
