@@ -2,7 +2,7 @@
 title: "EP-0101: LLM Agnosticism (The Symbiotic Paradigm)"
 description: "Defines Tur's LLM-agnostic architecture via MCP Sampling, eliminating embedded LLM SDK dependencies."
 icon: lucide/shuffle
-status: final
+status: implemented
 ---
 
 # EP-0101: LLM Agnosticism (The Symbiotic Paradigm)
@@ -12,10 +12,10 @@ status: final
 | **EP**      | 0101                                     |
 | **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
 | **Author**  | Eran Rivlis, The Architect               |
-| **Status**  | Final                                    |
+| **Status**  | Implemented                              |
 | **Type**    | Architecture                             |
 | **Created** | 2026-03-29                               |
-| **Updated** | 2026-07-18                               |
+| **Updated** | 2026-07-25                               |
 
 ## Abstract
 
@@ -75,6 +75,8 @@ Object) triples and hand them back to me."*
 
 ## Change Log
 
+* **2026-07-25:**
+    * **Status promoted to Implemented.** Implementation completed via **EP-0121 (Agnostic Harness Interaction Protocol)**. Both `tur sleep` and `tur introspect` now follow the dual-mode interaction pattern (MCP sampling via connected context, or `HarnessDelegationError` with self-describing delegation instructions when executed offline without API keys).
 * **2026-07-18:**
     * **Status reverted from Implemented to Final.** The MCP path is correctly agnostic (the harness provides inference
       via `ctx.sample()` / MCP Sampling), and `introspect` has a `HarnessDelegationError` fallback for CLI usage without

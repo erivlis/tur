@@ -2,7 +2,7 @@
 title: "EP-0121: The Agnostic Harness Interaction Protocol"
 description: "Formalizes a unified, LLM-provider-agnostic interaction pattern for all cognitive commands, covering both MCP (context/sampling) and CLI (delegation prompt) modes."
 icon: lucide/cable
-status: draft
+status: implemented
 ---
 
 # EP-0121: The Agnostic Harness Interaction Protocol
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0121                                                                            |
 | **Title**   | The Agnostic Harness Interaction Protocol                                       |
 | **Author**  | The Architect                                                                   |
-| **Status**  | Draft                                                                           |
+| **Status**  | Implemented                                                                     |
 | **Type**    | Architecture                                                                    |
 | **Created** | 2026-07-18                                                                      |
-| **Updated** | 2026-07-18                                                                      |
+| **Updated** | 2026-07-25                                                                      |
 | **Depends** | EP-0101 (LLM Agnosticism), EP-0108 (Spark Protocol), EP-0109 (Harness Adapters) |
 
 ## Abstract
@@ -131,6 +131,11 @@ mapped to any provider's token by the deployment environment.
 
 ## Change Log
 
+* **2026-07-25:**
+    * **Status promoted to Implemented.**
+    * Moved `HarnessDelegationError` into `src/tur/models.py` for shared use across the framework.
+    * Added `require_inference` helper in `src/tur/_helpers.py` implementing the dual-mode adapter (MCP sampling vs. CLI delegation prompt).
+    * Refactored `perform_sleep_dreaming` in `src/tur/dreaming.py` and `tur sleep` CLI command in `src/tur/cli/agent.py` to raise and catch `HarnessDelegationError` with self-describing delegation instructions when run offline without API keys.
 * **2026-07-18:**
     * Initial Draft. Spawned from the EP-0101 and EP-0108 status review. Formalizes the dual-mode (MCP sampling vs.
       CLI delegation) pattern already partially implemented in `introspection.py` as the universal standard for all

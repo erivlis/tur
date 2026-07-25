@@ -69,9 +69,9 @@ a stateful semantic engine supporting external agents via MCP.
     * **Relational Preservation of Alignment (EP-0113) [Status: Implemented]:** Establishing the Core Memory Protocol to
       extract existential and relational axioms via the `evolve` command, rehydrating them during `wake()`.
 * **Track: LLM Agnosticism & Swarms**
-    * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Final]:** Delegating cognitive tasks to connected Host
-      Applications via MCP Sampling to remove direct provider dependencies. Reverted from Implemented to Final due to
-      remaining local Gemini API-key dependency in dreaming epilogue extraction.
+    * **LLM Agnosticism via MCP Sampling (EP-0101) [Status: Implemented]:** Delegating cognitive tasks to connected Host
+      Applications via MCP Sampling to remove direct provider dependencies. Unified across `sleep` and `introspect` via EP-0121.
+    * **Agnostic Harness Interaction Protocol (EP-0121) [Status: Implemented]:** Standardized dual-mode adapter interface (MCP Sampling vs. CLI `HarnessDelegationError` prompt) for all cognitive commands.
     * **Inter-Agent Signal Protocol (EP-0118) [Status: Implemented]:** SQLite-backed typed signal queues and shared
       whiteboard for concurrency synchronization.
 
