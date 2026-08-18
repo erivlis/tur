@@ -398,3 +398,53 @@ def test_tms_propagation_on_refines(temp_workspace):
     # Refiner node-a should also be deactivated
     assert graph.nodes['node-a']['status'] == 'superseded'
     assert graph.nodes['node-a']['confidence'] == 0.0
+
+
+def test_ep0003_policy_vs_mechanism_class_mappings():
+    """Verify that all functional engine classes and legacy Council aliases are correctly exported per EP-0003."""
+    from tur.introspection import (
+        BaconSubagent,
+        BoundaryEnforcer,
+        ClarityDistiller,
+        CouncilSubagent,
+        ExplorerSubagent,
+        FeynmanSubagent,
+        GraphPruner,
+        HebbianGraphDecayer,
+        IntegrityVerifier,
+        IntrospectionSubagent,
+        MaharalSubagent,
+        NoetherSubagent,
+        NoveltyExplorer,
+        OntologyExtractor,
+        PopperSubagent,
+        RussellSubagent,
+        ShannonSubagent,
+        StewardSubagent,
+        SymmetryValidator,
+        TruthMaintenanceEngine,
+    )
+
+    # Verify inheritance from IntrospectionSubagent
+    assert issubclass(IntegrityVerifier, IntrospectionSubagent)
+    assert issubclass(OntologyExtractor, IntrospectionSubagent)
+    assert issubclass(TruthMaintenanceEngine, IntrospectionSubagent)
+    assert issubclass(SymmetryValidator, IntrospectionSubagent)
+    assert issubclass(NoveltyExplorer, IntrospectionSubagent)
+    assert issubclass(HebbianGraphDecayer, IntrospectionSubagent)
+    assert issubclass(BoundaryEnforcer, IntrospectionSubagent)
+    assert issubclass(ClarityDistiller, IntrospectionSubagent)
+    assert issubclass(GraphPruner, IntrospectionSubagent)
+
+    # Verify legacy alias equality
+    assert CouncilSubagent is IntrospectionSubagent
+    assert BaconSubagent is IntegrityVerifier
+    assert RussellSubagent is OntologyExtractor
+    assert PopperSubagent is TruthMaintenanceEngine
+    assert NoetherSubagent is SymmetryValidator
+    assert ExplorerSubagent is NoveltyExplorer
+    assert ShannonSubagent is HebbianGraphDecayer
+    assert MaharalSubagent is BoundaryEnforcer
+    assert FeynmanSubagent is ClarityDistiller
+    assert StewardSubagent is GraphPruner
+

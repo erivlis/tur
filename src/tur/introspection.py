@@ -64,8 +64,8 @@ class ExtractedGraph(BaseModel):
     edges: list[ExtractedEdge] = Field(default_factory=list)
 
 
-# Abstract base class for Council Subagents
-class CouncilSubagent(ABC):
+# Abstract base class for Introspection Subagents (EP-0003 Policy vs. Mechanism)
+class IntrospectionSubagent(ABC):
     def __init__(self, name: str, role: str):
         self.name = name
         self.role = role
@@ -78,14 +78,14 @@ class CouncilSubagent(ABC):
         """
 
 
-class BaconSubagent(CouncilSubagent):
+class IntegrityVerifier(IntrospectionSubagent):
     """
-    1. Ingestion & Verification (Empiricism)
+    1. Ingestion & Verification (Integrity Mechanism / Bacon Policy)
     Runs Content-Hash checks on active L1 files, loads payloads, and raises TamperedStateError on mismatch.
     """
 
-    def __init__(self):
-        super().__init__('Bacon', 'Reality Anchor')
+    def __init__(self, name: str = 'IntegrityVerifier', role: str = 'Reality Anchor'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         persona_dir = context['persona_dir']
@@ -118,14 +118,15 @@ class BaconSubagent(CouncilSubagent):
         return graph, context
 
 
-class RussellSubagent(CouncilSubagent):
+class OntologyExtractor(IntrospectionSubagent):
     """
-    2. Ontological Extraction (Logic)
-    Uses the Host LLM (via google-genai) to extract triples and Normalizes Schemas.
+    2. Ontological Extraction (Logic Mechanism / Russell Policy)
+    Uses the Host LLM (via google-genai or MCP sampling) to extract triples and normalizes schemas.
     """
 
-    def __init__(self):
-        super().__init__('Russell', 'Ontological Logician')
+    def __init__(self, name: str = 'OntologyExtractor', role: str = 'Ontological Logician'):
+        super().__init__(name, role)
+
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         mems = context.get('raw_memories', [])
@@ -364,14 +365,14 @@ Please perform these modifications directly. Once done, print a completion messa
         return graph, context
 
 
-class PopperSubagent(CouncilSubagent):
+class TruthMaintenanceEngine(IntrospectionSubagent):
     """
-    3. Belief Revision / TMS Conflict (Falsifiability)
+    3. Belief Revision / TMS Conflict (Truth Maintenance Mechanism / Popper Policy)
     Runs a Truth Maintenance System (TMS) to propagate confidence decay down dependencies.
     """
 
-    def __init__(self):
-        super().__init__('Popper', 'Skeptical Arbitrator')
+    def __init__(self, name: str = 'TruthMaintenanceEngine', role: str = 'Skeptical Arbitrator'):
+        super().__init__(name, role)
 
     def _resolve_conflicts(self, graph: nx.DiGraph):
         """Resolves direct contradicts, superseded_by, and refuted_by conflict relations."""
@@ -464,14 +465,14 @@ class PopperSubagent(CouncilSubagent):
         return graph, context
 
 
-class NoetherSubagent(CouncilSubagent):
+class SymmetryValidator(IntrospectionSubagent):
     """
-    4. Symmetry Check (Symmetry)
+    4. Symmetry Check (Symmetry Conservation Mechanism / Noether Policy)
     Ensures "Conservation of Meaning". Validates that active decisions are not lost in graph compaction.
     """
 
-    def __init__(self):
-        super().__init__('Noether', 'Symmetry Meta-Validator')
+    def __init__(self, name: str = 'SymmetryValidator', role: str = 'Symmetry Meta-Validator'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         raw_mems = context.get('raw_memories', [])
@@ -492,14 +493,15 @@ class NoetherSubagent(CouncilSubagent):
         return graph, context
 
 
-class ExplorerSubagent(CouncilSubagent):
+class NoveltyExplorer(IntrospectionSubagent):
     """
-    5. Structural Explorer (Curiosity)
+    5. Structural Explorer (Curiosity Mechanism / Explorer Policy)
     Bridges gaps, maps alternative Hypothesis designs, and identifies OpenQuestion nodes.
     """
 
-    def __init__(self):
-        super().__init__('Explorer', 'Conceptual Explorer')
+    def __init__(self, name: str = 'NoveltyExplorer', role: str = 'Conceptual Explorer'):
+        super().__init__(name, role)
+
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Connect isolated parts or add OpenQuestion placeholder if we find structural holes
@@ -531,14 +533,14 @@ class ExplorerSubagent(CouncilSubagent):
         return graph, context
 
 
-class ShannonSubagent(CouncilSubagent):
+class HebbianGraphDecayer(IntrospectionSubagent):
     """
-    6. Hebbian Decay & Pruning (Efficiency)
+    6. Hebbian Decay & Pruning (Information Decay Mechanism / Shannon Policy)
     Prunes low-activation nodes based on interaction turn count logs, protecting pinned core principles.
     """
 
-    def __init__(self):
-        super().__init__('Shannon', 'Entropy Manager')
+    def __init__(self, name: str = 'HebbianGraphDecayer', role: str = 'Entropy Manager'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Process and flush the transient recall_access_log.txt
@@ -587,14 +589,14 @@ class ShannonSubagent(CouncilSubagent):
         return graph, context
 
 
-class MaharalSubagent(CouncilSubagent):
+class BoundaryEnforcer(IntrospectionSubagent):
     """
-    7. Validation & Safety Sandbox (Containment)
+    7. Validation & Safety Sandbox (Boundary Mechanism / Golem Policy)
     Checks UUID/schema validity and writes files atomically.
     """
 
-    def __init__(self):
-        super().__init__('Maharal', 'Containment Subagent')
+    def __init__(self, name: str = 'BoundaryEnforcer', role: str = 'Containment Subagent'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Validate node IDs to prevent path traversal
@@ -604,27 +606,27 @@ class MaharalSubagent(CouncilSubagent):
         return graph, context
 
 
-class FeynmanSubagent(CouncilSubagent):
+class ClarityDistiller(IntrospectionSubagent):
     """
-    8. Clarity & Simplification (Clarity)
+    8. Clarity & Simplification (Clarity Mechanism / Feynman Policy)
     Audits the Knowledge Graph for readability.
     """
 
-    def __init__(self):
-        super().__init__('Feynman', 'Clarity Auditor')
+    def __init__(self, name: str = 'ClarityDistiller', role: str = 'Clarity Auditor'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         return graph, context
 
 
-class StewardSubagent(CouncilSubagent):
+class GraphPruner(IntrospectionSubagent):
     """
-    9. Harmony & Lock Guards (Harmony)
+    9. Harmony & Lock Guards (Harmony Mechanism / Steward Policy)
     Enforces read-only recall queries and fallback compile routes.
     """
 
-    def __init__(self):
-        super().__init__('Steward', 'Swarm Harmony')
+    def __init__(self, name: str = 'GraphPruner', role: str = 'Swarm Harmony'):
+        super().__init__(name, role)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         context['introspection_completed'] = True
@@ -651,21 +653,35 @@ class IntrospectionAssembly:
 
         if not self.agents:
             self.agents = [
-                BaconSubagent(),
-                RussellSubagent(),
-                PopperSubagent(),
-                NoetherSubagent(),
-                ExplorerSubagent(),
-                ShannonSubagent(),
-                MaharalSubagent(),
-                FeynmanSubagent(),
-                StewardSubagent(),
+                IntegrityVerifier(),
+                OntologyExtractor(),
+                TruthMaintenanceEngine(),
+                SymmetryValidator(),
+                NoveltyExplorer(),
+                HebbianGraphDecayer(),
+                BoundaryEnforcer(),
+                ClarityDistiller(),
+                GraphPruner(),
             ]
 
     def execute(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         for agent in self.agents:
             graph, context = agent.run(graph, context)
         return graph, context
+
+
+# Legacy Council Subagent Aliases (Backwards Compatibility per EP-0003)
+CouncilSubagent = IntrospectionSubagent
+BaconSubagent = IntegrityVerifier
+RussellSubagent = OntologyExtractor
+PopperSubagent = TruthMaintenanceEngine
+NoetherSubagent = SymmetryValidator
+ExplorerSubagent = NoveltyExplorer
+ShannonSubagent = HebbianGraphDecayer
+MaharalSubagent = BoundaryEnforcer
+FeynmanSubagent = ClarityDistiller
+StewardSubagent = GraphPruner
+
 
 
 # Compacted L2 graph representation compiler

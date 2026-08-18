@@ -48,7 +48,7 @@ a stateful semantic engine supporting external agents via MCP.
 *Goal: Solidify the deterministic engine, lifecycle management, and core software boundaries.*
 
 * **Robust Memory Management:** Basic `sleep` / `wake` cycle and L1 event logs (now OKF Markdown files per EP-0120).
-* **Policy vs. Mechanism Decoupling (EP-0003) [Status: Accepted]:** Decoupling deterministic execution mechanics in `src/tur/` from anthropomorphic Council metaphors. Refactoring `introspection.py` to functional class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
+* **Policy vs. Mechanism Decoupling (EP-0003) [Status: Implemented]:** Decoupled deterministic execution mechanics in `src/tur/` from anthropomorphic Council metaphors. Refactored `introspection.py` to functional class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
 
