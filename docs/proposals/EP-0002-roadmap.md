@@ -15,14 +15,14 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-07-18      |
+| **Updated** | 2026-08-18      |
 
 ## Abstract
 
 This document outlines the strategic roadmap for the Tur project. It defines the short-term, medium-term, and long-term
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
-shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), and the
-"Ontological Porcelain" MCP API (EP-0105).
+shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
+"Ontological Porcelain" MCP API (EP-0105), and Policy vs. Mechanism Decoupling (EP-0003).
 
 ## Motivation
 
@@ -36,7 +36,7 @@ A phased approach allows us to stabilize the core architecture before introducin
 The recent introduction of the 100-series EPs marks a significant pivot: Tur is no longer just a static compiler, but
 a stateful semantic engine supporting external agents via MCP.
 
-* **Phase 1 (The Foundation):** Focuses on schema rigidity, state management, and the CLI. (Mostly Complete)
+* **Phase 1 (The Foundation):** Focuses on schema rigidity, state management, CLI, and Policy vs. Mechanism decoupling. (Active Refactoring)
 * **Phase 2 (The Memory Architecture & Abstraction):** Focuses on cryptographic state (Merkle), Graph Memory,
   Federation, and LLM Agnosticism.
 * **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration and multi-agent coordination.
@@ -45,11 +45,13 @@ a stateful semantic engine supporting external agents via MCP.
 
 ### Phase 1: The Foundation (v0.1.x -> v0.2.0) \[Status: Stabilized\]
 
-*Goal: Solidify the deterministic engine and lifecycle management.*
+*Goal: Solidify the deterministic engine, lifecycle management, and core software boundaries.*
 
 * **Robust Memory Management:** Basic `sleep` / `wake` cycle and L1 event logs (now OKF Markdown files per EP-0120).
+* **Policy vs. Mechanism Decoupling (EP-0003) [Status: Accepted]:** Decoupling deterministic execution mechanics in `src/tur/` from anthropomorphic Council metaphors. Refactoring `introspection.py` to functional class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
+
 
 ### Phase 2: The Memory Architecture & Abstraction (v0.3.x -> v0.5.0) \[Status: Active\]
 
@@ -106,7 +108,14 @@ This is a forward-looking informational document. Future EPs derived from this r
 compatibility concerns. Legacy `knowledge_graph.yaml` files are still read via a fallback adapter (EP-0120 Phase 2),
 ensuring backwards compatibility during the OKF transition.
 
+## Reference Implementation
+
+Roadmap document implemented across `docs/proposals/` and core CLI/MCP implementation.
+
+## Change Log
+
 * **2026-08-18:**
+    * Adopted **EP-0003 (Policy vs. Mechanism)** to decouple deterministic software mechanics in `src/tur/` from anthropomorphic Council metaphors, initiating the refactoring of introspection subagents to functional computer science names.
     * Promoted **EP-0119 (Persona-Centric Introspection Architecture)** to **Accepted** status.
 * **2026-07-18:**
     * Promoted **EP-0104 (Federated Knowledge)**, **EP-0105 (Porcelain API)**, **EP-0106 (Merkle Memory)**, **EP-0108 (

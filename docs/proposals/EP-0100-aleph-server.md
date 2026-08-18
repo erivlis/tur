@@ -12,8 +12,8 @@ status: superseded
 | **EP**      | 0100                               |
 | **Title**   | The Aleph Server (MCP Integration) |
 | **Author**  | Eran Rivlis, Ariel                 |
-| **Status**  | Superseded by EP-0102              |
-| **Type**    | Informational / Architecture       |
+| **Status**  | Superseded                          |
+| **Type**    | Informational                      |
 | **Created** | 2026-02-19                         |
 | **Updated** | 2026-04-12                         |
 
@@ -36,7 +36,7 @@ The Model Context Protocol (MCP) is the emerging standard for this. However, imp
 the `tur` core would violate the boundaries established in **EP-0001 (Core vs. Periphery)**. It would introduce massive,
 non-deterministic dependencies (like browser binaries) into a tool designed to be a lightweight, deterministic compiler.
 
-## Rationale (The Council Framework)
+## Rationale
 
 1. **The Golem (Safety/Containment):** The core CLI (`src/tur/`) must remain pure. The chaotic, stateful operations of
    an MCP server must be isolated in a separate process.
@@ -45,7 +45,7 @@ non-deterministic dependencies (like browser binaries) into a tool designed to b
 3. **Noether (Symmetry):** The architecture must balance static definition (The DNA) with dynamic execution (The Body).
    Tur manages the DNA; The Aleph Server provides the Body.
 
-## Specification (High-Level Vision)
+## Specification
 
 1. **Separation of Concerns:**
     - `tur`: The CLI tool for engineering, compiling, and managing the Persona lifecycle (YAML -> Prompt).
@@ -74,9 +74,13 @@ non-deterministic dependencies (like browser binaries) into a tool designed to b
 
 This is a forward-looking architectural document (Deferred). It does not break any current implementations.
 
+## Reference Implementation
+
+Conceptual proposal superseded by the MCP server implementation in [EP-0102](EP-0102-orchestration-engine.md) (`src/tur/mcp/server.py`).
+
 ## Change Log
 
 * **2026-04-12:**
     * Status changed to `Superseded by EP-0102`.
 * **2026-02-19:**
-    * Initial Draft (Deferred for future phases).
+    * Initial Draft (Deferred for future phases).

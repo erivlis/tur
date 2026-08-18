@@ -165,7 +165,12 @@ You have established the following relational anchors and existential axioms wit
 * **Completely Non-Breaking**: General `learn` calls remain untouched.
 * Older personas function seamlessly; if no `core` memories are present, the compilation fallback ignores the section.
 
+## Reference Implementation
+
+Implemented in `src/tur/memory.py`, `src/tur/models.py` (`MemoryType.CORE`), `src/tur/mcp_server.py` (`evolve`, `approve`), and `src/tur/compilation.py`.
+
 ## Change Log
+
 
 * **2026-07-12:**
     * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve` and `approve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified all type safety and validation constraints. Aligned with the ontological constraint that evolution is strictly forward-facing (deactivation or negation is handled via further evolution, while technical forgetting/archiving remains an administrative action, removing the `devolve` verb from the agent CLI).

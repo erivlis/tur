@@ -154,9 +154,12 @@ When `agentmemory` returns retrieved chunks to the context window, Tur's **Poppe
 * It leverages `agentmemory`'s existing REST API and MCP server tools without requiring any structural changes to Tur's
   file storage (`.tur/`).
 
----
+## Reference Implementation
+
+Integration pattern documented in `EP-0112` and enabled via companion `agentmemory` server deployment.
 
 ## Change Log
+
 
 * **2026-05-28:**
     * Initial Draft created by the Architect & Ariel to integrate agentmemory as the high-frequency storage companion.

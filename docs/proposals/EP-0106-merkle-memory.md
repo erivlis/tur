@@ -107,15 +107,6 @@ A new CLI command, `tur verify`, will be introduced. This command will iterate t
 bank, recompute the hashes of their contents, and assert that they match their filenames. Any divergence triggers a
 fatal "Tampered State" error (The Golem Protocol).
 
-## Backwards Compatibility & The Migration Script
-
-Because this proposal changes the fundamental identification schema of memories from UUID to SHA-256, all existing L1
-and L0 memory files must be migrated before the system can boot.
-
-A standalone, one-time script (`scripts/migrate_to_merkle.py`) has been provided to safely migrate the memory banks.
-
-### The Migration Logic (Step-by-Step)
-
 When the user executes the script, it performs the following atomic operations:
 
 1. **Federated Scan (Where it looks):** It scans for all Persona directories in both the local project (
@@ -264,7 +255,16 @@ if __name__ == "__main__":
     main()
 ```
 
+## Backwards Compatibility
+
+* Includes automated migration script `scripts/migrate_to_merkle.py` to upgrade legacy memory files to Merkle format.
+
+## Reference Implementation
+
+Implemented in `src/tur/merkle.py`, `src/tur/memory.py`, `src/tur/models.py`, and `scripts/migrate_to_merkle.py`.
+
 ## Change Log
+
 
 * **2026-07-18:** Status promoted from Final to Implemented. SHA-256 content-addressing live in memory.py; Golem's
   Seal (atomic write + lock) implemented; integrity audit via memory.py MemoryManager.audit_integrity().

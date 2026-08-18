@@ -18,7 +18,11 @@ status: implemented
 | **Updated**    | 2026-07-11                                  |
 | **Supersedes** | EP-0103, EP-0114                            |
 
-## 1. Context & Motivation
+## Abstract
+
+This proposal maps L1 and L2 memory structures to human-readable Open Knowledge Format (OKF) markdown directories while preserving Merkle seals, Truth Maintenance System (TMS) confidence decay, and Hebbian pruning. By adapting Tur to use OKF as its underlying storage medium, we unlock native Git-based tracking, Obsidian/Notion interoperability, and absolute tool agnosticism while retaining Tur's advanced cognitive safety protocols.
+
+## Motivation
 
 Prior to this proposal, Tur managed memory at two layers:
 1. **L1 Event Logs**: Stored as individual `.yaml` files containing serialized Pydantic memory objects under `.tur/personas/<uuid>/memories/`.
@@ -28,11 +32,24 @@ While this architecture guaranteed consistency and facilitated mathematical oper
 
 The **Open Knowledge Format (OKF)** offers a human- and agent-friendly, vendor-neutral structure of markdown files with YAML frontmatter. By adapting Tur to use OKF as its underlying storage medium, we unlocked native Git-based tracking, Obsidian/Notion interoperability, and absolute tool agnosticism, while retaining Tur's advanced cognitive safety protocols (TMS, cryptographic validation, and Hebbian pruning).
 
----
+## Rationale
 
-## 2. Proposed Design
+### Pros
+* **Human-in-the-Loop Curation**: Humans can open Obsidian or a text editor and edit a concept or correct a link directly.
+* **Sub-concept Version Control**: Instead of git diffing a massive 150KB single YAML graph, git shows line-by-line history of individual concepts changing.
+* **Swarm Readiness**: Multiple agents can read and write separate concept files concurrently with minimal risk of merge conflicts (POSIX atomic file operations limit conflicts to single-file level).
+* **Decoupled Search**: External search servers (like Semble) can index the `concepts/` directory directly as a collection of document chunks without custom parsing logic.
 
-We propose representing both L1 and L2 memory layers as a directory tree of OKF-conformant markdown documents.
+### Cons
+* **I/O Overhead**: Instead of reading a single `knowledge_graph.yaml` file, Tur must read and parse multiple small markdown files.
+* **Synonym Unification Complexity**: Synonyms must be checked by reading and comparing many files, which can be slower than scanning a single NetworkX data structure in memory.
+* **Link Validation Latency**: Ensuring reference integrity (preventing broken links) requires scanning all body links across all files, which has a higher complexity than validating a NetworkX edge list.
+
+## Specification
+
+### 1. Proposed Directory Layout
+
+We propose representing both L1 and L2 memory layers as a directory tree of OKF-conformant markdown documents:
 
 ```
 .tur/personas/<uuid>/
@@ -50,11 +67,9 @@ We propose representing both L1 and L2 memory layers as a directory tree of OKF-
     └── archive/                  # Decayed/Pruned nodes (confidence <= 0.2)
 ```
 
----
+### 2. Serialization Schemas
 
-## 3. Serialization Schemas
-
-### 3.1 L1 Memories (Event Log)
+#### 2.1 L1 Memories (Event Log)
 Each L1 event file is mapped to an OKF Concept.
 
 **File Path**: `memories/active/<timestamp>_<type>_<id>.md`
@@ -75,7 +90,7 @@ Decomposed the monolith 'main.py' into isolated domain modules: user, persona, s
 Removed 'main.py' aggregator. Standardized all CLI script paths.
 ```
 
-### 3.2 L2 Concepts (Graph Nodes)
+#### 2.2 L2 Concepts (Graph Nodes)
 Instead of a single `knowledge_graph.yaml`, every node in the L2 graph is represented by its own OKF file.
 
 **File Path**: `concepts/active/concept-<id>.md`
@@ -111,68 +126,56 @@ The decomposition of `main.py` solidifies our commitment to direct, domain-drive
 [1] [Decomposition Commit](https://github.com/erivlis/tur/commit/abc123xyz)
 ```
 
----
+### 3. Subagent & Introspection Engine Adaptations (EP-0003 Alignment)
 
-## 4. Subagent Adaptations (Cognitive Lifecycle)
-
-To keep Tur's cognitive functionality intact, the subagents in `src/tur/introspection.py` will be refactored to parse and update OKF directories:
+To keep Tur's cognitive functionality intact while maintaining strict decoupling between deterministic mechanisms and philosophical policy ([EP-0003](EP-0003-policy-vs-mechanism.md)), the introspection engine components in `src/tur/introspection.py` are structured around functional computer science roles:
 
 ```mermaid
 flowchart TD
-    L1[Raw L1 OKF Files] -->|Ingest & Hash Check| Bacon[Bacon Subagent]
-    Bacon -->|Extract Triples & Align| Russell[Russell Subagent]
+    L1[Raw L1 OKF Files] -->|Ingest & Hash Check| Bacon[IntegrityVerifier]
+    Bacon -->|Extract Triples & Align| Russell[OntologyExtractor]
     Russell -->|Build Graph & Write L2 OKF Nodes| OKF_L2[L2 OKF Directory]
     
-    OKF_L2 -->|TMS Confidence Propagation| Popper[Popper Subagent]
-    OKF_L2 -->|Hebbian Activation & Decay| Shannon[Shannon Subagent]
-    OKF_L2 -->|Conserves Active Decisions| Noether[Noether Subagent]
+    OKF_L2 -->|TMS Confidence Propagation| Popper[TruthMaintenanceEngine]
+    OKF_L2 -->|Hebbian Activation & Decay| Shannon[HebbianGraphDecayer]
+    OKF_L2 -->|Conserves Active Decisions| Noether[SymmetryValidator]
     
     Popper -->|Write updated confidence/status| OKF_L2
     Shannon -->|Archive decayed concepts| OKF_L2
 ```
 
-### 4.1 Bacon (Ingestion & Verification)
+#### 3.1 IntegrityVerifier (Ingestion & Verification — Bacon Policy)
 * **Action**: Scans `memories/active/` and `memories/subsumed/`.
 * **Validation**: Re-calculates the SHA-256 hash of each file's markdown body + frontmatter attributes to verify cryptographic seals (integrity). Raises `TamperedStateError` if any seal is broken.
 
-### 4.2 Russell (Ontological Extraction)
-* **Action**: Receives new L1 documents from Bacon. Calls the Host LLM to extract new concepts.
+#### 3.2 OntologyExtractor (Ontological Extraction — Russell Policy)
+* **Action**: Receives new L1 documents from `IntegrityVerifier`. Calls the Host LLM to extract new concepts.
 * **Writing**: Writes a new `.md` file to `concepts/active/` for each newly minted concept. If it merges or updates an existing concept, it appends details to the Markdown body and updates the frontmatter (`sources`, `timestamp`).
 
-### 4.3 Popper (Belief Revision / TMS)
+#### 3.3 TruthMaintenanceEngine (Belief Revision / TMS — Popper Policy)
 * **Action**: Parses the `relations` block of all active L2 concepts.
-* **TMS Logic**: Reconstructs the dependency graph in memory using NetworkX. If a node is marked `superseded` or its confidence decays to `0.0`, Popper recursively updates the frontmatter of all descendant files (linked via `depends_on`) in the directory, marking them `superseded` and resetting their confidence.
+* **TMS Logic**: Reconstructs the dependency graph in memory using NetworkX. If a node is marked `superseded` or its confidence decays to `0.0`, it recursively updates the frontmatter of all descendant files (linked via `depends_on`) in the directory, marking them `superseded` and resetting their confidence.
 
-### 4.4 Noether (Symmetry Conservation)
+#### 3.4 SymmetryValidator (Symmetry Conservation — Noether Policy)
 * **Action**: Compares the `hash` fields of all active L1 memories under `memories/active/` against the `sources` YAML lists of all active L2 concept files under `concepts/active/`.
-* **Symmetry Check**: If any active L1 memory is missing from the L2 graph, Noether raises a `SymmetryError` to prevent loss of context during compaction.
+* **Symmetry Check**: If any active L1 memory is missing from the L2 graph, it raises a `SymmetryError` to prevent loss of context during compaction.
 
-### 4.5 Shannon (Hebbian Decay & Pruning)
+#### 3.5 HebbianGraphDecayer (Hebbian Decay & Pruning — Shannon Policy)
 * **Action**: Reads the transient `recall_access_log.txt`. Increments the `retrieval_count` in the frontmatter of accessed concept files.
-* **Pruning Logic**: For files that weren't accessed, it decrements their `confidence` by `0.1`. If confidence drops to `0.2` or below, Shannon moves the file from `concepts/active/` to `concepts/archive/` (or updates its `status` key to `archived`), deleting any dangling links.
+* **Pruning Logic**: For files that weren't accessed, it decrements their `confidence` by `0.1`. If confidence drops to `0.2` or below, it moves the file from `concepts/active/` to `concepts/archive/` (or updates its `status` key to `archived`), deleting any dangling links.
 
----
 
-## 5. Evaluation: Pros & Cons
+## Backwards Compatibility
 
-### Pros
-* **Human-in-the-Loop Curation**: Humans can open Obsidian or a text editor and edit a concept or correct a link directly.
-* **Sub-concept Version Control**: Instead of git diffing a massive 150KB single YAML graph, git shows line-by-line history of individual concepts changing.
-* **Swarm Readiness**: Multiple agents can read and write separate concept files concurrently with minimal risk of merge conflicts (POSIX atomic file operations limit conflicts to single-file level).
-* **Decoupled Search**: External search servers (like Semble) can index the `concepts/` directory directly as a collection of document chunks without custom parsing logic.
-
-### Cons
-* **I/O Overhead**: Instead of reading a single `knowledge_graph.yaml` file, Tur must read and parse multiple small markdown files.
-* **Synonym Unification Complexity**: Synonyms must be checked by reading and comparing many files, which can be slower than scanning a single NetworkX data structure in memory.
-* **Link Validation Latency**: Ensuring reference integrity (preventing broken links) requires scanning all body links across all files, which has a higher complexity than validating a NetworkX edge list.
-
----
-
-## 6. Migration Strategy
+### Migration Strategy
 
 1. ~~**Dual-Backend Phase**: Maintain the NetworkX parser but add an OKF exporter that saves a copy of the graph as a directory of Markdown documents during the introspection compile step.~~ ✅ Completed (v0.5.0)
 2. ~~**Read-Through Adapter**: Transition the `topological_recall` in `src/tur/recall.py` to read from the OKF directory if it exists, falling back to `knowledge_graph.yaml`.~~ ✅ Completed (v0.5.0)
 3. **Full Deprecation**: Deprecate the centralized `.yaml` graph format once directory traversal speeds are optimized (e.g., using a fast Rust-based parser or caching the NetworkX graph in memory during active sessions). *(In progress — the read-through adapter still falls back to `knowledge_graph.yaml` for pre-migration personas.)*
+
+## Reference Implementation
+
+Implemented in `src/tur/memory.py` (OKF writer / `MemoryManager`), `src/tur/introspection.py` (`load_l2_graph_from_okf` / `save_l2_graph_to_okf`), and `src/tur/recall.py`.
 
 ## Change Log
 

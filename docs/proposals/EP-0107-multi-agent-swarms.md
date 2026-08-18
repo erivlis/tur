@@ -78,7 +78,12 @@ native MCP **Resources**.
 * The existing "Ontological Porcelain" tools (`who_am_i`, `learn`, `recall`) will remain fully functional for stateless
   or single-agent interactions.
 
+## Reference Implementation
+
+Implemented in `src/tur/mcp_server.py` (`signal`, `read_signals`, `ack_signals`, `list_agents`, `write_whiteboard`, `read_whiteboard`) and `src/tur/session.py`.
+
 ## Change Log
+
 
 * **2026-04-18:**
     * Initial Draft created to capture the Architect's insights on swarm concurrency, atomic writes, and the necessity

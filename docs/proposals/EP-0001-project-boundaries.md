@@ -12,8 +12,8 @@ status: superseded
 | **EP**      | 0001                                    |
 | **Title**   | Project Boundaries (Core vs. Periphery) |
 | **Author**  | Eran Rivlis                             |
-| **Status**  | Superseded by EP-0102                   |
-| **Type**    | Informational                           |
+| **Status**  | Superseded                              |
+| **Type**    | Process                                 |
 | **Created** | 2026-02-19                              |
 | **Updated** | 2026-04-12                              |
 
@@ -76,7 +76,16 @@ Playwright to fetch dynamic HTML and convert it to Markdown. It does not import 
 
 No code is broken. This is an informational EP that formalizes existing implicit rules.
 
+## Backwards Compatibility
+
+This document established core architectural boundaries. No software migration required.
+
+## Reference Implementation
+
+Superseded by [EP-0102](EP-0102-orchestration-engine.md) and module layout under `src/tur/`.
+
 ## Change Log
+
 
 * **2026-04-12:**
     * Status changed to `Superseded by EP-0102`.

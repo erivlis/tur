@@ -91,7 +91,12 @@ timeline of memories and injects them into the Constitution as before.
 * A migration script could be useful to move existing `UNIVERSAL` scoped memories from local to global, but is not
   strictly necessary for operation.
 
+## Reference Implementation
+
+Implemented in `src/tur/memory.py` (`MemoryManager`), `src/tur/models.py` (`MemoryScope`), and `src/tur/paths.py`.
+
 ## Change Log
+
 
 * **2026-07-18:** Status promoted from Final to Implemented. Scopes (UNIVERSAL / INCARNATION / USER / PERSONA)
   implemented in models.py; memory scope filtering live in memory.py and admin.py export command.

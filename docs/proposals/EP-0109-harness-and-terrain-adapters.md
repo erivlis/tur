@@ -88,7 +88,12 @@ state of the Traveler.)*
   hood to instantiate the appropriate `Adapter` rather than executing business logic directly.
 * Existing `.tur/` directories and personas will not be affected.
 
+## Reference Implementation
+
+Superseded by `docs/concepts/harness-integration.md` and external adapter implementations (e.g. `.pi/extensions/tur-adapter.ts`).
+
 ## Change Log
+
 
 * **2026-05-11:**
     * Status changed to `Superseded`, referencing `docs/concepts/harness-integration.md` as the superseding document and

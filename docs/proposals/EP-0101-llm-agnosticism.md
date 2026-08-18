@@ -13,7 +13,7 @@ status: implemented
 | **Title**   | LLM Agnosticism (The Symbiotic Paradigm) |
 | **Author**  | Eran Rivlis, The Architect               |
 | **Status**  | Implemented                              |
-| **Type**    | Architecture                             |
+| **Type**    | Standards Track                          |
 | **Created** | 2026-03-29                               |
 | **Updated** | 2026-07-25                               |
 
@@ -27,7 +27,7 @@ embed *any* LLM abstraction library (`pydantic-ai`, `google-genai`, etc.) within
 LLM Agnosticism by becoming an obligate symbiote to an MCP Client (the Host Application), delegating all cognitive
 tasks (like compiling knowledge graphs or summarizing logs) via **MCP Sampling Requests**.
 
-## Motivation (The Historical Context)
+## Motivation
 
 Originally, the `tur sleep` command hardcoded a dependency on `google-genai`, and the proposed `tur introspect` command
 required a robust, model-agnostic solution for structured data extraction. The plan was to embed `pydantic-ai` to solve
@@ -44,7 +44,7 @@ running in Cursor or Claude Desktop) to do the thinking for it:
 > *"Hello Host LLM. Here are 50 raw memory logs. Please extract them into a strict JSON array of (Subject, Predicate,
 Object) triples and hand them back to me."*
 
-## Rationale (The Council Framework)
+## Rationale
 
 1. **Symmetry (Noether):** The separation of concerns is absolute. Tur manages the State (files, hashes, graphs); the
    Host Application manages the Inference (API keys, model selection, token limits).
@@ -53,7 +53,7 @@ Object) triples and hand them back to me."*
 3. **The Explorer (Structural Novelty):** We transform Tur from a standalone CLI tool into a "Headless Body" that
    natively integrates with the broader agent ecosystem.
 
-## Specification (The Symbiotic Architecture)
+## Specification
 
 1. **Dependency Purge:**
     * Remove `google-genai` from `dependencies`.
@@ -72,6 +72,10 @@ Object) triples and hand them back to me."*
 
 * **Breaking Change:** Commands that rely on LLM inference (like `tur sleep`) will need to be refactored to either fail
   gracefully when run directly in the CLI, or explicitly request the user to launch a Wrapper Client.
+
+## Reference Implementation
+
+Implemented in `src/tur/_helpers.py` (`_mcp_sample`), `src/tur/dreaming.py`, and `src/tur/introspection.py` via EP-0121.
 
 ## Change Log
 
@@ -99,4 +103,4 @@ Object) triples and hand them back to me."*
     * Updated status to `Active`.
     * Adopted the `pydantic-ai` library as the standard interface.
 * **2026-03-29:**
-    * Initial Draft.
+    * Initial Draft.

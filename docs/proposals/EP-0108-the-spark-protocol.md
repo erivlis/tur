@@ -88,7 +88,12 @@ The Ontological Porcelain API matches this geometry:
   `note` and `wake` APIs.
 * It introduces session-bound note tracking and deprecates global context files.
 
+## Reference Implementation
+
+Implemented in `src/tur/session.py`, `src/tur/compilation.py`, and `src/tur/mcp_server.py` (`wake`, `note`, `sleep`).
+
 ## Change Log
+
 
 * **2026-07-18:**
     * **Status promoted to Implemented.** The Fractal Memory Hierarchy is live: `wake`, `note`, `learn`, `sleep` MCP

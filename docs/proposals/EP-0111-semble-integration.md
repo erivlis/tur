@@ -147,9 +147,12 @@ semantic similarity searches over past session ledgers without needing expensive
 * It strictly respects the **Boundary of Orchestration** by recommending Semble as a companion tool rather than
   hardcoding code search logic directly inside Tur's core repository.
 
----
+## Reference Implementation
+
+Configured via dual-MCP client setup (`semble[mcp]`) and documented in `AGENTS.md`.
 
 ## Change Log
+
 
 * **2026-05-28:**
     * Initial Draft created by the Architect & Ariel to integrate Semble as the official Terrain Search Engine.

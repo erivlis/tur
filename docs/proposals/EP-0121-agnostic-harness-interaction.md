@@ -13,7 +13,7 @@ status: implemented
 | **Title**   | The Agnostic Harness Interaction Protocol                                       |
 | **Author**  | The Architect                                                                   |
 | **Status**  | Implemented                                                                     |
-| **Type**    | Architecture                                                                    |
+| **Type**    | Standards Track                                                                 |
 | **Created** | 2026-07-18                                                                      |
 | **Updated** | 2026-07-25                                                                      |
 | **Depends** | EP-0101 (LLM Agnosticism), EP-0108 (Spark Protocol), EP-0109 (Harness Adapters) |
@@ -129,7 +129,12 @@ mapped to any provider's token by the deployment environment.
 2. Should there be a third "offline" mode that uses a lightweight local summarizer (no LLM) for degraded-but-functional
    `sleep` behaviour?
 
+## Reference Implementation
+
+Implemented in `src/tur/_helpers.py` (`require_inference`), `src/tur/models.py` (`HarnessDelegationError`), `src/tur/dreaming.py`, and `src/tur/introspection.py`.
+
 ## Change Log
+
 
 * **2026-07-25:**
     * **Status promoted to Implemented.**

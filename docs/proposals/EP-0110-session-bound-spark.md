@@ -98,7 +98,12 @@ The `tur wake` command will be modified:
 
 * The `tur wake` command adapts automatically to the new dynamic loading mechanism from flat YAML session note files.
 
+## Reference Implementation
+
+Implemented in `src/tur/session.py` (`SessionNotes`, `note_logic`, `compile_session_notes`) and `src/tur/mcp_server.py`.
+
 ## Change Log
+
 
 * **2026-07-18:** Status promoted from Final to Implemented. Session-bound note protocol live in session.py (note_logic,
   compile_session_notes). MCP tool note() and CLI tur note both implemented.
