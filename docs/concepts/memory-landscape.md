@@ -238,8 +238,8 @@ flowchart LR
 
 * **Write (Ingestion & Extraction):** Executed during the `tur sleep` phase. It extracts structured, atomic interactions
   from the active working context and commits them to L1 episodic memory files on disk.
-* **Manage (Belief Revision & Compaction):** Executed during `tur introspect`. The **Subagent Assembly of the Council
-  ** ([EP-0119](../proposals/EP-0119-subagent-council-introspection.md)) de-monoliths this
+* **Manage (Belief Revision & Compaction):** Executed during `tur introspect`. The **Persona-Centric Introspection Architecture
+  ** ([EP-0119](../proposals/EP-0119-persona-centric-introspection.md)) de-monoliths this
   management. Specialized subagents execute ontological alignment, chronological belief revision, spreading activation
   decay, and structural path validation, outputting a cleaned L2 Cognitive Map.
 * **Read (Topological & Hybrid Retrieval):** Executed during `wake` compilation. The compiler injects the macro-level L2

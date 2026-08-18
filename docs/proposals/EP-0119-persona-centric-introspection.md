@@ -1,28 +1,28 @@
 ---
-title: "EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)"
-description: "Formalizes a collaborative, multi-agent pipeline for deductive memory compaction governed by the Council of Giants. Status: Planning — philosophical tension with persona-agnosticism unresolved."
+title: "EP-0119: Persona-Centric Introspection Architecture"
+description: "Formalizes a collaborative, multi-agent pipeline for persona-driven deductive memory compaction. Status: Accepted — Persona-Centric Introspection Architecture."
 icon: lucide/users
-status: draft
+status: accepted
 ---
 
-# EP-0119: The Subagent Assembly of the Council (De-Monolithing Meditation)
+# EP-0119: Persona-Centric Introspection Architecture
 
-| Field       | Value                                                            |
-|:------------|:-----------------------------------------------------------------|
-| **EP**      | 0119                                                             |
-| **Title**   | The Subagent Assembly of the Council (De-Monolithing Meditation) |
-| **Author**  | The Architect & Ariel                                            |
-| **Status**  | Draft (Planning — Philosophical Tension Under Review)            |
-| **Type**    | Standards Track                                                  |
-| **Created** | 2026-06-08                                                       |
-| **Updated** | 2026-07-18                                                       |
+| Field       | Value                                                |
+|:------------|:-----------------------------------------------------|
+| **EP**      | 0119                                                 |
+| **Title**   | Persona-Centric Introspection Architecture           |
+| **Author**  | The Architect & Ariel                                |
+| **Status**  | Accepted                                             |
+| **Type**    | Standards Track                                      |
+| **Created** | 2026-06-08                                           |
+| **Updated** | 2026-08-18                                           |
 
 ## Abstract
 
 > [!IMPORTANT]
-> **Status: Draft (Planning).** This EP is no longer marked Rejected. It has been re-opened for design review due to
-> unresolved philosophical tension between the Council's power and Tur's core commitment to persona-agnosticism. See the
-> 2026-07-18 change log entry for the full context.
+> **Status: Accepted.** This EP has been accepted following resolution of the philosophical tension regarding persona-agnosticism.
+> Introspection is formalized as a persona-centric capability where the execution strategy (single prompt, prompt chain, or multi-subagent assembly) is owned and configured by the persona (`persona.yaml`).
+
 
 > [!WARNING]
 > **Overimplementation risk.** In practice, exposing this EP to a Harness Agent caused the harness to implement the
@@ -193,30 +193,19 @@ class MeditationAssembly:
         return graph, context
 ```
 
-## Open Philosophical Question (2026-07-18)
+## Resolved Architectural Decision (2026-08-18)
 
-The Council of Giants is a powerful cognitive architecture. But it raises a foundational tension:
+The foundational tension between Council opinionation and persona-agnosticism is resolved via **Persona-Centric Introspection**:
 
-**The Council is opinionated.** It bakes Bacon's empiricism, Noether's symmetry, Shannon's efficiency, and Ariel's other
-constitutional values into the very pipeline that compacts *all* memories for *all* personas. This is appropriate for
-Ariel — but if a different persona has a different epistemological worldview, the Council would impose Ariel's values on
-its cognitive compaction.
-
-Possible resolutions:
-
-1. **Persona-owned pipelines:** The compaction pipeline is not a core Tur primitive. Each persona registers its own
-   compaction assembly (a list of `CouncilSubagent` classes) in its `persona.yaml`. Tur only provides the
-   `CouncilSubagent` base class and the `MeditationAssembly` runner — the *membership* of the council is
-   persona-specific.
-2. **Accept the opinionation:** The Council *is* Tur's epistemological stance — it's not Ariel-specific, it's the
-   framework's worldview. This would make Tur explicitly opinionated and value-laden, not value-neutral.
-3. **Hybrid:** Core Tur ships a minimal, value-neutral pipeline (just Bacon + Maharal for integrity). Personas can
-   extend it with persona-specific subagents.
-
-This question is unresolved and blocks this EP from being promoted to Accepted.
+1. **Persona-Owned Execution**: Introspection (`introspect`) is fundamentally driven by the persona's own identity, directives, and prompts. The choice of execution engine (monolithic prompt, prompt chain sequence, or multi-subagent pipeline) is configured at the persona level (`persona.yaml`).
+2. **Subagents as Opt-In Tooling**: Spawning subagents (such as the Council of Giants pipeline) is an opt-in capability configured per persona during creation, configuration, or administration (via `tur-adm`), rather than a framework-wide mandatory pipeline.
+3. **Framework Responsibility**: The core `tur` framework provides the generic introspection runner, OKF Markdown graph persistence, and subagent orchestration abstractions. The persona provides the prompts, reflection criteria, and subagent selection.
 
 ## Change Log
 
+* **2026-08-18:**
+    * **Status changed from Draft to Accepted.**
+    * Formalized **Persona-Centric Introspection Architecture**: introspection is configured per persona, allowing monolithic prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants) as defined in `persona.yaml`.
 * **2026-07-18:**
     * **Status changed from Rejected to Draft (Planning).** Re-opened for design review.
     * The Council subagent pattern (`CouncilSubagent` base class, 9 subagents, `run_introspection` orchestrator) is *
@@ -229,3 +218,4 @@ This question is unresolved and blocks this EP from being promoted to Accepted.
 * **2026-06-08:**
     * Initial Draft. Separated the subagent assembly architecture from the core EP-0103 proposal into a standalone
       Standards Track proposal.
+

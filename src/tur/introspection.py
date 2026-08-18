@@ -18,7 +18,7 @@ from tur.models import HarnessDelegationError, MemoryType
 UTC = timezone.utc
 
 
-# Core exceptions as per EP-0103 and EP-0119 specifications
+# Core exceptions as per EP-0103 and EP-0119 (Persona-Centric Introspection) specifications
 class TamperedStateError(ValueError):
     """Raised by the Bacon subagent when cryptographic verification fails."""
 

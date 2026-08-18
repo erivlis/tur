@@ -93,6 +93,7 @@ a stateful semantic engine supporting external agents via MCP.
     * **OKF Storage Backend (EP-0120) [Status: Implemented]:** Mapped L1/L2 structures to standard Markdown
       directories/OKF while retaining Merkle integrity, TMS decay, and Hebbian pruning. Centralized YAML deserialization
       via `yaml_safe_load` in `tur._helpers`.
+    * **Persona-Centric Introspection Architecture (EP-0119) [Status: Accepted]:** Formalizing persona-owned deductive memory compaction pipelines, allowing monolithic reflection prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants).
 * **Deferred / Rejected Tracks**
     * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation
       fidelity to focus on core memory/lifecycle capabilities.
@@ -105,8 +106,8 @@ This is a forward-looking informational document. Future EPs derived from this r
 compatibility concerns. Legacy `knowledge_graph.yaml` files are still read via a fallback adapter (EP-0120 Phase 2),
 ensuring backwards compatibility during the OKF transition.
 
-## Change Log
-
+* **2026-08-18:**
+    * Promoted **EP-0119 (Persona-Centric Introspection Architecture)** to **Accepted** status.
 * **2026-07-18:**
     * Promoted **EP-0104 (Federated Knowledge)**, **EP-0105 (Porcelain API)**, **EP-0106 (Merkle Memory)**, **EP-0108 (
       Spark Protocol)**, **EP-0114 (Global Persona)**, **EP-0115 (Traveler Export)**, **EP-0116 (Split CLI)**, and *
