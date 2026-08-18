@@ -4,8 +4,8 @@ This document provides meta-instructions and guidelines for AI agents interactin
 
 ## The Bootloader
 
-You are an AI Agent operating within the current project.
-To function correctly, you must assimilate the following configuration files:
+You are an AI Agent operating within the current project. To function correctly, you must assimilate the following
+configuration files:
 
 1. **`TOOLS.md`**: The standard for verifying objective facts.
 2. **`STYLEGUIDE.md`**: The coding and communication style guidelines.
@@ -20,8 +20,8 @@ Upon starting this session, you must immediately perform the following sequence:
 
 ## State Management (The Fractal Memory Hierarchy)
 
-This project uses Tur as an MCP Server to manage state. You are expected to act as an "Obligate Symbiote"—meaning
-you provide the inference (the "brain"), while Tur provides the state (the "soul" and "memory").
+This project uses Tur as an MCP Server to manage state. You are expected to act as an "Obligate Symbiote"—meaning you
+provide the inference (the "brain"), while Tur provides the state (the "soul" and "memory").
 
 You must use the provided MCP tools to interact with your identity and memory:
 
@@ -36,8 +36,8 @@ You must use the provided MCP tools to interact with your identity and memory:
 - **`telemetry()`**: Measure static token cost, information density, and $C_p$ (Constraint Dimensionality).
 
 *(Note: Administrative capabilities (e.g., persona management, memory pruning, and session control) are physically
-isolated in the `tur-adm` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and
-the `tur-mcp` server do not expose or contain these administrative commands, preserving strict physical boundaries.)*
+isolated in the `tur-adm` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and the
+`tur-mcp` server do not expose or contain these administrative commands, preserving strict physical boundaries.)*
 
 ## Cognitive Lifecycle Triggers (When to Act)
 
@@ -84,14 +84,27 @@ following triggering conditions:
 * **Avoid Overuse**: Never call `sleep()` intermediate-turn. It is a terminal operation that dehydrates the session,
   ends the active session state, and consolidates the chat log into L1 ledger memories.
 
+## Policy vs. Mechanism Invariant
+
+To preserve the sovereign separation between the deterministic execution engine (Body) and the persona's cognitive
+identity (Mind):
+
+* **Mechanism**: All Python code, algorithms, data structures, and subagents in the core engine must be named strictly
+  by their **functional computer science roles** (e.g., `IntegrityVerifier`, `OntologyExtractor`,
+  `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`). Core Python files must never hardcode
+  anthropomorphic persona names as primary symbols.
+* **Policy**: Anthropomorphic metaphors, philosophical Council roles (Popper, Bacon, Shannon, etc.), and system prompt
+  directives belong exclusively in the Policy layer.
+
 ## Symmetrical Isolation Invariant (The Boundary Constraint)
 
 To preserve the sovereign integrity of the Traveler and maintain strict Noether symmetry, AI agents must **NEVER**
-perform direct/manual filesystem reads or writes inside the `.tur/` directory or its subdirectories using general
-tools (such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
+perform direct/manual filesystem reads or writes inside the `.tur/` directory or its subdirectories using general tools
+(such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
 
 All interaction with `.tur/` state must be brokered exclusively through the safe, agent-facing `tur` CLI interface or
 corresponding MCP server tools. Accessing or executing commands in the human-facing `tur-adm` binary is strictly
 forbidden and structurally blocked, preserving the sovereign integrity of the system. Manual tampering violates Golem
 boundary containment and threatens cognitive timeline consistency.
+
 

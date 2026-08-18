@@ -29,14 +29,15 @@ portability, an agentic system must be divided into three distinct pillars:
     * **Tools**: The mechanical affordances (e.g., bash, git, file reading).
     * *Examples*: Claude Code, Gemini CLI, OpenCode, Pi, etc.
 
-**Tur is exclusively responsible for The Traveler.** By ensuring the "Soul" is mathematically bound (via Merkle hashing)
-and cleanly separated from the Harness and Terrain, the Persona becomes an obligate symbiote—able to be unplugged from
-one Harness and plugged into another without losing its identity or memories.
+**Tur is exclusively responsible for The Traveler.** By ensuring the "Soul" is mathematically bound (via Merkle
+hashing), cleanly decoupled from anthropomorphic engine leaks, and separated from the Harness and Terrain, the Persona
+becomes an obligate symbiote—able to be unplugged from one Harness and plugged into another without losing its identity
+or memories.
 
 ## 📂 Project Structure
 
-Tur uses a multi-tenant architecture to ensure strict separation between different personas.
-All state is stored in the `.tur/` directory.
+Tur uses a multi-tenant architecture to ensure strict separation between different personas. All state is stored in the
+`.tur/` directory.
 
 ### Local vs. Global Scope
 
@@ -71,8 +72,8 @@ Tur respects a standard configuration hierarchy:
 
 The core application logic resides in `src/tur/`:
 
-- **`cli/`**: The package folder housing our split executables: `cli/agent.py` (runtime CLI), `cli/admin.py` (
-  administrative TUI), and `cli/mcp.py` (Harness MCP gateway).
+- **`cli/`**: The package folder housing our split executables: `cli/agent.py` (runtime CLI), `cli/admin.py`
+  (administrative TUI), and `cli/mcp.py` (Harness MCP gateway).
 - **`mcp_server.py`**: The Model Context Protocol server (The Porcelain for LLM interaction).
 - **`models.py`**: The Pydantic data models (The "Law" of the system).
 - **`user.py`**: User profile bootstrapping and domain management.

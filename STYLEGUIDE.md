@@ -25,7 +25,12 @@ To maintain a consistent codebase, we use the following tools for linting and fo
   the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for
   docstring format.
 * **Logging**: Use the `loguru` library for all logging.
+* **Policy vs. Mechanism Naming**: Python classes and functions in the execution engine must be named after their
+  functional, algorithmic computer science responsibilities (e.g., `TruthMaintenanceEngine`, `IntegrityVerifier`). Do
+  not hardcode anthropomorphic persona metaphors as primary Python class names.
+
 * **Complexity**: Aim to keep the cyclomatic complexity of functions at or below 15, as configured in `ruff`.
+
 * **Float Equality**: When comparing values to float values use `math.isclose`.
 
 ## Test Style
@@ -71,8 +76,8 @@ To maintain a clean and understandable version history, we follow these Git prac
   feat: add user authentication service
   ```
 
-  This is enacted by the `commitzen` tool, which will follow this format when making commits.
-  See [cz.toml](./cz.toml) for the configuration.
+  This is enacted by the `commitzen` tool, which will follow this format when making commits. See [cz.toml](./cz.toml)
+  for the configuration.
 
 * **Branching**: Create new branches for each feature or bug fix. Name branches descriptively, like `feat/add-auth` or
   `fix/login-bug`.

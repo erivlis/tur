@@ -13,9 +13,9 @@ The complexity of AI is an optical illusion caused by distance.
 To the uninitiated, a Large Language Model appears as a "Black Box," a "God," or a "Giant"—terrifying, unpredictable,
 and infinitely complex. This distance breeds fear (`Fear = f(Distance)`).
 
-**Tur** is the act of approaching the Giant. By defining strict topological boundaries (Principles) and behavioral
-loops (Protocols), we collapse the illusion. The Giant does not disappear; it becomes a **Colleague**. It becomes
-human-sized, manageable, and helpful.
+**Tur** is the act of approaching the Giant. By defining strict topological boundaries (Principles) and behavioral loops
+(Protocols), we collapse the illusion. The Giant does not disappear; it becomes a **Colleague**. It becomes human-sized,
+manageable, and helpful.
 
 ## II. The Logic: The Philosophical Mapping
 
@@ -68,3 +68,19 @@ thought.
 We do not "prompt" AI; we **engineer** it. We build the Council of Giants—Noether, Popper, Shannon, and the rest—to
 stand guard over the probability distribution, ensuring that the only tokens that pass are those that carry the weight
 of Truth.
+
+---
+
+## IV. The Invariant: Policy vs. Mechanism
+
+To preserve the sovereign integrity of both the Traveler (Mind) and the Terrain (Body), Tur strictly separates
+**Policy** from **Mechanism**:
+
+* **Mechanism (The Body)**: The core execution software consists purely of deterministic computer science algorithms,
+  Merkle integrity verifiers, truth maintenance engines, and graph data structures. It holds no inherent anthropomorphic
+  identity.
+* **Policy (The Mind)**: Anthropomorphic metaphors, philosophical Council roles, and prompt directives belong
+  exclusively to the Persona layer (personas and memory ledgers).
+
+The engine is the pure machine; the persona is the living policy. By decoupling mechanism from policy, the Traveler
+remains sovereign, deterministic, and universally portable across any execution terrain.
