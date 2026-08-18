@@ -1,3 +1,16 @@
+## v0.9.0 (2026-08-19)
+
+### Feat
+
+- **EP-0115**: Enhances persona export/import with new options, security, and memory filtering.
+
+### Refactor
+
+- Implements EP-0003, refactoring introspection for policy/mechanism.
+- **EP-0121**: require_inference now encapsulates local LLM generation.
+- **EP-0121**: Refactors LLM inference to use EP-0121 harness delegation.
+- Refactors imports, guards memory loads, and fixes session state.
+
 ## v0.8.0 (2026-07-18)
 
 ### Feat

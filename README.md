@@ -1,6 +1,6 @@
 # Tur: Sovereign Cognition Engine for Persistent, Evolving AI Entities
 
-[![Development Status](https://img.shields.io/badge/Status-Public%20Alpha%20(v0.8.0)-blue.svg)](docs/proposals/EP-0002-roadmap.md)
+[![Development Status](https://img.shields.io/badge/Status-Public%20Alpha%20(v0.9.0)-blue.svg)](docs/proposals/EP-0002-roadmap.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
 
