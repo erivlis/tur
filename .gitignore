@@ -208,3 +208,10 @@ __marimo__/
 
 /.idea/
 /site/
+
+# Tur Local State & Memory
+.tur/
+
+# Local workspace & editor helpers
+.obsidian/
+.ai/
