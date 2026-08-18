@@ -44,6 +44,15 @@ overwriting each other's immediate working context. It defines "What I Am Doing.
 * `note()` -> Writes to Short-Term L1.
 * `spark()` -> Updates Short-Term L2.
 
+## Truth Maintenance & Refutation Cascades
+
+Tur does not treat memories as isolated, static facts. Memory nodes form a directed associative graph with explicit dependency edges (`depends_on`, `refines`, `contradicts`, `superseded_by`).
+
+Under our **Truth Maintenance System (TMS)** (powered by `TruthMaintenanceEngine`):
+- When a foundational premise or architectural assumption is refuted (via the **Popperian Falsification** protocol), the engine does not leave orphaned downstream logic.
+- Instead, a **refutation cascade** propagates down the dependency graph, automatically deactivating or flagging derived memories and stale hypotheses.
+- This prevents "zombie context" where an agent continues reasoning from an axiom that was already proven false in a previous session.
+
 ## Entropy Management: Progressive Disclosure
 
 To prevent the Persona's context window from bloating, Tur strictly enforces **Progressive Disclosure** (a core tenet of
@@ -51,6 +60,6 @@ the Shannon Module).
 
 The axiom is: *"Never load the Body if the Index suffices."*
 
-Tur will always prefer loading compressed indexes, YAML frontmatter, or L2 axioms into the active context window,
+Tur will always prefer loading compressed indexes, frontmatter metadata, or L2 axioms into the active context window,
 relying on the Harness (via tools like `recall`) to hydrate the full verbose L1 bodies only when absolutely demanded by
 the task.

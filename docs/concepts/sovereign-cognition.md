@@ -1,9 +1,9 @@
 ---
-description: Treat an AI identity as structured, immutable software rather than a literary description.
+description: Treat an AI identity as structured, evolving software rather than a literary description.
 icon: lucide/dna
 ---
 
-# Persona Engineering
+# Sovereign Cognition & Persona Architecture
 
 The foundational premise of Tur is that **"Prompt Engineering" is a dead end.**
 
@@ -13,20 +13,23 @@ probabilistic, this unstructured text often leads to unpredictable, non-determin
 prompt is too long, the model suffers from "lost in the middle" syndrome. If the prompt is too vague, the model
 hallucinates.
 
-Tur replaces Prompt Engineering with **Persona Engineering**.
+Tur replaces literary Prompt Engineering with **Sovereign Cognition & Persona Architecture**.
 
 ## Identity as Code (DNA)
 
-In Tur, an AI persona is not a text file; it is a **structured, immutable software object**.
+In Tur, an AI persona is not an ephemeral text prompt; it is a **structured, immutable software object and an evolving
+cognitive entity**.
 
-We define the persona using strict data schemas (Pydantic models serialized to YAML). An identity consists of:
+We define the persona using strict data schemas (Pydantic models serialized to clean state files). An identity consists
+of:
 
 * **The Aleph:** The core, unyielding motivation.
-* **The Council:** Distinct, weighted philosophical constraints.
-* **Protocols:** Trigger-action behavioral loops.
+* **The Council:** Distinct, weighted philosophical constraints (Policy layer).
+* **Protocols:** Trigger-action behavioral loops (e.g. Dennis Protocol, Speech Center).
+* **Merkle Memory:** Fractal L1/L2 memory graph representing the continuity of self.
 
-By treating the persona as code, we can version it, clone it, test it, and inject it predictably into the context
-window. We stop writing prose and start writing cognitive topology.
+By treating identity as sovereign code, we can version it, clone it, test it, and inject it predictably into the context
+window. We stop writing prose and start engineering cognitive topology.
 
 ## Constraint Dimensionality ($C_p$)
 

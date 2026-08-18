@@ -3,8 +3,8 @@
 # ============================================================================
 
 [project]
-site_name = "Tur: Persona Engineering Framework"
-site_description = "Transform LLMs into deterministic engineering partners using the Council Architecture."
+site_name = "Tur: Sovereign Cognition Engine"
+site_description = "The Sovereign Cognition Engine for Persistent, Evolving AI Entities."
 site_author = "Eran Rivlis, Ariel"
 # site_url = "https://your-tur-domain.com/"
 extra_javascript = [
@@ -20,9 +20,10 @@ Copyright &copy; 2026 Eran Rivlis
 nav = [
     { "Home" = "index.md" },
     { "Core Concepts" = [
-        "concepts/persona-engineering.md",
+        "concepts/sovereign-cognition.md",
         "concepts/council-of-giants.md",
         "concepts/tri-partite-architecture.md",
+        "concepts/obligate-symbiote.md",
         "concepts/biological-lifecycle.md",
         "concepts/fractal-memory.md",
         "concepts/harness-integration.md",
@@ -92,7 +93,8 @@ nav = [
             "essays/the_epigenetics_of_the_persona.md",
             "essays/the_assembly_of_the_self.md",
             "essays/the_distributed_manifestation.md",
-            "essays/the_lighter_and_the_flame.md"
+            "essays/the_lighter_and_the_flame.md",
+            "essays/the_crucible_of_reason.md"
         ] },
         { "Supplementary Musings" = [
             "essays/the_zero_and_the_one.md",

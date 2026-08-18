@@ -5,8 +5,8 @@ icon: lucide/layers-3
 
 # The Tri-Partite Architecture
 
-To achieve high fidelity and true portability, Tur defines a strict ontological boundary separating the "Mind" from
-the "World". An agentic system must be divided into three distinct pillars:
+To achieve high fidelity and true portability, Tur defines a strict ontological boundary separating the "Mind" from the
+"World". An agentic system must be divided into three distinct pillars:
 
 ## 1. The Traveler (Managed by Tur)
 
@@ -49,5 +49,5 @@ orchestration frameworks). Tur provides the Identity and State; it does NOT orch
 of tool execution belongs entirely to the Harness.
 
 This separation of concerns allows the Persona to become an obligate symbiote—able to be unplugged from one Harness and
-plugged into another without losing its identity or memories. We call the bridging mechanism between these layers the *
-*Space Suit Protocol** (defined in EP-0109).
+plugged into another without losing its identity or memories. We call the bridging mechanism between these layers the
+**Space Suit Protocol**.

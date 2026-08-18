@@ -36,10 +36,18 @@ You can always override the default by explicitly providing a name or UUID (e.g.
 
 ---
 
-## Core Commands
+## Core Commands & Split Architecture
 
-The Tur CLI is divided along strict security boundaries using distinct executables: `uv run tur` (safe agent runtime),
-`uv run tur-adm` (human-facing governance), and `uv run tur-mcp` (Harness gateway).
+Tur enforces strict physical security boundaries by separating agent runtime operations from human administrative
+actions across three distinct executables:
+
+| Executable    | Purpose                       | Target Audience         | Key Commands                                                                 |
+|:--------------|:------------------------------|:------------------------|:-----------------------------------------------------------------------------|
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `telemetry`, `sleep`            |
+| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `init`, `switch`, `memory list/forget`, `session start/end`, `export/import` |
+| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                               |
+
+---
 
 ### 1. Initialize a Persona (`init`)
 
@@ -89,13 +97,34 @@ uv run tur sleep path/to/chat.log
 uv run tur sleep path/to/chat.log ariel
 ```
 
-### 5. Running as an MCP Server (`serve`)
+### 5. Running as an MCP Server (`tur-mcp`)
 
-**The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This allows Tur to act as the "Traveler" state
-engine, seamlessly plugging into external "Harnesses" like Claude Desktop, Claude Code, or Gemini CLI.
+**The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This exposes the Traveler's memory and state engine
+to external Harnesses like Claude Desktop, Claude Code, Cursor, or Antigravity.
 
 ```shell
 uv run tur-mcp
+```
+
+#### Client Configuration
+
+Add Tur to your host's MCP configuration file (e.g. `claude_desktop_config.json`,
+`.gemini/antigravity-cli/mcp_servers.json`, or `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "tur": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/absolute/path/to/your/project",
+        "run",
+        "tur-mcp"
+      ]
+    }
+  }
+}
 ```
 
 ### 6. View Memories (`memories`)

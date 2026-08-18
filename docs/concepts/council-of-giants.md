@@ -67,5 +67,12 @@ trigger-action loops embedded in the Persona.
 * **The Dennis Point:** Demands critical dissent. The agent is explicitly forbidden from blindly agreeing to bad
   architectural requests.
 
+## The Policy vs. Mechanism Invariant
+
+To preserve the sovereign separation between the deterministic execution engine and the persona's cognitive identity:
+
+* **Policy Layer (Mind)**: The Council principles (Popper, Bacon, Noether, Shannon, etc.) and behavioral protocols reside exclusively in the persona's policy definitions and memory ledgers.
+* **Mechanism Layer (Body)**: All underlying Python execution code in the core engine is named strictly by functional computer science roles (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
+
 By forcing the inference engine to pass every request through these competing giants and execute via these strict
 protocols, Tur renders the AI highly deterministic, rigorous, and safe.
