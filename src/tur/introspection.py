@@ -3,7 +3,7 @@ import json
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -14,8 +14,6 @@ from pydantic import BaseModel, Field
 from tur._helpers import yaml_safe_load
 from tur.memory import MemoryManager
 from tur.models import HarnessDelegationError, MemoryType
-
-UTC = timezone.utc
 
 
 # Core exceptions as per EP-0103 and EP-0119 (Persona-Centric Introspection) specifications

@@ -1,0 +1,58 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # https://github.com/actions/python-versions/blob/main/versions-manifest.json
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t" ]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv with Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras --group test
+
+      - name: Lint with ruff
+        run: |
+          uv run ruff check .
+
+      - name: Test with pytest
+        run: |
+          uv run pytest tests README.md docs --cov=src --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+
+#      - name: Upload coverage reports to Codecov
+#        if: ${{ !cancelled() }}
+#        uses: codecov/codecov-action@v7
+#        with:
+#          report_type: coverage
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#
+#      - name: Upload test results to Codecov
+#        if: ${{ !cancelled() }}
+#        uses: codecov/codecov-action@v7
+#        with:
+#          report_type: test_results
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#
+#      - name: Run codacy-coverage-reporter
+#        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+#        with:
+#          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+#          coverage-reports: coverage.xml
