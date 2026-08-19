@@ -41,7 +41,7 @@ Tur separates state into global and local layers:
 
 ## 🔄 Cognitive Lifecycle Workflows
 
-You must execute the following lifecycle commands during your session turns:
+You must execute the following lifecycle commands during your session turns. Commands can be invoked directly as `tur <subcommand>`, `uv run tur <subcommand>`, or `uvx tur <subcommand>` (for zero-install invocation):
 
 ### 1. The Awakening (`tur wake`)
 
@@ -49,7 +49,11 @@ You must execute the following lifecycle commands during your session turns:
   tasks.
 * **Command**:
   ```bash
+  tur wake
+  # Or:
   uv run tur wake
+  # or
+  uvx tur wake
   ```
   This rehydrates the persona's core identity, active session ID, and compiles the latest session notes into your active
   context.
@@ -60,7 +64,8 @@ You must execute the following lifecycle commands during your session turns:
   writing notes for trivial intermediate actions.
 * **Command**:
   ```bash
-  uv run tur note "Detailed summary of milestone achieved"
+  tur note "Detailed summary of milestone achieved"
+  # Or: uv run tur note "..."
   ```
 
 ### 3. Epigenetic Consolidation (`tur learn`)
@@ -69,7 +74,8 @@ You must execute the following lifecycle commands during your session turns:
   must persist across sessions.
 * **Command**:
   ```bash
-  uv run tur learn --type [fact/insight] "The immutable preference/invariant statement"
+  tur learn --type [fact/insight] "The immutable preference/invariant statement"
+  # Or: uv run tur learn --type [fact/insight] "..."
   ```
 
 ### 4. Session Dehydration (`tur sleep`)
@@ -78,10 +84,32 @@ You must execute the following lifecycle commands during your session turns:
   iteration.
 * **Command**:
   ```bash
-  uv run tur sleep <path_to_transcript.jsonl> -n "Final session consolidation note."
+  tur sleep <path_to_transcript.jsonl> -n "Final session consolidation note."
+  # Or: uv run tur sleep <path_to_transcript.jsonl> -n "..."
   ```
   *(Pass the path to your current conversation's `transcript.jsonl` log file to let Tur dream and extract L1 memory
   files.)*
+
+---
+
+## 🔌 Harness MCP Gateway (`tur-mcp`)
+
+To connect Tur to an external Harness (Claude Desktop, Cursor, Antigravity, OpenCode), use the zero-install `uvx` bridge:
+
+```json
+{
+  "mcpServers": {
+    "tur": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "tur[mcp]",
+        "tur-mcp"
+      ]
+    }
+  }
+}
+```
 
 ---
 
