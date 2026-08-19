@@ -21,7 +21,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies (docs group)
-        run: uv sync --group docs
+        run: uv sync --group docs --no-build
       - name: Build documentation with Zensical
         run: uv run zensical build --clean
       - uses: actions/upload-pages-artifact@v5
