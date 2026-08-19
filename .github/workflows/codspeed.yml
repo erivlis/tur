@@ -26,6 +26,15 @@ jobs:
           enable-cache: true
       - name: Install dependencies (test group)
         run: uv sync --no-default-groups --group test
+      # The CodSpeed runner installs its valgrind instrument and libc6-dbg through
+      # apt; make sure those installs can never block on a lock or on needrestart.
+      - name: Prepare apt for unattended installs
+        run: |
+          sudo mkdir -p /etc/needrestart/conf.d
+          echo "\$nrconf{restart} = 'a';" | sudo tee /etc/needrestart/conf.d/99-codspeed.conf > /dev/null
+          echo 'DPkg::Lock::Timeout "300";' | sudo tee /etc/apt/apt.conf.d/99-codspeed-lock > /dev/null
+          sudo DEBIAN_FRONTEND=noninteractive timeout 300 apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive timeout 300 apt-get install -y libc6-dbg
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
         with:
