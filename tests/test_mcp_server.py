@@ -16,7 +16,7 @@ from tur.models import (
 @pytest.fixture
 def mock_mcp_env(tmp_path, monkeypatch):
     # Setup mock active persona structure
-    persona_id = 'fake-persona-uuid'
+    persona_id = '12345678-1234-5678-1234-567812345678'
     persona_dir = tmp_path / 'personas' / persona_id
     persona_dir.mkdir(parents=True, exist_ok=True)
 
@@ -36,6 +36,7 @@ def mock_mcp_env(tmp_path, monkeypatch):
     monkeypatch.setattr(tur.session, 'get_persona_path', lambda *args: persona_dir)
     # Ensure tests are isolated from any real active session on disk
     monkeypatch.setattr(tur.session, 'get_active_session_id', lambda: None)
+    monkeypatch.setattr(mcp_server, '_active_session_id', None)
 
     persona = Persona(
         name='MockAriel',
@@ -212,7 +213,7 @@ def test_mcp_telemetry(mock_mcp_env, monkeypatch):
         'name: MockAriel\nversion: 5.4.0\naleph: To design test scenarios.\nprinciples: []\n', encoding='utf-8'
     )
 
-    res = mcp_server.telemetry(identifier='fake-persona-uuid')
+    res = mcp_server.telemetry(identifier='12345678-1234-5678-1234-567812345678')
     assert res['persona_name'] == 'MockAriel'
     assert res['constraint_dimensionality'] == 0
     assert 'class' in res
@@ -242,8 +243,8 @@ def test_mcp_wake_reuses_active_session(mock_mcp_env, monkeypatch):
 
 def test_mcp_status(mock_mcp_env):
     res = mcp_server.status()
-    assert res['persona_name'] == 'fake-persona-uuid'
-    assert res['persona_id'] == 'fake-persona-uuid'
+    assert res['persona_name'] == '12345678-1234-5678-1234-567812345678'
+    assert res['persona_id'] == '12345678-1234-5678-1234-567812345678'
     assert res['session_status'] == 'none'
 
 
