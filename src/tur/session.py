@@ -8,7 +8,7 @@ import sqlite3
 import time
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar, cast
 from uuid import UUID
@@ -615,7 +615,7 @@ def signal_logic(
         raise ValueError(f"RateLimitError: Agent '{sender}' exceeded rate limit of 10 signals per minute.")
 
     payload = f'{sender}|{recipient}|{type_}|{content}'
-    timestamp_str = datetime.now(timezone.utc).isoformat()
+    timestamp_str = datetime.now(UTC).isoformat()
     signal_id = hashlib.sha256(f'{payload}|{timestamp_str}|{uuid.uuid4().hex}'.encode()).hexdigest()
 
     with conn:
@@ -844,7 +844,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         cursor = conn.cursor()
         payload = f'{agent_id}|*|sleep_event|Consensus reached. Swarm sleeping.'
         sig_id = hashlib.sha256(
-            f'{payload}|{datetime.now(timezone.utc).isoformat()}|{uuid.uuid4().hex}'.encode()
+            f'{payload}|{datetime.now(UTC).isoformat()}|{uuid.uuid4().hex}'.encode()
         ).hexdigest()
         conn.execute(
             """

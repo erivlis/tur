@@ -58,6 +58,7 @@ def perform_sleep_dreaming(
 
     def build_delegation_instructions() -> str:
         from datetime import datetime, timezone
+
         current_time = datetime.now(UTC).isoformat()
         persona_uuid = persona_dir.name
 
@@ -97,10 +98,11 @@ Please perform these file modifications directly. Once done, print a completion 
 """
 
     from tur._helpers import require_inference
+
     resp_text = require_inference(
         prompt=prompt,
         ctx=ctx,
-        task_description="session dreaming extraction",
+        task_description='session dreaming extraction',
         delegation_instructions_builder=build_delegation_instructions,
         model=model,
         response_schema=Dream.model_json_schema(),

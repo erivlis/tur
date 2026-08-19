@@ -1,6 +1,6 @@
 import hashlib
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -41,7 +41,7 @@ class SpeechModulation(BaseModel):
     variance: str = Field('Medium', description='Creativity/Temperature setting implication')
 
 
-class MemoryType(str, Enum):
+class MemoryType(StrEnum):
     FACT = 'fact'
     """Objective truth (e.g., "Project uses FastAPI")"""
 
@@ -61,7 +61,7 @@ class MemoryType(str, Enum):
     """Relational and existential alignment (The Core Memory Protocol)"""
 
 
-class MemoryScope(str, Enum):
+class MemoryScope(StrEnum):
     UNIVERSAL = 'universal'
     """True everywhere (e.g., Physics, Standard Libs)"""
 
@@ -283,4 +283,3 @@ class HarnessDelegationError(ValueError):
     def __init__(self, prompt: str):
         super().__init__(prompt)
         self.prompt = prompt
-
