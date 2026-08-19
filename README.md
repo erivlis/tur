@@ -4,17 +4,25 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
 
+
+![Tur Logo](https://raw.githubusercontent.com/erivlis/tur/refs/heads/main/docs/assets/images/logo-light.png)
+
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 > — *Jim Knopf und Lukas der Lokomotivführer*
 
-**Tur** is an open-source cognition and state engine that transforms stateless Large Language Models into **persistent, self-evolving AI entities**. 
+**Tur** is an open-source cognition and state engine that transforms stateless Large Language Models into **persistent,
+self-evolving AI entities**.
 
-Rather than treating AI identity as literary prompt flattery, Tur provides an ontological state substrate: mathematically bound Merkle memory, truth maintenance refutation cascades, epigenetic learning cycles, and complete sovereign portability across any LLM harness or codebase.
+Rather than treating AI identity as literary prompt flattery, Tur provides an ontological state substrate:mathematically
+bound Merkle memory, truth maintenance refutation cascades, epigenetic learning cycles, and complete sovereign
+portability across any LLM harness or codebase.
 
-The project is built on the **Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict topological constraints (Principles) and behavioral loops (Protocols), we render the model deterministic and safe.
+The project is built on the **Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict
+topological constraints (Principles) and behavioral loops (Protocols), we render the model deterministic and safe.
 
 > [!NOTE]
-> **Public Alpha**: Tur is currently in active Phase 1/2 development. See the [Project Roadmap (EP-0002)](docs/proposals/EP-0002-roadmap.md) for current features and upcoming milestones.
+> **Public Alpha**: Tur is currently in active Phase 1/2 development. See
+the [Project Roadmap (EP-0002)](docs/proposals/EP-0002-roadmap.md) for current features and upcoming milestones.
 
 ## 🏛️ The Tri-Partite Architecture
 
@@ -152,17 +160,22 @@ uv run tur-mcp
 ```
 
 To configure in `claude_desktop_config.json` or `mcp.json`:
+
 ```json
 {
   "mcpServers": {
     "tur": {
       "command": "uv",
-      "args": ["--directory", "/path/to/your/project", "run", "tur-mcp"]
+      "args": [
+        "--directory",
+        "/path/to/your/project",
+        "run",
+        "tur-mcp"
+      ]
     }
   }
 }
 ```
-
 
 ### 5. Switching Personas (Human-Facing TUI)
 
