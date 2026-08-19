@@ -74,6 +74,52 @@ app.add_typer(session_app, name='session')
 
 
 # -----------------------------------------------------------------------------
+# ARCHIVE EXTRACTION SECURITY HELPERS (CWE-22 / Tar Slip Prevention)
+# -----------------------------------------------------------------------------
+
+
+def is_within_directory(directory: Path, target: Path) -> bool:
+    """Verify that target is strictly contained within directory."""
+    try:
+        target.resolve().relative_to(directory.resolve())
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
+    """
+    Safely extract tar archive members preventing Arbitrary File Write (Tar Slip / CWE-22).
+    Validates against symlinks, hardlinks, path traversal, and uses PEP 706 data filters.
+    """
+    resolved_path = path.resolve()
+    safe_members = []
+    for member in tar.getmembers():
+        if member.issym() or member.islnk():
+            raise PermissionError(
+                'Archive contains a symlink or hardlink '
+                f"which is not allowed for security reasons: '{member.name}'"
+            )
+        try:
+            member_path = (resolved_path / member.name).resolve()
+        except Exception as e:
+            raise PermissionError(f"Path traversal detected or invalid path: '{member.name}'") from e
+
+        if not is_within_directory(resolved_path, member_path):
+            raise PermissionError(
+                f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
+            )
+
+        safe_members.append(member)
+
+    if hasattr(tarfile, 'data_filter'):
+        tar.extractall(path=resolved_path, members=safe_members, filter='data')
+    else:
+        tar.extractall(path=resolved_path, members=safe_members)
+
+
+# -----------------------------------------------------------------------------
 # PERSONA COMMANDS GROUP
 # -----------------------------------------------------------------------------
 
@@ -270,7 +316,7 @@ def persona_export(
 
 @persona_app.command('import')
 @require_human
-def persona_import(  # noqa: C901
+def persona_import(
         archive_path: Path = typer.Argument(..., help='The filepath to the .tur archive to import'),
         set_active: bool = typer.Option(
             False,
@@ -297,27 +343,7 @@ def persona_import(  # noqa: C901
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
             with tarfile.open(archive_path, 'r:gz') as tar:
-                # Sanitize all member paths before extraction to prevent path traversal
-                resolved_tmp = tmp_path.resolve()
-                for member in tar.getmembers():
-                    if member.issym() or member.islnk():
-                        raise PermissionError(  # noqa: TRY301
-                            'Archive contains a symlink or hardlink '
-                            f"which is not allowed for security reasons: '{member.name}'"
-                        )
-                    try:
-                        member_path = (tmp_path / member.name).resolve()
-                    except Exception as e:
-                        raise PermissionError(f"Path traversal detected or invalid path: '{member.name}'") from e
-
-                    try:
-                        member_path.relative_to(resolved_tmp)
-                    except ValueError as e:
-                        raise PermissionError(
-                            f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
-                        ) from e
-
-                tar.extractall(path=tmp_path)
+                safe_extract(tar, tmp_path)
 
             persona_yaml = tmp_path / 'persona.yaml'
             if not persona_yaml.exists():
