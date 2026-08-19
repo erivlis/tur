@@ -263,7 +263,8 @@ def persona_export(
 
             persona_data['id'] = str(persona_uuid)
             yaml_str = yaml.dump(persona_data, sort_keys=False)
-            assert isinstance(yaml_str, str)
+            if not isinstance(yaml_str, str):
+                raise TypeError("Persona data cannot be deserilized")  # noqa: TRY301
             yaml_bytes = yaml_str.encode('utf-8')
             info = tarfile.TarInfo(name='persona.yaml')
             info.size = len(yaml_bytes)
@@ -311,7 +312,7 @@ def persona_export(
         console.print(f"[green]Persona '{identifier}' successfully exported to '{output_path}'[/green]")
     except Exception as e:
         console.print(f'[red]Error exporting persona: {e}[/red]')
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 @persona_app.command('import')
