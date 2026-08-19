@@ -1,12 +1,14 @@
 # Tur: Sovereign Cognition Engine for Persistent, Evolving AI Entities
 
+<img width="40%" src="https://erivlis.github.io/tur/assets/images/logo-light.png#only-light" alt="Tur Logo" style="float:right; width:40%; max-width:40%; height:auto; margin:1rem 1rem 1rem 1rem; vertical-align: center">
+
+<p>
+
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 >
 > — *Jim Knopf und Lukas der Lokomotivführer* by Michael Ende
 
-<img src="docs/assets/images/logo-dark.png" alt="Tur logo" style="float:right; width:20%; max-width:20%; height:auto; margin:0 1rem 1rem 0;">
 
-<p>
 
 **Tur** is an open-source cognition and state engine that transforms stateless Large Language Models into **persistent,
 evolving AI entities**.
@@ -18,11 +20,11 @@ sovereign portability across any LLM harness or codebase.
 The project is built on the **Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict
 topological constraints (Principles) and behavioral loops (Protocols), we render the model deterministic and safe.
 
-</p>
-
 > [!NOTE]
 > **Public Alpha**: Tur is currently in active Phase 1/2 development.
 > See the [Project Roadmap (EP-0002)](docs/proposals/EP-0002-roadmap.md) for current features and upcoming milestones.
+
+</p>
 
 <table>
   <tr style="vertical-align: middle;">
