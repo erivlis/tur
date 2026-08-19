@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Principle(BaseModel):
@@ -192,8 +192,7 @@ class Persona(BaseModel):
         default_factory=dict, description='Arbitrary tracking data (author, created_at, etc.)'
     )
 
-    class Config:
-        frozen = True  # Immutability by Default (The Golem Principle)
+    model_config = ConfigDict(frozen=True)  # Immutability by Default (The Golem Principle)
 
 
 class SessionState(BaseModel):
