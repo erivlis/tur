@@ -1,4 +1,5 @@
 import os
+from datetime import UTC
 from typing import Any
 
 from rich.console import Console
@@ -57,7 +58,7 @@ def perform_sleep_dreaming(
 
     def build_delegation_instructions() -> str:
         from datetime import datetime, timezone
-        current_time = datetime.now(timezone.utc).isoformat()
+        current_time = datetime.now(UTC).isoformat()
         persona_uuid = persona_dir.name
 
         return f"""# TUR DELEGATION: Session Epilogue & Memory Extraction Request (EP-0121)
@@ -172,26 +173,18 @@ def stage_sleep_dreaming(
             return await _mcp_sample(ctx, prompt)
 
         resp_text = run_async(do_sampling())
-    else:
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            return '[]'
+        return _clean_json_response(resp_text)
 
-        from google import genai
-        from google.genai import types
+    api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('TUR_LLM_API_KEY')
+    if not api_key:
+        return '[]'
 
-        client = genai.Client(api_key=api_key)
+    from tur._helpers import _local_gemini_generate
 
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type='application/json',
-                response_json_schema=Dream.model_json_schema(),
-            ),
-        )
-        resp_text = response.text
-        if not resp_text:
-            raise ValueError('Dream response was empty')
-
+    resp_text = _local_gemini_generate(
+        prompt=prompt,
+        api_key=api_key,
+        model=model,
+        response_schema=Dream.model_json_schema(),
+    )
     return _clean_json_response(resp_text)

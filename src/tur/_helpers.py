@@ -79,8 +79,14 @@ def _local_gemini_generate(
     response_schema: Any | None = None,
 ) -> str:
     """Helper to execute local Gemini SDK content generation."""
-    from google import genai
-    from google.genai import types
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError as e:
+        raise ImportError(
+            "The 'google-genai' package is required for direct Gemini API calls. "
+            "Install it with: pip install 'tur[gemini]' or uv add 'tur[gemini]'"
+        ) from e
 
     client = genai.Client(api_key=api_key)
     config = None

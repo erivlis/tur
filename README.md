@@ -182,8 +182,8 @@ your system `PATH`:
 # Install the core agent CLI
 uv tool install tur
 
-# Or install with human governance TUI (tur-adm) and MCP gateway (tur-mcp)
-uv tool install "tur[admin,mcp]"
+# Or install with human governance TUI (tur-adm), Gemini dreaming (gemini), and MCP gateway (tur-mcp)
+uv tool install "tur[admin,gemini,mcp]"
 
 # Upgrade to the latest version anytime
 uv tool upgrade tur
@@ -195,8 +195,8 @@ uv tool upgrade tur
 # Install core agent runtime in your active environment
 pip install tur
 
-# Or with administrative and MCP extras
-pip install "tur[admin,mcp]"
+# Or with administrative, Gemini SDK, and MCP extras
+pip install "tur[admin,gemini,mcp]"
 ```
 
 #### Zero-Install with `uvx`
