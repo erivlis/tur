@@ -1,3 +1,16 @@
+## v0.9.1 (2026-08-19)
+
+### Fix
+
+- Ensures state directories for robust MCP server test isolation.
+
+### Refactor
+
+- Adopts Pydantic v2 `ConfigDict` for model configuration.
+- Implements EP-0003, refactoring introspection for policy/mechanism.
+- **EP-0121**: require_inference now encapsulates local LLM generation.
+- **EP-0121**: Refactors LLM inference to use EP-0121 harness delegation.
+
 ## v0.9.0 (2026-08-19)
 
 ### Feat
