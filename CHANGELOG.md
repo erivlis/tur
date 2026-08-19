@@ -1,3 +1,15 @@
+## v0.9.2 (2026-08-19)
+
+### Fix
+
+- **security**: Enables Jinja2 autoescape for HTML/XML output.
+- **security**: Adds safe_extract for robust archive extraction.
+
+### Refactor
+
+- Adopts StrEnum and datetime.UTC for modern Python features.
+- Centralizes Gemini API calls and enhances dependency error messages.
+
 ## v0.9.1 (2026-08-19)
 
 ### Fix
