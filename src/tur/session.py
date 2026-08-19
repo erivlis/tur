@@ -453,6 +453,7 @@ def start_session_logic(
     else:
         state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
 
+    state_path.parent.mkdir(parents=True, exist_ok=True)
     with open(state_path, 'w', encoding='utf-8') as f:
         yaml.dump(state_obj.model_dump(mode='json'), f)
 
