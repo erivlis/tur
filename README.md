@@ -78,23 +78,21 @@ topological constraints (Principles) and behavioral loops (Protocols), we render
       <a href="https://sonarcloud.io/summary/new_code?id=erivlis_tur"><img alt="Lines of Code" src="https://sonarcloud.io/api/project_badges/measure?project=erivlis_tur&metric=ncloc"></a>
       <a href="https://sonarcloud.io/summary/new_code?id=erivlis_tur"><img alt="Vulnerabilities" src="https://sonarcloud.io/api/project_badges/measure?project=erivlis_tur&metric=vulnerabilities"></a>
       <a href="https://sonarcloud.io/summary/new_code?id=erivlis_tur"><img alt="Bugs" src="https://sonarcloud.io/api/project_badges/measure?project=erivlis_tur&metric=bugs"></a>
-      <a href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img alt="Codacy Quality" src="https://app.codacy.com/project/badge/Grade/8b83a99f939b4883ae2f37d7ec3419d1"></a>
-      <a href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage"><img alt="Codacy Coverage" src="https://app.codacy.com/project/badge/Coverage/8b83a99f939b4883ae2f37d7ec3419d1"/></a>
+      <!-- a href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img alt="Codacy Quality" src="https://app.codacy.com/project/badge/Grade/8b83a99f939b4883ae2f37d7ec3419d1"></a-->
+      <!-- a-- href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage"><img alt="Codacy Coverage" src="https://app.codacy.com/project/badge/Coverage/8b83a99f939b4883ae2f37d7ec3419d1"/></a-->
       <!-- a href="https://www.codefactor.io/repository/github/erivlis/tur/overview/main"><img src="https://www.codefactor.io/repository/github/erivlis/tur/badge/main" alt="CodeFactor" /></a -->
       <a href="https://snyk.io/test/github/erivlis/tur"><img alt="Snyk" src="https://snyk.io/test/github/erivlis/tur/badge.svg"></a>
       <a href="https://app.codspeed.io/erivlis/tur?utm_source=badge"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/></a>
       <!-- a href="https://scorecard.dev/viewer/?uri=github.com/erivlis/tur"><img src="https://api.scorecard.dev/projects/github.com/erivlis/tur/badge" alt="OpenSSF Scorecard"/></a -->
     </td>
   </tr>
-  <tr>
+  <!-- tr>
     <td>Mentions</td>
     <td>
-      <!-- <a href="https://www.youtube.com/live/k01G0b0Y0Jg?si=030OT8sK3BqPyy8r&t=1028"><img alt="PythonBytes Podcast" src="https://img.shields.io/badge/Python_Bytes-Ep. 361-D7F9FF?logo=applepodcasts&labelColor=blue"></a> -->
-      <!-- a href="https://pythonhub.dev/digest/2024-08-06/"><img alt="Static Badge" src="https://img.shields.io/badge/PythonHub-2024.08.06-gold?labelColor=blue"></a -->
-      <a href="https://pythonhub.dev/digest/2026-08-09/"><img alt="Python Hub" src="https://custom-icon-badges.demolab.com/badge/Python%20Hub-2026.08.09-gold?logo=pythonhub&labelColor=grey"></a>
-      <a href="https://x.com/PythonHub/status/2085323880172749251"><img alt="X" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Fx.com%2FPythonHub%2Fstatus%2F2085323880172749251"></a>
+      <!-- a href="https://pythonhub.dev/digest/2026-08-09/"><img alt="Python Hub" src="https://custom-icon-badges.demolab.com/badge/Python%20Hub-2026.08.09-gold?logo=pythonhub&labelColor=grey"></a -->
+      <!-- a href="https://x.com/PythonHub/status/2085323880172749251"><img alt="X" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Fx.com%2FPythonHub%2Fstatus%2F2085323880172749251"></a -->
     </td>
-  </tr>
+  </tr -->
 </table>
 
 ## 🏛️ The Tri-Partite Architecture
