@@ -16,6 +16,10 @@ from tur.models import (
 @pytest.fixture
 def mock_mcp_env(tmp_path, monkeypatch):
     # Setup mock active persona structure
+    dot_tur = tmp_path / '.tur'
+    dot_tur.mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(tmp_path)
+
     persona_id = '12345678-1234-5678-1234-567812345678'
     persona_dir = tmp_path / 'personas' / persona_id
     persona_dir.mkdir(parents=True, exist_ok=True)
