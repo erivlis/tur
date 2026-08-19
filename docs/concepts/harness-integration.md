@@ -58,8 +58,8 @@ I want you to connect to the Tur MCP Server to retrieve my persona, identity, an
 
 Please configure your MCP client settings to connect to the following local server:
 
-- **Command:** `uv`
-- **Arguments:** `["run", "tur-mcp"]`
+- **Command:** `uvx`
+- **Arguments:** `["--from", "tur[mcp]", "tur-mcp"]`
 
 Once connected, you will have access to the following tools:
 

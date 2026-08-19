@@ -102,15 +102,55 @@ Tur divides its execution footprint along strict Tri-Partite security boundaries
 
 ### 1. Installation & Setup
 
+#### System-Wide CLI Tools via `uv tool` (Recommended)
+
+Installs Tur into an isolated environment and makes the executables (`tur`, `tur-adm`, `tur-mcp`) globally available on
+your system `PATH`:
+
+```shell
+# Install the core agent CLI
+uv tool install tur
+
+# Or install with human governance TUI (tur-adm) and MCP gateway (tur-mcp)
+uv tool install "tur[admin,mcp]"
+
+# Upgrade to the latest version anytime
+uv tool upgrade tur
+```
+
+#### Via PyPI / `pip`
+
+```shell
+# Install core agent runtime in your active environment
+pip install tur
+
+# Or with administrative and MCP extras
+pip install "tur[admin,mcp]"
+```
+
+#### Zero-Install with `uvx`
+
+Run commands instantly in ephemeral environments without permanent installation:
+
+```shell
+# Launch the sovereign human administration TUI
+uvx --from "tur[admin]" tur-adm persona init
+
+# Run the agent lifecycle commands
+uvx tur wake
+
+# Run the MCP server
+uvx --from "tur[mcp]" tur-mcp
+```
+
+#### From Source (Development)
+
 ```shell
 # Clone the repository
 git clone https://github.com/erivlis/tur.git
 cd tur
 
-# Install standard agent runtime dependencies ONLY (Safe Sandbox)
-uv sync
-
-# Or install all developer and TUI extras (Human Governance)
+# Install dependencies with all extras
 uv sync --all-extras --all-groups
 ```
 
@@ -120,7 +160,7 @@ This launches the administrative TUI wizard. Since this is an administrative act
 `tur-adm`:
 
 ```shell
-uv run tur-adm persona init
+tur-adm persona init
 ```
 
 ### 3. The Core Lifecycle (Agent-Facing)
@@ -130,25 +170,25 @@ The agent interacts with the lightweight `tur` binary inside its sandboxed virtu
 **Wake:** Compiles the active persona state into a compiled System Prompt.
 
 ```shell
-uv run tur wake
+tur wake
 ```
 
 **Learn:** Manually injects a memory.
 
 ```shell
-uv run tur learn "The user prefers functional programming." --type preference
+tur learn "The user prefers functional programming." --type preference
 ```
 
 **Recall:** Keyword semantic search.
 
 ```shell
-uv run tur recall "functional"
+tur recall "functional"
 ```
 
 **Sleep:** Dehydrates the session and extracts memories.
 
 ```shell
-uv run tur sleep path/to/chat.log
+tur sleep path/to/chat.log
 ```
 
 ### 4. Running the Harness Gateway (The MCP Server)
@@ -156,20 +196,21 @@ uv run tur sleep path/to/chat.log
 Exposes the Traveler state to external Harnesses (e.g., Claude Desktop, Antigravity, Cursor):
 
 ```shell
-uv run tur-mcp
+tur-mcp
 ```
 
-To configure in `claude_desktop_config.json` or `mcp.json`:
+#### MCP Client Configuration
+
+Add Tur to your client configuration (e.g., `claude_desktop_config.json`, `.cursor/mcp.json`, or Antigravity config):
 
 ```json
 {
   "mcpServers": {
     "tur": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "/path/to/your/project",
-        "run",
+        "--from",
+        "tur[mcp]",
         "tur-mcp"
       ]
     }
@@ -182,7 +223,7 @@ To configure in `claude_desktop_config.json` or `mcp.json`:
 Allows the human Architect to change active global/local default personas:
 
 ```shell
-uv run tur-adm persona switch
+tur-adm persona switch
 ```
 
 This will launch a TUI to select from your available personas.

@@ -10,14 +10,54 @@ structured, immutable software object.
 
 ## Installation
 
-Ensure you have [uv](https://github.com/astral-sh/uv) installed.
+### System-Wide CLI Tools via `uv tool` (Recommended)
+
+`uv tool` installs Tur into an isolated virtual environment and exposes the executables globally on your system `PATH`:
+
+```shell
+# Install the core agent runtime CLI
+uv tool install tur
+
+# Or install with human administration TUI (tur-adm) and MCP gateway (tur-mcp)
+uv tool install "tur[admin,mcp]"
+
+# Upgrade to the latest version anytime
+uv tool upgrade tur
+```
+
+### Via PyPI / `pip`
+
+```shell
+# Install in your active Python environment
+pip install tur
+
+# Or with administrative and MCP extras
+pip install "tur[admin,mcp]"
+```
+
+### Zero-Install with `uvx`
+
+You can invoke any Tur command instantly without installing anything into your global environment:
+
+```shell
+# Run agent lifecycle commands
+uvx tur wake
+
+# Run the human administration TUI
+uvx --from "tur[admin]" tur-adm persona init
+
+# Run the MCP server
+uvx --from "tur[mcp]" tur-mcp
+```
+
+### From Source (Development)
 
 ```shell
 # Clone the repository
 git clone https://github.com/erivlis/tur.git
 cd tur
 
-# Install the project and dependencies
+# Install the project and all dependencies
 uv sync --all-extras --all-groups
 ```
 
@@ -32,7 +72,7 @@ If you run a command without specifying a persona, Tur will:
    personas.
 3. Your selection will be saved as the new default for all future commands.
 
-You can always override the default by explicitly providing a name or UUID (e.g., `uv run tur wake turing`).
+You can always override the default by explicitly providing a name or UUID (e.g., `tur wake turing` or `uv run tur wake turing`).
 
 ---
 
@@ -55,7 +95,7 @@ Bootstrap a new persona interactively. This creates the necessary `.tur/personas
 unique UUID, and creates your first `persona.yaml` DNA file.
 
 ```shell
-uv run tur-adm persona init
+tur-adm persona init
 ```
 
 ### 2. Wake the Persona (`wake`)
@@ -65,10 +105,10 @@ complete "System Prompt" ready to be fed to an LLM.
 
 ```shell
 # Wake the default persona
-uv run tur wake
+tur wake
 
 # Wake a specific persona
-uv run tur wake ariel
+tur wake ariel
 ```
 
 ### 3. Learn a Memory (`learn`)
@@ -77,10 +117,10 @@ uv run tur wake ariel
 Bank during a session.
 
 ```shell
-uv run tur learn "The user prefers functional programming over OOP." --type preference --scope incarnation
+tur learn "The user prefers functional programming over OOP." --type preference --scope incarnation
 
 # Or for a specific persona:
-uv run tur learn "Code must be perfectly symmetrical." ariel --type axiom
+tur learn "Code must be perfectly symmetrical." ariel --type axiom
 ```
 
 ### 4. Sleep & Consolidate (`sleep`)
@@ -91,10 +131,10 @@ an LLM (acting as the Subconscious) to parse the log and structure the data.
 *Note: Requires the `GEMINI_API_KEY` environment variable to be set.*
 
 ```shell
-uv run tur sleep path/to/chat.log
+tur sleep path/to/chat.log
 
 # Or for a specific persona:
-uv run tur sleep path/to/chat.log ariel
+tur sleep path/to/chat.log ariel
 ```
 
 ### 5. Running as an MCP Server (`tur-mcp`)
@@ -103,7 +143,7 @@ uv run tur sleep path/to/chat.log ariel
 to external Harnesses like Claude Desktop, Claude Code, Cursor, or Antigravity.
 
 ```shell
-uv run tur-mcp
+tur-mcp
 ```
 
 #### Client Configuration
@@ -115,11 +155,10 @@ Add Tur to your host's MCP configuration file (e.g. `claude_desktop_config.json`
 {
   "mcpServers": {
     "tur": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "--directory",
-        "/absolute/path/to/your/project",
-        "run",
+        "--from",
+        "tur[mcp]",
         "tur-mcp"
       ]
     }
@@ -133,13 +172,13 @@ Inspect the contents of the Memory Bank. This lists all active memories that wil
 cycle.
 
 ```shell
-uv run tur-adm memory list
+tur-adm memory list
 ```
 
 To include archived (forgotten) memories in the list:
 
 ```shell
-uv run tur-adm memory list --include-archived
+tur-adm memory list --include-archived
 ```
 
 ### 7. Measure Cognitive Load (`telemetry`)
@@ -148,7 +187,7 @@ Calculates the "Constraint Dimensionality" ($C_p$) of a persona based on its pri
 understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
 
 ```shell
-uv run tur telemetry
+tur telemetry
 ```
 
 ### 8. Forget a Memory (`forget`)
@@ -158,10 +197,10 @@ folder and is no longer loaded during `wake`.
 
 ```shell
 # You must provide the Memory ID
-uv run tur-adm memory forget <memory-hash>
+tur-adm memory forget <memory-hash>
 
 # For a non-default persona:
-uv run tur-adm memory forget <memory-hash> ariel
+tur-adm memory forget <memory-hash> ariel
 ```
 
 ### 9. Check Persona Status (`status`)
@@ -170,7 +209,7 @@ Renders a rich status panel containing the currently selected persona's details,
 status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
 
 ```shell
-uv run tur status
+tur status
 ```
 
 ### 10. Search Memories (`recall`)
@@ -179,7 +218,7 @@ Perform an exact or keyword search across all memories inside the persona's memo
 insights or facts.
 
 ```shell
-uv run tur recall "Noether"
+tur recall "Noether"
 ```
 
 ### 11. Manage Sessions (`session` Subgroup)
@@ -191,13 +230,13 @@ Administrative tools to manually start and end sessions for a persona.
 #### Start a Session
 
 ```shell
-uv run tur-adm session start my-session-123
+tur-adm session start my-session-123
 ```
 
 #### End a Session
 
 ```shell
-uv run tur-adm session end my-session-123
+tur-adm session end my-session-123
 ```
 
 ### 12. Append a Note (`note`)
@@ -206,7 +245,7 @@ Append a narrative note/utterance to the active session. These notes form the co
 sessions.
 
 ```shell
-uv run tur note "Added status command and cleaned up legacy files."
+tur note "Added status command and cleaned up legacy files."
 ```
 
 ### 13. Switch Active Default Persona (`switch`)
@@ -216,7 +255,7 @@ Interactive Textual TUI wizard to switch your current active default persona glo
 *Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
 
 ```shell
-uv run tur-adm persona switch
+tur-adm persona switch
 ```
 
 ### 14. Export Persona (`export`)
@@ -228,7 +267,7 @@ gzip-compressed archive (excluding project-local incarnation-specific memories).
 
 ```shell
 # Export a persona by its name or UUID to a destination file using --output or -o
-uv run tur-adm persona export ariel -o ariel.tur
+tur-adm persona export ariel -o ariel.tur
 ```
 
 ### 15. Import Persona (`import`)
@@ -240,10 +279,10 @@ sanitizes all Member paths prior to extraction to guarantee safety against path 
 
 ```shell
 # Import a persona from a .tur archive
-uv run tur-adm persona import ariel.tur
+tur-adm persona import ariel.tur
 
 # Force overwrite an existing persona and set it as active
-uv run tur-adm persona import ariel.tur --force --set-active
+tur-adm persona import ariel.tur --force --set-active
 ```
 
 ## Customization
