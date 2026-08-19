@@ -74,6 +74,7 @@ test = [
     "pytest-xdist",
     "markdown-pytest",
     "requests",
+    "pytest-codspeed>=5.0.3",
 ]
 
 [project.scripts]

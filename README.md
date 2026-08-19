@@ -3,6 +3,7 @@
 [![Development Status](https://img.shields.io/badge/Status-Public%20Alpha%20(v0.9.0)-blue.svg)](docs/proposals/EP-0002-roadmap.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/erivlis/tur?utm_source=badge)
 
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 > — *Jim Knopf und Lukas der Lokomotivführer*
