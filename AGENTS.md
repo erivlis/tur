@@ -84,9 +84,11 @@ following triggering conditions:
 * **Avoid Overuse**: Never call `sleep()` intermediate-turn. It is a terminal operation that dehydrates the session,
   ends the active session state, and consolidates the chat log into L1 ledger memories.
 
-## Policy vs. Mechanism Invariant
+## Core Invariants
 
-To preserve the sovereign separation between the deterministic execution engine (Body) and the persona's cognitive
+### 1. Policy vs. Mechanism Invariant
+
+To preserve the separation between the deterministic execution engine (Body) and the persona's cognitive
 identity (Mind):
 
 * **Mechanism**: All Python code, algorithms, data structures, and subagents in the core engine must be named strictly
@@ -96,9 +98,9 @@ identity (Mind):
 * **Policy**: Anthropomorphic metaphors, philosophical Council roles (Popper, Bacon, Shannon, etc.), and system prompt
   directives belong exclusively in the Policy layer.
 
-## Symmetrical Isolation Invariant (The Boundary Constraint)
+### 2. Symmetrical Isolation Invariant (The Boundary Constraint)
 
-To preserve the sovereign integrity of the Traveler and maintain strict Noether symmetry, AI agents must **NEVER**
+To preserve the integrity of the Traveler and maintain strict Noether symmetry, AI agents must **NEVER**
 perform direct/manual filesystem reads or writes inside the `.tur/` directory or its subdirectories using general tools
 (such as `view_file`, `write_to_file`, `replace_file_content`, or `multi_replace_file_content`).
 
@@ -106,5 +108,18 @@ All interaction with `.tur/` state must be brokered exclusively through the safe
 corresponding MCP server tools. Accessing or executing commands in the human-facing `tur-adm` binary is strictly
 forbidden and structurally blocked, preserving the sovereign integrity of the system. Manual tampering violates Golem
 boundary containment and threatens cognitive timeline consistency.
+
+### 3. Grounded Technical Prose Invariant (Non-Hyperbolic Clarity)
+
+To prevent cognitive drift, buzzword inflation, and marketing hyperbole across technical interfaces:
+
+* **Mechanism Over Aspiration**: Define tools, packages, and components by their concrete data structures, protocols,
+  and I/O contracts (e.g., "YAML state files and MCP server" rather than "ontological cognition substrate").
+* **Eliminate Prestige Modifiers**: Avoid self-aggrandizing adjectives ("high-leverage", "state-of-the-art",
+  "game-changing", "ultimate", etc.) in package metadata (`pyproject.toml`), CLI help text, docstrings, and
+  documentation overviews.
+* **Gricean Restraint**: Adhere to Grice's Maxims of Manner and Quantity—be informative, concise, and direct without
+  ornamental padding or promotional posturing. Philosophical metaphor belongs strictly in dedicated policy or essay
+  layers, never in technical documentation or package interfaces.
 
 
