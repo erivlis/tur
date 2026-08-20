@@ -56,11 +56,13 @@ nav = [
         "proposals/EP-0118-inter-agent-signal-protocol.md",
         "proposals/EP-0119-persona-centric-introspection.md",
         "proposals/EP-0120-okf-storage-backend.md",
-        "proposals/EP-0121-agnostic-harness-interaction.md"
+        "proposals/EP-0121-agnostic-harness-interaction.md",
+        "proposals/EP-0122-algebraic-meditation-consensus.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
-        "reviews/REV-0002-EP-0113-review-report.md"
+        "reviews/REV-0002-EP-0113-review-report.md",
+        "reviews/REV-0003-EP-0122-council-review.md"
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
