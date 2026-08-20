@@ -1,9 +1,9 @@
 ---
-description: Sovereign Cognition Engine for Persistent, Evolving AI Entities.
+description: Persistent state and memory management engine for AI agents.
 icon: lucide/home
 ---
 
-# Tur: The Sovereign Cognition Engine for Persistent, Evolving AI Entities.
+# Tur: Persistent State and Memory Engine for AI Agents
 
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 > — *Jim Knopf und Lukas der Lokomotivführer*
@@ -11,17 +11,17 @@ icon: lucide/home
 ![Tur Logo Light](assets/images/logo-light.png#only-light){ width="300" align=right}
 ![Tur Logo Dark](assets/images/logo-dark.png#only-dark){ width="300" align=right}
 
-**Tur** is an open-source cognition and state engine that transforms stateless Large Language Models into **persistent, self-evolving AI entities**. 
+**Tur** is an open-source state and memory management engine for AI agents and Large Language Models.
 
-Rather than treating an AI identity as literary prompt flattery, Tur provides an ontological state substrate: mathematically bound Merkle memory, truth maintenance refutation cascades, epigenetic learning cycles, and complete sovereign portability across any LLM harness or codebase.
+It provides persistent, structured persona state across sessions, harnesses, and codebases via the Model Context Protocol (MCP) and local CLI tools. Rather than relying on ephemeral system prompt configuration, Tur manages persona identity, operational principles, hierarchical memory (L1 ledger & L2 knowledge graph), and session continuity as structured, version-controlled files.
 
-This documentation site provides the core principles, architectural proposals, and usage guides for the Tur framework.
+This documentation site provides the core concepts, architectural proposals, and usage guides for the Tur framework.
 
 ## Core Philosophy
 
 The project is built on three foundational pillars:
 
-1. **The Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict topological constraints and behavioral protocols, we render the model deterministic and safe.
+1. **The Tur Tur Principle**: The complexity of AI behavior can be made more focused and manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
 2. **The Tri-Partite Architecture**: Clean ontological separation between **The Traveler** (the sovereign Mind and Memory managed by Tur), **The Terrain** (the codebase and local physics), and **The Harness** (the compute and tools).
 3. **Policy vs. Mechanism**: Strict separation between the deterministic execution engine (Body) and the philosophical Council identity (Mind).
 

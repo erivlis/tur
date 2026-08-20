@@ -111,7 +111,7 @@ def mock_workspace(tmp_path, monkeypatch):
 def test_admin_help(mock_workspace):
     result = runner.invoke(admin_app, ['--help'])
     assert result.exit_code == 0
-    assert 'Administrative Governance Suite' in result.stdout
+    assert 'Administrative persona management CLI' in result.stdout
 
 
 def test_admin_golem_protocol_violation(mock_workspace, monkeypatch):

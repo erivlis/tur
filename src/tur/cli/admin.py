@@ -56,7 +56,7 @@ from tur.models import (
 from tur.paths import resolve_personas_base_dir
 
 app = typer.Typer(
-    help='Tur: Persona Administrative Governance Suite.',
+    help='Tur: Administrative persona management CLI.',
     context_settings={'help_option_names': ['-h', '--help']},
     add_completion=False,
     no_args_is_help=True,
@@ -64,9 +64,9 @@ app = typer.Typer(
     rich_markup_mode='rich',
 )
 
-persona_app = typer.Typer(help='Manage persona configurations, DNA profiles, and identity lifecycle.')
-memory_app = typer.Typer(help='Query, inspect, and prune memories inside the deep memory ledger.')
-session_app = typer.Typer(help='Start, end, and inspect session notes and chronological continuity.')
+persona_app = typer.Typer(help='Manage persona configurations and identities.')
+memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger.')
+session_app = typer.Typer(help='Start, end, and inspect session state and notes.')
 
 app.add_typer(persona_app, name='persona')
 app.add_typer(memory_app, name='memory')

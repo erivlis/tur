@@ -1,4 +1,4 @@
-# Tur: Sovereign Cognition Engine for Persistent, Evolving AI Entities
+# Tur: Persistent State and Memory Engine for AI Agents
 
 <img width="40%" src="https://erivlis.github.io/tur/assets/images/logo-light.png#only-light" alt="Tur Logo" style="float:right; width:40%; max-width:40%; height:auto; margin:1rem 1rem 1rem 1rem; vertical-align: center">
 
@@ -10,15 +10,15 @@
 
 
 
-**Tur** is an open-source cognition and state engine that transforms stateless Large Language Models into **persistent,
-evolving AI entities**.
+**Tur** is an open-source state and memory management engine for AI agents and Large Language Models.
 
-Rather than treating AI identity as literary prompt flattery, Tur provides an ontological state substrate:
-mathematically bound Merkle memory, truth maintenance refutation cascades, epigenetic learning cycles, and complete
-sovereign portability across any LLM harness or codebase.
+It provides persistent, structured persona state across sessions, harnesses, and codebases via the Model Context
+Protocol (MCP) and local CLI tools. Rather than relying on ephemeral system prompt configuration, Tur manages persona
+identity, operational principles, hierarchical memory (L1 ledger & L2 knowledge graph), and session continuity as
+structured, version-controlled files.
 
-The project is built on the **Tur Tur Principle**: The complexity of AI is an illusion of distance. By imposing strict
-topological constraints (Principles) and behavioral loops (Protocols), we render the model deterministic and safe.
+The project is inspired by the **Tur Tur Principle**: The complexity of AI behavior can be made more focused and
+manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
 
 > [!NOTE]
 > **Public Alpha**: Tur is currently in active Phase 1/2 development.
