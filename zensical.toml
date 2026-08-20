@@ -57,7 +57,8 @@ nav = [
         "proposals/EP-0119-persona-centric-introspection.md",
         "proposals/EP-0120-okf-storage-backend.md",
         "proposals/EP-0121-agnostic-harness-interaction.md",
-        "proposals/EP-0122-algebraic-meditation-consensus.md"
+        "proposals/EP-0122-algebraic-meditation-consensus.md",
+        "proposals/EP-0123-reactive-signal-delivery.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
