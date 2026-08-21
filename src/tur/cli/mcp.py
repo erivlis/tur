@@ -42,10 +42,12 @@ def serve():
         sys.exit(1)
 
     try:
-        console.print('[bold green]Starting Tur MCP server (stdio)...[/bold green]')
         mcp_main()
     except Exception as e:
-        console.print(f'[red]Error starting server: {e}[/red]')
+        from rich.console import Console
+
+        err_console = Console(stderr=True)
+        err_console.print(f'[red]Error starting server: {e}[/red]')
         sys.exit(1)
 
 

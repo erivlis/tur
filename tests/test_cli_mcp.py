@@ -65,7 +65,8 @@ def test_mcp_serve_mocked(mock_workspace, monkeypatch):
 
     result = runner.invoke(mcp_app, [])
     assert result.exit_code == 0
-    assert 'Starting Tur MCP server' in result.stdout
+    # stdout must remain completely clean for JSON-RPC transport
+    assert result.stdout == ''
     mock_mcp_main.assert_called_once_with()
 
 
@@ -79,7 +80,8 @@ def test_mcp_serve_error(mock_workspace, monkeypatch):
 
     result = runner.invoke(mcp_app, [])
     assert result.exit_code == 1
-    assert 'Error starting server: Failure launching server' in result.stdout
+    output = result.stderr if getattr(result, 'stderr', None) else result.stdout
+    assert 'Error starting server: Failure launching server' in output
 
 
 def test_mcp_module_main(monkeypatch):

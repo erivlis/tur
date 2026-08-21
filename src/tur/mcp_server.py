@@ -1,11 +1,14 @@
+import logging
 import os
 import sys
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
 from mcp.server.fastmcp import Context, FastMCP
+
+logger = logging.getLogger('tur.mcp')
 
 
 # Force the working directory to the tur project root if possible
@@ -51,13 +54,13 @@ from tur.telemetry import CognitiveTelemetry  # noqa: E402
 
 
 @asynccontextmanager
-async def server_lifespan(server: FastMCP) -> AsyncGenerator[dict]:
+async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
     """Lifecycle hook for startup and graceful shutdown."""
-    print('Starting Tur MCP Server (Ontological Porcelain) on stdio...', file=sys.stderr)
+    logger.debug('Starting Tur MCP Server on stdio...')
     try:
         yield {}
     finally:
-        print('\nShutting down Tur MCP Server gracefully...', file=sys.stderr)
+        logger.debug('Shutting down Tur MCP Server...')
 
 
 mcp = FastMCP('tur-server', json_response=True, lifespan=server_lifespan)
@@ -625,7 +628,6 @@ def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
 def main():
     """Entry point for the MCP server."""
     try:
-        print('Starting stdio server...', file=sys.stderr)
         mcp.run(transport='stdio')
     except KeyboardInterrupt:
         # Architecture Note (The Golem Protocol):
