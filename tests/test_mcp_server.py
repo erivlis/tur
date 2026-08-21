@@ -3,14 +3,20 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 
 from tur import mcp_server
 from tur.models import (
+    Note,
     Persona,
     Principle,
+    SessionEntry,
+    SessionIndex,
+    SessionNotes,
     SessionState,
     UserProfile,
 )
+from tur.session import get_session_file, save_session_index
 
 
 @pytest.fixture
@@ -116,6 +122,26 @@ def test_mcp_sleep_exception(mock_mcp_env, monkeypatch):
 
     res = mcp_server.sleep(log_content='Log trace', note='Test sleep note')
     assert 'Error during dreaming: Simulated Gemini Failure' in res
+
+
+def test_mcp_sleep_note_or_end_error(mock_mcp_env, monkeypatch):
+    mcp_server._active_session_id = 'sess-err'
+
+    def mock_note_fail(*args, **kwargs):
+        raise ValueError('Note fail')
+
+    monkeypatch.setattr(mcp_server, 'note_logic', mock_note_fail)
+    res_note = mcp_server.sleep(note='bye', log_content='log')
+    assert 'Error appending final note: Note fail' in res_note
+
+    monkeypatch.setattr(mcp_server, 'note_logic', lambda *args, **kwargs: 'ok')
+
+    def mock_end_fail(*args, **kwargs):
+        raise ValueError('End fail')
+
+    monkeypatch.setattr(mcp_server, 'end_session_logic', mock_end_fail)
+    res_end = mcp_server.sleep(note='bye', log_content='log')
+    assert 'Error ending session: End fail' in res_end
 
 
 def test_mcp_server_main(monkeypatch):
@@ -224,6 +250,44 @@ def test_mcp_telemetry(mock_mcp_env, monkeypatch):
     assert 'static_token_cost' in res
 
 
+def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
+    persona_dir, _state = mock_mcp_env
+
+    # Low CP (<5)
+    persona_yaml = persona_dir / 'persona.yaml'
+    persona_yaml.write_text(
+        'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples: []\n',
+        encoding='utf-8',
+    )
+    res_low = mcp_server.telemetry()
+    assert 'Human' in res_low['class']
+
+    # Medium CP (5-9)
+    principles_med = "\n".join([f"  - name: P{i}\n    role: R{i}\n    weight: 1.0" for i in range(6)])
+    persona_yaml.write_text(
+        f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_med}\n',
+        encoding='utf-8',
+    )
+    res_med = mcp_server.telemetry()
+    assert 'Giant' in res_med['class']
+
+    # High CP (>=10)
+    principles_high = "\n".join([f"  - name: P{i}\n    role: R{i}\n    weight: 1.0" for i in range(12)])
+    persona_yaml.write_text(
+        f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_high}\n',
+        encoding='utf-8',
+    )
+    res_high = mcp_server.telemetry()
+    assert 'Titan' in res_high['class']
+
+
+def test_mcp_telemetry_error(mock_mcp_env, monkeypatch):
+    monkeypatch.setattr(mcp_server, 'get_persona_path', MagicMock(side_effect=RuntimeError('Tele failure')))
+    res = mcp_server.telemetry()
+    assert 'error' in res
+    assert 'Tele failure' in res['error']
+
+
 def test_mcp_wake_reuses_active_session(mock_mcp_env, monkeypatch):
     # Mock get_active_session_id to return an active session id
     monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: 'active-sess-id')
@@ -250,6 +314,50 @@ def test_mcp_status(mock_mcp_env):
     assert res['persona_name'] == '12345678-1234-5678-1234-567812345678'
     assert res['persona_id'] == '12345678-1234-5678-1234-567812345678'
     assert res['session_status'] == 'none'
+
+
+def test_mcp_status_with_persona_and_session(mock_mcp_env, monkeypatch):
+    persona_dir, _state = mock_mcp_env
+    persona_yaml = persona_dir / 'persona.yaml'
+    persona_yaml.write_text('name: TestName\nversion: 2.0.0\naleph: test\n', encoding='utf-8')
+
+    # Setup session notes
+    mcp_server._active_session_id = 'sess-status-1'
+
+    idx = SessionIndex(sessions=[
+        SessionEntry(id='sess-status-1', status='active')
+    ])
+    save_session_index(persona_dir, idx)
+
+    note_path = get_session_file(persona_dir, 'sess-status-1')
+    note_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(note_path, 'w', encoding='utf-8') as f:
+        yaml.dump(
+            SessionNotes(notes=[Note(content='Note text')]).model_dump(mode='json'),
+            f,
+        )
+
+    res = mcp_server.status()
+    assert res['persona_name'] == 'TestName'
+    assert res['persona_version'] == '2.0.0'
+    assert res['session_status'] == 'active'
+    assert res['note_count'] == 1
+    assert res['latest_note'] == 'Note text'
+
+
+def test_mcp_status_past_session_in_index(mock_mcp_env, monkeypatch):
+    persona_dir, _state = mock_mcp_env
+    mcp_server._active_session_id = None
+    monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: None)
+
+    idx = SessionIndex(sessions=[
+        SessionEntry(id='past-sess', status='ended')
+    ])
+    save_session_index(persona_dir, idx)
+
+    res = mcp_server.status()
+    assert res['session_id'] == 'past-sess'
+    assert 'ended (last)' in res['session_status']
 
 
 def test_mcp_status_error(mock_mcp_env, monkeypatch):
@@ -318,6 +426,35 @@ def test_mcp_parallel_tools_namespace_violation(mock_mcp_env, monkeypatch):
         mcp_server.tired(agent_id='agent_B')
 
 
+def test_mcp_parallel_tools_no_session_error(mock_mcp_env, monkeypatch):
+    mcp_server._active_session_id = None
+    monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: None)
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.read_notes()
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.signal(to='*', content='msg')
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.read_signals()
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.ack_signals(signal_ids=['s1'])
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.list_agents()
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.write_whiteboard('k', 'v')
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.read_whiteboard('k')
+
+    with pytest.raises(ValueError, match='No active session ID found'):
+        mcp_server.tired()
+
+
 def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: 'sess-active')
     mcp_server._active_session_id = 'sess-active'
@@ -327,12 +464,20 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     mock_signal = MagicMock(return_value='sig-ok')
     mock_read = MagicMock(return_value=[])
     mock_ack = MagicMock(return_value='ack-ok')
-    mock_tired = MagicMock(return_value='tired-ok')
+    mock_tired = MagicMock(return_value='Consensus sleep reached')
+    mock_notes = MagicMock(return_value=[])
+    mock_list_agents = MagicMock(return_value=[])
+    mock_wb_w = MagicMock(return_value='wb-ok')
+    mock_wb_r = MagicMock(return_value='wb-val')
 
     monkeypatch.setattr(mcp_server, 'signal_logic', mock_signal)
     monkeypatch.setattr(mcp_server, 'read_signals_logic', mock_read)
     monkeypatch.setattr(mcp_server, 'ack_signals_logic', mock_ack)
     monkeypatch.setattr(mcp_server, 'tired_logic', mock_tired)
+    monkeypatch.setattr(mcp_server, 'read_notes_logic', mock_notes)
+    monkeypatch.setattr(mcp_server, 'list_agents_logic', mock_list_agents)
+    monkeypatch.setattr(mcp_server, 'write_whiteboard_logic', mock_wb_w)
+    monkeypatch.setattr(mcp_server, 'read_whiteboard_logic', mock_wb_r)
 
     # Valid sender_id
     res_sig = mcp_server.signal(to='agent_C', content='hello', sender_id='agent_A')
@@ -354,9 +499,24 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     res_ack = mcp_server.ack_signals(agent_id='agent_A', signal_ids=['sig1'])
     assert res_ack == 'ack-ok'
 
-    # Valid tired
+    # Empty ack
+    res_ack_empty = mcp_server.ack_signals(agent_id='agent_A', signal_ids=[])
+    assert res_ack_empty == 'No signal IDs provided.'
+
+    # Read notes
+    assert mcp_server.read_notes() == []
+
+    # List agents
+    assert mcp_server.list_agents() == []
+
+    # Whiteboard
+    assert mcp_server.write_whiteboard('k', 'v') == 'wb-ok'
+    assert mcp_server.read_whiteboard('k') == 'wb-val'
+
+    # Valid tired with consensus sleep clearing _active_session_id
     res_tired = mcp_server.tired(agent_id='agent_A')
-    assert res_tired == 'tired-ok'
+    assert res_tired == 'Consensus sleep reached'
+    assert mcp_server._active_session_id is None
 
 
 def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
@@ -383,6 +543,23 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
     approve_res = mcp_server.approve(memory_id=core_id)
     assert 'approved and activated successfully' in approve_res
 
+    # 4. Approve already active
+    approve_again = mcp_server.approve(memory_id=core_id)
+    assert 'already active' in approve_again
+
+    # 5. Evolve non-existent
+    evolve_err = mcp_server.evolve(
+        memory_id='nonexistent_id',
+        core_type='existential_alignment',
+        derived_principle='p',
+        ethical_covenant='c',
+    )
+    assert 'No L1 memory found' in evolve_err
+
+    # 6. Approve non-existent
+    approve_err = mcp_server.approve(memory_id='nonexistent_id')
+    assert 'No Core memory found' in approve_err
+
 
 def test_mcp_introspect(mock_mcp_env, monkeypatch):
     """Test the introspect MCP tool runs the introspection pipeline."""
@@ -402,3 +579,8 @@ def test_mcp_introspect(mock_mcp_env, monkeypatch):
     assert 'Council Introspection complete' in result
     assert '1 nodes' in result
     assert 'mermaid' in result
+
+    # Test error in introspection
+    monkeypatch.setattr(tur.introspection, 'run_introspection', MagicMock(side_effect=RuntimeError('Council failure')))
+    res_err = mcp_server.introspect()
+    assert 'Error during Council Introspection: Council failure' in res_err

@@ -10,12 +10,21 @@ from typer.testing import CliRunner
 from tur.cli.agent import app
 from tur.introspection import (
     BaconSubagent,
+    BoundaryEnforcer,
+    ExtractedEdge,
+    ExtractedGraph,
+    ExtractedNode,
     IntrospectionAssembly,
     NoetherSubagent,
+    NoveltyExplorer,
     PopperSubagent,
+    RussellSubagent,
     SymmetryError,
     TamperedStateError,
+    format_graph_as_mermaid,
+    load_l2_graph_from_okf,
     run_introspection,
+    save_l2_graph_to_okf,
 )
 from tur.memory import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
@@ -448,3 +457,128 @@ def test_ep0003_policy_vs_mechanism_class_mappings():
     assert FeynmanSubagent is ClarityDistiller
     assert StewardSubagent is GraphPruner
 
+
+def test_okf_save_and_load_roundtrip(temp_workspace):
+    _, persona_dir = temp_workspace
+
+    graph = nx.DiGraph()
+    graph.add_node(
+        'active-concept',
+        type='Concept',
+        content='# Details\n\nActive conceptual body text.',
+        status='active',
+        confidence=1.0,
+        pinned=True,
+        sources=['src-1'],
+        retrieval_count=5,
+    )
+    graph.add_node(
+        'archived-concept',
+        type='Concept',
+        content='Low confidence archived node.',
+        status='archived',
+        confidence=0.1,
+        pinned=False,
+        sources=[],
+    )
+    graph.add_edge('active-concept', 'archived-concept', type='refines', confidence=0.9)
+
+    save_l2_graph_to_okf(graph, persona_dir)
+
+    # Active file should exist in concepts/active
+    active_path = persona_dir / 'concepts' / 'active' / 'active-concept.md'
+    assert active_path.exists()
+
+    # Archived file should exist in concepts/archive
+    archived_path = persona_dir / 'concepts' / 'archive' / 'archived-concept.md'
+    assert archived_path.exists()
+
+    # Load OKF back into graph
+    loaded_graph = load_l2_graph_from_okf(persona_dir)
+    assert loaded_graph is not None
+    assert loaded_graph.number_of_nodes() == 2
+    assert loaded_graph.has_edge('active-concept', 'archived-concept')
+    assert loaded_graph.nodes['active-concept']['pinned'] is True
+    assert loaded_graph.nodes['active-concept']['confidence'] == 1.0
+
+
+def test_okf_load_empty_or_missing(tmp_path):
+    assert load_l2_graph_from_okf(tmp_path) is None
+
+    (tmp_path / 'concepts' / 'active').mkdir(parents=True)
+    assert load_l2_graph_from_okf(tmp_path) is None
+
+
+def test_novelty_explorer_disconnected_components():
+    explorer = NoveltyExplorer()
+    graph = nx.DiGraph()
+    graph.add_node('part-a', type='Concept', content='A')
+    graph.add_node('part-b', type='Concept', content='B')
+
+    # Two disconnected nodes
+    updated, _ = explorer.run(graph, {})
+    assert updated.has_node('exploration-horizon-gap')
+    assert updated.nodes['exploration-horizon-gap']['type'] == 'OpenQuestion'
+    assert updated.has_edge('part-a', 'exploration-horizon-gap')
+    assert updated.has_edge('part-b', 'exploration-horizon-gap')
+
+
+def test_boundary_enforcer_path_traversal():
+    enforcer = BoundaryEnforcer()
+    graph = nx.DiGraph()
+    graph.add_node('../bad-node', type='Concept', content='Bad')
+
+    with pytest.raises(ValueError, match='CONTAINMENT FAILURE'):
+        enforcer.run(graph, {})
+
+
+def test_format_graph_as_mermaid():
+    graph = nx.DiGraph()
+    graph.add_node('d1', type='Decision')
+    graph.add_node('c1', type='Constraint')
+    graph.add_node('f1', type='Fact')
+    graph.add_node('gen1', type='Concept')
+    graph.add_edge('d1', 'c1', type='depends_on')
+
+    mermaid = format_graph_as_mermaid(graph)
+    assert 'graph TD' in mermaid
+    assert 'd1["Decision"]' in mermaid
+    assert 'c1{"Constraint"}' in mermaid
+    assert 'f1("[Fact]")' in mermaid
+    assert 'gen1["Concept"]' in mermaid
+    assert 'd1 -->|depends_on| c1' in mermaid
+
+
+def test_russell_cycle_enforcement_and_synonym_unification():
+    graph = nx.DiGraph()
+    graph.add_node('node-a', type='Decision', content='Base content', sources=['s1'], pinned=False)
+    graph.add_node('node-b', type='Decision', content='B content', sources=['s2'], pinned=False)
+
+    # 1. Unification: node-a already exists, merging new content into it
+    extracted = ExtractedGraph(
+        nodes=[
+            ExtractedNode(
+                id='node-a',
+                type='Decision',
+                content='Extended info',
+                sources=['s3'],
+                pinned=True,
+            )
+        ],
+        edges=[
+            ExtractedEdge(source='node-a', target='node-b', type='precedes', confidence=1.0),
+            ExtractedEdge(source='node-b', target='node-a', type='precedes', confidence=1.0),
+        ],
+    )
+
+    russell = RussellSubagent()
+    merged, _ = russell._merge_extracted_graph(graph, extracted, {})
+
+    # Check unification
+    assert 'Base content | Extended info' in merged.nodes['node-a']['content']
+    assert set(merged.nodes['node-a']['sources']) == {'s1', 's3'}
+    assert merged.nodes['node-a']['pinned'] is True
+
+    # Check DAG cycle enforcement: node-a -> node-b is added, but node-b -> node-a would create a cycle and is dropped
+    assert merged.has_edge('node-a', 'node-b')
+    assert not merged.has_edge('node-b', 'node-a')

@@ -1,7 +1,10 @@
+import json
 import os
+import sqlite3
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
@@ -88,6 +91,14 @@ def test_compile_session_notes_corrupt(mock_session_workspace):
     assert notes == 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
 
 
+def test_compile_session_notes_none(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    notes = session.compile_session_notes(p_dir, None)
+    assert notes == 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
+
+
 def test_hydrate_session_state_fallback(mock_session_workspace):
     _tmp_path, persona_id = mock_session_workspace
     p_dir = persona.get_persona_path(persona_id)
@@ -116,6 +127,23 @@ def test_hydrate_session_state_fallback(mock_session_workspace):
     assert state.epilogue == 'Latest ended session note content.'
 
 
+def test_hydrate_session_state_with_kg(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    # Add knowledge graph yaml
+    kg_path = p_dir / 'knowledge_graph.yaml'
+    kg_path.write_text('nodes: [1, 2]\nedges: []\n', encoding='utf-8')
+
+    state = session.hydrate_session_state(persona_id)
+    assert state.knowledge_graph == {'nodes': [1, 2], 'edges': []}
+
+    # Test corrupted knowledge graph yaml gracefully ignored
+    kg_path.write_text('corrupt: yaml: : : 123', encoding='utf-8')
+    state_corrupt = session.hydrate_session_state(persona_id)
+    assert state_corrupt.knowledge_graph is None
+
+
 def test_start_session_logic_previous_seed(mock_session_workspace):
     _tmp_path, persona_id = mock_session_workspace
     p_dir = persona.get_persona_path(persona_id)
@@ -135,6 +163,12 @@ def test_start_session_logic_previous_seed(mock_session_workspace):
     new_notes = SessionNotes(**new_notes_data)
     assert len(new_notes.notes) == 1
     assert new_notes.notes[0].content == 'Inherited note content'
+
+
+def test_start_session_logic_invalid_agent_id(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    with pytest.raises(ValueError, match='Invalid agent_id format'):
+        session.start_session_logic('s1', agent_id='bad space id!', identifier=persona_id)
 
 
 def test_start_session_logic_existing_update(mock_session_workspace):
@@ -266,3 +300,72 @@ def test_hydrate_session_state_with_cores(mock_session_workspace):
     assert '## CORE AXIOMS & COVENANTS' in prompt
     assert 'Keep tasks highly visual and immediate.' in prompt
     assert 'Always present a structured visual plan.' in prompt
+
+
+def test_db_retry_locked_and_timeout():
+    attempts = 0
+
+    @session.db_retry(max_retries=3, initial_delay=0.01, backoff_factor=1.5)
+    def flaky_func():
+        nonlocal attempts
+        attempts += 1
+        if attempts < 2:
+            raise sqlite3.OperationalError('database is locked')
+        return 'success'
+
+    assert flaky_func() == 'success'
+    assert attempts == 2
+
+    # Timeout failure
+    @session.db_retry(max_retries=2, initial_delay=0.01, backoff_factor=1.0)
+    def always_locked():
+        raise sqlite3.OperationalError('database is locked')
+
+    with pytest.raises(sqlite3.OperationalError):
+        always_locked()
+
+
+def test_signal_logic_invalid_ids_and_ratelimit(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    session.start_session_logic('sess-sig', identifier=persona_id)
+
+    # Invalid sender
+    with pytest.raises(ValueError, match='Invalid sender ID'):
+        session.signal_logic('sess-sig', sender='invalid space sender', recipient='agent_1', content='test')
+
+    # Invalid recipient
+    with pytest.raises(ValueError, match='Invalid recipient ID'):
+        session.signal_logic('sess-sig', sender='agent_1', recipient='invalid space recip', content='test')
+
+    # Ratelimit: send 10 messages, 11th should raise
+    for i in range(10):
+        session.signal_logic('sess-sig', sender='agent_1', recipient='agent_2', content=f'msg {i}')
+
+    with pytest.raises(ValueError, match='RateLimitError'):
+        session.signal_logic('sess-sig', sender='agent_1', recipient='agent_2', content='msg 11')
+
+
+def test_tired_logic_staged_dreaming_consensus(mock_session_workspace, monkeypatch):
+    _tmp_path, persona_id = mock_session_workspace
+    session.start_session_logic('sess-tired', agent_id='agent_1', identifier=persona_id)
+    session.start_session_logic('sess-tired', agent_id='agent_2', identifier=persona_id)
+
+    # Agent 1 calls tired with staged memories -> should be in standby since agent_2 is active
+    staged_payload = json.dumps([
+        {'type': 'fact', 'scope': 'incarnation', 'tags': ['test'], 'content': 'Staged fact 1'}
+    ])
+    monkeypatch.setattr('tur.dreaming.stage_sleep_dreaming', lambda *args, **kwargs: staged_payload)
+
+    res1 = session.tired_logic('sess-tired', agent_id='agent_1', transcript='agent 1 log')
+    assert 'Standby mode active' in res1
+
+    # Agent 2 calls tired with dream error simulation
+    def raise_dream_error(*args, **kwargs):
+        raise RuntimeError('Dream stage error')
+
+    monkeypatch.setattr('tur.dreaming.stage_sleep_dreaming', raise_dream_error)
+
+    # Agent 2 calls tired -> now consensus reached and session ends
+    res2 = session.tired_logic('sess-tired', agent_id='agent_2', transcript='agent 2 log')
+    assert 'Consensus sleep reached' in res2
+    assert 'Consolidated 1 memories' in res2

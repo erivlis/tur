@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 
 from tur import dreaming, persona, session
 from tur.cli.agent import app as agent_app
+from tur.models import HarnessDelegationError
 
 runner = CliRunner()
 
@@ -481,3 +482,208 @@ def test_agent_core_memory_evolution_flow(mock_workspace):
     approve_res = runner.invoke(agent_app, ['approve', core_id[:8]])
     assert approve_res.exit_code == 0
     assert 'approved and activated successfully' in approve_res.stdout
+
+    # 4. Approving again notes that it is already active
+    approve_again = runner.invoke(agent_app, ['approve', core_id[:8]])
+    assert approve_again.exit_code == 0
+    assert 'already active' in approve_again.stdout
+
+
+def test_agent_evolve_and_approve_errors(mock_workspace):
+    # Evolve nonexistent memory
+    res = runner.invoke(
+        agent_app,
+        ['evolve', 'nonexistent_id', '--principle', 'p', '--covenant', 'c'],
+    )
+    assert res.exit_code == 1
+    assert 'No memory found matching ID' in res.stdout
+
+    # Approve nonexistent memory
+    res_app = runner.invoke(agent_app, ['approve', 'nonexistent_id'])
+    assert res_app.exit_code == 1
+    assert 'No Core memory found' in res_app.stdout
+
+
+def test_agent_list_agents_and_coordination(mock_workspace):
+    # Start session and wake an agent
+    wake_res = runner.invoke(agent_app, ['wake', '--agent-id', 'agent_alpha'])
+    assert wake_res.exit_code == 0
+
+    # List agents (table format)
+    list_res = runner.invoke(agent_app, ['list-agents'])
+    assert list_res.exit_code == 0
+    assert 'agent_alpha' in list_res.stdout
+
+    # List agents (json format)
+    list_json = runner.invoke(agent_app, ['list-agents', '--json'])
+    assert list_json.exit_code == 0
+    assert '"id": "agent_alpha"' in list_json.stdout
+
+    # Send a signal
+    sig_res = runner.invoke(
+        agent_app,
+        ['signal', '*', 'Broadcast sync message', '--agent-id', 'agent_alpha'],
+    )
+    assert sig_res.exit_code == 0
+    assert 'Signal sent successfully' in sig_res.stdout
+
+    # Read signals (standard format)
+    read_res = runner.invoke(
+        agent_app,
+        ['read-signals', '--agent-id', 'agent_alpha', '--unread-only'],
+    )
+    assert read_res.exit_code == 0
+    assert 'Broadcast sync message' in read_res.stdout
+
+    # Read signals (json format)
+    read_json = runner.invoke(
+        agent_app,
+        ['read-signals', '--agent-id', 'agent_alpha', '--json', '--all'],
+    )
+    assert read_json.exit_code == 0
+    assert 'Broadcast sync message' in read_json.stdout
+
+    # Extract signal id from JSON
+    import json
+
+    sigs = json.loads(read_json.stdout)
+    sig_id = sigs[0]['id']
+
+    # Ack signal
+    ack_res = runner.invoke(
+        agent_app,
+        ['ack-signals', sig_id, '--agent-id', 'agent_alpha'],
+    )
+    assert ack_res.exit_code == 0
+
+    # Whiteboard write and read
+    wb_w = runner.invoke(
+        agent_app,
+        ['whiteboard-write', 'coord_key', 'val_123', '--agent-id', 'agent_alpha'],
+    )
+    assert wb_w.exit_code == 0
+
+    wb_r = runner.invoke(agent_app, ['whiteboard-read', 'coord_key'])
+    assert wb_r.exit_code == 0
+    assert 'val_123' in wb_r.stdout
+
+    # Whiteboard unset key
+    wb_unset = runner.invoke(agent_app, ['whiteboard-read', 'nonexistent_key'])
+    assert wb_unset.exit_code == 0
+    assert "Key 'nonexistent_key' not set." in wb_unset.stdout
+
+    # Read notes
+    notes_res = runner.invoke(agent_app, ['read-notes'])
+    assert notes_res.exit_code == 0
+
+    # Tired command
+    tired_res = runner.invoke(agent_app, ['tired', '--agent-id', 'agent_alpha'])
+    assert tired_res.exit_code == 0
+
+
+def test_agent_resolve_cli_context_namespace_violation(mock_workspace, monkeypatch):
+    # Wake first to establish session
+    runner.invoke(agent_app, ['wake', '--agent-id', 'alpha'])
+
+    # Set TUR_AGENT_ID and try to use conflicting agent_id
+    monkeypatch.setenv('TUR_AGENT_ID', 'alpha')
+    sig_err = runner.invoke(
+        agent_app,
+        ['signal', '*', 'hello', '--agent-id', 'beta'],
+    )
+    assert sig_err.exit_code == 1
+    assert 'Namespace violation' in sig_err.stdout
+
+
+def test_agent_introspect(mock_workspace, monkeypatch):
+    import tur.cli.agent
+
+    def fake_run_intro(*args, **kwargs):
+        import networkx as nx
+
+        g = nx.DiGraph()
+        g.add_node('concept_1', label='Root Concept')
+        return g
+
+    monkeypatch.setattr(tur.cli.agent, 'run_introspection', fake_run_intro)
+    monkeypatch.setattr(tur.cli.agent, 'format_graph_as_mermaid', lambda g: 'graph TD\nconcept_1')
+
+    intro_res = runner.invoke(agent_app, ['introspect', '--all', '--visualize'])
+    assert intro_res.exit_code == 0
+    assert 'Introspection Assembly completed successfully' in intro_res.stdout
+    assert '--- Mermaid L2 Graph ---' in intro_res.stdout
+
+    # Test delegation handling
+    def mock_delegation(*args, **kwargs):
+        raise HarnessDelegationError('Delegation required')
+
+    monkeypatch.setattr(tur.cli.agent, 'run_introspection', mock_delegation)
+    intro_del = runner.invoke(agent_app, ['introspect'])
+    assert intro_del.exit_code == 0
+    assert 'Delegation required' in intro_del.stdout
+
+    # Test error handling
+    def mock_err(*args, **kwargs):
+        raise RuntimeError('Introspection error')
+
+    monkeypatch.setattr(tur.cli.agent, 'run_introspection', mock_err)
+    intro_err = runner.invoke(agent_app, ['introspect'])
+    assert intro_err.exit_code == 1
+    assert 'Error during introspection: Introspection error' in intro_err.stdout
+
+
+def test_agent_resolve_cli_context_ambiguous_agents(mock_workspace, monkeypatch):
+    # Wake two different agents in the same session
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_one'])
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_two'])
+
+    # Clear env so auto-resolution triggers
+    monkeypatch.delenv('TUR_AGENT_ID', raising=False)
+
+    # Signal without --agent-id should fail due to ambiguity
+    res = runner.invoke(agent_app, ['signal', '*', 'hello'])
+    assert res.exit_code == 1
+    assert 'AmbiguousIdentityError' in res.stdout
+
+
+def test_agent_status_long_note_and_past_session(mock_workspace, monkeypatch):
+    # 1. Wake and create a long note (>80 chars)
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_long'])
+    long_content = (
+        'This is a very detailed and long architectural note'
+        ' that exceeds eighty characters in total length for testing.'
+    )
+    runner.invoke(agent_app, ['note', long_content])
+
+    status_res = runner.invoke(agent_app, ['status'])
+    assert status_res.exit_code == 0
+    assert '…' in status_res.stdout
+
+    # 2. Clear active session in state.yaml to verify (last) past session branch
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': None}, f)
+    monkeypatch.delenv('TUR_ACTIVE_SESSION_ID', raising=False)
+
+    status_ended = runner.invoke(agent_app, ['status'])
+    assert status_ended.exit_code == 0
+    assert '(last)' in status_ended.stdout
+
+
+def test_agent_coordination_no_session_errors(mock_workspace, monkeypatch):
+    # Clear active session in state.yaml
+    state_path = Path('.tur/state.yaml')
+    with open(state_path, 'w', encoding='utf-8') as f:
+        yaml.dump({'active_persona_id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'active_session_id': None}, f)
+    monkeypatch.delenv('TUR_ACTIVE_SESSION_ID', raising=False)
+
+    # List agents should fail
+    assert runner.invoke(agent_app, ['list-agents']).exit_code == 1
+    # Read signals should fail
+    assert runner.invoke(agent_app, ['read-signals']).exit_code == 1
+    # Whiteboard read should fail
+    assert runner.invoke(agent_app, ['whiteboard-read', 'key']).exit_code == 1
+    # Whiteboard write should fail
+    assert runner.invoke(agent_app, ['whiteboard-write', 'key', 'val']).exit_code == 1
+    # Read notes should fail
+    assert runner.invoke(agent_app, ['read-notes']).exit_code == 1
