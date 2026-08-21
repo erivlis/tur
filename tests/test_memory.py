@@ -430,3 +430,41 @@ def test_memory_core(temp_home_and_base):
     # Verify Merkle integrity matches
     failures = manager.verify_integrity()
     assert len(failures) == 0
+
+
+def test_memory_get_stats(temp_home_and_base):
+    _fake_home, local_base = temp_home_and_base
+    manager = MemoryManager(base_dir=local_base)
+
+    mem1 = Memory(
+        timestamp=datetime(2026, 7, 1, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='Fact 1',
+    )
+    mem2 = Memory(
+        timestamp=datetime(2026, 7, 2, 12, 0, 0),
+        type=MemoryType.AXIOM,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['test'],
+        content='Axiom 1',
+    )
+    mem3 = Memory(
+        timestamp=datetime(2026, 7, 3, 12, 0, 0),
+        type=MemoryType.INSIGHT,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['test'],
+        content='Insight 1',
+    )
+    manager.save(mem1)
+    manager.save(mem2)
+    manager.save(mem3)
+
+    stats = manager.get_stats()
+    assert stats['total'] == 3
+    assert stats['active'] == 3
+    assert stats['archived'] == 0
+    assert stats['subsumed'] == 0
+    assert stats['by_scope'] == {'incarnation': 1, 'universal': 2}
+    assert stats['by_type'] == {'fact': 1, 'axiom': 1, 'insight': 1}

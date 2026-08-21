@@ -234,6 +234,7 @@ def test_agent_status(mock_workspace):
     assert 'Status' in result_active.stdout
     assert 'active' in result_active.stdout
     assert 'session-status-test' in result_active.stdout
+    assert 'L1 Memories' in result_active.stdout
 
 
 def test_agent_status_error(mock_workspace, monkeypatch):
