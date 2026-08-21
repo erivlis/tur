@@ -1,3 +1,10 @@
+## v0.9.3 (2026-08-21)
+
+### Refactor
+
+- Replace print statements with logging in MCP server and CLI
+- Enhances error handling with explicit type checks and exception chaining.
+
 ## v0.9.2 (2026-08-19)
 
 ### Fix
