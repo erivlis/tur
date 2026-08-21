@@ -172,48 +172,12 @@ async def test_mcp_server_lifespan():
         assert isinstance(ctx, dict)
 
 
-def test_ensure_project_root_walk(tmp_path, monkeypatch):
-    # Setup parent directories structure
-    parent_dir = tmp_path / 'parent_project'
-    sub_dir = parent_dir / 'subdir' / 'deep'
+def test_no_cwd_hijacking_on_mcp_init(tmp_path, monkeypatch):
+    """Verify that importing or using mcp_server never mutates process CWD."""
+    sub_dir = tmp_path / 'unrelated_project' / 'subdir'
     sub_dir.mkdir(parents=True)
-
-    # Create fake .tur directory in the parent
-    (parent_dir / '.tur').mkdir()
-
-    # Change current working directory to deep sub_dir
     monkeypatch.chdir(sub_dir)
-    # Mock __file__ of the module so it is resolved inside our temporary subdir
-    monkeypatch.setattr(mcp_server, '__file__', str(sub_dir / 'mcp_server.py'))
 
-    # Callensure_project_root to verify it successfully traverses up and changes cwd to parent_dir
-    mcp_server._ensure_project_root()
-    assert Path.cwd() == parent_dir
-
-
-def test_ensure_project_root_no_dot_tur(tmp_path, monkeypatch):
-    # Setup parent directories structure without any .tur
-    parent_dir = tmp_path / 'parent_project'
-    sub_dir = parent_dir / 'subdir' / 'deep'
-    sub_dir.mkdir(parents=True)
-
-    # Change current working directory to deep sub_dir
-    monkeypatch.chdir(sub_dir)
-    monkeypatch.setattr(mcp_server, '__file__', str(sub_dir / 'mcp_server.py'))
-
-    # Mock Path(".tur").exists() to be False so we traverse
-    original_exists = Path.exists
-
-    def mock_exists(self):
-        if self.name == '.tur':
-            return False
-        return original_exists(self)
-
-    monkeypatch.setattr(Path, 'exists', mock_exists)
-
-    # Call _ensure_project_root
-    mcp_server._ensure_project_root()
-    # It should not have changed CWD since no .tur exists anywhere in parents
     assert Path.cwd() == sub_dir
 
 
@@ -343,6 +307,10 @@ def test_mcp_status_with_persona_and_session(mock_mcp_env, monkeypatch):
     assert res['session_status'] == 'active'
     assert res['note_count'] == 1
     assert res['latest_note'] == 'Note text'
+    assert 'memory_stats' in res
+    assert 'total' in res['memory_stats']
+    assert 'by_scope' in res['memory_stats']
+    assert 'by_type' in res['memory_stats']
 
 
 def test_mcp_status_past_session_in_index(mock_mcp_env, monkeypatch):

@@ -75,5 +75,8 @@ def test_perform_sleep_dreaming_missing_api_key(mock_workspace, monkeypatch):
     with pytest.raises(HarnessDelegationError) as exc:
         dreaming.perform_sleep_dreaming(log_content='User: hello', active_id='7544202e-92f5-40ce-adfb-e4b0eae6c262')
     assert '# TUR DELEGATION: Session Epilogue & Memory Extraction Request' in exc.value.prompt
-    assert 'No local `GEMINI_API_KEY` or `TUR_LLM_API_KEY` was found' in exc.value.prompt
+    assert 'Boundary Invariant' in exc.value.prompt
+    assert 'tur sleep --commit' in exc.value.prompt
+    assert 'Memory Extraction Principles & Scoping Rules' in exc.value.prompt
+    assert 'Subagent Execution (Recommended)' in exc.value.prompt
 

@@ -9,18 +9,18 @@ from typer.testing import CliRunner
 
 from tur.cli.agent import app
 from tur.introspection import (
-    BaconSubagent,
     BoundaryEnforcer,
     ExtractedEdge,
     ExtractedGraph,
     ExtractedNode,
+    IntegrityVerifier,
     IntrospectionAssembly,
-    NoetherSubagent,
     NoveltyExplorer,
-    PopperSubagent,
-    RussellSubagent,
+    OntologyExtractor,
     SymmetryError,
+    SymmetryValidator,
     TamperedStateError,
+    TruthMaintenanceEngine,
     format_graph_as_mermaid,
     load_l2_graph_from_okf,
     run_introspection,
@@ -87,8 +87,8 @@ def test_bacon_integrity_verification(temp_workspace):
     with open(saved_path, 'w', encoding='utf-8') as f:
         f.write('tampered-content')
 
-    # Bacon subagent should fail verification
-    bacon = BaconSubagent()
+    # IntegrityVerifier should fail verification
+    bacon = IntegrityVerifier()
     graph = nx.DiGraph()
     context = {'persona_dir': persona_dir}
 
@@ -106,8 +106,8 @@ def test_popper_tms_propagation(temp_workspace):
     graph.add_node('node-b', type='Decision', status='active', confidence=1.0)
     graph.add_edge('node-a', 'node-b', type='depends_on')
 
-    # Popper subagent TMS pass
-    popper = PopperSubagent()
+    # Popper TMS pass
+    popper = TruthMaintenanceEngine()
 
     # Mark B as superseded/invalid
     graph.nodes['node-b']['status'] = 'superseded'
@@ -132,7 +132,7 @@ def test_noether_symmetry_conservation(temp_workspace):
     )
     memory_manager.save(mem)
 
-    noether = NoetherSubagent()
+    noether = SymmetryValidator()
     graph = nx.DiGraph()
     context = {'persona_dir': persona_dir, 'raw_memories': [mem]}
 
@@ -289,8 +289,8 @@ def test_popper_belief_revision_conflict_resolution():
     graph.add_edge('node-a', 'node-b', type='contradicts')
     graph.add_edge('node-c', 'node-a', type='depends_on')
 
-    # Run Popper Subagent
-    subagent = PopperSubagent()
+    # Run TMS
+    subagent = TruthMaintenanceEngine()
     updated_graph, _ = subagent.run(graph, {})
 
     # node-a should be superseded because it is older than node-b
@@ -316,10 +316,10 @@ def test_popper_belief_revision_conflict_resolution():
 
 def test_pluggable_compaction_pipeline_dynamic_loading():
     # 1. Test successful custom loading
-    config = {'subagents': [{'name': 'CustomPopper', 'class': 'tur.introspection.PopperSubagent'}]}
+    config = {'subagents': [{'name': 'CustomTMS', 'class': 'tur.introspection.TruthMaintenanceEngine'}]}
     assembly = IntrospectionAssembly(config)
     assert len(assembly.agents) == 1
-    assert isinstance(assembly.agents[0], PopperSubagent)
+    assert isinstance(assembly.agents[0], TruthMaintenanceEngine)
 
     # 2. Test invalid import path raising ImportError
     bad_config = {'subagents': [{'name': 'BadAgent', 'class': 'nonexistent_module.NonexistentClass'}]}
@@ -330,9 +330,9 @@ def test_pluggable_compaction_pipeline_dynamic_loading():
     # 3. Test empty configuration fallback to default assembly
     empty_assembly = IntrospectionAssembly(None)
     assert len(empty_assembly.agents) == 9
-    from tur.introspection import BaconSubagent
+    from tur.introspection import IntegrityVerifier
 
-    assert isinstance(empty_assembly.agents[0], BaconSubagent)
+    assert isinstance(empty_assembly.agents[0], IntegrityVerifier)
 
 
 def test_harness_delegation_error_cli(temp_workspace, monkeypatch):
@@ -356,15 +356,16 @@ def test_harness_delegation_error_cli(temp_workspace, monkeypatch):
     result = runner.invoke(app, ['introspect', '--all'])
 
     assert result.exit_code == 0
-    assert '# TUR DELEGATION: Council Introspection Request' in result.output
-    assert 'No local `GEMINI_API_KEY` was found in the environment' in result.output
+    assert '# TUR DELEGATION: Ontological Concept Extraction Request' in result.output
     assert 'Test delegation fact.' in result.output
-    assert 'uv run python -c' in result.output
+    assert 'tur introspect --commit' in result.output
+    assert 'Boundary Invariant' in result.output
+    assert 'Subagent Execution (Recommended)' in result.output
 
 
 def test_relationship_signature_constraints(temp_workspace):
-    """Test that RussellSubagent rejects invalid edges that violate signature constraints."""
-    from tur.introspection import ExtractedEdge, ExtractedGraph, RussellSubagent
+    """Test that OntologyExtractor rejects invalid edges that violate signature constraints."""
+    from tur.introspection import ExtractedEdge, ExtractedGraph, OntologyExtractor
 
     graph = nx.DiGraph()
     graph.add_node('decision-a', type='Decision', content='First decision', status='active', confidence=1.0)
@@ -380,7 +381,7 @@ def test_relationship_signature_constraints(temp_workspace):
         ],
     )
 
-    subagent = RussellSubagent()
+    subagent = OntologyExtractor()
     updated_graph, _ = subagent._merge_extracted_graph(graph, extracted, {})
 
     # Neither of the invalid edges should be added to the graph
@@ -388,8 +389,7 @@ def test_relationship_signature_constraints(temp_workspace):
 
 
 def test_tms_propagation_on_refines(temp_workspace):
-    """Test that PopperSubagent deactivates refiners when the refined node is superseded."""
-    from tur.introspection import PopperSubagent
+    """Test that TruthMaintenanceEngine deactivates refiners when the refined node is superseded."""
 
     graph = nx.DiGraph()
     # node-a refines node-b
@@ -401,7 +401,7 @@ def test_tms_propagation_on_refines(temp_workspace):
     graph.nodes['node-b']['status'] = 'superseded'
     graph.nodes['node-b']['confidence'] = 0.0
 
-    subagent = PopperSubagent()
+    subagent = TruthMaintenanceEngine()
     subagent._propagate_deactivations(graph)
 
     # Refiner node-a should also be deactivated
@@ -409,29 +409,17 @@ def test_tms_propagation_on_refines(temp_workspace):
     assert graph.nodes['node-a']['confidence'] == 0.0
 
 
-def test_ep0003_policy_vs_mechanism_class_mappings():
-    """Verify that all functional engine classes and legacy Council aliases are correctly exported per EP-0003."""
+def test_policy_vs_mechanism_class_mappings():
+    """Verify functional engine classes are correctly exported and subclass IntrospectionSubagent."""
     from tur.introspection import (
-        BaconSubagent,
         BoundaryEnforcer,
         ClarityDistiller,
-        CouncilSubagent,
-        ExplorerSubagent,
-        FeynmanSubagent,
         GraphPruner,
         HebbianGraphDecayer,
         IntegrityVerifier,
         IntrospectionSubagent,
-        MaharalSubagent,
-        NoetherSubagent,
         NoveltyExplorer,
         OntologyExtractor,
-        PopperSubagent,
-        RussellSubagent,
-        ShannonSubagent,
-        StewardSubagent,
-        SymmetryValidator,
-        TruthMaintenanceEngine,
     )
 
     # Verify inheritance from IntrospectionSubagent
@@ -444,18 +432,6 @@ def test_ep0003_policy_vs_mechanism_class_mappings():
     assert issubclass(BoundaryEnforcer, IntrospectionSubagent)
     assert issubclass(ClarityDistiller, IntrospectionSubagent)
     assert issubclass(GraphPruner, IntrospectionSubagent)
-
-    # Verify legacy alias equality
-    assert CouncilSubagent is IntrospectionSubagent
-    assert BaconSubagent is IntegrityVerifier
-    assert RussellSubagent is OntologyExtractor
-    assert PopperSubagent is TruthMaintenanceEngine
-    assert NoetherSubagent is SymmetryValidator
-    assert ExplorerSubagent is NoveltyExplorer
-    assert ShannonSubagent is HebbianGraphDecayer
-    assert MaharalSubagent is BoundaryEnforcer
-    assert FeynmanSubagent is ClarityDistiller
-    assert StewardSubagent is GraphPruner
 
 
 def test_okf_save_and_load_roundtrip(temp_workspace):
@@ -571,8 +547,8 @@ def test_russell_cycle_enforcement_and_synonym_unification():
         ],
     )
 
-    russell = RussellSubagent()
-    merged, _ = russell._merge_extracted_graph(graph, extracted, {})
+    extractor = OntologyExtractor()
+    merged, _ = extractor._merge_extracted_graph(graph, extracted, {})
 
     # Check unification
     assert 'Base content | Extended info' in merged.nodes['node-a']['content']
