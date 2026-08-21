@@ -84,6 +84,21 @@ The `tur.memory.MemoryManager` will be updated:
 Because `MemoryManager.load_all()` now handles the federation implicitly, `tur_compile` simply receives the merged
 timeline of memories and injects them into the Constitution as before.
 
+shold we improe the stat### 4. Epilogue Memory Extraction & Scoping Specification (`tur sleep`)
+
+During session epilogue consolidation (`perform_sleep_dreaming`), memories extracted from chat logs are classified by scope and type:
+* **Scope Assignment:**
+  - `universal`: User preferences, persona identity, and general engineering principles applicable across all projects.
+  - `incarnation`: Architectural decisions, repository constraints, and project-specific states.
+* **Memory Type Taxonomy:**
+  - `axiom`: Permanent, immutable rules, boundary invariants, and fundamental principles.
+  - `fact`: Verifiable project states, dependencies, and established technical decisions.
+  - `insight`: Synthesized lessons learned, deductions, and conceptual breakthroughs.
+  - `preference`: User directives, coding tastes, communication style, and workflow preferences.
+* **Noise Exclusion Criteria:**
+  - Ignore transient engineering steps, ephemeral file inspections, intermediate resolved errors, and conversational filler.
+* **Delegation Integration:** Standardized under the pure-function delegation framework in [EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md).
+
 ## Backwards Compatibility
 
 * This is a non-destructive change. Existing projects that only have a local `.tur/` directory will continue to
@@ -97,7 +112,9 @@ Implemented in `src/tur/memory.py` (`MemoryManager`), `src/tur/models.py` (`Memo
 
 ## Change Log
 
-
+* **2026-08-22:**
+    * **Epilogue Memory Extraction & Scoping Specification**: Formalized the `tur sleep` session epilogue memory scoping rules (`universal` vs. `incarnation`), memory type taxonomy (`axiom`, `fact`, `insight`, `preference`), and noise exclusion criteria.
+    * Integrated with the pure-function delegation framework and multi-batch ingestion protocol established in EP-0124.
 * **2026-07-18:** Status promoted from Final to Implemented. Scopes (UNIVERSAL / INCARNATION / USER / PERSONA)
   implemented in models.py; memory scope filtering live in memory.py and admin.py export command.
 * **2026-04-18:**

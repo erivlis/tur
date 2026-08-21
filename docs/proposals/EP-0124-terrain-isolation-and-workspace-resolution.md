@@ -2,7 +2,7 @@
 title: "EP-0124: Terrain Isolation and Workspace Resolution"
 description: "Eliminates cross-project memory contamination and unauthorized direct state mutation through strict workspace resolution, pure-function delegation, test sandboxing, and phased state boundary hardening."
 icon: lucide/shield-alert
-status: draft
+status: accepted
 ---
 
 # EP-0124: Terrain Isolation and Workspace Resolution
@@ -14,7 +14,7 @@ status: draft
 | **Author**   | Ariel (Persona v5.4.0) & The Architect                     |
 | **Sponsor**  | Core Maintainers                                           |
 | **Delegate** | The Maharal (Safety Containment) & Emmy Noether (Symmetry) |
-| **Status**   | Draft                                                      |
+| **Status**   | Accepted (Phase 1 Implemented)                             |
 | **Type**     | Standards Track                                            |
 | **Created**  | 2026-08-21                                                 |
 | **Updated**  | 2026-08-21                                                 |
@@ -142,7 +142,61 @@ To prevent test runs from polluting real user directories or project repositorie
   2. Sets `TUR_PROJECT_DIR = tmp_path / "project_tur"`
   3. Mocks `Path.home()` to `tmp_path / "home"`
   4. Patches CWD to `tmp_path / "project_tur"`
-  5. Validates on teardown that `~/.tur` and repo `.tur` were untouched.
+---
+
+### Phase 1.5: Canonical Delegation Framework & Prompt Hygiene
+
+#### 1. Canonical Prompt Engine (`format_delegation_prompt`)
+All delegation prompt generation across Tur (such as `dreaming.py` and `introspection.py`) is consolidated into a single parameterized builder in `src/tur/_helpers.py`:
+
+```python
+def format_delegation_prompt(
+    title: str,
+    task_instructions: str,
+    input_sections: list[tuple[str, str]],
+    schema: type[BaseModel] | dict,
+    primary_commit_cmd: str,
+    secondary_commit_cmd: str | None = None,
+) -> str:
+```
+
+#### 2. Prompt Hygiene & Gricean Restraint
+* **Elimination of Proposal Metadata**: All internal EP proposal references (`EP-0121`, `EP-0124`, etc.) are stripped from prompt headers, descriptions, and code docstrings.
+* **Removal of API Key Diagnostics**: Prompts never inform the external harness of missing local API keys (`No local GEMINI_API_KEY...`), focusing the LLM exclusively on the cognitive extraction contract without generating distracting troubleshooting behavior.
+
+#### 3. Subagent Execution Recommendation (Harness Guidance)
+The Execution & Commit Contract includes an explicit architectural guideline informing agent harnesses to delegate synthesis to an isolated subagent (e.g. `invoke_subagent` or worker agents) to prevent reasoning degradation from main session context pollution.
+
+#### 4. Domain Semantic Harmonization
+While EP-0124 standardizes the **delivery protocol and ingestion framework**, domain-specific extraction semantics are defined in their authoritative proposals:
+- **Ontological Extraction Principles (`tur introspect`)**: Specified in [EP-0119](EP-0119-persona-centric-introspection.md) (canonicalization, node taxonomy, relational edge signatures, and Noether attribution).
+- **Epilogue Memory Scoping & Taxonomy (`tur sleep`)**: Specified in [EP-0104](EP-0104-federated-knowledge.md) and [EP-0113](EP-0113-core-memory.md) (`universal` vs `incarnation` scoping, memory type taxonomy, and noise exclusion).
+
+#### 5. Unified 3-Part Prompt Contract Layout
+Consolidates execution, boundary rules, and ingestion protocols into a single **Execution & Commit Contract**:
+
+```markdown
+# TUR DELEGATION: {Title}
+
+{Task Instructions}
+
+## 1. Input Data
+### {Section Title}
+{Section Content}
+
+## 2. Target JSON Schema
+{schema_json}
+
+## 3. Execution & Commit Contract
+- Boundary Invariant: Under NO circumstances should you create or edit files directly inside `.tur/`. Compute a pure structured JSON payload conforming to the schema above.
+- Subagent Execution (Recommended): If your harness supports subagents, delegate this synthesis to an isolated subagent for clean, unpolluted deduction without context noise.
+- Single Commit: `{primary_commit_cmd}`
+- Multi-Batch & Large Payload Ingestion:
+  - Multiple flags: `tur sleep --commit '<CHUNK_1>' --commit '<CHUNK_2>'`
+  - File glob / path: `tur sleep --commit 'chunks/*.json'`
+  - Newline-Delimited JSON (NDJSON) or JSON array of objects
+- Secondary Commit (if applicable): `{secondary_commit_cmd}`
+```
 
 ---
 
@@ -250,6 +304,9 @@ Create two independent temporary directories (`temp_repo_a` and `temp_repo_b`) w
 
 ## Change Log
 
+* **2026-08-22:**
+    * **Phase 1.5 Implemented**: Built canonical `format_delegation_prompt` builder in `_helpers.py`, removed internal EP metadata and API-key diagnostic messages from runtime prompts and code comments, added multi-payload batching/NDJSON/glob commit support, added subagent execution recommendation for agent harnesses, enriched `OntologyExtractor` prompt with comprehensive ontological principles and taxonomy, enriched `perform_sleep_dreaming` prompt with scoping rules and noise exclusion criteria, and removed legacy `CouncilSubagent` aliases per EP-0003.
+    * **Phase 1 Implemented**: Removed `_ensure_project_root()` working directory hijacking, implemented 4-tier Terrain resolution hierarchy (`resolve_workspace_dir`), refactored delegation prompt builders to pure JSON computation (`tur sleep --commit`, `tur introspect --commit`, `tur learn --json`), injected System Boundary Invariant into persona compiler, implemented storage bank hygiene (`tur-adm clean`), and added global pytest fixture sandbox (`tests/conftest.py`) with 100% test pass rate.
 * **2026-08-21:**
     * Initial Draft authored by Ariel (v5.4.0) & The Architect.
     * Restructured into **Two-Phase Implementation Plan**: Phase 1 (Boundary hardening, workspace resolution, JSON delegation, test sandboxing) and Phase 2 (Cryptographic signing & quarantine).

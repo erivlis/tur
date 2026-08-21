@@ -96,13 +96,30 @@ The pipeline ensures clear segregation of concerns:
   }
   ```
 
-#### 2b. The Ontological Extraction Subagent (The Russell Subagent)
+#### 2b. The Ontological Extraction Subagent (The Russell Subagent / `OntologyExtractor`)
 
-* **Role:** Enforces **Logic**.
-* **Responsibility:** Receives raw text from Bacon. Maps statements into structured, typed triples matching standard
-  node and edge schemas.
-* **Syntactic Consolidation:** Includes a syntactic consolidation pass to detect and merge duplicate string names (
-  synonyms) of the same type (e.g., merging "sqlite-db" and "SQLite").
+* **Role:** Enforces **Logic & Ontological Structure**.
+* **Responsibility:** Receives raw text from Bacon/L1 storage. Maps statements into structured, typed triples matching standard node and edge schemas.
+* **Extraction Principles & Guidelines:**
+  - **Canonicalization & Disambiguation:** Resolve synonyms and merges against existing L2 nodes to avoid graph fragmentation.
+  - **Identifier Conventions:** Use concise, lowercase kebab-case identifiers (`isolated-workspace-resolution`, `merkle-state-integrity`).
+  - **Attribution (Noether Tracing):** Every node derived from an input memory MUST list the corresponding memory ID in its `sources` array to maintain Merkle auditability.
+* **Categorical Node Taxonomy:**
+  - `Concept`: Fundamental domain entities and core abstract ideas.
+  - `Decision`: Architectural choices and design commitments.
+  - `Constraint`: Boundary conditions, invariants, and negative rules (*"MUST NOT..."*).
+  - `Insight`: Lessons learned, deductions, and synthesized principles.
+  - `Fact`: Objective empirical states and verified observations.
+  - `Dependency`: Upstream prerequisites or structural couplings.
+  - `Hypothesis`: Active conjectures or experiments under test.
+  - `BoundaryNode` / `OpenQuestion`: Perimeter definitions or unresolved inquiries.
+* **Relational Edge Signatures:**
+  - `refines`: Specializes another node of the SAME type (e.g., Specific Decision -> Base Decision).
+  - `contradicts`: Marks mutually exclusive claims or competing hypotheses.
+  - `precedes`: Indicates causal or temporal ordering between decisions or facts.
+  - `depends_on`: Explicit prerequisite dependency where node A requires node B.
+  - `competes_with`, `analogy_of`, `superseded_by`, `refuted_by`: Structural graph relations.
+* **Delegation Integration:** Standardized under the pure-function delegation framework in [EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md).
 
 #### 2c. The Conflict Resolution Subagent (The Popper Subagent)
 
@@ -203,6 +220,9 @@ The foundational tension between Council opinionation and persona-agnosticism is
 
 ## Change Log
 
+* **2026-08-22:**
+    * **Ontological Concept Extraction Specification**: Defined rich ontological extraction principles (canonicalization, lowercase kebab-case IDs, Noether attribution in `sources`, categorical node taxonomy, and relational edge signatures).
+    * Integrated with the pure-function delegation framework and multi-batch ingestion protocol established in EP-0124.
 * **2026-08-18:**
     * **Status changed from Draft to Accepted.**
     * Formalized **Persona-Centric Introspection Architecture**: introspection is configured per persona, allowing monolithic prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants) as defined in `persona.yaml`.

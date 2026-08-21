@@ -66,9 +66,9 @@ semantic engine supporting external agents via MCP.
 * **Track: Persona Lifecycle & Creation**
     * **Global Persona Architecture (EP-0114) [Status: Implemented]:** Decoupling the Traveler configuration (stored
       globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
-    * **Terrain Isolation & Workspace Resolution (EP-0124) [Status: Draft]:** Enforcing strict compartmentalization
-      between independent project codebases, removing MCP CWD hijacking, and establishing a 4-tier workspace resolution
-      protocol to eliminate cross-project memory bleeding.
+    * **Terrain Isolation & Workspace Resolution (EP-0124) [Status: Accepted (Phase 1 & 1.5 Implemented)]:** Enforcing
+      strict compartmentalization between independent project codebases, removing MCP CWD hijacking, establishing a
+      4-tier workspace resolution protocol, and standardizing the canonical delegation framework.
     * **Harness & Terrain Adapters (EP-0109) [Status: Superseded]:** Early concept of the Space Suit Protocol;
       superseded by EP-0114 and `docs/concepts/harness-integration.md`.
 * **Track: Persona Memory & Compaction**
