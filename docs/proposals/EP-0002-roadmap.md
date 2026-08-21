@@ -15,14 +15,14 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-08-18      |
+| **Updated** | 2026-08-21      |
 
 ## Abstract
 
 This document outlines the strategic roadmap for the Tur project. It defines the short-term, medium-term, and long-term
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
-"Ontological Porcelain" MCP API (EP-0105), and Policy vs. Mechanism Decoupling (EP-0003).
+"Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), and Terrain Isolation (EP-0124).
 
 ## Motivation
 
@@ -38,8 +38,8 @@ a stateful semantic engine supporting external agents via MCP.
 
 * **Phase 1 (The Foundation):** Focuses on schema rigidity, state management, CLI, and Policy vs. Mechanism decoupling. (Active Refactoring)
 * **Phase 2 (The Memory Architecture & Abstraction):** Focuses on cryptographic state (Merkle), Graph Memory,
-  Federation, and LLM Agnosticism.
-* **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration and multi-agent coordination.
+  Federation, LLM Agnosticism, and Terrain Isolation.
+* **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration, multi-agent coordination, and reactive signals.
 
 ## Specification (The Roadmap)
 
@@ -51,6 +51,7 @@ a stateful semantic engine supporting external agents via MCP.
 * **Policy vs. Mechanism Decoupling (EP-0003) [Status: Implemented]:** Decoupled deterministic execution mechanics in `src/tur/` from anthropomorphic Council metaphors. Refactored `introspection.py` to functional class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
+* **Historical Core Boundaries (EP-0001) [Status: Superseded]:** Defined the early boundary between Core and Periphery; superseded by the Orchestration Engine architecture (EP-0102).
 
 
 ### Phase 2: The Memory Architecture & Abstraction (v0.3.x -> v0.5.0) \[Status: Active\]
@@ -60,6 +61,8 @@ a stateful semantic engine supporting external agents via MCP.
 * **Track: Persona Lifecycle & Creation**
     * **Global Persona Architecture (EP-0114) [Status: Implemented]:** Decoupling the Traveler configuration (stored
       globally in `~/.tur/`) from local workspace Terrain state to isolate core entity DNA.
+    * **Terrain Isolation & Workspace Resolution (EP-0124) [Status: Draft]:** Enforcing strict compartmentalization between independent project codebases, removing MCP CWD hijacking, and establishing a 4-tier workspace resolution protocol to eliminate cross-project memory bleeding.
+    * **Harness & Terrain Adapters (EP-0109) [Status: Superseded]:** Early concept of the Space Suit Protocol; superseded by EP-0114 and `docs/concepts/harness-integration.md`.
 * **Track: Persona Memory & Compaction**
     * **Merkle Memory (EP-0106) [Status: Implemented]:** Refactoring L1 storage to use SHA-256 content hashes, ensuring
       tamper-proof state and implicit deduplication.
@@ -76,6 +79,8 @@ a stateful semantic engine supporting external agents via MCP.
     * **Agnostic Harness Interaction Protocol (EP-0121) [Status: Implemented]:** Standardized dual-mode adapter interface (MCP Sampling vs. CLI `HarnessDelegationError` prompt) for all cognitive commands.
     * **Inter-Agent Signal Protocol (EP-0118) [Status: Implemented]:** SQLite-backed typed signal queues and shared
       whiteboard for concurrency synchronization.
+    * **Reactive Signal Delivery (EP-0123) [Status: Draft]:** Active notification push mechanisms for inter-agent signals across MCP-connected swarms.
+    * **Algebraic Meditation Consensus (EP-0122) [Status: Draft]:** Multi-agent consensus mechanisms for distributed persona governance.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) \[Status: Active\]
 
@@ -84,6 +89,7 @@ a stateful semantic engine supporting external agents via MCP.
 * **Track: Persona Lifecycle & Creation**
     * **The Ontological Porcelain API (EP-0105) [Status: Implemented]:** Stabilizing FastMCP SDK integration to expose
       semantic `status`, `wake`, `learn`, and `sleep` verbs to external agents.
+    * **The Aleph Server (EP-0100) [Status: Superseded]:** Initial conceptual vision for MCP integration; superseded by EP-0102 and EP-0105.
     * **Traveler Export Protocol (EP-0115) [Status: Implemented]:** Implementing lightweight `.tur` zip/tarball archives
       to export global identities and universal memories safely.
     * **The Tri-Partite CLI Security Boundary (EP-0116) [Status: Implemented]:** Splitting entrypoints into
@@ -97,6 +103,7 @@ a stateful semantic engine supporting external agents via MCP.
       via `yaml_safe_load` in `tur._helpers`.
     * **Persona-Centric Introspection Architecture (EP-0119) [Status: Accepted]:** Formalizing persona-owned deductive memory compaction pipelines, allowing monolithic reflection prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants).
 * **Deferred / Rejected Tracks**
+    * **Multi-Agent Swarms Synchronization (EP-0107) \[Status: Deferred\]:** Early swarm concurrency draft; superseded and realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
     * **Substrate Benchmark Protocol (EP-0117) \[Status: Deferred\]:** Postponed measurement of LLM manifestation
       fidelity to focus on core memory/lifecycle capabilities.
     * **Semble Integration (EP-0111) \[Status: Rejected\]:** Replaced by Tool-Agnostic Isolation.
@@ -114,6 +121,9 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-21:**
+    * Synchronized full roadmap coverage across all 29 EPs: added **EP-0001**, **EP-0100**, **EP-0107**, **EP-0109**, and **EP-0124**.
+    * Registered **EP-0122 (Algebraic Meditation Consensus)** and **EP-0123 (Reactive Signal Delivery)** in Phase 2 Swarm track.
 * **2026-08-18:**
     * Adopted **EP-0003 (Policy vs. Mechanism)** to decouple deterministic software mechanics in `src/tur/` from anthropomorphic Council metaphors, initiating the refactoring of introspection subagents to functional computer science names.
     * Promoted **EP-0119 (Persona-Centric Introspection Architecture)** to **Accepted** status.
@@ -122,27 +132,4 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
       Spark Protocol)**, **EP-0114 (Global Persona)**, **EP-0115 (Traveler Export)**, **EP-0116 (Split CLI)**, and *
       *EP-0118 (IASP)** to **Implemented** status.
     * Reverted **EP-0101 (LLM Agnosticism)** from Implemented to **Final** to track the remaining Gemini coupling gap in
-      `dreaming.py` (addressed in draft **EP-0121**).
-    * Re-opened **EP-0119 (Council Introspection)** as **Draft** to review philosophical tension with
-      persona-agnosticism.
-    * Updated EP-0103 Deductive Memory descriptions to correctly reference the `introspect` CLI command.
-    * Removed stale `devolve` reference from EP-0113 changelog entry.
-* **2026-07-12:**
-    * Marked **EP-0101 (LLM Agnosticism)** as **Implemented**.
-    * Renamed and marked **EP-0113 (Core Memory Protocol)** as **Implemented**, introducing `evolve` and `approve`
-      tools/commands.
-    * Marked **EP-0118 (Inter-Agent Signal Protocol)** as **Implemented**.
-* **2026-07-11:**
-    * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103
-      supersession note. Updated Backwards Compatibility section to reflect OKF migration.
-* **2026-06-02:**
-    * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**,
-      **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review
-      consensus.
-* **2026-05-28:**
-    * Drafted and added **EP-0111 (Semble Integration)** and **EP-0112 (agentmemory Integration)** to Phase 3.
-* **2026-04-18:**
-    * Added **EP-0108 (The Spark Protocol)** to Phase 3.
-    * Restructured roadmap to reflect the EP-010X series.
-* **2026-02-19:**
-    * Initial Draft.
+      `dreaming.py` (addressed in draft **EP-0121**).\n    * Re-opened **EP-0119 (Council Introspection)** as **Draft** to review philosophical tension with\n      persona-agnosticism.\n    * Updated EP-0103 Deductive Memory descriptions to correctly reference the `introspect` CLI command.\n    * Removed stale `devolve` reference from EP-0113 changelog entry.\n* **2026-07-12:**\n    * Marked **EP-0101 (LLM Agnosticism)** as **Implemented**.\n    * Renamed and marked **EP-0113 (Core Memory Protocol)** as **Implemented**, introducing `evolve` and `approve`\n      tools/commands.\n    * Marked **EP-0118 (Inter-Agent Signal Protocol)** as **Implemented**.\n* **2026-07-11:**\n    * Marked **EP-0120 (OKF Storage Backend)** as **Implemented**. Updated Phase 1 L1 reference and Phase 2 EP-0103\n      supersession note. Updated Backwards Compatibility section to reflect OKF migration.\n* **2026-06-02:**\n    * Updated roadmap to formally incorporate **EP-0113 (Tether)**, **EP-0114 (Global Persona)**, **EP-0115 (Export)**,\n      **EP-0116 (Split CLI)**, **EP-0117 (Benchmark)**, and **EP-0118 (IASP)** following the Council of Giants review\n      consensus.\n* **2026-05-28:**\n    * Drafted and added **EP-0111 (Semble Integration)** and **EP-0112 (agentmemory Integration)** to Phase 3.\n* **2026-04-18:**\n    * Added **EP-0108 (The Spark Protocol)** to Phase 3.\n    * Restructured roadmap to reflect the EP-010X series.\n* **2026-02-19:**\n    * Initial Draft.
