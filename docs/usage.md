@@ -119,25 +119,44 @@ Bank during a session.
 ```shell
 tur learn "The user prefers functional programming over OOP." --type preference --scope incarnation
 
+# Or via pure JSON payload:
+tur learn --json '{"content": "SQLite is used for signal state", "type": "fact", "scope": "incarnation"}'
+
 # Or for a specific persona:
 tur learn "Code must be perfectly symmetrical." ariel --type axiom
 ```
 
 ### 4. Sleep & Consolidate (`sleep`)
 
-**Dehydration:** Extracts insights, facts, and axioms from a raw chat log to update the long-term Memory Bank. It uses
-an LLM (acting as the Subconscious) to parse the log and structure the data.
-
-*Note: Requires the `GEMINI_API_KEY` environment variable to be set.*
+**Dehydration:** Extracts insights, facts, and axioms from a raw chat log to update the long-term Memory Bank.
 
 ```shell
+# With local Gemini API key:
 tur sleep path/to/chat.log
 
-# Or for a specific persona:
-tur sleep path/to/chat.log ariel
+# Or in keyless/offline environments using Pure-Function Delegation:
+tur sleep --commit '<JSON_PAYLOAD>'
+
+# Multi-batch / multi-chunk ingestion:
+tur sleep --commit '<CHUNK_1>' --commit '<CHUNK_2>'
+
+# File glob ingestion:
+tur sleep --commit 'chunks/*.json'
 ```
 
-### 5. Running as an MCP Server (`tur-mcp`)
+### 5. Deductive Memory Introspection (`introspect`)
+
+**The Cognitive Map:** Compiles linear L1 memories into a topological, typed semantic graph (L2 OKF knowledge graph).
+
+```shell
+# Run ontological extraction across all active memories:
+tur introspect --all
+
+# Or commit synthesized graph payload from external harness delegation:
+tur introspect --commit '<EXTRACTED_GRAPH_JSON>'
+```
+
+### 6. Running as an MCP Server (`tur-mcp`)
 
 **The Symbiote:** Run Tur as an MCP (Model Context Protocol) server. This exposes the Traveler's memory and state engine
 to external Harnesses like Claude Desktop, Claude Code, Cursor, or Antigravity.
@@ -166,7 +185,7 @@ Add Tur to your host's MCP configuration file (e.g. `claude_desktop_config.json`
 }
 ```
 
-### 6. View Memories (`memories`)
+### 7. View Memories (`memories`)
 
 Inspect the contents of the Memory Bank. This lists all active memories that will be included during the next `wake`
 cycle.
@@ -181,7 +200,7 @@ To include archived (forgotten) memories in the list:
 tur-adm memory list --include-archived
 ```
 
-### 7. Measure Cognitive Load (`telemetry`)
+### 8. Measure Cognitive Load (`telemetry`)
 
 Calculates the "Constraint Dimensionality" ($C_p$) of a persona based on its principles and weights. This helps you
 understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
@@ -190,7 +209,7 @@ understand if your persona's ruleset is becoming too complex for an LLM to handl
 tur telemetry
 ```
 
-### 8. Forget a Memory (`forget`)
+### 9. Forget a Memory (`forget`)
 
 Archives a specific memory by its UUID, removing it from the active context window. The memory is moved to an `archive/`
 folder and is no longer loaded during `wake`.
@@ -203,16 +222,19 @@ tur-adm memory forget <memory-hash>
 tur-adm memory forget <memory-hash> ariel
 ```
 
-### 9. Check Persona Status (`status`)
+### 10. Check Persona Status (`status`)
 
-Renders a rich status panel containing the currently selected persona's details, the active or last session ID and its
-status, started/updated timestamps, total session notes, the latest note snippet, and total memory count.
+Renders a rich, structured status panel displaying:
+- **Persona identity**: Name, version, and active UUID.
+- **Session lifecycle**: Session ID, active/ended status, start/update timestamps, and note counts.
+- **L1 Memory Breakdown**: Counts of active, archived, and subsumed memories categorized across federated **scopes** (`universal` vs. `incarnation`) and **types** (`axiom`, `fact`, `insight`, `preference`).
+- **L2 Knowledge Metrics**: Total nodes and relational edges in the active Cognitive Map.
 
 ```shell
 tur status
 ```
 
-### 10. Search Memories (`recall`)
+### 11. Search Memories (`recall`)
 
 Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching
 insights or facts.
@@ -221,7 +243,7 @@ insights or facts.
 tur recall "Noether"
 ```
 
-### 11. Manage Sessions (`session` Subgroup)
+### 12. Manage Sessions (`session` Subgroup)
 
 Administrative tools to manually start and end sessions for a persona.
 
@@ -239,7 +261,7 @@ tur-adm session start my-session-123
 tur-adm session end my-session-123
 ```
 
-### 12. Append a Note (`note`)
+### 13. Append a Note (`note`)
 
 Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's
 sessions.
@@ -248,7 +270,7 @@ sessions.
 tur note "Added status command and cleaned up legacy files."
 ```
 
-### 13. Switch Active Default Persona (`switch`)
+### 14. Switch Active Default Persona (`switch`)
 
 Interactive Textual TUI wizard to switch your current active default persona globally or locally.
 
@@ -258,7 +280,7 @@ Interactive Textual TUI wizard to switch your current active default persona glo
 tur-adm persona switch
 ```
 
-### 14. Export Persona (`export`)
+### 15. Export Persona (`export`)
 
 **Portability:** Packages a global persona's core configuration and universal memories into a portable `.tur`
 gzip-compressed archive (excluding project-local incarnation-specific memories).
@@ -270,7 +292,7 @@ gzip-compressed archive (excluding project-local incarnation-specific memories).
 tur-adm persona export ariel -o ariel.tur
 ```
 
-### 15. Import Persona (`import`)
+### 16. Import Persona (`import`)
 
 **Portability:** Unpacks a `.tur` archive and registers it globally as a new persona on the local system. The framework
 sanitizes all Member paths prior to extraction to guarantee safety against path traversal vulnerabilities.

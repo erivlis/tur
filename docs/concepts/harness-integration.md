@@ -76,17 +76,20 @@ You must treat the Tur MCP Server as your primary source of state. If your conte
 rehydrate your constraints.
 ```
 
-## 3. The CLI Delegation Protocol (Bypassing Direct LLM dependencies)
+## 3. The Pure-Function Delegation Protocol (Keyless & Offline Inference)
 
-If the local workspace has no `GEMINI_API_KEY` environment variable configured, running the CLI command `tur introspect` cannot call the LLM directly. 
+When running cognitive commands like `tur introspect`, `tur sleep`, or `tur learn` in environments without local API keys (`GEMINI_API_KEY`), Tur triggers the **Pure-Function Delegation Protocol**:
 
-Instead of failing, the command triggers the **Harness Delegation Protocol**:
-1. It prints a structured markdown request block (`# TUR DELEGATION: Council Introspection Request`) containing the active L1 memories to extract, existing nodes in the graph, and allowed schema types.
-2. It exits with code `0`.
-3. The Harness reads the terminal output, parses the instructions, performs the semantic extraction locally via its own inference loop, writes/updates the L2 OKF files under `.tur/personas/<uuid>/concepts/active/` (or `archive/`), and moves the processed L1s to `subsumed/`.
-4. The Harness then runs the provided python compilation command to rebuild `knowledge_graph.yaml`.
+1. **Standardized Delegation Request**: Tur prints a structured markdown block (e.g. `# TUR DELEGATION: Ontological Concept Extraction Request` or `# TUR DELEGATION: Session Epilogue & Memory Extraction Request`) containing the task instructions, input data, target JSON schema, and execution contract.
+2. **Subagent Execution Recommendation**: For complex extractions or large session logs, the Harness is advised to delegate the deduction to an isolated subagent to preserve clean context and prevent noise pollution.
+3. **Strict Boundary Invariant**: The external Harness **MUST NEVER** create or edit files directly inside the `.tur/` directory.
+4. **Deterministic Ingestion Loop**: The Harness computes a pure JSON payload matching the target schema and feeds it back into Tur via the CLI:
+   - Single commit: `tur introspect --commit '<JSON_PAYLOAD>'` or `tur sleep --commit '<JSON_PAYLOAD>'`
+   - Multi-chunk flags: `tur sleep --commit '<CHUNK_1>' --commit '<CHUNK_2>'`
+   - File globs: `tur sleep --commit 'chunks/*.json'`
+   - Streaming NDJSON: Newline-delimited JSON payloads.
 
-This allows the CLI tool to remain lightweight and fully operational even in keyless environments.
+This preserves strict cryptographic integrity, guarantees state symmetry, and ensures Tur remains 100% operational in keyless, sandboxed, or enterprise agent environments.
 
 ---
 
