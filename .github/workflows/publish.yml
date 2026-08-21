@@ -4,7 +4,7 @@
 name: Publish
 on:
   release:
-    types: [published]
+    types: [ published ]
 
 permissions:
   contents: read
@@ -29,8 +29,3 @@ jobs:
         run: uv build
       - name: Publish package
         run: uv publish
-#        uses: pypa/gh-action-pypi-publish@release/v1
-#        with:
-#          print-hash: true
-#          user: __token__
-#          password: ${{ secrets.PYPI_API_TOKEN }}
