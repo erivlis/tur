@@ -18,11 +18,15 @@ def perform_sleep_dreaming(
     session_id: str | None = None,
     model: str = 'gemini-3.1-pro-preview',
     ctx: Any = None,
+    commit_payload: str | dict | None = None,
 ) -> int:
     """
     Dehydrate a session log by parsing it to extract memories.
     Returns the number of extracted memories.
     """
+    import json
+    from pathlib import Path
+
     from pydantic import BaseModel, Field
 
     persona_dir = get_persona_path(active_id)
@@ -37,15 +41,34 @@ def perform_sleep_dreaming(
     class Dream(BaseModel):
         memories: list[ExtractedMemory]
 
-    prompt = f"""
-    You are the Subconscious of a Persona Engineering system.
-    Analyze the following chat log and extract key insights,
-    facts, or axioms that should be retained in long-term memory.
+    from tur._helpers import _clean_json_response, parse_multi_json_payloads
 
-    Focus on:
-    1. User preferences (what the user likes/dislikes).
-    2. Important project facts (architectural decisions, tech stack).
-    3. Philosophical axioms derived during the session.
+    if commit_payload:
+        payloads = parse_multi_json_payloads(commit_payload)
+        extracted_memories = []
+        for p in payloads:
+            if isinstance(p, dict):
+                if 'memories' in p and isinstance(p['memories'], list):
+                    extracted_memories.extend(p['memories'])
+                elif 'type' in p and 'content' in p:
+                    extracted_memories.append(p)
+    else:
+        prompt = f"""
+    Analyze the following session chat log and extract durable long-term memories
+    that should be consolidated across sessions.
+
+    Memory Extraction Principles & Scoping Rules:
+    - Scope Assignment:
+      - `universal`: User preferences, persona identity, and general engineering principles.
+      - `incarnation`: Architectural decisions, repository constraints, and project-specific states.
+    - Memory Type Taxonomy:
+      - `axiom`: Permanent, immutable rules, boundary invariants, and fundamental principles.
+      - `fact`: Verifiable project states, dependencies, and established technical decisions.
+      - `insight`: Synthesized lessons learned, deductions, and architectural breakthroughs.
+      - `preference`: User directives, coding tastes, communication style, and workflow preferences.
+    - Exclusion Criteria:
+      - Do NOT extract transient engineering steps, ephemeral file inspections, or resolved errors.
+      - Extract only high-density, durable invariants.
 
     Chat Log:
     {log_content}
@@ -56,69 +79,60 @@ def perform_sleep_dreaming(
     Do not include markdown wrapper blocks (such as ```json) or any conversational text. Return only the JSON object.
     """
 
-    def build_delegation_instructions() -> str:
-        from datetime import datetime, timezone
+        def build_delegation_instructions() -> str:
+            from tur._helpers import format_delegation_prompt
 
-        current_time = datetime.now(UTC).isoformat()
-        persona_uuid = persona_dir.name
+            extraction_principles = (
+                '- Scope Assignment:\n'
+                '  - `universal`: User preferences, persona identity, and general engineering principles.\n'
+                '  - `incarnation`: Architectural decisions, repository constraints, and project-specific states.\n'
+                '- Memory Type Taxonomy:\n'
+                '  - `axiom`: Permanent rules, boundary invariants, and fundamental principles.\n'
+                '  - `fact`: Verifiable project states, dependencies, and established technical decisions.\n'
+                '  - `insight`: Synthesized lessons learned, deductions, and conceptual breakthroughs.\n'
+                '  - `preference`: User directives, coding tastes, and workflow requirements.\n'
+                '- Exclusion Criteria (Signal over Noise):\n'
+                '  - Do NOT extract transient steps, ephemeral file inspections, or intermediate resolved errors.\n'
+                '  - Only extract high-density, durable invariants that should survive session resets.'
+            )
 
-        return f"""# TUR DELEGATION: Session Epilogue & Memory Extraction Request (EP-0121)
+            return format_delegation_prompt(
+                title='Session Epilogue & Memory Extraction Request',
+                task_instructions=(
+                    'Analyze the session chat log and extract durable long-term memories, '
+                    'categorizing each by type, scope, and tags.'
+                ),
+                input_sections=[
+                    ('Memory Extraction Principles & Scoping Rules', extraction_principles),
+                    ('Chat Log to Process', log_content),
+                ],
+                schema=Dream,
+                primary_commit_cmd="tur sleep --commit '<JSON_PAYLOAD>'",
+                secondary_commit_cmd="tur learn --json '<JSON_PAYLOAD>'",
+            )
 
-No local `GEMINI_API_KEY` or `TUR_LLM_API_KEY` was found in the environment.
-Since you (the Harness) are an autonomous agent with file-writing tools,
-you must execute the memory extraction yourself.
+        from tur._helpers import require_inference
 
-Please parse the chat log below and extract key insights, facts, or axioms into individual OKF memory files.
+        resp_text = require_inference(
+            prompt=prompt,
+            ctx=ctx,
+            task_description='session dreaming extraction',
+            delegation_instructions_builder=build_delegation_instructions,
+            model=model,
+            response_schema=Dream.model_json_schema(),
+        )
 
-## 1. Chat Log to Process:
-{log_content}
-
-## 2. Allowed Memory Types & Scopes:
-- Memory Types: fact, preference, insight, axiom, event
-- Memory Scopes: universal, user, persona, incarnation
-
-## 3. OKF Memory File Schema:
-For each extracted memory, write a file named:
-`.tur/personas/{persona_uuid}/memories/active/<timestamp>_<type>_<short_hash>.md`
-
-The file MUST use this exact format (YAML frontmatter + body):
----
-type: L1 Memory
-timestamp: {current_time}
-memory_type: <One of the Allowed Memory Types>
-scope: <One of the Allowed Memory Scopes>
-tags:
-  - dreaming
-source_session: {session_id or 'unknown'}
----
-
-<Content of the memory>
-
-Please perform these file modifications directly. Once done, print a completion message.
-"""
-
-    from tur._helpers import require_inference
-
-    resp_text = require_inference(
-        prompt=prompt,
-        ctx=ctx,
-        task_description='session dreaming extraction',
-        delegation_instructions_builder=build_delegation_instructions,
-        model=model,
-        response_schema=Dream.model_json_schema(),
-    )
-
-    import json
-
-    resp_text = _clean_json_response(resp_text)
-    dream_data = json.loads(resp_text)
-    extracted_memories = dream_data.get('memories', [])
+        resp_text = _clean_json_response(resp_text)
+        dream_data = json.loads(resp_text)
+        extracted_memories = dream_data.get('memories', [])
 
     count = 0
     for mem_data in extracted_memories:
+        m_type = MemoryType(mem_data['type']) if isinstance(mem_data['type'], str) else mem_data['type']
+        m_scope = MemoryScope(mem_data['scope']) if isinstance(mem_data['scope'], str) else mem_data['scope']
         memory = Memory(
-            type=mem_data['type'],
-            scope=mem_data['scope'],
+            type=m_type,
+            scope=m_scope,
             tags=[*mem_data.get('tags', []), 'dreaming'],
             content=mem_data['content'],
             source_session=session_id,

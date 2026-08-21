@@ -124,19 +124,57 @@ def wake(
 
 @app.command()
 def learn(
-        content: str = typer.Argument(..., help='The content of the memory to store.'),
+        content: str | None = typer.Argument(None, help='The content of the memory to store.'),
         identifier: str | None = typer.Argument(
             None, help='The name or UUID of the persona. If omitted, uses the default.'
         ),
         type: MemoryType = typer.Option(MemoryType.INSIGHT, help='The type of memory.'),
         scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help='The scope of the memory.'),
         session_id: str = typer.Option(None, help='The name/ID of the session this memory belongs to'),
+        json_payload: list[str] | None = typer.Option(
+            None, '--json', help='Structured JSON payload(s), file paths, or globs to commit.'
+        ),
 ):
-    """Create a new memory for a persona."""
+    """Create a new memory for a persona, or commit structured JSON memories."""
+    if not json_payload and not content:
+        console.print('[red]Error: Must provide memory content or --json payload.[/red]')
+        raise typer.Exit(code=1)
+
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
         memory_manager = MemoryManager(base_dir=persona_dir)
+
+        if json_payload:
+            from tur._helpers import parse_multi_json_payloads
+
+            payloads = parse_multi_json_payloads(json_payload)
+            extracted_memories = []
+            for p in payloads:
+                if isinstance(p, dict):
+                    if 'memories' in p and isinstance(p['memories'], list):
+                        extracted_memories.extend(p['memories'])
+                    elif 'type' in p and 'content' in p:
+                        extracted_memories.append(p)
+
+            count = 0
+            for mem_dict in extracted_memories:
+                m_type = MemoryType(mem_dict.get('type', type.value))
+                m_scope = MemoryScope(mem_dict.get('scope', scope.value))
+                m_content = mem_dict.get('content', '')
+                m_tags = mem_dict.get('tags', ['json', 'cli'])
+                memory = Memory(
+                    type=m_type,
+                    scope=m_scope,
+                    tags=m_tags,
+                    content=m_content,
+                    source_session=session_id or mem_dict.get('source_session'),
+                )
+                saved_path = memory_manager.save(memory)
+                count += 1
+                console.print(f'[green]Memory saved to {saved_path}[/green]')
+            console.print(f'[bold green]Committed {count} memories from JSON payload(s).[/bold green]')
+            return
 
         console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
 
@@ -257,9 +295,25 @@ def status(
             session_status = most_recent.status
             session_updated = most_recent.updated_at.strftime('%Y-%m-%d %H:%M:%S')
 
-        # --- Memory count ---
+        # --- Memory stats ---
         memory_manager = MemoryManager(base_dir=persona_dir)
-        memory_count = memory_manager.count_all()
+        stats = memory_manager.get_stats()
+        active_count = stats['active']
+        archived_count = stats['archived']
+        subsumed_count = stats['subsumed']
+
+        scope_parts = [f'{k}: {v}' for k, v in sorted(stats['by_scope'].items())]
+        scope_str = ', '.join(scope_parts) if scope_parts else 'none'
+
+        type_parts = [f'{k}: {v}' for k, v in sorted(stats['by_type'].items(), key=lambda x: -x[1])]
+        type_str = ', '.join(type_parts) if type_parts else 'none'
+
+        from tur.introspection import load_l2_graph_from_okf
+
+        l2_graph = load_l2_graph_from_okf(persona_dir)
+        l2_info = None
+        if l2_graph is not None and l2_graph.number_of_nodes() > 0:
+            l2_info = f'{l2_graph.number_of_nodes()} nodes, {l2_graph.number_of_edges()} edges'
 
         # --- Render ---
         table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
@@ -279,7 +333,16 @@ def status(
         table.add_row('Notes', str(note_count))
         table.add_row('Latest note', f'[dim]{latest_note}[/dim]')
         table.add_row('', '')
-        table.add_row('Memories', str(memory_count))
+        table.add_row(
+            'L1 Memories',
+            f'{active_count} active [dim]({archived_count} archived, {subsumed_count} subsumed)[/dim]',
+        )
+        if stats['by_scope']:
+            table.add_row('  Scopes', f'[dim]{scope_str}[/dim]')
+        if stats['by_type']:
+            table.add_row('  Types', f'[dim]{type_str}[/dim]')
+        if l2_info:
+            table.add_row('L2 Knowledge', f'[green]{l2_info}[/green]')
 
         console.print(Panel(table, title='[bold]Tur Status[/bold]', border_style='cyan'))
 
@@ -290,15 +353,22 @@ def status(
 
 @app.command()
 def sleep(
-        log_path: str = typer.Argument(..., help='Path to the chat log file to be parsed.'),
+        log_path: str | None = typer.Argument(None, help='Path to the chat log file to be parsed.'),
         identifier: str | None = typer.Argument(
             None, help='The name or UUID of the persona. If omitted, uses the default.'
         ),
         session_id: str = typer.Option(None, help='The name/ID of the session these memories belong to'),
         model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for dreaming (insight extraction)'),
         note: str = typer.Option(..., '-n', '--note', help='Final note/utterance to append before sleeping.'),
+        commit: list[str] | None = typer.Option(
+            None, '--commit', help='Structured JSON payload(s), file path(s), or glob(s) to commit directly.'
+        ),
 ):
-    """Dehydrate a session by parsing a chat log to extract memories."""
+    """Dehydrate a session by parsing a chat log to extract memories or commit structured JSON."""
+    if not commit and not log_path:
+        console.print('[red]Error: Must provide log_path or --commit payload.[/red]')
+        raise typer.Exit(code=1)
+
     try:
         active_id = persona.get_active_persona_id(identifier)
         resolved_session_id = session_id or session.get_active_session_id()
@@ -312,11 +382,28 @@ def sleep(
             res_end = session.end_session_logic(resolved_session_id, identifier=identifier)
             console.print(f'[dim]Auto-ended session: {res_end}[/dim]')
 
+        if commit:
+            console.print(f"Committing dreams directly for '{active_id}'...")
+            try:
+                count = dreaming.perform_sleep_dreaming(
+                    log_content='',
+                    active_id=active_id,
+                    session_id=resolved_session_id,
+                    model=model,
+                    commit_payload=commit,
+                )
+                console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
+            except Exception as e:
+                console.print(f'[red]Error during committing dreams: {e}[/red]')
+                raise typer.Exit(code=1)
+
+            console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
+            return
+
         console.print(f"Processing session log for '{active_id}' from {log_path}...")
         console.print(f'Extracting insights using {model}... (Dreaming)')
 
         try:
-
             count = dreaming.perform_sleep_dreaming(
                 log_content=Path(log_path).read_text(encoding='utf-8'),
                 active_id=active_id,
@@ -571,7 +658,7 @@ def verify(
             None, help='The name or UUID of the persona. If omitted, uses the default.'
         ),
 ):
-    """Verify the cryptographic integrity of all memory files (EP-0106)."""
+    """Verify the cryptographic integrity of all memory files."""
     failures = None
     try:
         active_id = persona.get_active_persona_id(identifier)
@@ -609,12 +696,17 @@ def introspect(
         model: str = typer.Option(
             'gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'
         ),
+        commit: list[str] | None = typer.Option(
+            None,
+            '--commit',
+            help='Structured JSON payload(s), file path(s), or glob(s) containing ExtractedGraph(s) to commit.',
+        ),
         test_mode: bool = typer.Option(
             False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'
         ),
 ):
     """
-    Compress L1 memories into the L2 Cognitive Map. Runs the Council Assembly pipeline (EP-0103).
+    Compress L1 memories into the L2 Cognitive Map. Runs the Council Assembly pipeline.
     """
 
     try:
@@ -622,7 +714,13 @@ def introspect(
         persona_dir = persona.get_persona_path(active_id)
 
         console.print(f"Running Council Introspection Assembly for persona '{active_id}'...")
-        graph = run_introspection(persona_dir, bootstrap=all, model=model, test_mode=test_mode)
+        graph = run_introspection(
+            persona_dir,
+            bootstrap=all,
+            model=model,
+            test_mode=test_mode,
+            commit_payload=commit,
+        )
         console.print(
             '[bold green]Introspection Assembly completed successfully. L2 Cognitive Map updated.[/bold green]'
         )

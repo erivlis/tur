@@ -53,7 +53,7 @@ from tur.models import (
     PersonaIndex,
     SessionNotes,
 )
-from tur.paths import resolve_personas_base_dir
+from tur.paths import get_global_tur_dir, resolve_personas_base_dir, resolve_workspace_dir
 
 app = typer.Typer(
     help='Tur: Administrative persona management CLI.',
@@ -680,6 +680,151 @@ def session_note(
     except Exception as e:
         console.print(f'[red]Error viewing session note: {e}[/red]')
         raise typer.Exit(code=1)
+
+
+def _resolve_target_stores(
+        scope: str, global_only: bool, local_only: bool
+) -> list[tuple[str, Path]]:
+    if global_only:
+        target_scopes = ['global']
+    elif local_only:
+        target_scopes = ['local']
+    elif scope in ['global', 'local']:
+        target_scopes = [scope]
+    else:
+        target_scopes = ['global', 'local']
+
+    stores: list[tuple[str, Path]] = []
+    if 'global' in target_scopes:
+        stores.append(('global', get_global_tur_dir()))
+    if 'local' in target_scopes:
+        ws = resolve_workspace_dir()
+        if ws:
+            stores.append(('local', ws / '.tur'))
+        elif Path('.tur').exists():
+            stores.append(('local', Path('.tur').resolve()))
+    return stores
+
+
+def _collect_hygiene_items(
+        stores: list[tuple[str, Path]]
+) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]], list[Path]]:
+    orphaned_dirs: list[tuple[str, Path]] = []
+    dangling_files: list[tuple[str, Path]] = []
+    retained_personas: list[Path] = []
+
+    for store_label, base_dir in stores:
+        if not base_dir.exists():
+            continue
+
+        index_file = base_dir / 'personas.yaml'
+        valid_ids: set[str] = set()
+        if index_file.exists():
+            try:
+                with open(index_file, encoding='utf-8') as f:
+                    data = yaml_safe_load(f)
+                idx = PersonaIndex(**data)
+                for p in idx.personas:
+                    valid_ids.add(str(p.id))
+                    valid_ids.add(p.name.lower())
+            except Exception:
+                pass
+
+        personas_dir = base_dir / 'personas'
+        if personas_dir.exists():
+            for p_dir in personas_dir.iterdir():
+                if p_dir.is_dir():
+                    if p_dir.name not in valid_ids and p_dir.name.lower() not in valid_ids:
+                        orphaned_dirs.append((store_label, p_dir))
+                    else:
+                        retained_personas.append(p_dir)
+
+        for tmp_file in base_dir.glob('**/*.tmp.*'):
+            if tmp_file.is_file():
+                dangling_files.append((store_label, tmp_file))
+
+    return orphaned_dirs, dangling_files, retained_personas
+
+
+def _execute_hygiene_removals(
+        orphaned_dirs: list[tuple[str, Path]], dangling_files: list[tuple[str, Path]]
+) -> None:
+    for _, p in orphaned_dirs:
+        if p.exists() and p.is_dir():
+            shutil.rmtree(p)
+            console.print(f'[green]Removed orphaned directory:[/green] {p}')
+
+    for _, p in dangling_files:
+        if p.exists() and p.is_file():
+            p.unlink(missing_ok=True)
+            console.print(f'[green]Removed dangling temp file:[/green] {p}')
+
+
+def _verify_retained_stores(retained_personas: list[Path]) -> int:
+    console.print('\n[bold cyan]Running Merkle Integrity Verification on Retained Stores...[/bold cyan]')
+    total_failures = 0
+    for p_dir in retained_personas:
+        mm = MemoryManager(base_dir=p_dir)
+        failures = mm.verify_integrity()
+        if failures:
+            total_failures += len(failures)
+            console.print(f"[red]Integrity check failed for persona '{p_dir.name}':[/red]")
+            for f_path, reason in failures:
+                console.print(f'  [red]{f_path.name}:[/red] {reason}')
+        else:
+            console.print(f"[green]Persona '{p_dir.name}': 100% Merkle integrity verified.[/green]")
+    return total_failures
+
+
+@app.command('clean')
+@require_human
+def clean(
+        dry_run: bool = typer.Option(False, '--dry-run', help='Display what would be cleaned without modifying files.'),
+        scope: str = typer.Option('all', '--scope', help='Storage scope to clean: all, global, or local.'),
+        global_only: bool = typer.Option(False, '--global', help='Clean global storage only.'),
+        local_only: bool = typer.Option(False, '--local', help='Clean local storage only.'),
+        yes: bool = typer.Option(False, '-y', '--yes', help='Bypass confirmation prompt.'),
+) -> None:
+    """
+    Storage bank hygiene: prune unindexed/orphaned persona directories and dangling temp files.
+    """
+    stores = _resolve_target_stores(scope, global_only, local_only)
+    orphaned_dirs, dangling_files, retained_personas = _collect_hygiene_items(stores)
+
+    table = Table(title='Storage Bank Hygiene Audit', box=box.ROUNDED)
+    table.add_column('Scope', style='cyan')
+    table.add_column('Type', style='yellow')
+    table.add_column('Path', style='white')
+
+    for s_lbl, p in orphaned_dirs:
+        table.add_row(s_lbl, 'Orphaned Persona Dir', str(p))
+    for s_lbl, p in dangling_files:
+        table.add_row(s_lbl, 'Dangling Temp File', str(p))
+
+    if not orphaned_dirs and not dangling_files:
+        console.print('[bold green]Storage banks are clean. No orphaned or dangling artifacts found.[/bold green]')
+    else:
+        console.print(table)
+        if dry_run:
+            console.print(
+                f'[bold cyan]Dry run completed.[/bold cyan] {len(orphaned_dirs)} orphaned dirs, '
+                f'{len(dangling_files)} dangling files identified.'
+            )
+            return
+
+        if not yes and not typer.confirm('Proceed with storage hygiene cleanup?'):
+            console.print('Aborted.')
+            return
+
+        _execute_hygiene_removals(orphaned_dirs, dangling_files)
+        console.print('[bold green]Hygiene cleanup completed.[/bold green]')
+
+    failures = _verify_retained_stores(retained_personas)
+    if failures > 0:
+        console.print(f'[bold red]Verification completed with {failures} integrity failure(s).[/bold red]')
+        raise typer.Exit(code=1)
+
+    console.print('[bold green]All retained stores verified with 100% Merkle integrity.[/bold green]')
 
 
 def main():

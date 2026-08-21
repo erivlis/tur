@@ -16,7 +16,7 @@ from tur.memory import MemoryManager
 from tur.models import HarnessDelegationError, MemoryType
 
 
-# Core exceptions as per EP-0103 and EP-0119 (Persona-Centric Introspection) specifications
+# Core exceptions for persona-centric introspection
 class TamperedStateError(ValueError):
     """Raised by the Bacon subagent when cryptographic verification fails."""
 
@@ -62,7 +62,7 @@ class ExtractedGraph(BaseModel):
     edges: list[ExtractedEdge] = Field(default_factory=list)
 
 
-# Abstract base class for Introspection Subagents (EP-0003 Policy vs. Mechanism)
+# Abstract base class for Introspection Subagents
 class IntrospectionSubagent(ABC):
     def __init__(self, name: str, role: str):
         self.name = name
@@ -128,7 +128,7 @@ class OntologyExtractor(IntrospectionSubagent):
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         mems = context.get('raw_memories', [])
-        if not mems:
+        if not mems and not context.get('commit_payload'):
             return graph, context
 
         # Compile existing graph details for reference/synonym-merging
@@ -195,78 +195,59 @@ class OntologyExtractor(IntrospectionSubagent):
             return graph, context
 
         def build_delegation_instructions() -> str:
-            current_time = datetime.now(UTC).isoformat()
-            persona_dir = context.get('persona_dir')
-            persona_uuid = persona_dir.name if persona_dir else '<uuid>'
+            from tur._helpers import format_delegation_prompt
 
-            return f"""# TUR DELEGATION: Council Introspection Request
+            ontological_principles = (
+                '- Canonicalization: Avoid creating duplicate or near-synonymous nodes. '
+                'Check existing L2 nodes and merge/refine where applicable.\n'
+                '- Node ID Conventions: Use concise, lowercase kebab-case identifiers '
+                '(e.g., isolated-workspace-resolution, merkle-state-integrity).\n'
+                '- Attribution (Traceability): Every node derived from a memory MUST list the corresponding '
+                'memory ID in its `sources` array to maintain Merkle auditability.\n'
+                '- Categorical Node Types:\n'
+                '  - Concept: Fundamental domain entities and core abstract ideas.\n'
+                '  - Decision: Architectural choices and design commitments.\n'
+                '  - Constraint: Boundary conditions, invariants, and negative rules (e.g. MUST NOT).\n'
+                '  - Insight: Lessons learned, deductions, and synthesized principles.\n'
+                '  - Fact: Objective empirical states and verified observations.\n'
+                '  - Dependency: Upstream prerequisites or structural couplings.\n'
+                '  - Hypothesis: Active conjectures or experiments under test.\n'
+                '  - BoundaryNode / OpenQuestion: Perimeter definitions or unresolved inquiries.\n'
+                '- Relational Edge Signatures:\n'
+                '  - refines: Specializes another node of the SAME type (e.g., Specific Decision -> Base Decision).\n'
+                '  - contradicts: Marks mutually exclusive claims or competing hypotheses.\n'
+                '  - precedes: Indicates causal or temporal ordering between decisions or facts.\n'
+                '  - depends_on: Explicit prerequisite dependency where node A requires node B.\n'
+                '  - competes_with, analogy_of, superseded_by, refuted_by: Structural graph relations.'
+            )
 
-No local `GEMINI_API_KEY` was found in the environment. Since you (the Harness) are an autonomous agent
-with file-writing and execution tools, you must execute the Introspection Assembly yourself.
+            return format_delegation_prompt(
+                title='Ontological Concept Extraction Request',
+                task_instructions=(
+                    'Execute an ontological knowledge synthesis pass over the provided L1 memories, '
+                    'distilling them into a directed, typed semantic graph (L2 Cognitive Map).'
+                ),
+                input_sections=[
+                    ('Ontological Principles & Guidelines', ontological_principles),
+                    ('Active L1 Memories to Process', raw_text),
+                    ('Existing L2 Graph Nodes (for Synonym Merging & Deduplication)', existing_nodes_info or 'None'),
+                ],
+                schema=ExtractedGraph,
+                primary_commit_cmd="tur introspect --commit '<JSON_PAYLOAD>'",
+            )
 
-Please follow these instructions to process the active L1 memories and update the L2 Cognitive Map:
+        from tur._helpers import parse_multi_json_payloads
 
-## 1. Input L1 Memories to Process:
-{raw_text}
+        if context.get('commit_payload'):
+            payload = context['commit_payload']
+            if isinstance(payload, ExtractedGraph):
+                return self._merge_extracted_graph(graph, payload, context)
 
-## 2. Existing L2 Nodes in Graph (for reference/synonym-merging):
-{existing_nodes_info or 'None'}
-
-## 3. Allowed Types:
-- Allowed Node Types:
-  Concept, Decision, Constraint, Insight, Fact, Dependency, Hypothesis, BoundaryNode, OpenQuestion
-- Allowed Edge Types (Relations):
-  refines, contradicts, precedes, depends_on, competes_with, analogy_of, superseded_by, refuted_by
-
-## 4. OKF Markdown File Schema:
-For each new or updated node, write (or update) a file named:
-`.tur/personas/{persona_uuid}/concepts/active/<node_id>.md`
-(or `archive/<node_id>.md` if status is superseded/archived).
-
-The file MUST use this exact format (YAML frontmatter + body):
----
-type: L2 Concept
-title: Node Title (Title Case)
-description: Brief one-line description
-timestamp: {current_time}
-node_type: <One of the Allowed Node Types>
-sources:
-  - <L1 Memory ID/Hash>
-confidence: 1.0
-pinned: false
-status: active
-relations:
-  - target: /concepts/active/<target_node_id>.md
-    type: <One of the Allowed Edge Types>
-    confidence: 1.0
-    created_at: {current_time}
----
-# Details
-
-<Detailed explanation/content of the concept>
-
-## 5. Execution Steps for the Harness:
-1. Extract concepts/relations from the L1 memories, merging with existing nodes if they are synonyms.
-2. Write/update the OKF files under `.tur/personas/{persona_uuid}/concepts/active/` (or `archive/`).
-3. Move the processed L1 memory files from:
-   `.tur/personas/{persona_uuid}/memories/`
-   to `.tur/personas/{persona_uuid}/memories/subsumed/`.
-4. Rebuild the `knowledge_graph.yaml` file by running this exact command in the workspace root:
-   `uv run python -c "
-from pathlib import Path
-import networkx as nx
-import yaml
-from tur.introspection import load_l2_graph_from_okf
-p = Path('.tur/personas/{persona_uuid}')
-g = load_l2_graph_from_okf(p)
-Path(p / 'knowledge_graph.yaml').write_text(
-    yaml.dump(nx.node_link_data(g), sort_keys=False),
-    encoding='utf-8'
-)
-"`
-
-Please perform these modifications directly. Once done, print a completion message.
-"""
+            payloads = parse_multi_json_payloads(payload)
+            for p in payloads:
+                extracted = ExtractedGraph(**p)
+                graph, context = self._merge_extracted_graph(graph, extracted, context)
+            return graph, context
 
         from tur._helpers import require_inference
         model = context.get('model', 'gemini-3.1-pro-preview')
@@ -274,7 +255,7 @@ Please perform these modifications directly. Once done, print a completion messa
         resp_text = require_inference(
             prompt=prompt,
             ctx=mcp_context,
-            task_description="council introspection extraction",
+            task_description='council introspection extraction',
             delegation_instructions_builder=build_delegation_instructions,
             model=model,
             response_schema=ExtractedGraph.model_json_schema(),
@@ -333,7 +314,7 @@ Please perform these modifications directly. Once done, print a completion messa
                 src_type = graph.nodes[src].get('type')
                 tgt_type = graph.nodes[tgt].get('type')
 
-                # EP-0103 Signature constraints:
+                # Relationship signature constraints:
                 # 1. precedes can only connect Decision and Fact nodes
                 if edge.type == 'precedes' and not (
                         src_type in ['Decision', 'Fact'] and tgt_type in ['Decision', 'Fact']
@@ -668,19 +649,6 @@ class IntrospectionAssembly:
         return graph, context
 
 
-# Legacy Council Subagent Aliases (Backwards Compatibility per EP-0003)
-CouncilSubagent = IntrospectionSubagent
-BaconSubagent = IntegrityVerifier
-RussellSubagent = OntologyExtractor
-PopperSubagent = TruthMaintenanceEngine
-NoetherSubagent = SymmetryValidator
-ExplorerSubagent = NoveltyExplorer
-ShannonSubagent = HebbianGraphDecayer
-MaharalSubagent = BoundaryEnforcer
-FeynmanSubagent = ClarityDistiller
-StewardSubagent = GraphPruner
-
-
 
 # Compacted L2 graph representation compiler
 def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
@@ -877,6 +845,7 @@ def run_introspection(
         model: str = 'gemini-3.1-pro-preview',
         test_mode: bool = False,
         mcp_context: Any = None,
+        commit_payload: str | ExtractedGraph | dict | None = None,
 ) -> nx.DiGraph:
     """
     Core entrypoint to run the introspection compaction loop.
@@ -904,6 +873,7 @@ def run_introspection(
         'model': model,
         'test_mode': test_mode,
         'mcp_context': mcp_context,
+        'commit_payload': commit_payload,
     }
 
     # Load compaction configuration from persona.yaml
@@ -943,7 +913,7 @@ def run_introspection(
     with contextlib.suppress(Exception):
         os.chmod(kg_path, 0o444)
 
-    # Save L2 Graph as OKF files (EP-0120)
+    # Save L2 Graph as OKF files
     save_l2_graph_to_okf(graph, persona_dir)
 
     # Compaction Handoff: move subsumed L1 files

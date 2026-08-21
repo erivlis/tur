@@ -107,7 +107,7 @@ class Memory(BaseModel):
     links: list[MemoryLink] = Field(default_factory=list, description='Connections to other knowledge nodes')
     source_session: str | None = Field(None, description='The session ID where this originated')
 
-    # EP-0113: The Core Memory Protocol fields
+    # Core Memory Protocol fields
     core_type: str | None = Field(
         default=None, description='existential_alignment, relational_discovery, or identity_transition'
     )
@@ -120,7 +120,7 @@ class Memory(BaseModel):
     @model_validator(mode='after')
     def compute_merkle_hash(self) -> 'Memory':
         """
-        EP-0106: Merkle Memory.
+        Merkle Memory hash computation.
         If the ID is empty (a new memory), compute its SHA-256 hash deterministically.
         We hash the entire state of the object to guarantee a tamper-proof historical ledger.
         """
@@ -277,7 +277,7 @@ class SessionNotes(BaseModel):
 
 class HarnessDelegationError(ValueError):
     """
-    Raised when cognitive inference must be delegated to the Harness due to lack of API key / MCP context (EP-0121).
+    Raised when cognitive inference must be delegated to the Harness due to lack of API key / MCP context.
     """
 
     def __init__(self, prompt: str):

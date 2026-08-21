@@ -8,32 +8,14 @@ from typing import Literal
 
 from mcp.server.fastmcp import Context, FastMCP
 
-logger = logging.getLogger('tur.mcp')
-
-
-# Force the working directory to the tur project root if possible
-def _ensure_project_root():
-    if Path('.tur').exists():
-        return
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / '.tur').exists():
-            os.chdir(parent)
-            return
-
-
-_ensure_project_root()
-
-# Defer imports until AFTER the working directory is set to ensure they resolve correctly,
-# even if this script is launched from a different CWD.
-
-from tur._helpers import yaml_safe_load  # noqa: E402
-from tur.compiler import compile_persona  # noqa: E402
-from tur.dreaming import perform_sleep_dreaming  # noqa: E402
-from tur.memory import MemoryManager  # noqa: E402
-from tur.models import Memory, MemoryScope, MemoryType, SessionNotes  # noqa: E402
-from tur.persona import get_active_persona_id, get_persona_path  # noqa: E402
-from tur.session import (  # noqa: E402
+from tur._helpers import yaml_safe_load
+from tur.compiler import compile_persona
+from tur.dreaming import perform_sleep_dreaming
+from tur.memory import MemoryManager
+from tur.models import Memory, MemoryScope, MemoryType, SessionNotes
+from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
+from tur.persona import get_active_persona_id, get_persona_path
+from tur.session import (
     ack_signals_logic,
     end_session_logic,
     get_active_session_id,
@@ -50,7 +32,9 @@ from tur.session import (  # noqa: E402
     tired_logic,
     write_whiteboard_logic,
 )
-from tur.telemetry import CognitiveTelemetry  # noqa: E402
+from tur.telemetry import CognitiveTelemetry
+
+logger = logging.getLogger('tur.mcp')
 
 
 @asynccontextmanager
@@ -118,9 +102,20 @@ def status() -> dict:
             session_id = most_recent.id
             session_status = most_recent.status + ' (last)'
 
-        # Memory count
+        # Memory stats
         memory_manager = MemoryManager(base_dir=persona_dir)
-        memory_count = memory_manager.count_all()
+        memory_stats = memory_manager.get_stats()
+        memory_count = memory_stats['total']
+
+        from tur.introspection import load_l2_graph_from_okf
+
+        l2_graph = load_l2_graph_from_okf(persona_dir)
+        l2_stats = None
+        if l2_graph is not None:
+            l2_stats = {
+                'nodes': l2_graph.number_of_nodes(),
+                'edges': l2_graph.number_of_edges(),
+            }
 
         res = {
             'persona_name': persona_name,
@@ -131,6 +126,8 @@ def status() -> dict:
             'note_count': note_count,
             'latest_note': latest_note,
             'memory_count': memory_count,
+            'memory_stats': memory_stats,
+            'l2_stats': l2_stats,
         }
     except Exception as e:
         return {'error': str(e)}
@@ -342,7 +339,7 @@ def approve(memory_id: str) -> str:
 def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
     """
     Compress L1 event logs into the L2 Cognitive Map using the Council Assembly pipeline.
-    This runs the full introspection compaction loop (EP-0103), consolidating raw memories
+    This runs the full introspection compaction loop, consolidating raw memories
     into a topological knowledge graph.
 
     Args:

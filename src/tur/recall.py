@@ -47,7 +47,7 @@ def _spread_activation(graph: nx.DiGraph, matched_nodes: list[str]) -> set[str]:
 
 def topological_recall(query: str, persona_dir: Path) -> str:
     """
-    Upgraded recall logic under EP-0103 / EP-0120.
+    Graph-enhanced semantic recall logic.
     Searches the L2 knowledge graph, propagates spreading activation (2 hops),
     stages access metrics in a transient append-only log, and falls back to L1 if L2 is missing.
     """

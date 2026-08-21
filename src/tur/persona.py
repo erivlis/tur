@@ -3,7 +3,7 @@ from pathlib import Path
 
 from tur._helpers import yaml_safe_load
 from tur.models import PersonaIndex, SystemState
-from tur.paths import resolve_personas_base_dir
+from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
 
 
 def select_persona_wizard(index):
@@ -26,7 +26,8 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     if env_id:
         return env_id
 
-    state_path = Path('.tur/state.yaml')
+    ws = resolve_workspace_dir() or Path.cwd()
+    state_path = ws / '.tur' / 'state.yaml'
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:

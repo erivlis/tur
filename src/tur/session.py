@@ -27,33 +27,34 @@ from tur.models import (
     SessionState,
     SystemState,
 )
-from tur.paths import is_global_path
+from tur.paths import is_global_path, resolve_workspace_dir
 from tur.persona import get_active_persona_id, get_persona_path
 from tur.user import get_user_profile
 
 
-def get_local_persona_dir(persona_dir: Path) -> Path:
+def get_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = None) -> Path:
     """
     Returns the project-local persona directory path for runtime state (sessions, notes).
 
     When *persona_dir* is a global path (~/.tur/...) the corresponding local mirror
-    under the current working directory is returned.  This function is a pure query —
-    it does NOT create directories.  Call ensure_local_persona_dir() when you need
+    under the resolved workspace directory is returned. This function is a pure query —
+    it does NOT create directories. Call ensure_local_persona_dir() when you need
     the directory to actually exist on disk.
     """
     if is_global_path(persona_dir):
-        return Path.cwd() / '.tur' / 'personas' / persona_dir.name
+        ws = workspace_dir or resolve_workspace_dir() or Path.cwd()
+        return ws / '.tur' / 'personas' / persona_dir.name
     return persona_dir
 
 
-def ensure_local_persona_dir(persona_dir: Path) -> Path:
+def ensure_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = None) -> Path:
     """
     Returns the project-local persona directory, creating it on disk if necessary.
 
     Use this instead of get_local_persona_dir() when you are about to write files
-    into the directory.  Callers that only *read* should use the pure getter.
+    into the directory. Callers that only *read* should use the pure getter.
     """
-    local_dir = get_local_persona_dir(persona_dir)
+    local_dir = get_local_persona_dir(persona_dir, workspace_dir)
     local_dir.mkdir(parents=True, exist_ok=True)
     return local_dir
 
@@ -83,7 +84,7 @@ def get_session_file(persona_dir: Path, session_id: str) -> Path:
     return get_local_persona_dir(persona_dir) / 'sessions' / f'{session_id}.yaml'  # read-only path query
 
 
-def get_active_session_id() -> str | None:
+def get_active_session_id(workspace_dir: Path | None = None) -> str | None:
     """
     Resolves the active session ID.
     - Checks env var `TUR_ACTIVE_SESSION_ID`.
@@ -93,7 +94,8 @@ def get_active_session_id() -> str | None:
     if env_id:
         return env_id
 
-    state_path = Path('.tur/state.yaml')
+    ws = workspace_dir or resolve_workspace_dir()
+    state_path = (ws / '.tur' / 'state.yaml') if ws is not None else Path('.tur/state.yaml')
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
@@ -205,7 +207,8 @@ def db_retry(max_retries: int = 5, initial_delay: float = 0.05, backoff_factor: 
 
 def get_session_db(session_id: str) -> Path:
     """Resolves and returns the path to the SQLite session database, ensuring parent dirs exist."""
-    db_dir = Path('.tur') / 'sessions' / session_id
+    ws = resolve_workspace_dir() or Path.cwd()
+    db_dir = ws / '.tur' / 'sessions' / session_id
     db_dir.mkdir(parents=True, exist_ok=True)
     return db_dir / 'session.db'
 
@@ -441,7 +444,8 @@ def start_session_logic(
 
     save_session_index(persona_dir, index)
 
-    state_path = Path('.tur/state.yaml')
+    ws = resolve_workspace_dir() or Path.cwd()
+    state_path = ws / '.tur' / 'state.yaml'
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
@@ -570,7 +574,8 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
 
     save_session_index(persona_dir, index)
 
-    state_path = Path('.tur/state.yaml')
+    ws = resolve_workspace_dir() or Path.cwd()
+    state_path = ws / '.tur' / 'state.yaml'
     if state_path.exists():
         try:
             with open(state_path, encoding='utf-8') as f:
