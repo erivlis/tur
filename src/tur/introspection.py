@@ -1,6 +1,7 @@
 import contextlib
 import json
 import os
+import re
 import tempfile
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
@@ -13,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from tur._helpers import yaml_safe_load
 from tur.memory import MemoryManager
-from tur.models import HarnessDelegationError, MemoryType
+from tur.models import EdgeType, HarnessDelegationError, MemoryType, NodeType
 
 
 # Core exceptions for persona-centric introspection
@@ -51,7 +52,7 @@ class ExtractedEdge(BaseModel):
         ...,
         description=(
             'Relation type: refines, contradicts, precedes, depends_on, '
-            'competes_with, analogy_of, superseded_by, refuted_by'
+            'competes_with, analogy_of, metaphor_for, superseded_by, refuted_by'
         ),
     )
     confidence: float = Field(default=1.0, description='Confidence score from 0.0 to 1.0')
@@ -164,7 +165,12 @@ class OntologyExtractor(IntrospectionSubagent):
         Allowed Node Types: Concept, Decision, Constraint, Insight, Fact, Dependency,
         Hypothesis, BoundaryNode, OpenQuestion
         Allowed Edge Types: refines, contradicts, precedes, depends_on, competes_with,
-        analogy_of, superseded_by, refuted_by
+        analogy_of, metaphor_for, superseded_by, refuted_by
+
+        Cognitive Mapping Semantics:
+        - analogy_of: Structural isomorphism across domains (A:B :: C:D, e.g., merkle-dag -> git-commit-history).
+        - metaphor_for: Connects a high-level policy/narrative vehicle to a concrete mechanism/tenor
+          (e.g., traveler -> persistent-persona-identity).
 
         Your Output MUST be a raw JSON object matching this schema:
         {ExtractedGraph.model_json_schema()}
@@ -218,7 +224,10 @@ class OntologyExtractor(IntrospectionSubagent):
                 '  - contradicts: Marks mutually exclusive claims or competing hypotheses.\n'
                 '  - precedes: Indicates causal or temporal ordering between decisions or facts.\n'
                 '  - depends_on: Explicit prerequisite dependency where node A requires node B.\n'
-                '  - competes_with, analogy_of, superseded_by, refuted_by: Structural graph relations.'
+                '  - competes_with: Competing alternatives addressing the same problem.\n'
+                '  - analogy_of: Structural isomorphism across domains (A:B :: C:D).\n'
+                '  - metaphor_for: Connects a policy/narrative vehicle to a concrete mechanism/tenor.\n'
+                '  - superseded_by, refuted_by: Temporal or falsification dialectic relations.'
             )
 
             return format_delegation_prompt(
@@ -276,10 +285,53 @@ class OntologyExtractor(IntrospectionSubagent):
     def _merge_extracted_graph(
             self, graph: nx.DiGraph, extracted: ExtractedGraph, context: dict
     ) -> tuple[nx.DiGraph, dict]:
+        # Custom edge types from persona configuration
+        custom_edge_types: set[str] = set()
+        compaction_cfg = context.get('compaction_config')
+        if not compaction_cfg and context.get('persona_dir'):
+            persona_yaml_path = Path(context['persona_dir']) / 'persona.yaml'
+            if persona_yaml_path.exists():
+                with contextlib.suppress(Exception):
+                    with open(persona_yaml_path, encoding='utf-8') as f:
+                        pdata = yaml_safe_load(f) or {}
+                    compaction_cfg = pdata.get('compaction')
+
+        if isinstance(compaction_cfg, dict):
+            ontology_cfg = compaction_cfg.get('ontology', {})
+            if isinstance(ontology_cfg, dict):
+                declared_custom = ontology_cfg.get('custom_edge_types', [])
+                if isinstance(declared_custom, list):
+                    custom_edge_types = {
+                        str(e).strip().lower().replace('-', '_').replace(' ', '_') for e in declared_custom
+                    }
+
+        canonical_edge_values = {e.value for e in EdgeType}
+        allowed_edge_types = canonical_edge_values | custom_edge_types
+
+        # Canonical synonym mapping to prevent synonym drift
+        synonym_map = {
+            'is_analogous_to': EdgeType.ANALOGY_OF.value,
+            'analogous_to': EdgeType.ANALOGY_OF.value,
+            'analogous_with': EdgeType.ANALOGY_OF.value,
+            'analogy': EdgeType.ANALOGY_OF.value,
+            'is_metaphor_for': EdgeType.METAPHOR_FOR.value,
+            'metaphor': EdgeType.METAPHOR_FOR.value,
+            'is_superseded_by': EdgeType.SUPERSEDED_BY.value,
+            'is_refuted_by': EdgeType.REFUTED_BY.value,
+            'is_dependent_on': EdgeType.DEPENDS_ON.value,
+            'is_refinement_of': EdgeType.REFINES.value,
+            'contradict': EdgeType.CONTRADICTS.value,
+            'competes': EdgeType.COMPETES_WITH.value,
+        }
+        node_type_lookup = {nt.value.lower(): nt.value for nt in NodeType}
+
         # Update NetworkX Graph based on extraction
         # Merge new nodes and consolidate synonyms
         for node in extracted.nodes:
             nid = node.id.strip().lower().replace(' ', '-')
+            raw_ntype = node.type.strip()
+            norm_ntype = node_type_lookup.get(raw_ntype.lower(), raw_ntype)
+
             if graph.has_node(nid):
                 # Unification Algebra
                 old_data = graph.nodes[nid]
@@ -294,7 +346,7 @@ class OntologyExtractor(IntrospectionSubagent):
             else:
                 graph.add_node(
                     nid,
-                    type=node.type,
+                    type=norm_ntype,
                     content=node.content,
                     pinned=node.pinned,
                     sources=node.sources,
@@ -309,6 +361,13 @@ class OntologyExtractor(IntrospectionSubagent):
         for edge in extracted.edges:
             src = edge.source.strip().lower().replace(' ', '-')
             tgt = edge.target.strip().lower().replace(' ', '-')
+            raw_edge_type = edge.type.strip().lower().replace('-', '_').replace(' ', '_')
+            normalized_edge_type = synonym_map.get(raw_edge_type, raw_edge_type)
+
+            # Validate edge type against canonical, declared custom, or sanitized snake_case identifier
+            if normalized_edge_type not in allowed_edge_types and not re.match(r'^[a-z0-9_]+$', normalized_edge_type):
+                continue
+
             # Enforce relationship signatures
             if graph.has_node(src) and graph.has_node(tgt):
                 src_type = graph.nodes[src].get('type')
@@ -316,29 +375,40 @@ class OntologyExtractor(IntrospectionSubagent):
 
                 # Relationship signature constraints:
                 # 1. precedes can only connect Decision and Fact nodes
-                if edge.type == 'precedes' and not (
-                        src_type in ['Decision', 'Fact'] and tgt_type in ['Decision', 'Fact']
+                if normalized_edge_type == EdgeType.PRECEDES.value and not (
+                        src_type in [NodeType.DECISION.value, NodeType.FACT.value]
+                        and tgt_type in [NodeType.DECISION.value, NodeType.FACT.value]
                 ):
                     continue
                 # 2. refines only connects nodes of the same type
-                if edge.type == 'refines' and src_type != tgt_type:
+                if normalized_edge_type == EdgeType.REFINES.value and src_type != tgt_type:
                     continue
 
                 # We assert Directed Acyclic Graph (DAG) for precedes and depends_on
-                if edge.type in ['precedes', 'depends_on']:
+                if normalized_edge_type in [EdgeType.PRECEDES.value, EdgeType.DEPENDS_ON.value]:
                     graph.add_edge(
-                        src, tgt, type=edge.type, confidence=edge.confidence, created_at=datetime.now(UTC).isoformat()
+                        src,
+                        tgt,
+                        type=normalized_edge_type,
+                        confidence=edge.confidence,
+                        created_at=datetime.now(UTC).isoformat(),
                     )
                     if not nx.is_directed_acyclic_graph(
                             nx.subgraph_view(
-                                graph, filter_edge=lambda u, v: graph[u][v].get('type') in ['precedes', 'depends_on']
+                                graph,
+                                filter_edge=lambda u, v: graph[u][v].get('type')
+                                in [EdgeType.PRECEDES.value, EdgeType.DEPENDS_ON.value],
                             )
                     ):
                         # If cycle is formed, remove to enforce DAG constraints
                         graph.remove_edge(src, tgt)
                 else:
                     graph.add_edge(
-                        src, tgt, type=edge.type, confidence=edge.confidence, created_at=datetime.now(UTC).isoformat()
+                        src,
+                        tgt,
+                        type=normalized_edge_type,
+                        confidence=edge.confidence,
+                        created_at=datetime.now(UTC).isoformat(),
                     )
 
         return graph, context
@@ -655,20 +725,27 @@ def format_graph_as_mermaid(graph: nx.DiGraph) -> str:
     """Exports the networkx graph to a clean, markdown-friendly Mermaid diagram."""
     lines = ['graph TD']
     for node, data in graph.nodes(data=True):
-        ntype = data.get('type', 'Concept')
-        if ntype == 'Decision':
+        ntype = data.get('type', NodeType.CONCEPT.value)
+        if ntype == NodeType.DECISION.value:
             lines.append(f'    {node}["Decision"]')
-        elif ntype == 'Constraint':
+        elif ntype == NodeType.CONSTRAINT.value:
             lines.append(f'    {node}{{"Constraint"}}')
-        elif ntype == 'Fact':
+        elif ntype == NodeType.FACT.value:
             lines.append(f'    {node}("[Fact]")')
+        elif ntype == NodeType.BOUNDARY_NODE.value:
+            lines.append(f'    {node}[["BoundaryNode"]]')
+        elif ntype == NodeType.OPEN_QUESTION.value:
+            lines.append(f'    {node}{{{{"OpenQuestion"}}}}')
         else:
             lines.append(f'    {node}["{ntype}"]')
 
     for u, v in graph.edges:
         d = graph.edges[u, v]
         rel = d.get('type', 'links')
-        lines.append(f'    {u} -->|{rel}| {v}')
+        if rel == EdgeType.METAPHOR_FOR.value:
+            lines.append(f'    {u} -.->|{rel}| {v}')
+        else:
+            lines.append(f'    {u} -->|{rel}| {v}')
 
     return '\n'.join(lines)
 
@@ -886,6 +963,8 @@ def run_introspection(
             compaction_config = persona_data.get('compaction')
         except Exception:
             pass
+
+    context['compaction_config'] = compaction_config
 
     # Run subagent assembly
     assembly = IntrospectionAssembly(compaction_config)

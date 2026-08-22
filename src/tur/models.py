@@ -75,6 +75,45 @@ class MemoryScope(StrEnum):
     """True only for this specific project instance"""
 
 
+class NodeType(StrEnum):
+    """
+    Canonical node type taxonomy for the L2 Cognitive Map.
+    """
+
+    CONCEPT = 'Concept'
+    DECISION = 'Decision'
+    CONSTRAINT = 'Constraint'
+    INSIGHT = 'Insight'
+    FACT = 'Fact'
+    DEPENDENCY = 'Dependency'
+    HYPOTHESIS = 'Hypothesis'
+    BOUNDARY_NODE = 'BoundaryNode'
+    OPEN_QUESTION = 'OpenQuestion'
+
+
+class EdgeType(StrEnum):
+    """
+    Canonical relational edge type taxonomy for the L2 Cognitive Map.
+    """
+
+    # Hierarchy
+    REFINES = 'refines'
+
+    # Causality & Dependency
+    PRECEDES = 'precedes'
+    DEPENDS_ON = 'depends_on'
+
+    # TMS & Dialectic
+    CONTRADICTS = 'contradicts'
+    COMPETES_WITH = 'competes_with'
+    SUPERSEDED_BY = 'superseded_by'
+    REFUTED_BY = 'refuted_by'
+
+    # Cognitive Mapping
+    ANALOGY_OF = 'analogy_of'
+    METAPHOR_FOR = 'metaphor_for'
+
+
 class MemoryLink(BaseModel):
     """
     A semantic link to another resource.

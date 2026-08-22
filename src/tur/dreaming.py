@@ -170,7 +170,7 @@ def stage_sleep_dreaming(
         memories: list[ExtractedMemory]
 
     prompt = f"""
-    You are the Subconscious of a Persona Engineering system.
+    You are the Subconscious of a cognitive memory and state management system.
     Analyze the following chat log and extract key insights,
     facts, or axioms that should be retained in long-term memory.
 
