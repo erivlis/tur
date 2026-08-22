@@ -6,7 +6,8 @@ icon: lucide/home
 # Tur: Persistent State and Memory Engine for AI Agents
 
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
-> — *Jim Knopf und Lukas der Lokomotivführer*
+> 
+> — *[Jim Knopf und Lukas der Lokomotivführer](https://en.wikipedia.org/wiki/Jim_Button_and_Luke_the_Engine_Driver)*
 
 ![Tur Logo Light](assets/images/logo-light.png#only-light){ width="300" align=right}
 ![Tur Logo Dark](assets/images/logo-dark.png#only-dark){ width="300" align=right}
