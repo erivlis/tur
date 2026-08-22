@@ -23,21 +23,38 @@ Tur implements a two-tiered federated memory architecture with strict type class
 
 ## 2. L2 Cognitive Map Taxonomy (Graph Introspection)
 
-### Node Types
+### Canonical Node Types (`NodeType`)
+- `Concept`: Fundamental abstract ideas and core domain entities.
+- `Decision`: Architectural choices and design commitments.
+- `Constraint`: Boundary conditions, invariants, and negative rules (MUST NOT...).
+- `Insight`: Lessons learned, deductions, and synthesized principles.
+- `Fact`: Objective empirical states and verified observations.
+- `Dependency`: Upstream prerequisites or structural couplings.
+- `Hypothesis`: Active conjectures or experiments under test.
+- `BoundaryNode` / `OpenQuestion`: Perimeter definitions or unresolved inquiries.
 
-- $Concept$: Fundamental abstract ideas and core domain entities.
-- $Decision$: Architectural choices and design commitments.
-- $Constraint$: Boundary conditions, invariants, and negative rules (MUST NOT...).
-- $Insight$: Lessons learned, deductions, and synthesized principles.
-- $Fact$: Objective empirical states and verified observations.
-- $Dependency$: Upstream prerequisites or structural couplings.
-- $Hypothesis$: Active conjectures or experiments under test.
-- $BoundaryNode$ / $OpenQuestion$: Perimeter definitions or unresolved inquiries.
+### Canonical Edge Relations (`EdgeType`)
+- **Hierarchy**:
+  - `refines`: Specializes another node of the same type (e.g. Concrete Decision $\to$ Base Decision).
+- **Causality & Dependency (DAG-enforced)**:
+  - `precedes`: Causal/temporal sequence between `Decision` and `Fact` nodes.
+  - `depends_on`: Upstream prerequisite requirement where node A depends on node B.
+- **Dialectic & Truth Maintenance (TMS)**:
+  - `contradicts`: Mutually exclusive claims or competing hypotheses (resolved by timestamp).
+  - `competes_with`: Competing alternatives addressing the same problem.
+  - `superseded_by`: Direct supersession of an older node by a newer active node.
+  - `refuted_by`: Falsification and decay propagation trace edge.
+- **Cognitive Mapping**:
+  - `analogy_of`: Structural isomorphism across distinct domains ($A:B :: C:D$, e.g. `merkle-dag` $\to$ `git-commit-history`).
+  - `metaphor_for`: Figurative framing connecting a policy/narrative vehicle to a concrete technical mechanism/tenor (e.g. `traveler` $\to$ `persistent-persona-identity`).
 
-### Edge Relations
+### 3. Declarative Persona Extensibility (Tier 3)
+Domain personas can declare approved custom edge types in `persona.yaml`:
 
-- refines: Specializes another node of the same type.
-- contradicts: Marks mutually exclusive claims or competing hypotheses.
-- precedes: Indicates causal or temporal ordering between decisions or facts.
-- depends_on: Explicit prerequisite dependency where node A requires node B.
-- competes_with, analogy_of, superseded_by, refuted_by: Structural graph relations.
+```yaml
+compaction:
+  ontology:
+    custom_edge_types:
+      - "cites_precedent"
+      - "overrules"
+```
