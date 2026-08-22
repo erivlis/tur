@@ -17,7 +17,7 @@ Tur implements a two-tiered federated memory architecture with strict type class
 - `fact`: Objective, verifiable project states, tech stack invariants, and architecture decisions.
 - `insight`: Synthesized deductions, lessons learned, and conceptual breakthroughs.
 - `preference`: User directives, coding tastes, communication style, and workflow preferences.
-- `core`: Foundational existential alignment axioms staged via evolve and activated via approve.
+- `core`: Foundational existential alignment axioms staged via `evolve` and activated via human review (`tur-adm memory approve`).
 
 ---
 

@@ -15,7 +15,9 @@ Tur.
 | **Sleep**          | tur sleep &lt;log&gt; -n ...      | sleep(...)              | Consolidate session transcript into L1 memories.                |
 | **Recall**         | tur recall &lt;query&gt;          | recall(query=...)       | Semantic & keyword search across L1/L2 memory banks.            |
 | **Telemetry**      | tur telemetry                     | telemetry()             | Measure token density and Constraint Dimensionality ($C_p$).    |
-| **Approve**        | tur approve &lt;core_id&gt;       | approve(core_id=...)    | Promote a staged Core Memory into active alignment.             |
+| **Evolve**         | tur evolve &lt;id&gt; --type ...  | evolve(...)             | Stage a lived experience as a Core Memory (pending approval).   |
+
+*(Note: Core Memory approval is strictly human-governed via the administrative CLI: `tur-adm memory approve <core_id>`)*
 
 ---
 
