@@ -6,24 +6,39 @@ from tur.models import PersonaIndex, SystemState
 from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
 
 
-def select_persona_wizard(index):
-    from tur.tui import select_persona_wizard as real_wizard
-
-    return real_wizard(index)
-
-
 def get_active_persona_id(identifier: str | None = None) -> str:
     """
-    Resolves the active persona ID.
-    - If an identifier is provided, it's returned.
+    Resolves the active persona ID (UUID string).
+    - If an identifier (name or UUID) is provided, it resolves to the persona UUID.
+    - If not, it checks the TUR_ACTIVE_PERSONA_ID environment variable.
     - If not, it checks the .tur/state.yaml file.
-    - If the state file doesn't exist, it launches a TUI to select and set the default.
+    - If no active persona is configured in state:
+      - If exactly one persona exists in personas.yaml, it is used automatically.
+      - If multiple personas exist, an error is raised directing the user/agent.
     """
+    base_dir = resolve_personas_base_dir()
+    index_path = base_dir / 'personas.yaml'
+    index = None
+    if index_path.exists():
+        try:
+            with open(index_path, encoding='utf-8') as f:
+                index = PersonaIndex(**yaml_safe_load(f))
+        except Exception:
+            pass
+
     if identifier:
+        if index:
+            for entry in index.personas:
+                if str(entry.id) == identifier or entry.name.lower() == identifier.lower():
+                    return str(entry.id)
         return identifier
 
     env_id = os.environ.get('TUR_ACTIVE_PERSONA_ID')
     if env_id:
+        if index:
+            for entry in index.personas:
+                if str(entry.id) == env_id or entry.name.lower() == env_id.lower():
+                    return str(entry.id)
         return env_id
 
     ws = resolve_workspace_dir() or Path.cwd()
@@ -39,36 +54,21 @@ def get_active_persona_id(identifier: str | None = None) -> str:
             if state_obj.active_persona_id:
                 return str(state_obj.active_persona_id)
 
-    # If we're here, no default is set, so we launch the selector TUI
-    import sys
-
-    if not sys.stdin.isatty() and not os.environ.get('PYTEST_CURRENT_TEST'):
-        raise ValueError(
-            'No active persona set and stdin is not a TTY (headless mode). '
-            "Please set the 'TUR_ACTIVE_PERSONA_ID' environment variable or run 'tur-adm' first."
-        )
-
-    base_dir = resolve_personas_base_dir()
-    index_path = base_dir / 'personas.yaml'
-    if not index_path.exists():
-        raise FileNotFoundError('No personas found. Please run `tur init` to create one.')
-
-    with open(index_path, encoding='utf-8') as f:
-        index = PersonaIndex(**yaml_safe_load(f))
+    if index is None:
+        raise FileNotFoundError('No personas found. Please run `tur-adm init` to create one.')
 
     if not index.personas:
-        import typer
+        raise ValueError('No personas available. Please run `tur-adm init`.')
 
-        raise ValueError('No personas available to select. Please run `tur init`.')
+    if len(index.personas) == 1:
+        return str(index.personas[0].id)
 
-    new_active_id = select_persona_wizard(index)
-    if not new_active_id:
-        import typer
-
-        typer.echo('No persona selected. Aborting.', err=True)
-        raise typer.Exit(code=1)
-
-    return new_active_id
+    names = ', '.join(p.name for p in index.personas)
+    raise ValueError(
+        f"No active persona configured for this workspace. Multiple personas available: [{names}]. "
+        "Please select one via 'tur-adm persona default <name>', specify an identifier (e.g. 'tur status <name>'), "
+        "or set the 'TUR_ACTIVE_PERSONA_ID' environment variable."
+    )
 
 
 def get_persona_path(identifier: str) -> Path:
