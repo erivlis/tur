@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -110,9 +111,18 @@ def _parse_json_or_ndjson(text: str) -> list[dict]:
 
 
 def _load_file_or_glob(item_str: str) -> list[dict]:
-    """Attempts to resolve item_str as a glob pattern or file path."""
+    """Attempts to resolve item_str as direct JSON/NDJSON, or as a file path or glob pattern."""
+    if item_str.startswith(('{', '[')):
+        return _parse_json_or_ndjson(item_str)
+
+    p = Path(item_str)
+    if p.exists() and p.is_file():
+        try:
+            return _parse_json_or_ndjson(p.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+
     import glob
-    from pathlib import Path
 
     results: list[dict] = []
     matched_files = glob.glob(item_str)
@@ -125,13 +135,6 @@ def _load_file_or_glob(item_str: str) -> list[dict]:
             except Exception:
                 pass
         return results
-
-    p = Path(item_str)
-    if p.exists() and p.is_file():
-        try:
-            return _parse_json_or_ndjson(p.read_text(encoding='utf-8'))
-        except Exception:
-            pass
 
     return _parse_json_or_ndjson(item_str)
 

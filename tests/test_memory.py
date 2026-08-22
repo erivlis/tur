@@ -296,14 +296,24 @@ def test_load_all_with_non_existent_directory(temp_home_and_base):
     assert len(mems) == 0
 
 
-def test_memory_manager_global_path_init(temp_home_and_base):
-    fake_home, _local_base = temp_home_and_base
+def test_memory_manager_global_path_init(temp_home_and_base, monkeypatch):
+    fake_home, local_base = temp_home_and_base
     # Initialize with a global path (starts inside fake_home/.tur/)
     global_base = fake_home / '.tur' / 'personas' / 'global-uuid'
     global_base.mkdir(parents=True, exist_ok=True)
 
-    manager = MemoryManager(base_dir=global_base)
-    assert manager.local_dir == Path.cwd() / '.tur' / 'personas' / 'global-uuid' / 'memories' / 'active'
+    # 1. Attached workspace resolution via TUR_PROJECT_DIR
+    monkeypatch.setenv('TUR_PROJECT_DIR', str(local_base))
+    manager_attached = MemoryManager(base_dir=global_base)
+    assert manager_attached.local_dir == local_base / '.tur' / 'personas' / 'global-uuid' / 'memories' / 'active'
+
+    # 2. Pure Traveler mode (explicitly in a directory without .tur)
+    monkeypatch.delenv('TUR_PROJECT_DIR', raising=False)
+    empty_dir = fake_home.parent / 'no_tur_dir'
+    empty_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(empty_dir)  # no_tur_dir has no local .tur
+    manager_pure = MemoryManager(base_dir=global_base)
+    assert manager_pure.local_dir is None
 
 
 def test_memory_manager_invalid_scope(temp_home_and_base):
