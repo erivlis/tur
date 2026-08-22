@@ -1,23 +1,24 @@
 # ============================================================================
 # Zensical Configuration for Tur
 # ============================================================================
-
-site_name = "Tur: Persistent State and Memory Engine for AI Agents"
-site_description = "Persistent state and memory management engine for AI agents."
-site_author = "Eran Rivlis, Ariel"
-
 [project]
+copyright = "Copyright &copy; 2026 Eran Rivlis"
 site_name = "Tur: Persistent State and Memory Engine for AI Agents"
-name = "Tur Documentation"
-description = "Persistent state and memory management engine for AI agents."
+site_author = "Eran Rivlis"
+site_description = "Persistent state and memory management engine for AI agents."
+repo_url = "https://github.com/erivlis/tur"
+repo_name = "erivlis/tur"
+license = "https://github.com/erivlis/tur/LICENSE"
 extra_javascript = [
+    # MathJax
     "javascripts/mathjax.js",
-    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+    # KaTex
+    "javascripts/katex.js",
+    "https://unpkg.com/katex@0/dist/katex.min.js",
+    "https://unpkg.com/katex@0/dist/contrib/auto-render.min.js"
 ]
 
-copyright = """
-Copyright &copy; 2026 Eran Rivlis
-"""
 
 # Explicit Navigation
 nav = [
@@ -123,34 +124,50 @@ nav = [
 ]
 
 [project.theme]
+#variant = "classic"
+font.text = "Inter"
+font.code = "JetBrains Mono"
 language = "en"
 logo = "assets/images/logo-drawing.png"
 
 features = [
     "content.code.annotate",
     "content.code.copy",
+    "content.code.select",
     "content.tabs.link",
     "content.tooltips",
     "navigation.footer",
     "navigation.indexes",
     "navigation.instant",
     "navigation.instant.prefetch",
+    "navigation.instant.progress",
     "navigation.path",
     "navigation.sections",
     "navigation.top",
     "navigation.tracking",
     "search.highlight",
+    "toc.follow",
 ]
 
+# Palette toggle for automatic mode
 [[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+# Palette toggle for light mode
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
 scheme = "default"
 toggle.icon = "lucide/sun"
 toggle.name = "Switch to dark mode"
 
+# Palette toggle for dark mode
 [[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
 scheme = "slate"
 toggle.icon = "lucide/moon"
-toggle.name = "Switch to light mode"
+toggle.name = "Switch to system preference"
 
 # Markdown Extensions for advanced features
 [project.markdown_extensions.abbr]
@@ -163,6 +180,7 @@ toggle.name = "Switch to light mode"
 [project.markdown_extensions.tables]
 [project.markdown_extensions.toc]
 permalink = true
+toc_depth = 3
 
 [project.markdown_extensions.pymdownx.arithmatex]
 generic = true
@@ -185,6 +203,7 @@ custom_fences = [
 alternate_style = true
 [project.markdown_extensions.pymdownx.tasklist]
 custom_checkbox = true
+
 [project.markdown_extensions.pymdownx.emoji]
 emoji_index = "zensical.extensions.emoji.twemoji"
 emoji_generator = "zensical.extensions.emoji.to_svg"
