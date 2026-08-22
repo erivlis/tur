@@ -1,3 +1,9 @@
+## v0.10.2 (2026-08-23)
+
+### Fix
+
+- **persona**: add direct persona switching, default setting, and workspace state persistence
+
 ## v0.10.1 (2026-08-22)
 
 ### Refactor
