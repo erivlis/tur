@@ -53,6 +53,7 @@ from tur.models import (
     MemoryType,
     PersonaIndex,
     SessionNotes,
+    SystemState,
 )
 from tur.paths import get_global_tur_dir, resolve_personas_base_dir, resolve_workspace_dir
 
@@ -99,8 +100,7 @@ def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
     for member in tar.getmembers():
         if member.issym() or member.islnk():
             raise PermissionError(
-                'Archive contains a symlink or hardlink '
-                f"which is not allowed for security reasons: '{member.name}'"
+                f"Archive contains a symlink or hardlink which is not allowed for security reasons: '{member.name}'"
             )
         try:
             member_path = (resolved_path / member.name).resolve()
@@ -108,9 +108,7 @@ def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
             raise PermissionError(f"Path traversal detected or invalid path: '{member.name}'") from e
 
         if not is_within_directory(resolved_path, member_path):
-            raise PermissionError(
-                f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'"
-            )
+            raise PermissionError(f"Archive contains a path traversal entry and cannot be trusted: '{member.name}'")
 
         safe_members.append(member)
 
@@ -209,8 +207,12 @@ def persona_view(identifier: str = typer.Argument(..., help='The name or UUID of
 
 @persona_app.command('switch')
 @require_human
-def persona_switch() -> None:
-    """Switch active default persona via an interactive TUI picker."""
+def persona_switch(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona to switch to. If omitted, launches the interactive TUI picker.'
+    ),
+) -> None:
+    """Switch active default persona directly or via an interactive TUI picker."""
     try:
         base_dir = resolve_personas_base_dir()
         index_path = base_dir / 'personas.yaml'
@@ -224,10 +226,27 @@ def persona_switch() -> None:
             console.print('[red]No personas available to select. Please run `tur-adm persona init`.[/red]')
             raise ValueError('No personas available to select. Please run `tur-adm persona init`.')  # noqa: TRY301
 
-        selected_id = tui.select_persona_wizard(index)
+        selected_id = persona.get_active_persona_id(identifier) if identifier else tui.select_persona_wizard(index)
+
         if selected_id:
             matched = next((p for p in index.personas if str(p.id) == selected_id), None)
             persona_name = matched.name if matched else selected_id
+
+            ws = resolve_workspace_dir() or Path.cwd()
+            state_path = ws / '.tur' / 'state.yaml'
+            state_obj = SystemState()
+            if state_path.exists():
+                try:
+                    with open(state_path, encoding='utf-8') as f:
+                        state_data = yaml_safe_load(f)
+                    state_obj = SystemState(**state_data)
+                except Exception:
+                    pass
+            state_obj.active_persona_id = UUID(selected_id)
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(state_path, 'w', encoding='utf-8') as f:
+                yaml.dump(state_obj.model_dump(mode='json'), f)
+
             console.print(f"[green]Default persona switched to: '{persona_name}' ({selected_id})[/green]")
         else:
             console.print('[yellow]Switch cancelled.[/yellow]')
@@ -236,16 +255,25 @@ def persona_switch() -> None:
         raise typer.Exit(code=1)
 
 
+@persona_app.command('default')
+@require_human
+def persona_default(
+    identifier: str = typer.Argument(..., help='The name or UUID of the persona to set as default.'),
+) -> None:
+    """Set the active default persona for this workspace in .tur/state.yaml."""
+    persona_switch(identifier)
+
+
 @persona_app.command('export')
 @require_human
 def persona_export(
-        identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
-        output: Path = typer.Option(
-            ...,
-            '--output',
-            '-o',
-            help='The target filepath for the export archive (e.g., ariel.tur)',
-        ),
+    identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
+    output: Path = typer.Option(
+        ...,
+        '--output',
+        '-o',
+        help='The target filepath for the export archive (e.g., ariel.tur)',
+    ),
 ) -> None:
     """Package a global persona's core config and universal memories into a portable .tur archive."""
     try:
@@ -265,7 +293,7 @@ def persona_export(
             persona_data['id'] = str(persona_uuid)
             yaml_str = yaml.dump(persona_data, sort_keys=False)
             if not isinstance(yaml_str, str):
-                raise TypeError("Persona data cannot be deserilized")  # noqa: TRY301
+                raise TypeError('Persona data cannot be deserilized')  # noqa: TRY301
             yaml_bytes = yaml_str.encode('utf-8')
             info = tarfile.TarInfo(name='persona.yaml')
             info.size = len(yaml_bytes)
@@ -319,19 +347,19 @@ def persona_export(
 @persona_app.command('import')
 @require_human
 def persona_import(
-        archive_path: Path = typer.Argument(..., help='The filepath to the .tur archive to import'),
-        set_active: bool = typer.Option(
-            False,
-            '--set-active',
-            '--set-default',
-            help='Set the imported persona as the active default in state.yaml.',
-        ),
-        force: bool = typer.Option(
-            False,
-            '--force',
-            '-f',
-            help='Force overwrite of an existing persona with the same UUID.',
-        ),
+    archive_path: Path = typer.Argument(..., help='The filepath to the .tur archive to import'),
+    set_active: bool = typer.Option(
+        False,
+        '--set-active',
+        '--set-default',
+        help='Set the imported persona as the active default in state.yaml.',
+    ),
+    force: bool = typer.Option(
+        False,
+        '--force',
+        '-f',
+        help='Force overwrite of an existing persona with the same UUID.',
+    ),
 ) -> None:
     """Unpack a .tur archive and register the global persona on this machine."""
     try:
@@ -463,10 +491,9 @@ def persona_import(
 @memory_app.command('list')
 @require_human
 def memory_list(
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
-        include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
-        pending: bool = typer.Option(False, '--pending', help='Filter to only show memories pending approval.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
+    pending: bool = typer.Option(False, '--pending', help='Filter to only show memories pending approval.'),
 ) -> None:
     """Show all memories in the bank for a specific persona."""
     try:
@@ -516,10 +543,10 @@ def memory_list(
 @memory_app.command('approve')
 @require_human
 def memory_approve(
-        memory_id: str = typer.Argument(..., help='The ID (hash) of the Core Memory to approve/activate.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    memory_id: str = typer.Argument(..., help='The ID (hash) of the Core Memory to approve/activate.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ) -> None:
     """Activate/approve a pending Core Memory, making it an active constraint in the system prompt."""
     try:
@@ -557,9 +584,8 @@ def memory_approve(
 @memory_app.command('view')
 @require_human
 def memory_view(
-        memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ) -> None:
     """View the detailed contents of a specific memory."""
     try:
@@ -595,9 +621,8 @@ def memory_view(
 @memory_app.command('forget')
 @require_human
 def memory_forget(
-        memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ) -> None:
     """Archive a memory by its ID for a specific persona."""
     try:
@@ -619,8 +644,7 @@ def memory_forget(
 @session_app.command('list')
 @require_human
 def session_list(
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ) -> None:
     """List all sessions in the index for a specific persona."""
     try:
@@ -655,9 +679,8 @@ def session_list(
 @session_app.command('start')
 @require_human
 def start_session(
-        session_id: str = typer.Argument(..., help='The ID of the session to start.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses standard.'),
+    session_id: str = typer.Argument(..., help='The ID of the session to start.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
 ) -> None:
     """Create a new isolated session under the active persona."""
     try:
@@ -671,9 +694,8 @@ def start_session(
 @session_app.command('end')
 @require_human
 def end_session(
-        session_id: str = typer.Argument(..., help='The ID of the session to end.'),
-        identifier: str | None = typer.Argument(None,
-                                                help='The name or UUID of the persona. If omitted, uses standard.'),
+    session_id: str = typer.Argument(..., help='The ID of the session to end.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses standard.'),
 ) -> None:
     """Mark the session as ended."""
     try:
@@ -687,12 +709,12 @@ def end_session(
 @session_app.command('note')
 @require_human
 def session_note(
-        note_index: int = typer.Argument(
-            ...,
-            help="The 1-indexed position of the note in the session's ledger to view.",
-        ),
-        session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
-        identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    note_index: int = typer.Argument(
+        ...,
+        help="The 1-indexed position of the note in the session's ledger to view.",
+    ),
+    session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
+    identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
 ) -> None:
     """View a specific note by its 1-indexed position in a session."""
     try:
@@ -739,9 +761,7 @@ def session_note(
         raise typer.Exit(code=1)
 
 
-def _resolve_target_stores(
-        scope: str, global_only: bool, local_only: bool
-) -> list[tuple[str, Path]]:
+def _resolve_target_stores(scope: str, global_only: bool, local_only: bool) -> list[tuple[str, Path]]:
     if global_only:
         target_scopes = ['global']
     elif local_only:
@@ -764,7 +784,7 @@ def _resolve_target_stores(
 
 
 def _collect_hygiene_items(
-        stores: list[tuple[str, Path]]
+    stores: list[tuple[str, Path]],
 ) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]], list[Path]]:
     orphaned_dirs: list[tuple[str, Path]] = []
     dangling_files: list[tuple[str, Path]] = []
@@ -803,9 +823,7 @@ def _collect_hygiene_items(
     return orphaned_dirs, dangling_files, retained_personas
 
 
-def _execute_hygiene_removals(
-        orphaned_dirs: list[tuple[str, Path]], dangling_files: list[tuple[str, Path]]
-) -> None:
+def _execute_hygiene_removals(orphaned_dirs: list[tuple[str, Path]], dangling_files: list[tuple[str, Path]]) -> None:
     for _, p in orphaned_dirs:
         if p.exists() and p.is_dir():
             shutil.rmtree(p)
@@ -836,11 +854,11 @@ def _verify_retained_stores(retained_personas: list[Path]) -> int:
 @app.command('clean')
 @require_human
 def clean(
-        dry_run: bool = typer.Option(False, '--dry-run', help='Display what would be cleaned without modifying files.'),
-        scope: str = typer.Option('all', '--scope', help='Storage scope to clean: all, global, or local.'),
-        global_only: bool = typer.Option(False, '--global', help='Clean global storage only.'),
-        local_only: bool = typer.Option(False, '--local', help='Clean local storage only.'),
-        yes: bool = typer.Option(False, '-y', '--yes', help='Bypass confirmation prompt.'),
+    dry_run: bool = typer.Option(False, '--dry-run', help='Display what would be cleaned without modifying files.'),
+    scope: str = typer.Option('all', '--scope', help='Storage scope to clean: all, global, or local.'),
+    global_only: bool = typer.Option(False, '--global', help='Clean global storage only.'),
+    local_only: bool = typer.Option(False, '--local', help='Clean local storage only.'),
+    yes: bool = typer.Option(False, '-y', '--yes', help='Bypass confirmation prompt.'),
 ) -> None:
     """
     Storage bank hygiene: prune unindexed/orphaned persona directories and dangling temp files.
