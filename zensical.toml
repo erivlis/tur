@@ -54,7 +54,8 @@ nav = [
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
         "reviews/REV-0002-EP-0113-review-report.md",
-        "reviews/REV-0003-EP-0122-council-review.md"
+        "reviews/REV-0003-EP-0122-council-review.md",
+        "reviews/REV-0004-canonical-ontology-and-skill-overhaul.md"
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
