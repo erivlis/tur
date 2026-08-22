@@ -52,22 +52,38 @@ def test_get_active_persona_id_env(mock_core_workspace, monkeypatch):
     assert persona.get_active_persona_id() == 'env-persona-uuid'
 
 
-def test_get_active_persona_id_state_none(mock_core_workspace, monkeypatch):
-    # If state.yaml exists but has no active_persona_id
+def test_get_active_persona_id_state_none_single_persona(mock_core_workspace):
+    # If state.yaml exists but has no active_persona_id, but 1 persona exists in personas.yaml
     state_path = Path('.tur/state.yaml')
     with open(state_path, 'w', encoding='utf-8') as f:
         yaml.dump({'active_persona_id': None}, f)
 
-    # We also mock select_persona_wizard to avoid actually running TUI
-    monkeypatch.setattr(persona, 'select_persona_wizard', lambda index: 'selector-uuid')
-
-    # Make index exist
     index_path = Path('.tur/personas.yaml')
     with open(index_path, 'w', encoding='utf-8') as f:
         yaml.dump({'personas': [{'id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'name': 'Ariel', 'version': '1.0'}]}, f)
 
     res = persona.get_active_persona_id()
-    assert res == 'selector-uuid'
+    assert res == '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+
+
+def test_get_active_persona_id_multiple_personas_error(mock_core_workspace):
+    state_path = Path('.tur/state.yaml')
+    if state_path.exists():
+        state_path.unlink()
+
+    index_path = Path('.tur/personas.yaml')
+    with open(index_path, 'w', encoding='utf-8') as f:
+        yaml.dump({
+            'personas': [
+                {'id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'name': 'Ariel', 'version': '1.0'},
+                {'id': '8544202e-92f5-40ce-adfb-e4b0eae6c263', 'name': 'Popper', 'version': '1.0'}
+            ]
+        }, f)
+
+    with pytest.raises(ValueError) as exc:
+        persona.get_active_persona_id()
+    assert 'Multiple personas available' in str(exc.value)
+    assert 'tur-adm persona default' in str(exc.value)
 
 
 def test_get_active_persona_id_no_index(mock_core_workspace):
@@ -93,22 +109,6 @@ def test_get_active_persona_id_empty_index(mock_core_workspace):
     with pytest.raises(ValueError) as exc:
         persona.get_active_persona_id()
     assert 'No personas available' in str(exc.value)
-
-
-def test_get_active_persona_id_cancel_tui(mock_core_workspace, monkeypatch):
-    state_path = Path('.tur/state.yaml')
-    if state_path.exists():
-        state_path.unlink()
-
-    index_path = Path('.tur/personas.yaml')
-    with open(index_path, 'w', encoding='utf-8') as f:
-        yaml.dump({'personas': [{'id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'name': 'Ariel', 'version': '1.0'}]}, f)
-
-    # Mock wizard to return None (cancel)
-    monkeypatch.setattr(persona, 'select_persona_wizard', lambda index: None)
-
-    with pytest.raises(typer.Exit):
-        persona.get_active_persona_id()
 
 
 def test_get_persona_path_no_index(mock_core_workspace):

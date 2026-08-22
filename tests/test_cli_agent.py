@@ -367,19 +367,12 @@ def test_tur_module_main(monkeypatch):
     assert exc.value.code == 0
 
 
-def test_agent_wake_state_file_corrupt(mock_workspace, monkeypatch):
+def test_agent_wake_state_file_corrupt(mock_workspace):
     # Corrupt state.yaml
     state_path = Path('.tur/state.yaml')
     state_path.write_text('invalid: yaml: : content', encoding='utf-8')
 
-    # Mock select_persona_wizard to prevent blocking TUI from launching
-    import tur.persona
-    import tur.tui
-
-    monkeypatch.setattr(tur.persona, 'select_persona_wizard', lambda index: '7544202e-92f5-40ce-adfb-e4b0eae6c262')
-    monkeypatch.setattr(tur.tui, 'select_persona_wizard', lambda index: '7544202e-92f5-40ce-adfb-e4b0eae6c262')
-
-    result = runner.invoke(agent_app, ['wake'])
+    result = runner.invoke(agent_app, ['wake', 'Ariel'])
     assert result.exit_code == 0
     assert 'SYSTEM WAKE' in result.stdout
 
