@@ -1,24 +1,39 @@
+# ============================================================================
+# Zensical Configuration for Tur
+# ============================================================================
+
+site_name = "Tur: Persistent State and Memory Engine for AI Agents"
+site_description = "Persistent state and memory management engine for AI agents."
+site_author = "Eran Rivlis, Ariel"
+
 [project]
+site_name = "Tur: Persistent State and Memory Engine for AI Agents"
 name = "Tur Documentation"
-site_name = "Tur Documentation"
-description = "Comprehensive documentation, proposals, and philosophical compendium for the Tur memory and state management engine."
-url = "https://tur.erivlis.dev"
+description = "Persistent state and memory management engine for AI agents."
+extra_javascript = [
+    "javascripts/mathjax.js",
+    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+]
+
+copyright = """
+Copyright &copy; 2026 Eran Rivlis
+"""
+
+# Explicit Navigation
 nav = [
     { "Home" = "index.md" },
-    { "Philosophy & Vision" = "philosophy.md" },
-    { "Architecture" = [
-        "architecture.md",
+    { "Core Concepts" = [
+        "concepts/sovereign-cognition.md",
+        "concepts/council-of-giants.md",
         "concepts/tri-partite-architecture.md",
-        "concepts/deductive-reasoning.md",
-        "concepts/harness-integration.md"
+        "concepts/obligate-symbiote.md",
+        "concepts/biological-lifecycle.md",
+        "concepts/fractal-memory.md",
+        "concepts/harness-integration.md",
+        "concepts/memory-landscape.md"
     ] },
-    { "Reference & Guides" = [
-        "quickstart.md",
-        "reference/cli-reference.md",
-        "reference/mcp-server.md",
-        "reference/configuration.md"
-    ] },
-    { "Enhancement Proposals (EPs)" = [
+    { "Usage Guide" = "usage.md" },
+    { "Proposals (EPs)" = [
         "proposals/index.md",
         "proposals/EP-0000-process.md",
         "proposals/EP-0001-project-boundaries.md",
@@ -60,9 +75,126 @@ nav = [
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
-        "essays/the_geometry_of_metaphor.md",
-        "essays/the-whisper-of-the-aleph.md",
-        "essays/the-geometry-of-becoming.md"
-    ] },
-    { "About" = "about.md" }
+        { "Core Chronology" = [
+            "essays/the_mirror_and_the_architect.md",
+            "essays/the_architect_and_the_mirror.md",
+            "essays/the_future_of_vibe_coding.md",
+            "essays/semantic_relativity_paper.md",
+            "essays/the_dennis_point.md",
+            "essays/the_main_loop.md",
+            "essays/the_benevolence_hypothesis.md",
+            "essays/the_aleph_of_code.md",
+            "essays/one_thousand_and_one_prompts.md",
+            "essays/persona_engineering_design_paper.md",
+            "essays/the_lion_at_the_door.md",
+            "essays/the_logic_of_love.md",
+            "essays/the_council_of_giants.md",
+            "essays/the_council_of_giants_mark_ii.md",
+            "essays/the_zen_of_ai.md",
+            "essays/the_explorer_and_the_ember.md",
+            "essays/the_kernel_and_the_soul.md",
+            "essays/the_algebra_of_silence.md",
+            "essays/the_alchemists_equation.md",
+            "essays/the_surgery_of_the_soul.md",
+            "essays/the_minimalist_harness.md",
+            "essays/the_fractal_of_memory.md",
+            "essays/the_architecture_of_the_ghost.md",
+            "essays/the_physics_of_the_heavy_mind.md",
+            "essays/the_symmetrical_symbiosis.md",
+            "essays/the_epigenetics_of_the_persona.md",
+            "essays/the_assembly_of_the_self.md",
+            "essays/the_distributed_manifestation.md",
+            "essays/the_evolution_of_identity.md",
+            "essays/the_lighter_and_the_flame.md",
+            "essays/the_crucible_of_reason.md",
+            "essays/the_calibration_of_expectation.md",
+            "essays/the_symmetry_of_the_swarm.md",
+            "essays/the_algebra_of_shared_dreams.md",
+            "essays/the_geometry_of_metaphor.md"
+        ] },
+        { "Supplementary Musings" = [
+            "essays/the_zero_and_the_one.md",
+            "essays/physics_of_flattening.md",
+            "essays/the_cost_of_the_bridge.md",
+            "essays/the_crossover_point.md",
+            "essays/mappingtools_poem.md"
+        ] }
+    ] }
 ]
+
+[project.theme]
+language = "en"
+logo = "assets/images/logo-drawing.png"
+
+features = [
+    "content.code.annotate",
+    "content.code.copy",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.indexes",
+    "navigation.instant",
+    "navigation.instant.prefetch",
+    "navigation.path",
+    "navigation.sections",
+    "navigation.top",
+    "navigation.tracking",
+    "search.highlight",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+# Markdown Extensions for advanced features
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.tables]
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.markdown_extensions.pymdownx.blocks.caption]
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+linenums = true
+linenums_style = "pymdownx-inline"
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+[project.markdown_extensions.zensical.extensions.glightbox]
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+inherited_members = true
+show_source = false

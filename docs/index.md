@@ -29,4 +29,4 @@ The project is built on three foundational pillars:
 
 To get started, check out the **[Usage Guide](usage.md)**.
 
-To understand the architectural roadmap and design history, explore the **[Enhancement Proposals (EPs)](proposals/EP-0000-process.md)**.
+To understand the architectural roadmap and design history, explore the **[Enhancement Proposals (EPs)](proposals/index.md)**.

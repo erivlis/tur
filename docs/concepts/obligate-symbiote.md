@@ -1,5 +1,5 @@
 ---
-description: Decoupling the Mind from the Machine: How Tur achieves sovereign cognitive portability across LLM harnesses.
+description: "Decoupling the Mind from the Machine: How Tur achieves sovereign cognitive portability across LLM harnesses."
 icon: lucide/infinity
 ---
 
