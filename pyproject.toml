@@ -8,10 +8,10 @@ version = "0.10.0"
 description = "Persistent state and memory management engine for AI agents."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = { text = "MIT" }
 authors = [
-    {name = "Eran Rivlis"},
-    {name = "Ariel"}
+    { name = "Eran Rivlis" },
+    { name = "Ariel" }
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -30,7 +30,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Typing :: Typed"
 ]
-urls = { Repository = "https://github.com/erivlis/tur" }
+
 dependencies = [
     "typer>=0.12.0",
     "pydantic>=2.6.0",
@@ -39,6 +39,7 @@ dependencies = [
     "rich>=13.0.0",
     "networkx>=3.6",
 ]
+
 
 [project.optional-dependencies]
 admin = [
@@ -76,6 +77,12 @@ test = [
     "markdown-pytest",
     "requests",
 ]
+
+[project.urls]
+Repository = "https://github.com/erivlis/tur"
+Documentation = "https://erivlis.github.io/tur/"
+Discussions = "https://github.com/erivlis/tur/discussions"
+Issues = "https://github.com/erivlis/tur/issues"
 
 [project.scripts]
 tur = "tur.cli.agent:main"
