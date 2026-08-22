@@ -1,3 +1,9 @@
+## v0.10.1 (2026-08-22)
+
+### Refactor
+
+- **persona**: Enhance active persona resolution with streamlined logic, error handling, and automatic fallback mechanisms
+
 ## v0.10.0 (2026-08-22)
 
 ### Feat
