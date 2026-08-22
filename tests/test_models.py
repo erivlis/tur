@@ -5,10 +5,12 @@ import pytest
 from pydantic import ValidationError
 
 from tur.models import (
+    EdgeType,
     Memory,
     MemoryLink,
     MemoryScope,
     MemoryType,
+    NodeType,
     Persona,
     PersonaIndex,
     PersonaIndexEntry,
@@ -143,3 +145,28 @@ def test_persona_index_models():
     assert index.personas[0].id == pid
     assert index.personas[0].name == 'Ariel'
     assert index.personas[0].version == '1.0.0'
+
+
+def test_node_type_and_edge_type_enums():
+    # Canonical NodeType verification
+    assert NodeType.CONCEPT == 'Concept'
+    assert NodeType.DECISION == 'Decision'
+    assert NodeType.CONSTRAINT == 'Constraint'
+    assert NodeType.INSIGHT == 'Insight'
+    assert NodeType.FACT == 'Fact'
+    assert NodeType.DEPENDENCY == 'Dependency'
+    assert NodeType.HYPOTHESIS == 'Hypothesis'
+    assert NodeType.BOUNDARY_NODE == 'BoundaryNode'
+    assert NodeType.OPEN_QUESTION == 'OpenQuestion'
+
+    # Canonical EdgeType verification
+    assert EdgeType.REFINES == 'refines'
+    assert EdgeType.PRECEDES == 'precedes'
+    assert EdgeType.DEPENDS_ON == 'depends_on'
+    assert EdgeType.CONTRADICTS == 'contradicts'
+    assert EdgeType.COMPETES_WITH == 'competes_with'
+    assert EdgeType.SUPERSEDED_BY == 'superseded_by'
+    assert EdgeType.REFUTED_BY == 'refuted_by'
+    assert EdgeType.ANALOGY_OF == 'analogy_of'
+    assert EdgeType.METAPHOR_FOR == 'metaphor_for'
+

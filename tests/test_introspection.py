@@ -558,3 +558,105 @@ def test_russell_cycle_enforcement_and_synonym_unification():
     # Check DAG cycle enforcement: node-a -> node-b is added, but node-b -> node-a would create a cycle and is dropped
     assert merged.has_edge('node-a', 'node-b')
     assert not merged.has_edge('node-b', 'node-a')
+
+
+def test_metaphor_for_and_cognitive_mapping():
+    """Verify metaphor_for and analogy_of relations are correctly extracted and preserved."""
+    graph = nx.DiGraph()
+    extracted = ExtractedGraph(
+        nodes=[
+            ExtractedNode(
+                id='traveler-entity',
+                type='Concept',
+                content='Narrative persona identity vehicle.',
+            ),
+            ExtractedNode(
+                id='persistent-identity-state',
+                type='Fact',
+                content='Global ~/.tur/ state directory.',
+            ),
+            ExtractedNode(
+                id='merkle-dag',
+                type='Concept',
+                content='Content-addressable directed acyclic graph.',
+            ),
+            ExtractedNode(
+                id='git-commit-history',
+                type='Fact',
+                content='Git commit hash history.',
+            ),
+        ],
+        edges=[
+            ExtractedEdge(
+                source='traveler-entity',
+                target='persistent-identity-state',
+                type='metaphor_for',
+                confidence=1.0,
+            ),
+            ExtractedEdge(
+                source='merkle-dag',
+                target='git-commit-history',
+                type='analogy_of',
+                confidence=0.95,
+            ),
+        ],
+    )
+
+    extractor = OntologyExtractor()
+    merged, _ = extractor._merge_extracted_graph(graph, extracted, {})
+
+    assert merged.has_edge('traveler-entity', 'persistent-identity-state')
+    assert merged.edges['traveler-entity', 'persistent-identity-state']['type'] == 'metaphor_for'
+    assert merged.edges['traveler-entity', 'persistent-identity-state']['confidence'] == 1.0
+
+    assert merged.has_edge('merkle-dag', 'git-commit-history')
+    assert merged.edges['merkle-dag', 'git-commit-history']['type'] == 'analogy_of'
+
+    # Test mermaid diagram formatting for metaphor_for (dotted arrow)
+    mermaid = format_graph_as_mermaid(merged)
+    assert 'traveler-entity -.->|metaphor_for| persistent-identity-state' in mermaid
+    assert 'merkle-dag -->|analogy_of| git-commit-history' in mermaid
+
+
+def test_synonym_normalization_and_custom_persona_ontology():
+    """Verify synonym drift reduction and persona declarative custom edge types."""
+    graph = nx.DiGraph()
+    extracted = ExtractedGraph(
+        nodes=[
+            ExtractedNode(id='precedent-case', type='decision', content='Court decision 123.'),
+            ExtractedNode(id='current-matter', type='decision', content='Active legal matter.'),
+            ExtractedNode(id='system-vehicle', type='concept', content='Poetic vehicle.'),
+            ExtractedNode(id='engine-tenor', type='fact', content='Deterministic engine.'),
+        ],
+        edges=[
+            # Synonyms to normalize
+            ExtractedEdge(source='system-vehicle', target='engine-tenor', type='is_metaphor_for'),
+            # Custom edge type declared in persona config
+            ExtractedEdge(source='current-matter', target='precedent-case', type='cites_precedent'),
+        ],
+    )
+
+    context = {
+        'compaction_config': {
+            'ontology': {
+                'custom_edge_types': ['cites_precedent'],
+            }
+        }
+    }
+
+    extractor = OntologyExtractor()
+    merged, _ = extractor._merge_extracted_graph(graph, extracted, context)
+
+    # Node types normalized to canonical PascalCase
+    assert merged.nodes['precedent-case']['type'] == 'Decision'
+    assert merged.nodes['system-vehicle']['type'] == 'Concept'
+    assert merged.nodes['engine-tenor']['type'] == 'Fact'
+
+    # Synonym normalized to canonical metaphor_for
+    assert merged.has_edge('system-vehicle', 'engine-tenor')
+    assert merged.edges['system-vehicle', 'engine-tenor']['type'] == 'metaphor_for'
+
+    # Declared custom edge type accepted
+    assert merged.has_edge('current-matter', 'precedent-case')
+    assert merged.edges['current-matter', 'precedent-case']['type'] == 'cites_precedent'
+
