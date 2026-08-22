@@ -82,7 +82,7 @@ manageable by imposing clear constraints, deterministic state files, and explici
       <a href="https://sonarcloud.io/summary/new_code?id=erivlis_tur"><img alt="Bugs" src="https://sonarcloud.io/api/project_badges/measure?project=erivlis_tur&metric=bugs"></a>
       <a href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img alt="Codacy Quality" src="https://app.codacy.com/project/badge/Grade/ca3c3e0923a94ff5b621a449a82d210a"/></a>
       <a href="https://app.codacy.com/gh/erivlis/tur/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage"><img alt="Codacy Coverage" src="https://app.codacy.com/project/badge/Coverage/ca3c3e0923a94ff5b621a449a82d210a"/></a>
-      <!-- a href="https://www.codefactor.io/repository/github/erivlis/tur/overview/main"><img src="https://www.codefactor.io/repository/github/erivlis/tur/badge/main" alt="CodeFactor" /></a-->
+      <a href="https://www.codefactor.io/repository/github/erivlis/tur"><img src="https://www.codefactor.io/repository/github/erivlis/tur/badge" alt="CodeFactor"/></a>
       <a href="https://snyk.io/test/github/erivlis/tur"><img alt="Snyk" src="https://snyk.io/test/github/erivlis/tur/badge.svg"></a>
       <a href="https://app.codspeed.io/erivlis/tur?utm_source=badge"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/></a>
       <!-- a href="https://scorecard.dev/viewer/?uri=github.com/erivlis/tur"><img src="https://api.scorecard.dev/projects/github.com/erivlis/tur/badge" alt="OpenSSF Scorecard"/></a -->
