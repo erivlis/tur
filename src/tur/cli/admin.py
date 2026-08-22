@@ -50,6 +50,7 @@ from tur._helpers import yaml_safe_load
 from tur.cli.common import console, require_human
 from tur.memory import MemoryManager
 from tur.models import (
+    MemoryType,
     PersonaIndex,
     SessionNotes,
 )
@@ -465,6 +466,7 @@ def memory_list(
         identifier: str | None = typer.Argument(None,
                                                 help='The name or UUID of the persona. If omitted, uses default.'),
         include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
+        pending: bool = typer.Option(False, '--pending', help='Filter to only show memories pending approval.'),
 ) -> None:
     """Show all memories in the bank for a specific persona."""
     try:
@@ -473,8 +475,14 @@ def memory_list(
         memory_manager = MemoryManager(base_dir=persona_dir)
         mems = memory_manager.load_all(include_archived=include_archived)
 
+        if pending:
+            mems = [m for m in mems if getattr(m, 'status', None) == 'pending_approval']
+
         if not mems:
-            console.print(f'The Memory Bank for {active_id} is empty.')
+            if pending:
+                console.print(f'No pending memories found for {active_id}.')
+            else:
+                console.print(f'The Memory Bank for {active_id} is empty.')
             return
 
         table = Table(title=f'Memory Bank ({active_id})', show_lines=True)
@@ -486,14 +494,63 @@ def memory_list(
 
         for m in mems:
             content_snippet = (m.content[:80] + '..') if len(m.content) > 80 else m.content
-            status_display = 'archived' if getattr(m, 'status', None) == 'archived' else 'active'
-            row_style = 'dim' if status_display == 'archived' else ''
+            raw_status = getattr(m, 'status', None)
+            if raw_status == 'archived':
+                status_display = 'archived'
+                row_style = 'dim'
+            elif raw_status == 'pending_approval':
+                status_display = 'pending_approval'
+                row_style = 'yellow'
+            else:
+                status_display = 'active'
+                row_style = ''
 
             table.add_row(str(m.id), m.type.value, m.scope.value, status_display, content_snippet, style=row_style)
 
         console.print(table)
     except Exception as e:
         console.print(f'[red]Error listing memories: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@memory_app.command('approve')
+@require_human
+def memory_approve(
+        memory_id: str = typer.Argument(..., help='The ID (hash) of the Core Memory to approve/activate.'),
+        identifier: str | None = typer.Argument(
+            None, help='The name or UUID of the persona. If omitted, uses the default.'
+        ),
+) -> None:
+    """Activate/approve a pending Core Memory, making it an active constraint in the system prompt."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        all_mems = memory_manager.load_all()
+    except Exception as e:
+        console.print(f'[red]Error: {e}[/red]')
+        raise typer.Exit(code=1)
+
+    matching_mem = None
+    for m in all_mems:
+        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
+            matching_mem = m
+            break
+
+    if not matching_mem:
+        console.print(f"[red]Error: No Core memory found matching ID '{memory_id}'[/red]")
+        raise typer.Exit(code=1)
+
+    if getattr(matching_mem, 'status', None) == 'active':
+        console.print(f"[yellow]Core Memory '{matching_mem.id[:8]}' is already active.[/yellow]")
+        return
+
+    try:
+        matching_mem.status = 'active'
+        memory_manager.save(matching_mem)
+        console.print(f"[green]Core Memory '{matching_mem.id[:8]}' approved and activated successfully.[/green]")
+    except Exception as e:
+        console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
 
 

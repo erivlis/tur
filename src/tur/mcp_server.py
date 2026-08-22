@@ -301,38 +301,8 @@ def evolve(
     saved_path = manager.save(core_mem)
     return (
         f"Core Memory created and staged in 'pending_approval' status: {core_mem.id}. File: {saved_path.name}."
-        f' Instruct the Architect to approve it with: tur approve {core_mem.id[:8]}'
+        f' Instruct the Architect to approve it with: tur-adm memory approve {core_mem.id[:8]}'
     )
-
-
-@mcp.tool()
-def approve(memory_id: str) -> str:
-    """
-    Activate/approve a pending Core Memory, making it an active constraint in the system prompt.
-
-    Args:
-        memory_id(str): The ID of the Core Memory to approve/activate.
-    """
-    active_id = get_active_persona_id()
-    persona_dir = get_persona_path(active_id)
-    manager = MemoryManager(base_dir=persona_dir)
-
-    all_mems = manager.load_all()
-    matching_mem = None
-    for m in all_mems:
-        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
-            matching_mem = m
-            break
-
-    if not matching_mem:
-        return f"Error: No Core memory found matching ID '{memory_id}'"
-
-    if matching_mem.status == 'active':
-        return f"Core Memory '{matching_mem.id[:8]}' is already active."
-
-    matching_mem.status = 'active'
-    manager.save(matching_mem)
-    return f"Core Memory '{matching_mem.id[:8]}' approved and activated successfully."
 
 
 @mcp.tool()
