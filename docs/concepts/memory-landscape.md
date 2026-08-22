@@ -15,7 +15,7 @@ icon: lucide/compass
 
 ## Abstract
 
-This report provides a comprehensive architectural and comparative review of 12 cutting-edge, local-first agentic
+This report provides a comprehensive architectural and comparative review of 13 cutting-edge, local-first agentic
 memory, cognitive architecture, and codebase search frameworks. It analyzes their underlying storage mediums, retrieval
 mathematics, token-saving heuristics, and philosophical paradigms, mapping them to the **Tri-Partite Architecture** (
 Traveler, Terrain, and Harness). Finally, it outlines how these diverse systems co-habitate in perfect, symmetrical
@@ -40,6 +40,7 @@ alignment, positioning **Tur** as the sovereign constitutional controller on top
 | [**MemPalace**](https://github.com/MemPalace/mempalace)                                                                  | Verbatim text files, structured directory index.                                           | Semantic vector search scoped strictly to context domains.        | Spatial palace metaphor (wings, rooms, drawers), mine scraper, wake-up. | Scoped retrieval searches restricted to target room/drawer.  | **Verbatim Spatial Scoping**: Verbatim memory with O(files) search.     |
 | [**Cognee**](https://github.com/topoteretes/cognee)                                                                      | Graph databases (Neo4j, NetworkX) + Vector DBs.                                            | Hybrid vector + graph traversal queries.                          | Ontological auto-extraction, custom cognitive schema modeling.          | Dynamic context framing, sub-graph scoped retrieval.         | **Semantic Topology**: Memory is a structured ontological map.          |
 | [**memsearch**](https://github.com/zilliztech/memsearch)                                                                 | Plain Markdown files on disk (canonical) + local Milvus vector database.                   | Semantic vector search + Full-Text Search.                        | Git-friendly, Cross-Platform unified memory hooks.                      | Zero-overhead plain text parser (index is derived/volatile). | **Canonical Plaintext Indexing**: Filesystem is the truth; DB is cache. |
+| [**Semantica**](https://github.com/semantica-agi/semantica)                                                              | Property graphs, RDF / W3C PROV-O triples, multi-source connectors.                         | Graph-native reasoning (Rete, Datalog, SPARQL) + Bi-temporal queries. | Context Knowledge Graph, Decision Provenance, Bi-temporal Time Travel.   | Context graph scoping; deterministic sub-graph extraction.   | **The Accountable Context Graph**: Graph-native truth & deep causality. |
 
 ---
 
@@ -199,6 +200,16 @@ spatial isolation:
   alongside an LLM-driven compaction process that summarizes records back into the markdown logs, creating a
   self-reinforcing capture loop.
 
+### 13. The Accountable Context Graph: Semantica
+
+**Semantica** introduces graph-native semantic infrastructure engineered specifically for accountable, explainable, and grounded AI systems:
+
+* **Graph-Native Epistemic Layer**: Rather than treating context as flat chunks or opaque vector embeddings, Semantica constructs an explicit, typed **Context Knowledge Graph** from heterogeneous inputs (documents, tabular data, relational DBs, and APIs).
+* **Decisions as First-Class Objects**: Every AI decision is represented as a first-class graph entity containing complete causal chains, input provenance, and confidence scores. This allows developers to trace any deduction backward through exact logical derivations.
+* **W3C PROV-O Provenance**: Formally tracks data and decision lineage using open W3C PROV-O ontologies, ensuring enterprise-grade auditability, accountability, and verifiable truth maintenance.
+* **Bi-Temporal Intelligence**: Supports temporal "time-travel" queries across the graph, enabling agents and auditors to inspect the state of knowledge and causal assumptions at any specific point in history.
+* **Deterministic Logic & Rule Engines**: Integrates formal reasoning engines (forward-chaining, Rete algorithm, Datalog, and SPARQL) to ensure rule compliance and eliminate hallucinations on structured domain invariants.
+
 ---
 
 ## 🧠 Alignment with Cognitive Science Frameworks (CoALA & Write-Manage-Read)
@@ -326,8 +337,8 @@ stays pure, the codebase search stays token-efficient, and the traveler remains 
 
 ## 🔗 References & Project Sources
 
-* **Tur**: [github.com/erivlis/tur](https://github.com/erivlis/tur) — structured CLI & MCP framework for persona
-  engineering.
+* **Tur**: [github.com/erivlis/tur](https://github.com/erivlis/tur) — structured CLI & MCP framework for sovereign state and memory management.
+* **Semantica**: [github.com/semantica-agi/semantica](https://github.com/semantica-agi/semantica) — graph-native context infrastructure and accountable decision intelligence for AI systems.
 * **MnemoCore
   **: [github.com/RobinALG87/MnemoCore-Persistent-Cognitive-Ai-Memory](https://github.com/RobinALG87/MnemoCore-Persistent-Cognitive-Ai-Memory) —
   hyperdimensional computing and vector symbolic architecture cognitive memory.
