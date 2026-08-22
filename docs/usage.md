@@ -65,14 +65,14 @@ uv sync --all-extras --all-groups
 
 Tur is designed to be ergonomic. For most commands, **the persona identifier (name or UUID) is optional.**
 
-If you run a command without specifying a persona, Tur will:
+When you run an agent command without specifying a persona, Tur resolves the persona via the following deterministic chain:
 
-1. Check `.tur/state.yaml` for your active default persona.
-2. If no default is set, it will launch an interactive Textual TUI asking you to select one from your available
-   personas.
-3. Your selection will be saved as the new default for all future commands.
+1. **Environment Variable**: Checks `TUR_ACTIVE_PERSONA_ID`.
+2. **Workspace State**: Checks `.tur/state.yaml` in the local workspace directory.
+3. **Single-Persona Auto-Resolution**: If no workspace state is set and only one persona exists in `~/.tur/personas.yaml` (e.g. `Ariel`), it is automatically selected with zero friction.
+4. **Multiple Personas**: If multiple personas exist without a default in `.tur/state.yaml`, Tur prompts you to specify one (`tur wake <name>`), configure a default with `tur-adm persona default <name>`, or switch interactively using the human TUI (`tur-adm persona switch`).
 
-You can always override the default by explicitly providing a name or UUID (e.g., `tur wake turing` or `uv run tur wake turing`).
+You can always override the default by explicitly providing a name or UUID (e.g., `tur wake ariel` or `tur status ariel`).
 
 ---
 
