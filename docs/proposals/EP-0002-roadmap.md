@@ -122,6 +122,8 @@ semantic engine supporting external agents via MCP.
     * **Persona-Centric Introspection Architecture (EP-0119) [Status: Accepted]:** Formalizing persona-owned deductive
       memory compaction pipelines, allowing monolithic reflection prompts, prompt sequences, or opt-in subagent
       assemblies (e.g. Council of Giants).
+    * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Draft]:** Formalizing canonical `NodeType`
+      and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility for domain personas.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
