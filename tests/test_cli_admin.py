@@ -163,6 +163,32 @@ def test_admin_persona_init_mocked(mock_workspace, monkeypatch):
     mock_wizard.assert_called_once()
 
 
+def test_admin_persona_default(mock_workspace):
+    result = runner.invoke(admin_app, ['persona', 'default', 'Ariel'])
+    assert result.exit_code == 0
+    assert "Default persona switched to: 'Ariel'" in result.stdout
+
+    # Verify state.yaml was written
+    state_path = Path('.tur/state.yaml')
+    assert state_path.exists()
+    with open(state_path, encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    assert data['active_persona_id'] == '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+
+
+def test_admin_persona_switch_with_argument(mock_workspace):
+    result = runner.invoke(admin_app, ['persona', 'switch', 'Umbriel'])
+    assert result.exit_code == 0
+    assert "Default persona switched to: 'Umbriel'" in result.stdout
+
+    # Verify state.yaml was written
+    state_path = Path('.tur/state.yaml')
+    assert state_path.exists()
+    with open(state_path, encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    assert data['active_persona_id'] == 'fab6858c-e4ad-4adf-9e2d-0c86455917cf'
+
+
 def test_admin_persona_switch_mocked(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value='fab6858c-e4ad-4adf-9e2d-0c86455917cf')
     monkeypatch.setattr(tui, 'select_persona_wizard', mock_wizard)
