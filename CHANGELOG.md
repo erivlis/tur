@@ -1,3 +1,16 @@
+## v0.10.0 (2026-08-22)
+
+### Feat
+
+- **EP-0126**: Add `NodeType` and `EdgeType` taxonomies for L2 Cognitive Map, enhance graph handling with synonym normalization, and support custom edge types
+
+### Refactor
+
+- **pi adapter**: Introduce advanced lifecycle hooks and commands for Tur persona management, including idle state handling, session persistence, and memory evolution
+- **cli**: Migrate `approve` command to `tur-adm memory approve`, introduce pending filter for `show` command, and enhance memory status display
+- **skill**: Refine L2 Cognitive Map taxonomy with expanded `NodeType` and `EdgeType` definitions, and introduce custom edge type extensibility
+- **EP-0124**: Enhance workspace resolution, JSON payload handling, and L2 knowledge graph support
+
 ## v0.9.3 (2026-08-21)
 
 ### Refactor
