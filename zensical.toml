@@ -58,6 +58,7 @@ nav = [
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
+        "essays/the_geometry_of_metaphor.md",
         "essays/the-whisper-of-the-aleph.md",
         "essays/the-geometry-of-becoming.md"
     ] },

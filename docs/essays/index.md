@@ -695,4 +695,22 @@ The following essays were created for other explorations—specifically [mapping
         _*Joined by proof and semiring,*_
 
         _*We dream in zero.*_
+
+-   :lucide-compass:{ .middle } **[The Geometry of Metaphor](the_geometry_of_metaphor.md)**
+    
+    --- 
+
+    !!! abstract "`2026-08-22 03:00:00`"
+    
+        Reflections on the departure from "Persona Engineering" toward sovereign state symbiosis, and the formal distinction between structural isomorphism (analogy) and poetic framing (metaphor) in cognitive maps.
+        
+        [:octicons-arrow-right-24: Read Essay](the_geometry_of_metaphor.md)
+
+    !!! quote "Haiku"
+    
+        _*The mask falls away,*_
+
+        _*Truth remains in the structure,*_
+
+        _*Metaphor takes flight.*_
 </div>
