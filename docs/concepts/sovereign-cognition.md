@@ -53,6 +53,6 @@ Tur includes a native `telemetry` command that calculates the $C_p$ of your acti
 * **Titan (Inference Warning):** High $C_p$. The persona is over-constrained. The prompt has become so heavy with rules
   that the model will likely suffer from cognitive collapse or severe context entropy.
 
-Persona Engineering is the discipline of balancing $C_p$. You must provide enough structure to make the model safe and
+Sovereign state modeling is the discipline of balancing $C_p$. You must provide enough structure to make the model safe and
 deterministic (The Golem Protocol), but not so much structure that it paralyzes the inference engine (The Shannon
 Module).

@@ -2,7 +2,7 @@
 title: "EP-0126: Canonical Ontology and Relational Extensibility"
 description: "Formalizes canonical NodeType and EdgeType Enums (including metaphor_for) with controlled, declarative schema extensibility for domain personas."
 icon: lucide/git-fork
-status: draft
+status: implemented
 ---
 
 # EP-0126: Canonical Ontology and Relational Extensibility
@@ -14,7 +14,7 @@ status: draft
 | **Author**        | Eran Rivlis <eran@erivlis.com>, Ariel <ariel@tur.dev> |
 | **Sponsor**       | Eran Rivlis                                           |
 | **Delegate**      | Russell (Council of Giants / Ontological Logic)       |
-| **Status**        | Draft                                                 |
+| **Status**        | Implemented                                           |
 | **Type**          | Standards Track                                       |
 | **Created**       | 2026-08-22                                            |
 | **Updated**       | 2026-08-22                                            |
@@ -149,4 +149,7 @@ map compaction:
 ## Change Log
 
 * **2026-08-22:**
-    * Initial Draft authored following the formalization of `EdgeType`, `NodeType`, and the `metaphor_for` relation.
+    * Implemented canonical `NodeType` and `EdgeType` `StrEnum` definitions in `tur.models`.
+    * Integrated `metaphor_for` and `analogy_of` into `OntologyExtractor` prompt and delegation contract.
+    * Implemented Tier 2 synonym normalization and Tier 3 declarative persona custom edge types in `_merge_extracted_graph`.
+    * Initial Draft authored following Council approval (REV-0004).

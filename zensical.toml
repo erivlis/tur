@@ -1,6 +1,7 @@
 [project]
 name = "Tur Documentation"
-description = "Comprehensive documentation, proposals, and philosophical compendium for the Tur persona engineering framework."
+site_name = "Tur Documentation"
+description = "Comprehensive documentation, proposals, and philosophical compendium for the Tur memory and state management engine."
 url = "https://tur.erivlis.dev"
 nav = [
     { "Home" = "index.md" },

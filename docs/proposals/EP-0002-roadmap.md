@@ -15,15 +15,15 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-08-21      |
+| **Updated** | 2026-08-22      |
 
 ## Abstract
 
 This document outlines the strategic roadmap for the Tur project. It defines the short-term, medium-term, and long-term
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
-"Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124), and
-Storage Evolution & Migrations (EP-0125).
+"Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124),
+Storage Evolution & Migrations (EP-0125), and Canonical Ontology & Relational Extensibility (EP-0126).
 
 ## Motivation
 
@@ -122,7 +122,7 @@ semantic engine supporting external agents via MCP.
     * **Persona-Centric Introspection Architecture (EP-0119) [Status: Accepted]:** Formalizing persona-owned deductive
       memory compaction pipelines, allowing monolithic reflection prompts, prompt sequences, or opt-in subagent
       assemblies (e.g. Council of Giants).
-    * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Draft]:** Formalizing canonical `NodeType`
+    * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Implemented]:** Formalizing canonical `NodeType`
       and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility for domain personas.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
@@ -141,7 +141,7 @@ ensuring backwards compatibility during the OKF transition.
 ## How to Teach This / Documentation Plan
 
 The roadmap is maintained as the central architectural reference
-in [EP-0002-roadmap.md](file:///C:/dev/erivlis/tur/docs/proposals/EP-0002-roadmap.md) and indexed in `zensical.toml`.
+in `docs/proposals/EP-0002-roadmap.md` and indexed in `zensical.toml`.
 Any proposal accepted or superseded must update the corresponding phase track in this document.
 
 ## Reference Implementation
@@ -161,6 +161,10 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-22:**
+    * Registered **EP-0126 (Canonical Ontology and Relational Extensibility)** under Phase 3 (Persona Memory &
+      Compaction) to formalize canonical `NodeType` and `EdgeType` enums, `metaphor_for` mapping, and domain-persona
+      extensibility.
 * **2026-08-21:**
     * Synchronized full roadmap coverage across all 30 EPs: registered **EP-0001**, **EP-0100**, **EP-0107**,
       **EP-0108**, **EP-0109**, **EP-0122**, **EP-0123**, **EP-0124**, and **EP-0125**.

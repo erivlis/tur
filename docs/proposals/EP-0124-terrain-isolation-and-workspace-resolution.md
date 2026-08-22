@@ -170,7 +170,7 @@ The Execution & Commit Contract includes an explicit architectural guideline inf
 #### 4. Domain Semantic Harmonization
 While EP-0124 standardizes the **delivery protocol and ingestion framework**, domain-specific extraction semantics are defined in their authoritative proposals:
 - **Ontological Extraction Principles (`tur introspect`)**: Specified in [EP-0119](EP-0119-persona-centric-introspection.md) (canonicalization, node taxonomy, relational edge signatures, and Noether attribution).
-- **Epilogue Memory Scoping & Taxonomy (`tur sleep`)**: Specified in [EP-0104](EP-0104-federated-knowledge.md) and [EP-0113](EP-0113-core-memory.md) (`universal` vs `incarnation` scoping, memory type taxonomy, and noise exclusion).
+- **Epilogue Memory Scoping & Taxonomy (`tur sleep`)**: Specified in [EP-0104](EP-0104-federated-knowledge.md) and [EP-0113](EP-0113-core-memory-protocol.md) (`universal` vs `incarnation` scoping, memory type taxonomy, and noise exclusion).
 
 #### 5. Unified 3-Part Prompt Contract Layout
 Consolidates execution, boundary rules, and ingestion protocols into a single **Execution & Commit Contract**:
