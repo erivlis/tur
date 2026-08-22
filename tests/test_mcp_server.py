@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from tur import mcp_server
+from tur.memory import MemoryManager
 from tur.models import (
     Note,
     Persona,
@@ -505,15 +506,21 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
         ethical_covenant='Do not bypass safety.',
     )
     assert 'Core Memory created' in evolve_res
+    assert 'tur-adm memory approve' in evolve_res
     core_id = evolve_res.split("pending_approval' status: ")[1].split('.')[0]
 
-    # 3. Approve
-    approve_res = mcp_server.approve(memory_id=core_id)
-    assert 'approved and activated successfully' in approve_res
+    # 3. Verify approve is NOT exposed on MCP server (Physical Boundary Invariant)
+    assert not hasattr(mcp_server, 'approve') or 'approve' not in [
+        t.name for t in mcp_server.mcp._tool_manager.list_tools()
+    ]
 
-    # 4. Approve already active
-    approve_again = mcp_server.approve(memory_id=core_id)
-    assert 'already active' in approve_again
+    # 4. Approve via MemoryManager / admin workflow
+    manager = MemoryManager(base_dir=persona_dir)
+    mems = manager.load_all()
+    core_mem = next(m for m in mems if m.id == core_id)
+    assert core_mem.status == 'pending_approval'
+    core_mem.status = 'active'
+    manager.save(core_mem)
 
     # 5. Evolve non-existent
     evolve_err = mcp_server.evolve(
@@ -523,10 +530,6 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
         ethical_covenant='c',
     )
     assert 'No L1 memory found' in evolve_err
-
-    # 6. Approve non-existent
-    approve_err = mcp_server.approve(memory_id='nonexistent_id')
-    assert 'No Core memory found' in approve_err
 
 
 def test_mcp_introspect(mock_mcp_env, monkeypatch):

@@ -479,18 +479,24 @@ def test_agent_core_memory_evolution_flow(mock_workspace):
     assert len(core_files) == 1
     core_id = core_files[0].name.split('_')[-1].split('.')[0]
 
-    # 3. Approve the Core memory
-    approve_res = runner.invoke(agent_app, ['approve', core_id[:8]])
+    # 3. Agent CLI does NOT expose approve command (Physical Boundary)
+    agent_approve = runner.invoke(agent_app, ['approve', core_id[:8]])
+    assert agent_approve.exit_code != 0
+
+    # 4. Approve via Admin CLI
+    from tur.cli.admin import app as admin_app
+
+    approve_res = runner.invoke(admin_app, ['memory', 'approve', core_id[:8]])
     assert approve_res.exit_code == 0
     assert 'approved and activated successfully' in approve_res.stdout
 
-    # 4. Approving again notes that it is already active
-    approve_again = runner.invoke(agent_app, ['approve', core_id[:8]])
+    # 5. Approving again notes that it is already active
+    approve_again = runner.invoke(admin_app, ['memory', 'approve', core_id[:8]])
     assert approve_again.exit_code == 0
     assert 'already active' in approve_again.stdout
 
 
-def test_agent_evolve_and_approve_errors(mock_workspace):
+def test_agent_evolve_errors(mock_workspace):
     # Evolve nonexistent memory
     res = runner.invoke(
         agent_app,
@@ -498,11 +504,6 @@ def test_agent_evolve_and_approve_errors(mock_workspace):
     )
     assert res.exit_code == 1
     assert 'No memory found matching ID' in res.stdout
-
-    # Approve nonexistent memory
-    res_app = runner.invoke(agent_app, ['approve', 'nonexistent_id'])
-    assert res_app.exit_code == 1
-    assert 'No Core memory found' in res_app.stdout
 
 
 def test_agent_list_agents_and_coordination(mock_workspace):

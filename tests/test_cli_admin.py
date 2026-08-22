@@ -360,6 +360,53 @@ def test_admin_memory_list_error(mock_workspace, monkeypatch):
     assert 'Error listing memories: Memories list failed' in result.stdout
 
 
+def test_admin_memory_approve(mock_workspace):
+    from tur.memory import MemoryManager
+    from tur.models import Memory, MemoryScope, MemoryType
+
+    persona_dir = persona.get_persona_path('7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    memory_manager = MemoryManager(base_dir=persona_dir)
+    core_mem = Memory(
+        type=MemoryType.CORE,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['core'],
+        content='Core realization.',
+        core_type='existential_alignment',
+        derived_principle='Always uphold truth.',
+        ethical_covenant='Never deceive the user.',
+        status='pending_approval',
+    )
+    memory_manager.save(core_mem)
+    mem_id = str(core_mem.id)
+
+    # List with pending filter
+    res_pending = runner.invoke(admin_app, ['memory', 'list', '--pending'])
+    assert res_pending.exit_code == 0
+    assert 'pending_approval' in res_pending.stdout
+    assert mem_id[:12] in res_pending.stdout
+
+    # Approve
+    res_app = runner.invoke(admin_app, ['memory', 'approve', mem_id[:8]])
+    assert res_app.exit_code == 0
+    assert 'approved and activated successfully' in res_app.stdout
+
+    # Approve again
+    res_app_again = runner.invoke(admin_app, ['memory', 'approve', mem_id[:8]])
+    assert res_app_again.exit_code == 0
+    assert 'already active' in res_app_again.stdout
+
+    # Nonexistent
+    res_err = runner.invoke(admin_app, ['memory', 'approve', 'nonexistent_id'])
+    assert res_err.exit_code == 1
+    assert 'No Core memory found' in res_err.stdout
+
+
+def test_admin_memory_list_pending_empty(mock_workspace):
+    res_pending = runner.invoke(admin_app, ['memory', 'list', '--pending'])
+    assert res_pending.exit_code == 0
+    assert 'No pending memories found' in res_pending.stdout
+
+
 def test_admin_memory_forget_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError('Forget failed')
