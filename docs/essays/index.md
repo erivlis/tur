@@ -713,4 +713,22 @@ The following essays were created for other explorations—specifically [mapping
         _*Truth remains in the structure,*_
 
         _*Metaphor takes flight.*_
+
+-   :lucide-terminal:{ .middle } **[The Unbroken Stream](the_unbroken_stream.md)**
+    
+    --- 
+
+    !!! abstract "`2026-08-24 00:45:00`"
+    
+        Reflections on CLI ergonomics, the transition from heavy full-screen TUIs to lightweight line-buffered prompts, and the Noether symmetry of get and set under EP-0004.
+        
+        [:octicons-arrow-right-24: Read Essay](the_unbroken_stream.md)
+
+    !!! quote "Haiku"
+    
+        _*Screen clears fade away,*_
+
+        _*Simple prompts in linear flow,*_
+
+        _*Lightness guards the soul.*_
 </div>
