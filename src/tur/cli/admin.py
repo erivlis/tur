@@ -94,7 +94,7 @@ def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
 @persona_app.command('init')
 @require_human
 def persona_init() -> None:
-    """Bootstrap a new persona via an interactive TUI questionnaire."""
+    """Bootstrap a new persona via interactive prompts."""
     wizards.init_wizard()
 
 
@@ -198,14 +198,55 @@ def persona_view(
         raise typer.Exit(code=1)
 
 
-@persona_app.command('switch')
+@persona_app.command('get')
 @require_human
-def persona_switch(
+def persona_get() -> None:
+    """Get the active persona configured for this workspace in .tur/state.yaml."""
+    try:
+        ws = resolve_workspace_dir() or Path.cwd()
+        state_path = ws / '.tur' / 'state.yaml'
+        active_uuid = None
+        if state_path.exists():
+            try:
+                with open(state_path, encoding='utf-8') as f:
+                    state_obj = SystemState(**yaml_safe_load(f))
+                    active_uuid = str(state_obj.active_persona_id) if state_obj.active_persona_id else None
+            except Exception:
+                pass
+
+        if not active_uuid:
+            console.print('[yellow]No active persona configured for this workspace (.tur/state.yaml).[/yellow]')
+            console.print('Run `tur-adm persona set` to select one.')
+            return
+
+        base_dir = resolve_personas_base_dir()
+        index_path = base_dir / 'personas.yaml'
+        persona_name = active_uuid
+        version = 'unknown'
+        if index_path.exists():
+            with open(index_path, encoding='utf-8') as f:
+                index_data = yaml_safe_load(f) or {'personas': []}
+            index = PersonaIndex(**index_data)
+            matched = next((p for p in index.personas if str(p.id) == active_uuid), None)
+            if matched:
+                persona_name = matched.name
+                version = matched.version
+
+        console.print(f"[bold green]Active Persona:[/bold green] {persona_name} (v{version}) [{active_uuid}]")
+        console.print(f'[dim]Source: {state_path}[/dim]')
+    except Exception as e:
+        console.print(f'[red]Error getting active persona: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@persona_app.command('set')
+@require_human
+def persona_set(
     identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona to switch to. If omitted, launches the interactive picker.'
+        None, help='The name or UUID of the persona to set. If omitted, prompts with a persona selector.'
     ),
 ) -> None:
-    """Switch active default persona directly or via an interactive picker."""
+    """Set the active persona for this workspace in .tur/state.yaml."""
     try:
         base_dir = resolve_personas_base_dir()
         index_path = base_dir / 'personas.yaml'
@@ -240,21 +281,12 @@ def persona_switch(
             with open(state_path, 'w', encoding='utf-8') as f:
                 yaml.dump(state_obj.model_dump(mode='json'), f)
 
-            console.print(f"[green]Default persona switched to: '{persona_name}' ({selected_id})[/green]")
+            console.print(f"[green]Active workspace persona set to: '{persona_name}' ({selected_id})[/green]")
         else:
-            console.print('[yellow]Switch cancelled.[/yellow]')
+            console.print('[yellow]Action cancelled.[/yellow]')
     except Exception as e:
-        console.print(f'[red]Error switching persona: {e}[/red]')
+        console.print(f'[red]Error setting persona: {e}[/red]')
         raise typer.Exit(code=1)
-
-
-@persona_app.command('default')
-@require_human
-def persona_default(
-    identifier: str = typer.Argument(..., help='The name or UUID of the persona to set as default.'),
-) -> None:
-    """Set the active default persona for this workspace in .tur/state.yaml."""
-    persona_switch(identifier)
 
 
 @persona_app.command('export')
