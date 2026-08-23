@@ -532,10 +532,10 @@ def test_admin_session_end_error(mock_workspace, monkeypatch):
 def test_admin_module_main(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['tur-adm', '--help'])
 
-    import runpy
+    from tur.cli.admin import main
 
     with pytest.raises(SystemExit) as exc:
-        runpy.run_module('tur.cli.admin', run_name='__main__')
+        main()
 
     assert exc.value.code == 0
 
@@ -768,12 +768,9 @@ def test_admin_persona_list_error(mock_workspace, monkeypatch):
     def mock_raise(*args, **kwargs):
         raise ValueError('Listing failed')
 
-    import tur.cli.admin
+    monkeypatch.setattr('tur.cli.admin.yaml_safe_load', mock_raise)
 
-    monkeypatch.setattr(tur.cli.admin, 'resolve_personas_base_dir', mock_raise)
-    monkeypatch.setattr('tur.paths.resolve_personas_base_dir', mock_raise)
-
-    result = runner.invoke(tur.cli.admin.app, ['persona', 'list'])
+    result = runner.invoke(admin_app, ['persona', 'list'])
     assert result.exit_code == 1
     assert 'Error listing personas: Listing failed' in result.stdout
 

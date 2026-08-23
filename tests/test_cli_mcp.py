@@ -87,9 +87,9 @@ def test_mcp_serve_error(mock_workspace, monkeypatch):
 def test_mcp_module_main(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['tur-mcp', '--help'])
 
-    import runpy
+    from tur.cli.mcp import main
 
     with pytest.raises(SystemExit) as exc:
-        runpy.run_module('tur.cli.mcp', run_name='__main__')
+        main()
 
     assert exc.value.code == 0

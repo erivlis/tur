@@ -192,9 +192,7 @@ def test_mcp_server_module_main(monkeypatch):
     monkeypatch.setattr(mcp_server, 'get_active_persona_id', lambda *args: 'fake-id')
     monkeypatch.setattr(mcp_server, 'get_persona_path', lambda *args: Path('fake'))
 
-    import runpy
-
-    runpy.run_module('tur.mcp_server', run_name='__main__')
+    mcp_server.main()
 
     mock_run.assert_called_with(transport='stdio')
 

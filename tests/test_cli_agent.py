@@ -348,10 +348,10 @@ def test_agent_no_admin_commands(mock_workspace):
 def test_agent_module_main(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['tur', '--help'])
 
-    import runpy
+    from tur.cli.agent import main
 
     with pytest.raises(SystemExit) as exc:
-        runpy.run_module('tur.cli.agent', run_name='__main__')
+        main()
 
     assert exc.value.code == 0
 
@@ -359,10 +359,10 @@ def test_agent_module_main(monkeypatch):
 def test_tur_module_main(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['tur', '--help'])
 
-    import runpy
+    from tur.__main__ import main
 
     with pytest.raises(SystemExit) as exc:
-        runpy.run_module('tur', run_name='__main__')
+        main()
 
     assert exc.value.code == 0
 
