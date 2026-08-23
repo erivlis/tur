@@ -40,6 +40,7 @@ nav = [
         "proposals/EP-0001-project-boundaries.md",
         "proposals/EP-0002-roadmap.md",
         "proposals/EP-0003-policy-vs-mechanism.md",
+        "proposals/EP-0004-command-grammar-and-semantics.md",
         "proposals/EP-0100-aleph-server.md",
         "proposals/EP-0101-llm-agnosticism.md",
         "proposals/EP-0102-orchestration-engine.md",
