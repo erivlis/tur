@@ -12,39 +12,19 @@ def strip_ansi(text: str) -> str:
     return ansi_escape.sub('', text)
 
 
-def test_admin_cli_missing_textual(monkeypatch, capsys):
-    # Hide textual from sys.modules
+def test_admin_cli_loads_without_textual(monkeypatch):
+    """Asserts that tur.cli.admin has zero dependency on textual and imports cleanly."""
     monkeypatch.setitem(sys.modules, 'textual', None)
-
-    # We must remove tur modules from sys.modules if they were already imported
-    # so they execute again in this import test
     admin_module_key = 'tur.cli.admin'
-    tui_module_key = 'tur.tui'
-
     old_admin = sys.modules.get(admin_module_key)
-    old_tui = sys.modules.get(tui_module_key)
-
-    if admin_module_key in sys.modules:
-        del sys.modules[admin_module_key]
-    if tui_module_key in sys.modules:
-        del sys.modules[tui_module_key]
-
     try:
-        with pytest.raises(SystemExit) as exc_info:
-            importlib.import_module('tur.cli.admin')
-
-        assert exc_info.value.code == 1
-
-        captured = capsys.readouterr()
-        plain_err = strip_ansi(captured.err)
-        assert "Error: The 'textual' package is required to run 'tur-adm'." in plain_err
-        assert 'pip install tur[admin]' in plain_err
+        if admin_module_key in sys.modules:
+            del sys.modules[admin_module_key]
+        mod = importlib.import_module('tur.cli.admin')
+        assert hasattr(mod, 'app')
     finally:
-        # Restore sys.modules to avoid breaking subsequent tests
         if old_admin is not None:
             sys.modules[admin_module_key] = old_admin
-        if old_tui is not None:
-            sys.modules[tui_module_key] = old_tui
 
 
 def test_mcp_cli_missing_mcp(monkeypatch):

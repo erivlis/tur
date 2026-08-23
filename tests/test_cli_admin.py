@@ -6,7 +6,8 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from tur import persona, session, tui
+from tur import persona, session
+from tur.cli import wizards
 from tur.cli.admin import app as admin_app
 
 runner = CliRunner()
@@ -154,9 +155,19 @@ def test_admin_persona_view(mock_workspace):
     assert '5.4.0' in result.stdout
 
 
+def test_admin_persona_view_interactive(mock_workspace, monkeypatch):
+    mock_wizard = MagicMock(return_value='7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
+
+    result = runner.invoke(admin_app, ['persona', 'view'])
+    assert result.exit_code == 0
+    assert 'Persona DNA' in result.stdout
+    assert 'Ariel' in result.stdout
+
+
 def test_admin_persona_init_mocked(mock_workspace, monkeypatch):
     mock_wizard = MagicMock()
-    monkeypatch.setattr(tui, 'init_wizard', mock_wizard)
+    monkeypatch.setattr(wizards, 'init_wizard', mock_wizard)
 
     result = runner.invoke(admin_app, ['persona', 'init'])
     assert result.exit_code == 0
@@ -191,7 +202,7 @@ def test_admin_persona_switch_with_argument(mock_workspace):
 
 def test_admin_persona_switch_mocked(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value='fab6858c-e4ad-4adf-9e2d-0c86455917cf')
-    monkeypatch.setattr(tui, 'select_persona_wizard', mock_wizard)
+    monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
 
     result = runner.invoke(admin_app, ['persona', 'switch'])
     assert result.exit_code == 0
@@ -200,7 +211,7 @@ def test_admin_persona_switch_mocked(mock_workspace, monkeypatch):
 
 def test_admin_persona_switch_cancelled(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value=None)
-    monkeypatch.setattr(tui, 'select_persona_wizard', mock_wizard)
+    monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
 
     result = runner.invoke(admin_app, ['persona', 'switch'])
     assert result.exit_code == 0
@@ -211,7 +222,7 @@ def test_admin_persona_switch_error(mock_workspace, monkeypatch):
     def raise_err(*args, **kwargs):
         raise RuntimeError('TUI error')
 
-    monkeypatch.setattr(tui, 'select_persona_wizard', raise_err)
+    monkeypatch.setattr(wizards, 'select_persona_wizard', raise_err)
 
     result = runner.invoke(admin_app, ['persona', 'switch'])
     assert result.exit_code == 1
@@ -292,6 +303,16 @@ def test_admin_persona_export_error(mock_workspace, monkeypatch):
     result = runner.invoke(admin_app, ['persona', 'export', 'Ariel', '--output', 'ariel.tur'])
     assert result.exit_code == 1
     assert 'Error exporting persona: Export failed internally' in result.stdout
+
+
+def test_admin_persona_export_interactive(mock_workspace, monkeypatch):
+    mock_wizard = MagicMock(return_value='7544202e-92f5-40ce-adfb-e4b0eae6c262')
+    monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
+
+    result = runner.invoke(admin_app, ['persona', 'export'])
+    assert result.exit_code == 0
+    assert 'successfully exported' in result.stdout
+    assert Path('ariel.tur').exists()
 
 
 def test_admin_memory_list_empty(mock_workspace):
@@ -894,3 +915,66 @@ def test_admin_persona_import_set_default(mock_workspace, tmp_path):
     with open(state_path, encoding='utf-8') as f:
         state_data = yaml.safe_load(f)
     assert state_data['active_persona_id'] == '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+
+
+# -----------------------------------------------------------------------------
+# WIZARD UNIT TESTS
+# -----------------------------------------------------------------------------
+
+
+def test_wizard_init_success(mock_workspace, monkeypatch):
+    from rich.prompt import Prompt
+
+    responses = iter(['NewPersona', 'To do cool stuff.'])
+    monkeypatch.setattr(Prompt, 'ask', lambda *args, **kwargs: next(responses))
+
+    msg = wizards.init_wizard()
+    assert 'NewPersona' in msg
+
+
+def test_wizard_select_persona_select(mock_workspace, monkeypatch):
+    import uuid
+
+    from rich.prompt import IntPrompt
+
+    from tur.models import PersonaIndex, PersonaIndexEntry
+
+    pid1 = uuid.uuid4()
+    pid2 = uuid.uuid4()
+    index = PersonaIndex(
+        personas=[
+            PersonaIndexEntry(id=pid1, name='ArielSelector', version='1.0'),
+            PersonaIndexEntry(id=pid2, name='UmbrielSelector', version='2.0'),
+        ]
+    )
+
+    monkeypatch.setattr(IntPrompt, 'ask', lambda *args, **kwargs: 1)
+    res = wizards.select_persona_wizard(index)
+    assert res == str(pid1)
+
+
+def test_wizard_select_persona_cancel(mock_workspace, monkeypatch):
+    import uuid
+
+    from rich.prompt import IntPrompt
+
+    from tur.models import PersonaIndex, PersonaIndexEntry
+
+    pid1 = uuid.uuid4()
+    index = PersonaIndex(
+        personas=[
+            PersonaIndexEntry(id=pid1, name='ArielSelector', version='1.0'),
+        ]
+    )
+
+    monkeypatch.setattr(IntPrompt, 'ask', lambda *args, **kwargs: 0)
+    res = wizards.select_persona_wizard(index)
+    assert res is None
+
+
+def test_wizard_select_persona_empty(mock_workspace):
+    from tur.models import PersonaIndex
+
+    index = PersonaIndex(personas=[])
+    res = wizards.select_persona_wizard(index)
+    assert res is None
