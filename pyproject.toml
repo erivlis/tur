@@ -42,9 +42,6 @@ dependencies = [
 
 
 [project.optional-dependencies]
-admin = [
-    "textual>=8.0.0",
-]
 gemini = [
     "google-genai",
 ]
