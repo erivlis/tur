@@ -23,7 +23,8 @@ This document outlines the strategic roadmap for the Tur project. It defines the
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
 "Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124),
-Storage Evolution & Migrations (EP-0125), and Canonical Ontology & Relational Extensibility (EP-0126).
+Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), and MCP Python SDK
+v2 Migration (EP-0127).
 
 ## Motivation
 
@@ -111,6 +112,9 @@ semantic engine supporting external agents via MCP.
     * **The Tri-Partite CLI Security Boundary (EP-0116) [Status: Implemented]:** Splitting entrypoints into
       low-privilege `tur` (agent runtime), `tur-adm` (human TUI), and `tur-mcp` (harness host) to prevent dependency
       leak.
+    * **MCP Python SDK v2 Migration & Protocol Alignment (EP-0127) [Status: Draft]:** Migrating Tur's MCP server and
+      harness integration layer to the official MCP Python SDK v2 (`MCPServer`), aligning with the 2026 protocol
+      specifications.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -161,6 +165,10 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-24:**
+    * Registered **EP-0127 (Model Context Protocol Python SDK v2 Migration & Protocol Alignment)** under Phase 3
+      (Persona Lifecycle & Creation) to track migration from `FastMCP` to `MCPServer` and align with the 2026 MCP
+      protocol standards.
 * **2026-08-22:**
     * Registered **EP-0126 (Canonical Ontology and Relational Extensibility)** under Phase 3 (Persona Memory &
       Compaction) to formalize canonical `NodeType` and `EdgeType` enums, `metaphor_for` mapping, and domain-persona

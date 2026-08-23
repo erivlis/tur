@@ -49,6 +49,7 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 | **[0124](EP-0124-terrain-isolation-and-workspace-resolution.md)**      | [Terrain Isolation and Workspace Resolution](EP-0124-terrain-isolation-and-workspace-resolution.md)                                   | **Implemented** | Standards Track | Eliminates cross-project memory contamination and unauthorized direct state mutation through strict workspace resolution, pure-function delegation, test sandboxing, and phased state boundary hardening. |
 | **[0125](EP-0125-storage-evolution-and-migration-protocol.md)**        | [Storage Evolution and Migration Protocol](EP-0125-storage-evolution-and-migration-protocol.md)                                       |     *Draft*     | Standards Track | Establishes an atomic, non-destructive migration lifecycle and verification standard for evolving Tur storage schemas with zero data corruption.                                                          |
 | **[0126](EP-0126-canonical-ontology-and-relational-extensibility.md)** | [Canonical Ontology and Relational Extensibility](EP-0126-canonical-ontology-and-relational-extensibility.md)                         | **Implemented** | Standards Track | Formalizes canonical NodeType and EdgeType Enums (including metaphor_for) with controlled, declarative schema extensibility for domain personas.                                                          |
+| **[0127](EP-0127-mcp-sdk-v2-migration.md)**                            | [Model Context Protocol Python SDK v2 Migration & Protocol Alignment](EP-0127-mcp-sdk-v2-migration.md)                               |     *Draft*     | Standards Track | Migrates Tur's MCP server and harness integration layer to the official MCP Python SDK v2, aligning with the 2026 protocol specifications.                                                                |
 
 ---
 
@@ -84,6 +85,7 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 - **[EP-0116](EP-0116-split-cli.md)**: The Tri-Partite CLI Security Boundary (`tur`, `tur-adm`, `tur-mcp`)
 - **[EP-0121](EP-0121-agnostic-harness-interaction.md)**: The Agnostic Harness Interaction Protocol
 - **[EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md)**: Terrain Isolation and Workspace Resolution
+- **[EP-0127](EP-0127-mcp-sdk-v2-migration.md)**: Model Context Protocol Python SDK v2 Migration & Protocol Alignment
 
 ### 4. Multi-Agent Swarms & Synchronization
 - **[EP-0107](EP-0107-multi-agent-swarms.md)**: Multi-Agent Swarm Readiness *(Deferred)*
