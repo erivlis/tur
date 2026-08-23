@@ -15,11 +15,11 @@ structured, immutable software object.
 `uv tool` installs Tur into an isolated virtual environment and exposes the executables globally on your system `PATH`:
 
 ```shell
-# Install the core agent runtime CLI
+# Install the core CLIs (both tur agent runtime and tur-adm administrative tool)
 uv tool install tur
 
-# Or install with human administration TUI (tur-adm), Gemini dreaming (gemini), and MCP gateway (tur-mcp)
-uv tool install "tur[admin,gemini,mcp]"
+# Or install with Gemini dreaming (gemini) and MCP gateway (mcp)
+uv tool install "tur[gemini,mcp]"
 
 # Upgrade to the latest version anytime
 uv tool upgrade tur
@@ -28,11 +28,11 @@ uv tool upgrade tur
 ### Via PyPI / `pip`
 
 ```shell
-# Install in your active Python environment
+# Install in your active Python environment (includes tur and tur-adm)
 pip install tur
 
-# Or with administrative, Gemini SDK, and MCP extras
-pip install "tur[admin,gemini,mcp]"
+# Or with Gemini SDK and MCP extras
+pip install "tur[gemini,mcp]"
 ```
 
 ### Zero-Install with `uvx`
@@ -43,8 +43,8 @@ You can invoke any Tur command instantly without installing anything into your g
 # Run agent lifecycle commands
 uvx tur wake
 
-# Run the human administration TUI
-uvx --from "tur[admin]" tur-adm persona init
+# Run human administration commands
+uvx --from tur tur-adm persona init
 
 # Run the MCP server
 uvx --from "tur[mcp]" tur-mcp
