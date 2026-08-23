@@ -174,23 +174,31 @@ def test_admin_persona_init_mocked(mock_workspace, monkeypatch):
     mock_wizard.assert_called_once()
 
 
-def test_admin_persona_default(mock_workspace):
-    result = runner.invoke(admin_app, ['persona', 'default', 'Ariel'])
-    assert result.exit_code == 0
-    assert "Default persona switched to: 'Ariel'" in result.stdout
-
-    # Verify state.yaml was written
+def test_admin_persona_get_unconfigured(mock_workspace):
+    # Ensure state.yaml has no active persona
     state_path = Path('.tur/state.yaml')
-    assert state_path.exists()
-    with open(state_path, encoding='utf-8') as f:
-        data = yaml.safe_load(f)
-    assert data['active_persona_id'] == '7544202e-92f5-40ce-adfb-e4b0eae6c262'
+    if state_path.exists():
+        state_path.unlink()
 
-
-def test_admin_persona_switch_with_argument(mock_workspace):
-    result = runner.invoke(admin_app, ['persona', 'switch', 'Umbriel'])
+    result = runner.invoke(admin_app, ['persona', 'get'])
     assert result.exit_code == 0
-    assert "Default persona switched to: 'Umbriel'" in result.stdout
+    assert 'No active persona configured' in result.stdout
+
+
+def test_admin_persona_get_configured(mock_workspace):
+    # Set active persona first
+    runner.invoke(admin_app, ['persona', 'set', 'Ariel'])
+
+    result = runner.invoke(admin_app, ['persona', 'get'])
+    assert result.exit_code == 0
+    assert 'Active Persona:' in result.stdout
+    assert 'Ariel' in result.stdout
+
+
+def test_admin_persona_set_direct(mock_workspace):
+    result = runner.invoke(admin_app, ['persona', 'set', 'Umbriel'])
+    assert result.exit_code == 0
+    assert "Active workspace persona set to: 'Umbriel'" in result.stdout
 
     # Verify state.yaml was written
     state_path = Path('.tur/state.yaml')
@@ -200,46 +208,46 @@ def test_admin_persona_switch_with_argument(mock_workspace):
     assert data['active_persona_id'] == 'fab6858c-e4ad-4adf-9e2d-0c86455917cf'
 
 
-def test_admin_persona_switch_mocked(mock_workspace, monkeypatch):
-    mock_wizard = MagicMock(return_value='fab6858c-e4ad-4adf-9e2d-0c86455917cf')
+def test_admin_persona_set_interactive(mock_workspace, monkeypatch):
+    mock_wizard = MagicMock(return_value='7544202e-92f5-40ce-adfb-e4b0eae6c262')
     monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
 
-    result = runner.invoke(admin_app, ['persona', 'switch'])
+    result = runner.invoke(admin_app, ['persona', 'set'])
     assert result.exit_code == 0
-    assert 'Default persona switched to:' in result.stdout
+    assert "Active workspace persona set to: 'Ariel'" in result.stdout
 
 
-def test_admin_persona_switch_cancelled(mock_workspace, monkeypatch):
+def test_admin_persona_set_cancelled(mock_workspace, monkeypatch):
     mock_wizard = MagicMock(return_value=None)
     monkeypatch.setattr(wizards, 'select_persona_wizard', mock_wizard)
 
-    result = runner.invoke(admin_app, ['persona', 'switch'])
+    result = runner.invoke(admin_app, ['persona', 'set'])
     assert result.exit_code == 0
-    assert 'Switch cancelled.' in result.stdout
+    assert 'Action cancelled.' in result.stdout
 
 
-def test_admin_persona_switch_error(mock_workspace, monkeypatch):
+def test_admin_persona_set_error(mock_workspace, monkeypatch):
     def raise_err(*args, **kwargs):
-        raise RuntimeError('TUI error')
+        raise RuntimeError('Wizard error')
 
     monkeypatch.setattr(wizards, 'select_persona_wizard', raise_err)
 
-    result = runner.invoke(admin_app, ['persona', 'switch'])
+    result = runner.invoke(admin_app, ['persona', 'set'])
     assert result.exit_code == 1
-    assert 'Error switching persona' in result.stdout
+    assert 'Error setting persona' in result.stdout
 
 
-def test_admin_persona_switch_missing_personas_yaml(mock_workspace):
+def test_admin_persona_set_missing_personas_yaml(mock_workspace):
     Path('.tur/personas.yaml').unlink()
-    result = runner.invoke(admin_app, ['persona', 'switch'])
+    result = runner.invoke(admin_app, ['persona', 'set'])
     assert result.exit_code == 1
     assert 'No registered personas found.' in result.stdout or 'No personas found.' in result.stdout
 
 
-def test_admin_persona_switch_empty_personas(mock_workspace):
+def test_admin_persona_set_empty_personas(mock_workspace):
     with open('.tur/personas.yaml', 'w', encoding='utf-8') as f:
         yaml.dump({'personas': []}, f)
-    result = runner.invoke(admin_app, ['persona', 'switch'])
+    result = runner.invoke(admin_app, ['persona', 'set'])
     assert result.exit_code == 1
     assert 'No personas available to select.' in result.stdout
 
@@ -763,8 +771,9 @@ def test_admin_persona_list_error(mock_workspace, monkeypatch):
     import tur.cli.admin
 
     monkeypatch.setattr(tur.cli.admin, 'resolve_personas_base_dir', mock_raise)
+    monkeypatch.setattr('tur.paths.resolve_personas_base_dir', mock_raise)
 
-    result = runner.invoke(admin_app, ['persona', 'list'])
+    result = runner.invoke(tur.cli.admin.app, ['persona', 'list'])
     assert result.exit_code == 1
     assert 'Error listing personas: Listing failed' in result.stdout
 
