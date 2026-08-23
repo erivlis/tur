@@ -1,3 +1,10 @@
+## v0.10.3 (2026-08-23)
+
+### Refactor
+
+- **cli/persona**: rename `switch` to `set` and improve persona management commands
+- **wizards**: replace Textual-based persona wizards with Rich-based CLI prompts
+
 ## v0.10.2 (2026-08-23)
 
 ### Fix
