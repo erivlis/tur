@@ -183,10 +183,8 @@ def test_no_cwd_hijacking_on_mcp_init(tmp_path, monkeypatch):
 
 
 def test_mcp_server_module_main(monkeypatch):
-    from mcp.server.fastmcp import FastMCP
-
     mock_run = MagicMock()
-    monkeypatch.setattr(FastMCP, 'run', mock_run)
+    monkeypatch.setattr(mcp_server.mcp, 'run', mock_run)
 
     # Mock return values for main functions used by mcp_server at startup or execution
     monkeypatch.setattr(mcp_server, 'get_active_persona_id', lambda *args: 'fake-id')

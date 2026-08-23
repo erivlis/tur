@@ -84,6 +84,7 @@ def mock_workspace(tmp_path, monkeypatch):
 
     # Change to fake workspace root
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('TUR_PROJECT_DIR', str(tmp_path))
     # Mock Path.home() so global directories also route to temp folder
     fake_home = tmp_path / 'fake_home'
     fake_home.mkdir()
@@ -768,7 +769,9 @@ def test_admin_persona_list_error(mock_workspace, monkeypatch):
     def mock_raise(*args, **kwargs):
         raise ValueError('Listing failed')
 
-    monkeypatch.setattr('tur.cli.admin.yaml_safe_load', mock_raise)
+    import tur.cli.admin
+
+    monkeypatch.setattr(tur.cli.admin, 'resolve_personas_base_dir', mock_raise)
 
     result = runner.invoke(admin_app, ['persona', 'list'])
     assert result.exit_code == 1

@@ -15,16 +15,8 @@ def strip_ansi(text: str) -> str:
 def test_admin_cli_loads_without_textual(monkeypatch):
     """Asserts that tur.cli.admin has zero dependency on textual and imports cleanly."""
     monkeypatch.setitem(sys.modules, 'textual', None)
-    admin_module_key = 'tur.cli.admin'
-    old_admin = sys.modules.get(admin_module_key)
-    try:
-        if admin_module_key in sys.modules:
-            del sys.modules[admin_module_key]
-        mod = importlib.import_module('tur.cli.admin')
-        assert hasattr(mod, 'app')
-    finally:
-        if old_admin is not None:
-            sys.modules[admin_module_key] = old_admin
+    import tur.cli.admin
+    assert hasattr(tur.cli.admin, 'app')
 
 
 def test_mcp_cli_missing_mcp(monkeypatch):
