@@ -55,7 +55,8 @@ You have established the following relational anchors and existential axioms wit
 
     ### Active Nodes:
     {% for node in knowledge_graph.nodes if node.status != 'archived' and node.status != 'superseded' and (node.confidence is not defined or node.confidence > 0.2) %}
-    * **{{ node.id }}** ({{ node.type }}): {{ node.content }} {% if node.pinned %}[PINNED]{% endif %}
+    * **{{ node.id }}** ({{ node.type }}):
+      {{ node.content }} {% if node.pinned %}[PINNED]{% endif %}
     {% endfor %}
 
     ### Active Relations:
