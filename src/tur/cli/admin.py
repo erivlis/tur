@@ -1,39 +1,6 @@
-import sys
-
-from rich.syntax import Syntax
-
-try:
-    import textual
-except ImportError:
-    from rich.console import Console, Group
-    from rich.panel import Panel
-
-    console = Console(stderr=True)
-
-    # 1. Create the inner code block
-
-    code = 'pip install tur[admin]\n# or\nuv pip install tur[admin]'
-
-    code_syntax = Syntax(code, 'shell', theme='monokai', line_numbers=True)
-
-    # 2. Wrap the code in its own panel
-    code_panel = Panel(code_syntax, title='[cyan]Shell[/cyan]', border_style='cyan', expand=True)
-
-    # 3. Group the introductory text and the code panel together
-    panel_contents = Group(
-        "[bold red]Error: The 'textual' package is required to run 'tur-adm'.[/bold red]\n\n"
-        'Please install the admin extra dependencies by running:\n',
-        code_panel,
-    )
-
-    # 4. Pass the group into the parent Panel
-    console.print(
-        Panel(panel_contents, title='[bold red]Dependency Missing[/bold red]', border_style='red', expand=False)
-    )
-    sys.exit(1)
-
 import io
 import shutil
+import sys
 import tarfile
 import tempfile
 from pathlib import Path
@@ -45,8 +12,9 @@ from rich import box
 from rich.panel import Panel
 from rich.table import Table
 
-from tur import persona, session, tui
+from tur import persona, session
 from tur._helpers import yaml_safe_load
+from tur.cli import wizards
 from tur.cli.common import console, require_human
 from tur.memory import MemoryManager
 from tur.models import (
@@ -127,7 +95,7 @@ def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
 @require_human
 def persona_init() -> None:
     """Bootstrap a new persona via an interactive TUI questionnaire."""
-    tui.init_wizard()
+    wizards.init_wizard()
 
 
 @persona_app.command('list')
@@ -159,9 +127,34 @@ def persona_list() -> None:
 
 @persona_app.command('view')
 @require_human
-def persona_view(identifier: str = typer.Argument(..., help='The name or UUID of the persona to view')) -> None:
+def persona_view(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona to view. If omitted, prompts with a persona selector.'
+    ),
+) -> None:
     """View the detailed DNA/configuration of a specific persona."""
     try:
+        if not identifier:
+            base_dir = resolve_personas_base_dir()
+            index_path = base_dir / 'personas.yaml'
+            if not index_path.exists():
+                console.print(
+                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
+                )
+                return
+            with open(index_path, encoding='utf-8') as f:
+                index_data = yaml_safe_load(f) or {'personas': []}
+            index = PersonaIndex(**index_data)
+            if not index.personas:
+                console.print(
+                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
+                )
+                return
+            identifier = wizards.select_persona_wizard(index)
+            if not identifier:
+                console.print('[yellow]View cancelled.[/yellow]')
+                return
+
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
         persona_yaml = persona_dir / 'persona.yaml'
@@ -209,10 +202,10 @@ def persona_view(identifier: str = typer.Argument(..., help='The name or UUID of
 @require_human
 def persona_switch(
     identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona to switch to. If omitted, launches the interactive TUI picker.'
+        None, help='The name or UUID of the persona to switch to. If omitted, launches the interactive picker.'
     ),
 ) -> None:
-    """Switch active default persona directly or via an interactive TUI picker."""
+    """Switch active default persona directly or via an interactive picker."""
     try:
         base_dir = resolve_personas_base_dir()
         index_path = base_dir / 'personas.yaml'
@@ -226,7 +219,7 @@ def persona_switch(
             console.print('[red]No personas available to select. Please run `tur-adm persona init`.[/red]')
             raise ValueError('No personas available to select. Please run `tur-adm persona init`.')  # noqa: TRY301
 
-        selected_id = persona.get_active_persona_id(identifier) if identifier else tui.select_persona_wizard(index)
+        selected_id = persona.get_active_persona_id(identifier) if identifier else wizards.select_persona_wizard(index)
 
         if selected_id:
             matched = next((p for p in index.personas if str(p.id) == selected_id), None)
@@ -267,18 +260,53 @@ def persona_default(
 @persona_app.command('export')
 @require_human
 def persona_export(
-    identifier: str = typer.Argument(..., help='The name or UUID of the persona to export'),
-    output: Path = typer.Option(
-        ...,
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona to export. If omitted, prompts with a persona selector.'
+    ),
+    output: Path | None = typer.Option(
+        None,
         '--output',
         '-o',
-        help='The target filepath for the export archive (e.g., ariel.tur)',
+        help='The target filepath for the export archive (e.g., ariel.tur). Defaults to <persona_name>.tur.',
     ),
 ) -> None:
     """Package a global persona's core config and universal memories into a portable .tur archive."""
     try:
+        if not identifier:
+            base_dir = resolve_personas_base_dir()
+            index_path = base_dir / 'personas.yaml'
+            if not index_path.exists():
+                console.print(
+                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
+                )
+                return
+            with open(index_path, encoding='utf-8') as f:
+                index_data = yaml_safe_load(f) or {'personas': []}
+            index = PersonaIndex(**index_data)
+            if not index.personas:
+                console.print(
+                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
+                )
+                return
+            identifier = wizards.select_persona_wizard(index)
+            if not identifier:
+                console.print('[yellow]Export cancelled.[/yellow]')
+                return
+
         persona_dir = persona.get_persona_path(identifier)
         persona_uuid = persona_dir.name
+
+        if output is None:
+            persona_yaml_path = persona_dir / 'persona.yaml'
+            target_name = persona_uuid
+            if persona_yaml_path.exists():
+                try:
+                    with open(persona_yaml_path, encoding='utf-8') as f:
+                        target_name = (yaml_safe_load(f) or {}).get('name', persona_uuid).lower()
+                except Exception:
+                    pass
+            output = Path(f'{target_name}.tur')
+
         output_path = output.resolve()
 
         with tarfile.open(output_path, 'w:gz') as tar:
