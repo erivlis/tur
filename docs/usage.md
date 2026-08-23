@@ -65,27 +65,32 @@ uv sync --all-extras --all-groups
 
 Tur is designed to be ergonomic. For most commands, **the persona identifier (name or UUID) is optional.**
 
-When you run an agent command without specifying a persona, Tur resolves the persona via the following deterministic chain:
+When you run an agent command without specifying a persona, Tur resolves the persona via the following deterministic
+chain:
 
 1. **Environment Variable**: Checks `TUR_ACTIVE_PERSONA_ID`.
 2. **Workspace State**: Checks `.tur/state.yaml` in the local workspace directory.
-3. **Single-Persona Auto-Resolution**: If no workspace state is set and only one persona exists in `~/.tur/personas.yaml` (e.g. `Ariel`), it is automatically selected with zero friction.
-4. **Multiple Personas**: If multiple personas exist without a default in `.tur/state.yaml`, Tur prompts you to specify one (`tur wake <name>`), configure a default with `tur-adm persona default <name>`, or switch interactively using the human TUI (`tur-adm persona switch`).
+3. **Single-Persona Auto-Resolution**: If no workspace state is set and only one persona exists in
+   `~/.tur/personas.yaml` (e.g. `Ariel`), it is automatically selected with zero friction.
+4. **Multiple Personas**: If multiple personas exist without a configured default in `.tur/state.yaml`, Tur prompts you
+   to specify one (`tur wake <name>`), configure one with `tur-adm persona set <name>`, or pick interactively
+   (`tur-adm persona set`).
 
-You can always override the default by explicitly providing a name or UUID (e.g., `tur wake ariel` or `tur status ariel`).
+You can always query the current workspace persona via `tur-adm persona get` or override it explicitly per-command
+(e.g., `tur wake ariel` or `tur status ariel`).
 
 ---
 
 ## Core Commands & Split Architecture
 
 Tur enforces strict physical security boundaries by separating agent runtime operations from human administrative
-actions across three distinct executables:
+actions across three distinct executables (EP-0004 / EP-0116):
 
-| Executable    | Purpose                       | Target Audience         | Key Commands                                                                 |
-|:--------------|:------------------------------|:------------------------|:-----------------------------------------------------------------------------|
-| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `telemetry`, `sleep`            |
-| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `init`, `switch`, `memory list/forget`, `session start/end`, `export/import` |
-| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                               |
+| Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                      |
+|:--------------|:------------------------------|:------------------------|:------------------------------------------------------------------------------------------------------------------|
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `telemetry`, `sleep`                                                 |
+| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean` |
+| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                    |
 
 ---
 
@@ -225,9 +230,11 @@ tur-adm memory forget <memory-hash> ariel
 ### 10. Check Persona Status (`status`)
 
 Renders a rich, structured status panel displaying:
+
 - **Persona identity**: Name, version, and active UUID.
 - **Session lifecycle**: Session ID, active/ended status, start/update timestamps, and note counts.
-- **L1 Memory Breakdown**: Counts of active, archived, and subsumed memories categorized across federated **scopes** (`universal` vs. `incarnation`) and **types** (`axiom`, `fact`, `insight`, `preference`).
+- **L1 Memory Breakdown**: Counts of active, archived, and subsumed memories categorized across federated **scopes**
+  (`universal` vs. `incarnation`) and **types** (`axiom`, `fact`, `insight`, `preference`).
 - **L2 Knowledge Metrics**: Total nodes and relational edges in the active Cognitive Map.
 
 ```shell
@@ -270,14 +277,19 @@ sessions.
 tur note "Added status command and cleaned up legacy files."
 ```
 
-### 14. Switch Active Default Persona (`switch`)
+### 14. Configure Workspace Persona (`get` & `set`)
 
-Interactive Textual TUI wizard to switch your current active default persona globally or locally.
-
-*Requires a physical TUI/interactive terminal shell (decorated with `@require_human`).*
+Query or configure the active persona for your workspace in `.tur/state.yaml`:
 
 ```shell
-tur-adm persona switch
+# Inspect the active persona configured for this workspace
+tur-adm persona get
+
+# Set active persona directly:
+tur-adm persona set Ariel
+
+# Or set interactively via numbered prompt:
+tur-adm persona set
 ```
 
 ### 15. Export Persona (`export`)
