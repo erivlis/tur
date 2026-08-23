@@ -160,7 +160,7 @@ Tur respects a standard configuration hierarchy:
 The core application logic resides in `src/tur/`:
 
 - **`cli/`**: The package folder housing our split executables: `cli/agent.py` (runtime CLI), `cli/admin.py`
-  (administrative TUI), and `cli/mcp.py` (Harness MCP gateway).
+  (human administrative CLI), and `cli/mcp.py` (Harness MCP gateway).
 - **`mcp_server.py`**: The Model Context Protocol server (The Porcelain for LLM interaction).
 - **`models.py`**: The Pydantic data models (The "Law" of the system).
 - **`user.py`**: User profile bootstrapping and domain management.
@@ -181,11 +181,11 @@ Installs Tur into an isolated environment and makes the executables (`tur`, `tur
 your system `PATH`:
 
 ```shell
-# Install the core agent CLI
+# Install the core agent CLI and administrative tools (tur and tur-adm)
 uv tool install tur
 
-# Or install with human governance TUI (tur-adm), Gemini dreaming (gemini), and MCP gateway (tur-mcp)
-uv tool install "tur[admin,gemini,mcp]"
+# Or install with Gemini dreaming (gemini) and MCP gateway (tur-mcp)
+uv tool install "tur[gemini,mcp]"
 
 # Upgrade to the latest version anytime
 uv tool upgrade tur
@@ -194,11 +194,11 @@ uv tool upgrade tur
 #### Via PyPI / `pip`
 
 ```shell
-# Install core agent runtime in your active environment
+# Install core runtime and admin CLI in your active environment
 pip install tur
 
-# Or with administrative, Gemini SDK, and MCP extras
-pip install "tur[admin,gemini,mcp]"
+# Or with Gemini SDK and MCP extras
+pip install "tur[gemini,mcp]"
 ```
 
 #### Zero-Install with `uvx`
@@ -206,8 +206,8 @@ pip install "tur[admin,gemini,mcp]"
 Run commands instantly in ephemeral environments without permanent installation:
 
 ```shell
-# Launch the sovereign human administration TUI
-uvx --from "tur[admin]" tur-adm persona init
+# Launch sovereign human administration commands
+uvx --from tur tur-adm persona init
 
 # Run the agent lifecycle commands
 uvx tur wake
@@ -229,7 +229,7 @@ uv sync --all-extras --all-groups
 
 ### 2. Initialize Your First Persona
 
-This launches the administrative TUI wizard. Since this is an administrative action, it is physically isolated inside
+This launches the interactive administrative wizard. Since this is an administrative action, it is physically isolated inside
 `tur-adm`:
 
 ```shell
@@ -291,15 +291,20 @@ Add Tur to your client configuration (e.g., `claude_desktop_config.json`, `.curs
 }
 ```
 
-### 5. Switching Personas (Human-Facing TUI)
+### 5. Configuring Workspace Personas (`get` & `set`)
 
-Allows the human Architect to change active global/local default personas:
+Allows the human Architect to inspect or assign the active workspace persona in `.tur/state.yaml`:
 
 ```shell
-tur-adm persona switch
-```
+# Inspect the active persona for the current workspace
+tur-adm persona get
 
-This will launch a TUI to select from your available personas.
+# Assign the active persona directly
+tur-adm persona set Ariel
+
+# Or select interactively from a numbered prompt
+tur-adm persona set
+```
 
 ## 📜 Origin
 
