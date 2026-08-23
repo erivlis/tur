@@ -39,7 +39,7 @@ Tur.
 *Note: Administrative commands are restricted to the human architect CLI (`tur-adm`) and are structurally blocked from
 AI agent runtime execution:*
 
-- `tur-adm persona init` / `switch`/ `export` / `import`
-- `tur-adm memory list`/ `forget`
-- `tur-adm session start`/ `end`
+- `tur-adm persona init` / `list` / `view` / `get` / `set` / `export` / `import`
+- `tur-adm memory list` / `view` / `forget` / `approve`
+- `tur-adm session start` / `end` / `list` / `note`
 - `tur-adm clean` (Storage bank hygiene)
