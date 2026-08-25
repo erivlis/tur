@@ -1,3 +1,9 @@
+## v0.11.2 (2026-08-26)
+
+### Refactor
+
+- **session,locking**: implement atomic YAML writes and improve lock handling
+
 ## v0.11.1 (2026-08-26)
 
 ### Refactor
