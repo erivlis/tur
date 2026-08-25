@@ -152,14 +152,16 @@ A process must **never** acquire a Global Traveler lock while holding a Local Te
 
 ### 3. Transactional Locking Helpers (`src/tur/locking.py`)
 
-A centralized locking module provides context managers configured for low-latency contention recovery and standard timeout subtyping:
+A centralized locking module provides sync and async context managers configured for low-latency contention recovery, singleton thread re-entrancy, and Windows handle collision prevention (`preserve_lock_file=True`):
 
 ```python
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 import logging
+import os
 from pathlib import Path
-from filelock import FileLock, Timeout
+import socket
+from filelock import AsyncFileLock, FileLock, Timeout
 
 logger = logging.getLogger(__name__)
 
@@ -172,27 +174,103 @@ DEFAULT_LOCK_TIMEOUT_SECONDS: float = FAST_LOCK_TIMEOUT_SECONDS
 class LockTimeoutError(TimeoutError):
     """Raised when a file lock cannot be acquired within the timeout window."""
 
+    def __init__(self, lock_path: Path, timeout: float) -> None:
+        self.lock_path = lock_path
+        self.timeout = timeout
+        super().__init__(
+            f"Could not acquire lock on {lock_path} after {timeout:.2f}s (held by another process)"
+        )
+
+
+def _stamp_lock_holder(fd: int) -> None:
+    """Stamp holder PID and hostname into native lock descriptor for debugging."""
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        payload = f"pid={os.getpid()} host={socket.gethostname()}\n".encode()
+        os.write(fd, payload)
+        os.ftruncate(fd, len(payload))
+    except OSError:
+        pass
+
+
+def get_file_lock(
+    lock_path: Path,
+    timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+    poll_interval: float = DEFAULT_POLL_INTERVAL_SECONDS,
+) -> FileLock:
+    """Instantiate a platform-aware singleton FileLock with production defaults."""
+    resolved_path = lock_path.resolve()
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+
+    return FileLock(
+        str(resolved_path),
+        timeout=timeout,
+        poll_interval=poll_interval,
+        is_singleton=True,
+        preserve_lock_file=True,
+        close_error_policy="suppress",
+        on_acquired=_stamp_lock_holder,
+    )
+
 
 @contextmanager
 def state_lock(
     lock_path: Path,
     timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
     poll_interval: float = DEFAULT_POLL_INTERVAL_SECONDS,
-) -> Iterator[None]:
+) -> Iterator[FileLock]:
     """Context manager for acquiring an advisory multi-process lock.
 
-    Guarantees parent directory creation, enforces non-inheritable file descriptors
-    to prevent subprocess handle leaks, and raises LockTimeoutError on contention timeout.
+    Guarantees parent directory creation, enables singleton thread re-entrancy,
+    preserves lock files on Windows to eliminate handle release collisions,
+    and performs fast-probe contention logging before blocking.
     """
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock = FileLock(str(lock_path), timeout=timeout, poll_interval=poll_interval)
+    lock = get_file_lock(lock_path, timeout=timeout, poll_interval=poll_interval)
+
+    # 1. Fast probe: Check if immediately available without waiting
     try:
-        with lock:
-            yield
+        lock.acquire(blocking=False)
+    except Timeout:
+        logger.info(
+            "Lock %s is currently held by another process; waiting up to %.1fs...",
+            lock.lock_file,
+            timeout,
+        )
+        try:
+            # 2. Block with deadline
+            lock.acquire(timeout=timeout, poll_interval=poll_interval)
+        except Timeout as exc:
+            raise LockTimeoutError(lock_path=lock_path, timeout=timeout) from exc
+
+    try:
+        yield lock
+    finally:
+        lock.release()
+
+
+@asynccontextmanager
+async def async_state_lock(
+    lock_path: Path,
+    timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+    poll_interval: float = DEFAULT_POLL_INTERVAL_SECONDS,
+) -> AsyncIterator[AsyncFileLock]:
+    """Asynchronous lock context manager for non-blocking MCP tool endpoints."""
+    resolved_path = lock_path.resolve()
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+
+    lock = AsyncFileLock(
+        str(resolved_path),
+        timeout=timeout,
+        poll_interval=poll_interval,
+        is_singleton=True,
+        preserve_lock_file=True,
+        close_error_policy="suppress",
+    )
+    try:
+        async with lock:
+            yield lock
     except Timeout as exc:
-        raise LockTimeoutError(
-            f"Could not acquire lock on {lock_path} after {timeout}s"
-        ) from exc
+        raise LockTimeoutError(lock_path=lock_path, timeout=timeout) from exc
 ```
 
 ### 4. Integration with Read-Modify-Write Cycles

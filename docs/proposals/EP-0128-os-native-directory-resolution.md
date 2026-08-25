@@ -79,7 +79,7 @@ dependencies = [
 
 ### 2. Path Resolution Architecture (`src/tur/paths.py`)
 
-Refactor `paths.py` to expose distinct resolution primitives according to storage category, hardened with container fallbacks and POSIX permissions:
+Refactor `paths.py` to expose distinct resolution primitives according to storage category using a unified `PlatformDirs` singleton, returning direct `pathlib.Path` objects and hardened with container fallbacks and POSIX permissions:
 
 ```python
 from functools import lru_cache
@@ -88,12 +88,20 @@ import os
 from pathlib import Path
 import tempfile
 from typing import Any
-import platformdirs
+from platformdirs import PlatformDirs
 
 logger = logging.getLogger(__name__)
 
 APP_NAME = "tur"
-APP_AUTHOR = False  # Avoid Windows/Linux hierarchy mismatch unless strictly required
+APP_AUTHOR = False  # Suppress Windows publisher folder duplication (AppData/Local/tur vs tur/tur)
+
+# Module-level PlatformDirs instance avoiding per-call object allocations
+_PLATFORM_DIRS = PlatformDirs(
+    appname=APP_NAME,
+    appauthor=APP_AUTHOR,
+    roaming=False,
+    opinion=True,
+)
 
 
 @lru_cache(maxsize=16)
@@ -115,18 +123,16 @@ def resolve_runtime_dir() -> Path:
         return p
 
     try:
-        runtime_dir = Path(
-            platformdirs.user_runtime_dir(
-                appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
-            )
-        )
-        # Apply POSIX 0700 permission mask for multi-user security
+        runtime_dir = _PLATFORM_DIRS.user_runtime_path
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+
+        # Apply POSIX 0700 permission mask for multi-user IPC socket security
         if hasattr(os, "chmod") and os.name != "nt":
             try:
                 os.chmod(runtime_dir, 0o700)
             except OSError:
                 pass
-        return runtime_dir
+        return runtime_dir.resolve()
     except (OSError, PermissionError) as exc:
         uid = os.getuid() if hasattr(os, "getuid") else "win"
         fallback = Path(tempfile.gettempdir()) / f"tur-runtime-{uid}"
@@ -137,24 +143,35 @@ def resolve_runtime_dir() -> Path:
             except OSError:
                 pass
         logger.debug(f"Runtime dir fallback engaged: {fallback} (due to {exc})")
-        return fallback
+        return fallback.resolve()
 
 
 @lru_cache(maxsize=16)
 def resolve_cache_dir() -> Path:
-    """Resolve directory for ephemeral introspection indexes and telemetry cache."""
+    """Resolve directory for ephemeral introspection indexes and graph caches."""
     env_cache = os.environ.get("TUR_CACHE_DIR")
     if env_cache:
         p = Path(env_cache).expanduser().resolve()
         p.mkdir(parents=True, exist_ok=True)
         return p
 
-    cache_dir = Path(
-        platformdirs.user_cache_dir(
-            appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
-        )
-    )
-    return cache_dir
+    cache_dir = _PLATFORM_DIRS.user_cache_path
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir.resolve()
+
+
+@lru_cache(maxsize=16)
+def resolve_log_dir() -> Path:
+    """Resolve directory for diagnostic logs, telemetry metrics, and traces."""
+    env_log = os.environ.get("TUR_LOG_DIR")
+    if env_log:
+        p = Path(env_log).expanduser().resolve()
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    log_dir = _PLATFORM_DIRS.user_log_path
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir.resolve()
 
 
 @lru_cache(maxsize=16)
@@ -164,25 +181,19 @@ def resolve_data_dir() -> Path:
     if env_home:
         return Path(env_home).expanduser().resolve()
 
-    legacy_home = Path.home() / ".tur"
+    legacy_home = (Path.home() / ".tur").resolve()
     if (legacy_home / "personas.yaml").exists() or (legacy_home / "personas").exists():
         return legacy_home
 
-    return Path(
-        platformdirs.user_data_dir(
-            appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
-        )
-    )
+    data_dir = _PLATFORM_DIRS.user_data_path
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir.resolve()
 
 
 def is_global_path(p: Path) -> bool:
-    """Returns True if *p* lives inside user-global data, runtime, or cache stores.
-    
-    Tests against TUR_HOME, legacy ~/.tur/, resolve_data_dir(), resolve_cache_dir(),
-    and resolve_runtime_dir().
-    """
+    """Returns True if *p* lives inside user-global data, runtime, log, or cache stores."""
     resolved_p = p.resolve()
-    for root_getter in (resolve_data_dir, resolve_cache_dir, resolve_runtime_dir):
+    for root_getter in (resolve_data_dir, resolve_cache_dir, resolve_runtime_dir, resolve_log_dir):
         try:
             resolved_p.relative_to(root_getter())
             return True
@@ -197,7 +208,7 @@ def is_global_path(p: Path) -> bool:
 
 def resolve_workspace_dir(ctx: Any | None = None) -> Path | None:
     """Deterministically resolves active workspace / Terrain directory.
-    
+
     INVARIANT (EP-0124): Workspace state is ALWAYS strictly co-located inside
     <workspace_root>/.tur/ and NEVER redirects to global platformdirs paths.
     """
@@ -206,18 +217,19 @@ def resolve_workspace_dir(ctx: Any | None = None) -> Path | None:
 
 ### 3. Subsystem Storage Mapping
 
-| Category                | Subsystem / Files                   | Target Path Function          | OS Example (Linux / Windows)                            |
-|:------------------------|:------------------------------------|:------------------------------|:--------------------------------------------------------|
-| **Workspace Terrain**   | Incarnational OKF, Session Notes    | `resolve_workspace_dir()`     | `<repo>/.tur/` *(Inviolable)*                           |
-| **Global Traveler**     | Personas, Universal Memory          | `resolve_data_dir()`          | `~/.local/share/tur/` / `%APPDATA%\tur\` (or `~/.tur/`) |
-| **Swarm IPC / Sockets** | SQLite Signal DB, Whiteboard, Locks | `resolve_runtime_dir()`       | `/run/user/1000/tur/` / `%LOCALAPPDATA%\Temp\tur\`      |
-| **Telemetry & Cache**   | Graph indexes, Token cost metrics   | `resolve_cache_dir()`         | `~/.cache/tur/` / `%LOCALAPPDATA%\tur\Cache\`           |
+| Category                | Subsystem / Files                   | Target Path Function          | OS Example (Linux / Windows)                                 |
+|:------------------------|:------------------------------------|:------------------------------|:-------------------------------------------------------------|
+| **Workspace Terrain**   | Incarnational OKF, Session Notes    | `resolve_workspace_dir()`     | `<repo>/.tur/` *(Inviolable)*                                |
+| **Global Traveler**     | Personas, Universal Memory          | `resolve_data_dir()`          | `~/.local/share/tur/` / `%LOCALAPPDATA%\tur\` (or `~/.tur/`)  |
+| **Swarm IPC / Sockets** | SQLite Signal DB, Whiteboard, Locks | `resolve_runtime_dir()`       | `/run/user/1000/tur/` / `%LOCALAPPDATA%\Temp\tur\`           |
+| **Telemetry & Cache**   | Graph indexes, Token cost metrics   | `resolve_cache_dir()`         | `~/.cache/tur/` / `%LOCALAPPDATA%\tur\Cache\`                |
+| **Diagnostic Logs**     | Session telemetry, daemon traces    | `resolve_log_dir()`           | `~/.local/state/tur/log/` / `%LOCALAPPDATA%\tur\Logs\`       |
 
 ## Backwards Compatibility
 
 * **Legacy `~/.tur/` Preserved:** The resolution pipeline automatically detects and respects existing `~/.tur/personas.yaml`
   or `~/.tur/personas/` directories, guaranteeing zero breakage for existing setups.
-* **Environment Overrides:** `TUR_HOME`, `TUR_DATA_DIR`, `TUR_RUNTIME_DIR`, and `TUR_CACHE_DIR` take top precedence, allowing custom deployment paths in
+* **Environment Overrides:** `TUR_HOME`, `TUR_DATA_DIR`, `TUR_RUNTIME_DIR`, `TUR_CACHE_DIR`, and `TUR_LOG_DIR` take top precedence, allowing custom deployment paths in
   CI/CD and sandboxes.
 * **Terrain Isolation (EP-0124):** No changes are made to local `<repo>/.tur/` resolution.
 
