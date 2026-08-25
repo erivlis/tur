@@ -78,7 +78,8 @@ nav = [
         "reviews/REV-0002-EP-0113-review-report.md",
         "reviews/REV-0003-EP-0122-council-review.md",
         "reviews/REV-0004-canonical-ontology-and-skill-overhaul.md",
-        "reviews/REV-0005-layer-1-substrate-hardening-review.md"
+        "reviews/REV-0005-layer-1-substrate-hardening-review.md",
+        "reviews/REV-0006-substrate-hardening-implementation-audit.md"
     ] },
     { "Philosophical Essays" = [
         "essays/index.md",
