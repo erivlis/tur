@@ -23,8 +23,9 @@ This document outlines the strategic roadmap for the Tur project. It defines the
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
 "Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124),
-Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), MCP Python SDK
-v2 Migration (EP-0127), OS-Native Directory Resolution (EP-0128), and Multi-Process File Locking (EP-0129).
+Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), MCP Python SDK v2
+Migration (EP-0127), OS-Native Directory Resolution (EP-0128), Multi-Process File Locking (EP-0129), and Session Lineage
+& Continuity (EP-0130).
 
 ## Motivation
 
@@ -146,6 +147,9 @@ graph TD
     * **Multi-Process State Synchronization and File Locking Architecture (EP-0129) [Status: Draft]:** Adopting
       `filelock` to eliminate multi-agent read-modify-write race conditions and establish cross-platform process
       synchronization for shared indices, session continuity, and storage evolution.
+    * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Draft]:** Establishing explicit
+      `parent_session_id` lineage tracking, automatic continuity seeding at `wake()`, bounded cross-session note
+      discovery, and dual-backend SQLite/YAML signal fallbacks.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
@@ -226,6 +230,9 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
       workspace terrain isolation.
     * Registered **EP-0129 (Multi-Process State Synchronization and File Locking Architecture)** under Phase 2 (LLM
       Agnosticism & Swarms) to eliminate multi-agent read-modify-write race conditions via `filelock`.
+    * Registered **EP-0130 (Session Lineage and Cross-Session Continuity Protocol)** under Phase 2 (LLM Agnosticism &
+      Swarms) to establish explicit session DAG lineage, automatic `wake()` continuity seeding, and bounded
+      cross-session note discovery.
 * **2026-08-24:**
     * Registered **EP-0127 (Model Context Protocol Python SDK v2 Migration & Protocol Alignment)** under Phase 3
       (Persona Lifecycle & Creation) to track migration from `FastMCP` to `MCPServer` and align with the 2026 MCP

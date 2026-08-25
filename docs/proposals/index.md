@@ -52,6 +52,7 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 | **[0127](EP-0127-mcp-sdk-v2-migration.md)**                            | [Model Context Protocol Python SDK v2 Migration & Protocol Alignment](EP-0127-mcp-sdk-v2-migration.md)                               |     *Draft*     | Standards Track | Migrates Tur's MCP server and harness integration layer to the official MCP Python SDK v2, aligning with the 2026 protocol specifications.                                                                |
 | **[0128](EP-0128-os-native-directory-resolution.md)**                 | [OS-Native Directory Resolution and Runtime Storage Standards](EP-0128-os-native-directory-resolution.md)                             |     *Draft*     | Standards Track | Adopts platformdirs to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global persona state while preserving workspace terrain isolation.                         |
 | **[0129](EP-0129-file-locking-architecture.md)**                      | [Multi-Process State Synchronization and File Locking Architecture](EP-0129-file-locking-architecture.md)                             |     *Draft*     | Standards Track | Adopts filelock to eliminate multi-agent read-modify-write race conditions and establish cross-platform process synchronization for shared indices, session continuity, and storage evolution.             |
+| **[0130](EP-0130-session-lineage-and-continuity-protocol.md)**                      | [Session Lineage and Cross-Session Continuity Protocol](EP-0130-session-lineage-and-continuity-protocol.md)                             |     *Draft*     | Standards Track | Establishes explicit parent-session lineage tracking, automatic continuity seeding at wake, bounded cross-session note discovery, and dual-backend fallback for signal reading.                         |
 
 ---
 
@@ -96,6 +97,7 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 - **[EP-0122](EP-0122-algebraic-meditation-consensus.md)**: Algebraic Meditation Consensus (Provenance Semirings)
 - **[EP-0123](EP-0123-reactive-signal-delivery.md)**: Reactive Signal Delivery and Harness Notification Architecture
 - **[EP-0129](EP-0129-file-locking-architecture.md)**: Multi-Process State Synchronization and File Locking Architecture
+- **[EP-0130](EP-0130-session-lineage-and-continuity-protocol.md)**: Session Lineage and Cross-Session Continuity Protocol
 
 ### 5. Benchmark & External Integrations (Deferred/Rejected)
 - **[EP-0111](EP-0111-semble-integration.md)**: Federated Code Search (Semble Integration) *(Rejected)*
