@@ -16,6 +16,7 @@ from uuid import UUID
 import yaml
 
 from tur._helpers import yaml_safe_load
+from tur.locking import FAST_LOCK_TIMEOUT_SECONDS, state_lock
 from tur.memory import MemoryManager
 from tur.models import (
     MemoryType,
@@ -56,6 +57,26 @@ def ensure_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = Non
     """
     local_dir = get_local_persona_dir(persona_dir, workspace_dir)
     local_dir.mkdir(parents=True, exist_ok=True)
+
+    # Ensure .tur/.gitignore ignores lock files
+    try:
+        ws = workspace_dir or resolve_workspace_dir() or Path.cwd()
+        tur_dir = ws / '.tur'
+        if tur_dir.exists() and tur_dir.is_dir():
+            gitignore = tur_dir / '.gitignore'
+            content = gitignore.read_text(encoding='utf-8') if gitignore.exists() else ''
+            rules = [r.strip() for r in content.splitlines() if r.strip()]
+            needed = ['.locks/', '*.lock']
+            added = False
+            for n in needed:
+                if n not in rules:
+                    rules.append(n)
+                    added = True
+            if added:
+                gitignore.write_text('\n'.join(rules) + '\n', encoding='utf-8')
+    except Exception:
+        pass
+
     return local_dir
 
 
@@ -417,49 +438,51 @@ def start_session_logic(
     persona_dir = get_persona_path(active_id)
 
     # Backwards compatibility flat file setup
-    sessions_dir = ensure_local_persona_dir(persona_dir) / 'sessions'
-    sessions_dir.mkdir(parents=True, exist_ok=True)
-    session_file = get_session_file(persona_dir, session_id)
+    session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+    with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
+        sessions_dir = ensure_local_persona_dir(persona_dir) / 'sessions'
+        sessions_dir.mkdir(parents=True, exist_ok=True)
+        session_file = get_session_file(persona_dir, session_id)
 
-    if not session_file.exists():
-        seed_content = 'Session started.'
-        if previous_session_id:
-            prev_content = compile_session_notes(persona_dir, previous_session_id)
-            if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
-                seed_content = prev_content
-        session_notes = SessionNotes(notes=[Note(timestamp=datetime.now(), content=seed_content)])
-        with open(session_file, 'w', encoding='utf-8') as f:
-            yaml.dump(session_notes.model_dump(mode='json'), f)
+        if not session_file.exists():
+            seed_content = 'Session started.'
+            if previous_session_id:
+                prev_content = compile_session_notes(persona_dir, previous_session_id)
+                if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
+                    seed_content = prev_content
+            session_notes = SessionNotes(notes=[Note(timestamp=datetime.now(), content=seed_content)])
+            with open(session_file, 'w', encoding='utf-8') as f:
+                yaml.dump(session_notes.model_dump(mode='json'), f)
 
-    index = load_session_index(persona_dir)
-    index.active_session_id = session_id
+        index = load_session_index(persona_dir)
+        index.active_session_id = session_id
 
-    existing_entry = next((s for s in index.sessions if s.id == session_id), None)
-    if existing_entry:
-        existing_entry.updated_at = datetime.now()
-        existing_entry.status = 'active'
-    else:
-        new_entry = SessionEntry(id=session_id, status='active')
-        index.sessions.append(new_entry)
+        existing_entry = next((s for s in index.sessions if s.id == session_id), None)
+        if existing_entry:
+            existing_entry.updated_at = datetime.now()
+            existing_entry.status = 'active'
+        else:
+            new_entry = SessionEntry(id=session_id, status='active')
+            index.sessions.append(new_entry)
 
-    save_session_index(persona_dir, index)
+        save_session_index(persona_dir, index)
 
-    ws = resolve_workspace_dir() or Path.cwd()
-    state_path = ws / '.tur' / 'state.yaml'
-    if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_data = yaml_safe_load(f)
-            state_obj = SystemState(**state_data)
-            state_obj.active_session_id = session_id
-        except Exception:
+        ws = resolve_workspace_dir() or Path.cwd()
+        state_path = ws / '.tur' / 'state.yaml'
+        if state_path.exists():
+            try:
+                with open(state_path, encoding='utf-8') as f:
+                    state_data = yaml_safe_load(f)
+                state_obj = SystemState(**state_data)
+                state_obj.active_session_id = session_id
+            except Exception:
+                state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
+        else:
             state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
-    else:
-        state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
 
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(state_path, 'w', encoding='utf-8') as f:
-        yaml.dump(state_obj.model_dump(mode='json'), f)
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(state_path, 'w', encoding='utf-8') as f:
+            yaml.dump(state_obj.model_dump(mode='json'), f)
 
     # SQLite Database Multi-manifestation initialization
     model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
@@ -563,29 +586,31 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
     if not session_file.exists():
         raise FileNotFoundError(f"Session '{session_id}' not found.")
 
-    index = load_session_index(persona_dir)
-    if index.active_session_id == session_id:
-        index.active_session_id = None
+    session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+    with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
+        index = load_session_index(persona_dir)
+        if index.active_session_id == session_id:
+            index.active_session_id = None
 
-    existing_entry = next((s for s in index.sessions if s.id == session_id), None)
-    if existing_entry:
-        existing_entry.status = 'ended'
-        existing_entry.updated_at = datetime.now()
+        existing_entry = next((s for s in index.sessions if s.id == session_id), None)
+        if existing_entry:
+            existing_entry.status = 'ended'
+            existing_entry.updated_at = datetime.now()
 
-    save_session_index(persona_dir, index)
+        save_session_index(persona_dir, index)
 
-    ws = resolve_workspace_dir() or Path.cwd()
-    state_path = ws / '.tur' / 'state.yaml'
-    if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_obj = SystemState(**yaml_safe_load(f))
-            if state_obj.active_session_id == session_id:
-                state_obj.active_session_id = None
-            with open(state_path, 'w', encoding='utf-8') as f:
-                yaml.dump(state_obj.model_dump(mode='json'), f)
-        except Exception:
-            pass
+        ws = resolve_workspace_dir() or Path.cwd()
+        state_path = ws / '.tur' / 'state.yaml'
+        if state_path.exists():
+            try:
+                with open(state_path, encoding='utf-8') as f:
+                    state_obj = SystemState(**yaml_safe_load(f))
+                if state_obj.active_session_id == session_id:
+                    state_obj.active_session_id = None
+                with open(state_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(state_obj.model_dump(mode='json'), f)
+            except Exception:
+                pass
 
     return f"Session '{session_id}' ended successfully."
 
@@ -922,33 +947,35 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
     resolved_session_id = session_id or get_active_session_id()
 
     if resolved_session_id:
-        session_file = get_session_file(persona_dir, resolved_session_id)
-        session_file.parent.mkdir(parents=True, exist_ok=True)
+        session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+        with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
+            session_file = get_session_file(persona_dir, resolved_session_id)
+            session_file.parent.mkdir(parents=True, exist_ok=True)
 
-        notes_list = []
-        if session_file.exists():
-            try:
-                with open(session_file, encoding='utf-8') as f:
-                    notes_data = yaml_safe_load(f)
-                session_notes = SessionNotes(**notes_data)
-                notes_list = session_notes.notes
-            except Exception:
-                pass
+            notes_list = []
+            if session_file.exists():
+                try:
+                    with open(session_file, encoding='utf-8') as f:
+                        notes_data = yaml_safe_load(f)
+                    session_notes = SessionNotes(**notes_data)
+                    notes_list = session_notes.notes
+                except Exception:
+                    pass
 
-        notes_list.append(Note(timestamp=datetime.now(), content=content.strip()))
-        session_notes = SessionNotes(notes=notes_list)
+            notes_list.append(Note(timestamp=datetime.now(), content=content.strip()))
+            session_notes = SessionNotes(notes=notes_list)
 
-        with open(session_file, 'w', encoding='utf-8') as f:
-            yaml.dump(session_notes.model_dump(mode='json'), f)
+            with open(session_file, 'w', encoding='utf-8') as f:
+                yaml.dump(session_notes.model_dump(mode='json'), f)
 
-        index = load_session_index(persona_dir)
-        existing_entry = next((s for s in index.sessions if s.id == resolved_session_id), None)
-        if existing_entry:
-            existing_entry.updated_at = datetime.now()
-        else:
-            new_entry = SessionEntry(id=resolved_session_id, status='active')
-            index.sessions.append(new_entry)
-        save_session_index(persona_dir, index)
+            index = load_session_index(persona_dir)
+            existing_entry = next((s for s in index.sessions if s.id == resolved_session_id), None)
+            if existing_entry:
+                existing_entry.updated_at = datetime.now()
+            else:
+                new_entry = SessionEntry(id=resolved_session_id, status='active')
+                index.sessions.append(new_entry)
+            save_session_index(persona_dir, index)
 
         # Mirror note to SQLite database
         with contextlib.suppress(Exception):
