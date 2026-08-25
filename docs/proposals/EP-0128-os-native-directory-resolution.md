@@ -241,7 +241,9 @@ def resolve_workspace_dir(ctx: Any | None = None) -> Path | None:
 
 ## Reference Implementation
 
-Drafted across `src/tur/paths.py` and integrated into `src/tur/session.py` signal storage.
+Implemented in `src/tur/paths.py` and validated via a 13-test matrix in `tests/test_paths.py` covering MCP context roots,
+URI decoding, CWD detection, environment overrides (`TUR_HOME`, `TUR_DATA_DIR`, `TUR_RUNTIME_DIR`, `TUR_CACHE_DIR`,
+`TUR_LOG_DIR`, `TUR_PROJECT_DIR`), and container fallback.
 
 ## Rejected Ideas
 
@@ -261,6 +263,9 @@ Drafted across `src/tur/paths.py` and integrated into `src/tur/session.py` signa
 
 ## Change Log
 
+* **2026-08-26:**
+    * Expanded test coverage across all workspace resolution tiers (MCP context roots, URI parsing, CWD detection, and pure traveler fallback) in `tests/test_paths.py` (13/13 tests passing).
+    * Ratified under REV-0006 Council of Giants Implementation Audit.
 * **2026-08-25:**
     * Implemented in `src/tur/paths.py` and verified with 100% test pass in `tests/test_paths.py`. Promoted status to **Implemented**.
     * Integrated Council of Giants Review hardening mandates: container `/run/user` fallback, POSIX `0700` runtime permissions, symmetric `TUR_RUNTIME_DIR`/`TUR_CACHE_DIR`/`TUR_LOG_DIR` environment overrides, and `is_global_path` coverage update.
