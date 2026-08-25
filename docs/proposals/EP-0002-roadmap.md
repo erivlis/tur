@@ -45,6 +45,52 @@ semantic engine supporting external agents via MCP.
   Federation, Terrain Isolation, and LLM Agnosticism.
 * **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration, multi-agent coordination, and storage evolution.
 
+### Strategic Implementation Trajectory (Layered Dependency Sequence)
+
+To ensure resilient execution, proposals across Phases 2 and 3 are sequenced by foundational dependency:
+
+```mermaid
+graph TD
+    subgraph Layer 1: Substrate Hardening & OS Primitives
+        EP0128[EP-0128: platformdirs<br/>OS Directory Resolution]
+        EP0129[EP-0129: filelock<br/>Multi-Process State Sync]
+    end
+
+    subgraph Layer 2: Protocol & Harness Runtime
+        EP0127[EP-0127: MCP SDK v2<br/>FastMCP -> MCPServer]
+    end
+
+    subgraph Layer 3: Storage & Signal Infrastructure
+        EP0125[EP-0125: Storage Evolution<br/>Atomic Schema Migrations]
+        EP0123[EP-0123: Reactive Signals<br/>MCP Resource Push Notifications]
+    end
+
+    subgraph Layer 4: Cognitive & Deductive Capabilities
+        EP0119[EP-0119: Persona-Centric Introspection<br/>Persona-Owned Compaction]
+        EP0122[EP-0122: Algebraic Meditation<br/>Provenance Semiring Consensus]
+    end
+
+    EP0128 --> EP0129
+    EP0128 --> EP0127
+    EP0129 --> EP0125
+    EP0127 --> EP0123
+    EP0128 --> EP0123
+    EP0125 --> EP0119
+    EP0123 --> EP0122
+    EP0119 --> EP0122
+```
+
+1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129`):** Integrate `platformdirs` and `filelock`
+   to establish canonical runtime directories (`resolve_runtime_dir()`, `resolve_cache_dir()`) and eliminate
+   read-modify-write clobbering across parallel agent harnesses.
+2. **Layer 2: Protocol Modernization (`EP-0127`):** Migrate `tur-mcp` to official MCP Python SDK v2 (`MCPServer`),
+   decoupling transport execution to `.run()` and standardizing on canonical `mcp-types`.
+3. **Layer 3: Storage Evolution & Reactive Swarms (`EP-0125` + `EP-0123`):** Implement the 5-stage non-destructive
+   migration lifecycle under `tur-adm` and activate real-time `notifications/resources/updated` push delivery for
+   inter-agent signals.
+4. **Layer 4: Cognitive Consolidation & Swarm Consensus (`EP-0119` + `EP-0122`):** Formalize persona-owned declarative
+   introspection pipelines and mathematical belief merging via $\mathbb{N}[X]$ Provenance Semirings.
+
 ## Specification (The Roadmap)
 
 ### Phase 1: The Foundation (v0.1.x -> v0.2.0) [Status: Stabilized]
@@ -172,6 +218,9 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 ## Change Log
 
 * **2026-08-25:**
+    * Codified the **Strategic Implementation Trajectory (Layered Dependency Sequence)** to sequence Phase 2 and 3 EPs
+      across 4 foundational layers (Layer 1: Substrate Hardening, Layer 2: Protocol Modernization, Layer 3: Storage &
+      Reactive Signals, Layer 4: Cognitive Consolidation & Swarm Consensus).
     * Registered **EP-0128 (OS-Native Directory Resolution and Runtime Storage Standards)** under Phase 3 (Persona
       Lifecycle & Creation) to standardize cross-platform directory resolution via `platformdirs` while preserving
       workspace terrain isolation.
