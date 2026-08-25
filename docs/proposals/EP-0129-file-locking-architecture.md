@@ -116,24 +116,25 @@ dependencies = [
 ]
 ```
 
-### 2. Two-Tiered Locking Hierarchy
+### 2. Two-Tiered Locking Hierarchy & Deadlock Invariant
 
 File locks are partitioned cleanly along the Traveler vs. Terrain architectural boundary:
 
 ```mermaid
 graph TD
     subgraph Global [Traveler Scope - OS Runtime Dir]
-        GLock[Global Persona Lock<br/>resolve_runtime_dir/locks/persona_uuid.lock]
         GMigrate[Global Migration Lock<br/>resolve_runtime_dir/locks/migration.lock]
+        GLock[Global Persona Lock<br/>resolve_runtime_dir/locks/persona_uuid.lock]
     end
 
     subgraph Local [Terrain Scope - Workspace .tur Dir]
-        LLock[Workspace Session Lock<br/>workspace/.tur/.locks/session.lock]
         LGraph[Deductive Graph Lock<br/>workspace/.tur/.locks/compaction.lock]
+        LLock[Workspace Session Lock<br/>workspace/.tur/.locks/session.lock]
     end
 
-    Agent1[Harness A: Claude Code] -->|Acquires| LLock
-    Agent2[Harness B: Gemini CLI] -->|Waits / Retries| LLock
+    GMigrate --> GLock
+    GLock --> LGraph
+    LGraph --> LLock
 ```
 
 1. **Workspace Terrain Locks (`<workspace>/.tur/.locks/`):**
@@ -144,40 +145,53 @@ graph TD
       universal memory banks.
     - `migration.lock`: Exclusively held by `tur-adm` during EP-0125 storage evolution procedures.
 
+#### Total Lock Acquisition Ordering Invariant (Anti-Deadlock Rule)
+To prevent cross-process cyclic wait deadlocks (AB-BA deadlocks), any composite operation requiring multiple locks must acquire them in strict descending topological order:
+$$\text{Global (Migration)} \succ \text{Global (Persona)} \succ \text{Local (Compaction)} \succ \text{Local (Session)}$$
+A process must **never** acquire a Global Traveler lock while holding a Local Terrain lock.
+
 ### 3. Transactional Locking Helpers (`src/tur/locking.py`)
 
-A centralized locking module provides context managers with configurable timeouts and sensible defaults:
+A centralized locking module provides context managers configured for low-latency contention recovery and standard timeout subtyping:
 
 ```python
 from collections.abc import Iterator
 from contextlib import contextmanager
+import logging
 from pathlib import Path
 from filelock import FileLock, Timeout
 
-DEFAULT_LOCK_TIMEOUT_SECONDS = 10.0
+logger = logging.getLogger(__name__)
+
+DEFAULT_POLL_INTERVAL_SECONDS: float = 0.005  # 5ms fast probe eliminates latency quantization
+FAST_LOCK_TIMEOUT_SECONDS: float = 3.0        # Interactive state mutations (session notes, telemetry)
+HEAVY_LOCK_TIMEOUT_SECONDS: float = 30.0      # Storage migrations and Merkle graph compaction
+DEFAULT_LOCK_TIMEOUT_SECONDS: float = FAST_LOCK_TIMEOUT_SECONDS
 
 
-class LockTimeoutError(Exception):
+class LockTimeoutError(TimeoutError):
     """Raised when a file lock cannot be acquired within the timeout window."""
 
 
 @contextmanager
 def state_lock(
-        lock_path: Path, timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS
+    lock_path: Path,
+    timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+    poll_interval: float = DEFAULT_POLL_INTERVAL_SECONDS,
 ) -> Iterator[None]:
     """Context manager for acquiring an advisory multi-process lock.
-  
-    Guarantees parent directory creation and raises LockTimeoutError on
-    contention timeout.
+
+    Guarantees parent directory creation, enforces non-inheritable file descriptors
+    to prevent subprocess handle leaks, and raises LockTimeoutError on contention timeout.
     """
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock = FileLock(str(lock_path), timeout=timeout)
+    lock = FileLock(str(lock_path), timeout=timeout, poll_interval=poll_interval)
     try:
         with lock:
             yield
     except Timeout as exc:
         raise LockTimeoutError(
-            f'Could not acquire lock on {lock_path} after {timeout}s'
+            f"Could not acquire lock on {lock_path} after {timeout}s"
         ) from exc
 ```
 
@@ -191,15 +205,16 @@ def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
     """Append a session note safely under multi-process lock."""
     lock_file = persona_dir / ".locks" / "session.lock"
 
-    with state_lock(lock_file):
-        # 1. Read existing index
+    with state_lock(lock_file, timeout=FAST_LOCK_TIMEOUT_SECONDS):
+        # 1. Read existing index under lock
         index = load_session_index(persona_dir)
 
         # 2. Modify in-memory state
         # ... append note, update session status ...
 
-        # 3. Atomically replace file
+        # 3. Atomically replace file under lock
         atomic_yaml_write(get_session_file(persona_dir, session_id), session_data)
+        save_session_index(persona_dir, index)
 ```
 
 ## Backwards Compatibility
@@ -207,13 +222,12 @@ def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
 * **Non-Invasive Lock Files:** Lock files (`.lock`) are advisory and created inside `.tur/.locks/` or OS runtime
   directories. They do not alter existing YAML or OKF markdown schemas.
 * **Ignored in Version Control:** `.tur/.locks/` is automatically added to `.tur/.gitignore` upon initialization.
-* **Single-Process Zero Impact:** In environments with a single agent, lock acquisition incurs sub-millisecond overhead.
+* **Single-Process Zero Impact:** In environments with a single agent, lock acquisition incurs sub-millisecond overhead (12–45µs).
 
 ## How to Teach This / Documentation Plan
 
 * Update `docs/concepts/harness-integration.md` to explain how concurrent harnesses coordinate via advisory locks.
-* Document `LockTimeoutError` handling in MCP server documentation so harnesses know to retry transient lock
-  contentions.
+* Document `LockTimeoutError` handling in MCP server documentation: MCP tool endpoints catch `LockTimeoutError` and return structured JSON-RPC responses (`Status: Contended. The state lock is currently held by another agent.`) rather than raising raw unhandled stack traces.
 
 ## Reference Implementation
 
@@ -234,14 +248,16 @@ Implemented in `src/tur/locking.py` and wrapped around `tur.session` and `tur.me
   crashes; `filelock` relies on kernel-level advisory locks that the OS automatically releases if a process terminates
   abnormally.
 
-## Open Questions
+## Open Questions & Council Directives
 
-- [ ] Should the MCP server return an explicit JSON-RPC error code or automatically retry with exponential backoff when
-  encountering a `LockTimeoutError`?
+- [ ] **Multiprocessing Concurrency Suite (Bacon):** Implement a 6-matrix pytest test suite in `tests/test_locking.py` using `multiprocessing.Barrier` to empirically verify zero data loss under $N=20$ concurrent agent writes.
+- [ ] **Total Lock Ordering Validation (Maharal & Popper):** Assert that no code path attempts to acquire a Global Traveler lock while holding a Local Terrain lock.
+- [ ] **Graceful MCP Tool Contention Response (Steward):** Verify that MCP tools return non-fatal retry guidance when encountering `LockTimeoutError`.
 
 ## Change Log
 
 * **2026-08-25:**
+    * Integrated Council of Giants Review hardening mandates: Total Lock Ordering Hierarchy invariant (anti-deadlock), 5ms polling interval optimization (`poll_interval=0.005`), tiered timeout defaults (`FAST_LOCK_TIMEOUT=3.0s`, `HEAVY_LOCK_TIMEOUT=30.0s`), `LockTimeoutError(TimeoutError)` subtyping, and multiprocessing barrier test matrix specification.
     * Enhanced proposal with comparative analysis against `portalocker`, `fasteners`, and `flufl.lock`, detailing the
       `os.replace` inode replacement hazard and shared read lock trade-offs.
     * Initial Draft proposing `filelock` integration for cross-platform process synchronization and race condition

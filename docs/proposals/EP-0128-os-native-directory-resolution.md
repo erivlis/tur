@@ -79,33 +79,76 @@ dependencies = [
 
 ### 2. Path Resolution Architecture (`src/tur/paths.py`)
 
-Refactor `paths.py` to expose distinct resolution primitives according to storage category:
+Refactor `paths.py` to expose distinct resolution primitives according to storage category, hardened with container fallbacks and POSIX permissions:
 
 ```python
+from functools import lru_cache
+import logging
 import os
 from pathlib import Path
+import tempfile
+from typing import Any
 import platformdirs
 
+logger = logging.getLogger(__name__)
+
 APP_NAME = "tur"
-APP_AUTHOR = "erivlis"
+APP_AUTHOR = False  # Avoid Windows/Linux hierarchy mismatch unless strictly required
 
 
+@lru_cache(maxsize=16)
 def resolve_runtime_dir() -> Path:
     """Resolve ephemeral runtime directory for IPC sockets, signal queues, and locks.
-  
-    Linux: /run/user/<uid>/tur (or $XDG_RUNTIME_DIR/tur) macOS:
-    ~/Library/Caches/TemporaryItems/tur Windows: %LOCALAPPDATA%\\Temp\\tur
+    
+    Linux: /run/user/<uid>/tur (or $XDG_RUNTIME_DIR/tur)
+    macOS: ~/Library/Caches/TemporaryItems/tur
+    Windows: %LOCALAPPDATA%\\Temp\\tur
+    
+    Container / Headless Fallback:
+      If /run/user/<uid> is missing or read-only (e.g. minimal Docker/CI),
+      falls back to tempfile.gettempdir() / f"tur-runtime-{uid}".
     """
-    runtime_dir = Path(
-        platformdirs.user_runtime_dir(
-            appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
+    env_runtime = os.environ.get("TUR_RUNTIME_DIR")
+    if env_runtime:
+        p = Path(env_runtime).expanduser().resolve()
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    try:
+        runtime_dir = Path(
+            platformdirs.user_runtime_dir(
+                appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
+            )
         )
-    )
-    return runtime_dir
+        # Apply POSIX 0700 permission mask for multi-user security
+        if hasattr(os, "chmod") and os.name != "nt":
+            try:
+                os.chmod(runtime_dir, 0o700)
+            except OSError:
+                pass
+        return runtime_dir
+    except (OSError, PermissionError) as exc:
+        uid = os.getuid() if hasattr(os, "getuid") else "win"
+        fallback = Path(tempfile.gettempdir()) / f"tur-runtime-{uid}"
+        fallback.mkdir(parents=True, exist_ok=True)
+        if hasattr(os, "chmod") and os.name != "nt":
+            try:
+                os.chmod(fallback, 0o700)
+            except OSError:
+                pass
+        logger.debug(f"Runtime dir fallback engaged: {fallback} (due to {exc})")
+        return fallback
 
 
+@lru_cache(maxsize=16)
 def resolve_cache_dir() -> Path:
     """Resolve directory for ephemeral introspection indexes and telemetry cache."""
+    env_cache = os.environ.get("TUR_CACHE_DIR")
+    if env_cache:
+        p = Path(env_cache).expanduser().resolve()
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
     cache_dir = Path(
         platformdirs.user_cache_dir(
             appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
@@ -114,35 +157,47 @@ def resolve_cache_dir() -> Path:
     return cache_dir
 
 
-def resolve_personas_base_dir() -> Path:
-    """Resolve global personas base directory.
-  
-    Resolution Priority:
-    1. TUR_HOME / TUR_PERSONAS_DIR environment override
-    2. Legacy ~/.tur/personas/ (if exists, for backwards compatibility)
-    3. platformdirs.user_data_dir("tur") / "personas"
-    """
-    env_home = os.environ.get("TUR_HOME") or os.environ.get("TUR_PERSONAS_DIR")
+@lru_cache(maxsize=16)
+def resolve_data_dir() -> Path:
+    """Resolve global user data directory for permanent persona definitions."""
+    env_home = os.environ.get("TUR_HOME") or os.environ.get("TUR_DATA_DIR")
     if env_home:
         return Path(env_home).expanduser().resolve()
 
-    legacy_home = Path.home() / ".tur" / "personas"
-    if legacy_home.exists():
+    legacy_home = Path.home() / ".tur"
+    if (legacy_home / "personas.yaml").exists() or (legacy_home / "personas").exists():
         return legacy_home
 
-    data_dir = Path(
+    return Path(
         platformdirs.user_data_dir(
             appname=APP_NAME, appauthor=APP_AUTHOR, ensure_exists=True
         )
     )
-    return data_dir / "personas"
 
 
-def resolve_workspace_dir(
-        target_path: Path | None = None,
-) -> tuple[Path, Path | None]:
-    """Resolve workspace repository root and its co-located .tur/ terrain state.
-  
+def is_global_path(p: Path) -> bool:
+    """Returns True if *p* lives inside user-global data, runtime, or cache stores.
+    
+    Tests against TUR_HOME, legacy ~/.tur/, resolve_data_dir(), resolve_cache_dir(),
+    and resolve_runtime_dir().
+    """
+    resolved_p = p.resolve()
+    for root_getter in (resolve_data_dir, resolve_cache_dir, resolve_runtime_dir):
+        try:
+            resolved_p.relative_to(root_getter())
+            return True
+        except (ValueError, Exception):
+            pass
+    try:
+        resolved_p.relative_to((Path.home() / ".tur").resolve())
+        return True
+    except (ValueError, Exception):
+        return False
+
+
+def resolve_workspace_dir(ctx: Any | None = None) -> Path | None:
+    """Deterministically resolves active workspace / Terrain directory.
+    
     INVARIANT (EP-0124): Workspace state is ALWAYS strictly co-located inside
     <workspace_root>/.tur/ and NEVER redirects to global platformdirs paths.
     """
@@ -154,15 +209,15 @@ def resolve_workspace_dir(
 | Category                | Subsystem / Files                   | Target Path Function          | OS Example (Linux / Windows)                            |
 |:------------------------|:------------------------------------|:------------------------------|:--------------------------------------------------------|
 | **Workspace Terrain**   | Incarnational OKF, Session Notes    | `resolve_workspace_dir()`     | `<repo>/.tur/` *(Inviolable)*                           |
-| **Global Traveler**     | Personas, Universal Memory          | `resolve_personas_base_dir()` | `~/.local/share/tur/` / `%APPDATA%\tur\` (or `~/.tur/`) |
+| **Global Traveler**     | Personas, Universal Memory          | `resolve_data_dir()`          | `~/.local/share/tur/` / `%APPDATA%\tur\` (or `~/.tur/`) |
 | **Swarm IPC / Sockets** | SQLite Signal DB, Whiteboard, Locks | `resolve_runtime_dir()`       | `/run/user/1000/tur/` / `%LOCALAPPDATA%\Temp\tur\`      |
 | **Telemetry & Cache**   | Graph indexes, Token cost metrics   | `resolve_cache_dir()`         | `~/.cache/tur/` / `%LOCALAPPDATA%\tur\Cache\`           |
 
 ## Backwards Compatibility
 
-* **Legacy `~/.tur/` Preserved:** The resolution pipeline automatically detects and respects existing `~/.tur/personas/`
-  directories, guaranteeing zero breakage for existing setups.
-* **Environment Overrides:** `TUR_HOME` and `TUR_PERSONAS_DIR` take top precedence, allowing custom deployment paths in
+* **Legacy `~/.tur/` Preserved:** The resolution pipeline automatically detects and respects existing `~/.tur/personas.yaml`
+  or `~/.tur/personas/` directories, guaranteeing zero breakage for existing setups.
+* **Environment Overrides:** `TUR_HOME`, `TUR_DATA_DIR`, `TUR_RUNTIME_DIR`, and `TUR_CACHE_DIR` take top precedence, allowing custom deployment paths in
   CI/CD and sandboxes.
 * **Terrain Isolation (EP-0124):** No changes are made to local `<repo>/.tur/` resolution.
 
@@ -183,12 +238,15 @@ Drafted across `src/tur/paths.py` and integrated into `src/tur/session.py` signa
 * **Writing Custom Platform Branching Logic:** Rejected. Maintaining bespoke OS path resolvers violates the Shannon and
   Steward principles when `platformdirs` is already the battle-tested standard.
 
-## Open Questions
+## Open Questions & Council Directives
 
+- [ ] **Container Fallback Testing (Popper & Bacon):** Assert that headless environments with missing `/run/user/<uid>` fall back cleanly to `tempfile.gettempdir() / f"tur-runtime-{uid}"` with 100% test coverage.
+- [ ] **Global Path Predicate Completeness (Steward):** Verify that `is_global_path()` correctly identifies paths inside `platformdirs.user_data_dir()`.
 - [ ] Should `tur-adm purge-cache` be introduced as a dedicated CLI command leveraging `resolve_cache_dir()`?
 
 ## Change Log
 
 * **2026-08-25:**
+    * Integrated Council of Giants Review hardening mandates: container `/run/user` fallback, POSIX `0700` runtime permissions, `@lru_cache` memoization, symmetric `TUR_RUNTIME_DIR`/`TUR_CACHE_DIR` environment overrides, and `is_global_path` coverage update.
     * Initial Draft proposing `platformdirs` integration for OS-native directory standards and ephemeral runtime IPC
       isolation.
