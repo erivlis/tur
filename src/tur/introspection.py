@@ -13,6 +13,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from tur._helpers import yaml_safe_load
+from tur.locking import HEAVY_LOCK_TIMEOUT_SECONDS, state_lock
 from tur.memory import MemoryManager
 from tur.models import EdgeType, HarnessDelegationError, MemoryType, NodeType
 
@@ -927,78 +928,80 @@ def run_introspection(
     Core entrypoint to run the introspection compaction loop.
     Loads L1, executes the Council Assembly, saves L2 Graph, and moves consolidated L1s.
     """
-    kg_path = persona_dir / 'knowledge_graph.yaml'
+    compaction_lock = persona_dir / '.locks' / 'compaction.lock'
+    with state_lock(compaction_lock, timeout=HEAVY_LOCK_TIMEOUT_SECONDS):
+        kg_path = persona_dir / 'knowledge_graph.yaml'
 
-    graph = None
-    if not bootstrap:
-        graph = load_l2_graph_from_okf(persona_dir)
-        if graph is None and kg_path.exists():
+        graph = None
+        if not bootstrap:
+            graph = load_l2_graph_from_okf(persona_dir)
+            if graph is None and kg_path.exists():
+                try:
+                    with open(kg_path, encoding='utf-8') as f:
+                        data = yaml_safe_load(f)
+                    graph = nx.node_link_graph(data)
+                except Exception:
+                    graph = None
+
+        if graph is None:
+            graph = nx.DiGraph()
+
+        context = {
+            'persona_dir': persona_dir,
+            'bootstrap': bootstrap or (not kg_path.exists() and not (persona_dir / 'concepts').exists()),
+            'model': model,
+            'test_mode': test_mode,
+            'mcp_context': mcp_context,
+            'commit_payload': commit_payload,
+        }
+
+        # Load compaction configuration from persona.yaml
+        persona_yaml_path = persona_dir / 'persona.yaml'
+        compaction_config = None
+        if persona_yaml_path.exists():
             try:
-                with open(kg_path, encoding='utf-8') as f:
-                    data = yaml_safe_load(f)
-                graph = nx.node_link_graph(data)
+                with open(persona_yaml_path, encoding='utf-8') as f:
+                    persona_data: dict = yaml_safe_load(f) or {}
+                compaction_config = persona_data.get('compaction')
             except Exception:
-                graph = None
+                pass
 
-    if graph is None:
-        graph = nx.DiGraph()
+        context['compaction_config'] = compaction_config
 
-    context = {
-        'persona_dir': persona_dir,
-        'bootstrap': bootstrap or (not kg_path.exists() and not (persona_dir / 'concepts').exists()),
-        'model': model,
-        'test_mode': test_mode,
-        'mcp_context': mcp_context,
-        'commit_payload': commit_payload,
-    }
+        # Run subagent assembly
+        assembly = IntrospectionAssembly(compaction_config)
+        graph, context = assembly.execute(graph, context)
 
-    # Load compaction configuration from persona.yaml
-    persona_yaml_path = persona_dir / 'persona.yaml'
-    compaction_config = None
-    if persona_yaml_path.exists():
+        # Save L2 Graph Atomically (Maharal constraint)
+        kg_temp_fd, kg_temp_path = tempfile.mkstemp(dir=persona_dir, prefix='kg.tmp.')
         try:
-            with open(persona_yaml_path, encoding='utf-8') as f:
-                persona_data: dict = yaml_safe_load(f) or {}
-            compaction_config = persona_data.get('compaction')
+            graph_data = nx.node_link_data(graph)
+            yaml_content = yaml.dump(graph_data, sort_keys=False)
+            with open(kg_temp_fd, 'w', encoding='utf-8') as f:
+                f.write(str(yaml_content))
+                f.flush()
+                os.fsync(f.fileno())
+            if kg_path.exists():
+                with contextlib.suppress(Exception):
+                    os.chmod(kg_path, 0o666)
+            os.replace(kg_temp_path, kg_path)
         except Exception:
-            pass
+            with contextlib.suppress(OSError):
+                os.remove(kg_temp_path)
+            raise
 
-    context['compaction_config'] = compaction_config
+        # Golem's Seal: lock L2 file permissions to read-only
+        with contextlib.suppress(Exception):
+            os.chmod(kg_path, 0o444)
 
-    # Run subagent assembly
-    assembly = IntrospectionAssembly(compaction_config)
-    graph, context = assembly.execute(graph, context)
+        # Save L2 Graph as OKF files
+        save_l2_graph_to_okf(graph, persona_dir)
 
-    # Save L2 Graph Atomically (Maharal constraint)
-    kg_temp_fd, kg_temp_path = tempfile.mkstemp(dir=persona_dir, prefix='kg.tmp.')
-    try:
-        graph_data = nx.node_link_data(graph)
-        yaml_content = yaml.dump(graph_data, sort_keys=False)
-        with open(kg_temp_fd, 'w', encoding='utf-8') as f:
-            f.write(str(yaml_content))
-            f.flush()
-            os.fsync(f.fileno())
-        if kg_path.exists():
-            with contextlib.suppress(Exception):
-                os.chmod(kg_path, 0o666)
-        os.replace(kg_temp_path, kg_path)
-    except Exception:
-        with contextlib.suppress(OSError):
-            os.remove(kg_temp_path)
-        raise
+        # Compaction Handoff: move subsumed L1 files
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        raw_mems = context.get('raw_memories', [])
+        for mem in raw_mems:
+            with contextlib.suppress(FileNotFoundError):
+                memory_manager.subsume(mem.id)
 
-    # Golem's Seal: lock L2 file permissions to read-only
-    with contextlib.suppress(Exception):
-        os.chmod(kg_path, 0o444)
-
-    # Save L2 Graph as OKF files
-    save_l2_graph_to_okf(graph, persona_dir)
-
-    # Compaction Handoff: move subsumed L1 files
-    memory_manager = MemoryManager(base_dir=persona_dir)
-    raw_mems = context.get('raw_memories', [])
-    for mem in raw_mems:
-        with contextlib.suppress(FileNotFoundError):
-            memory_manager.subsume(mem.id)
-
-    return graph
+        return graph

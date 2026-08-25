@@ -97,15 +97,15 @@ def resolve_log_dir() -> Path:
 
 def resolve_data_dir() -> Path:
     """Resolve global user data directory for permanent persona definitions."""
-    return get_global_tur_dir()
-
-
-def get_global_tur_dir() -> Path:
-    """Returns the user-global directory for Tur state, respecting TUR_HOME / TUR_DATA_DIR."""
     env_home = os.environ.get('TUR_HOME') or os.environ.get('TUR_DATA_DIR')
     if env_home:
         return Path(env_home).expanduser().resolve()
     return (Path.home() / '.tur').resolve()
+
+
+def get_global_tur_dir() -> Path:
+    """Returns the user-global directory for Tur state, respecting TUR_HOME / TUR_DATA_DIR."""
+    return resolve_data_dir()
 
 
 def is_global_path(p: Path) -> bool:

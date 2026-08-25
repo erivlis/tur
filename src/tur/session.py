@@ -93,11 +93,24 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
     return SessionIndex(active_session_id=None, sessions=[])
 
 
+def atomic_yaml_write(target_path: Path, data: Any) -> None:
+    """Atomically write YAML data to target_path using tempfile and os.replace."""
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_file = target_path.with_name(f'.tmp_{uuid.uuid4().hex}_{target_path.name}')
+    try:
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        os.replace(temp_file, target_path)
+    finally:
+        with contextlib.suppress(OSError):
+            if temp_file.exists():
+                temp_file.unlink()
+
+
 def save_session_index(persona_dir: Path, index: SessionIndex):
-    """Saves the session index to sessions.yaml."""
+    """Saves the session index to sessions.yaml atomically."""
     index_path = ensure_local_persona_dir(persona_dir) / 'sessions.yaml'
-    with open(index_path, 'w', encoding='utf-8') as f:
-        yaml.dump(index.model_dump(mode='json'), f)
+    atomic_yaml_write(index_path, index.model_dump(mode='json'))
 
 
 def get_session_file(persona_dir: Path, session_id: str) -> Path:
@@ -451,8 +464,7 @@ def start_session_logic(
                 if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
                     seed_content = prev_content
             session_notes = SessionNotes(notes=[Note(timestamp=datetime.now(), content=seed_content)])
-            with open(session_file, 'w', encoding='utf-8') as f:
-                yaml.dump(session_notes.model_dump(mode='json'), f)
+            atomic_yaml_write(session_file, session_notes.model_dump(mode='json'))
 
         index = load_session_index(persona_dir)
         index.active_session_id = session_id
@@ -480,9 +492,7 @@ def start_session_logic(
         else:
             state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
 
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(state_path, 'w', encoding='utf-8') as f:
-            yaml.dump(state_obj.model_dump(mode='json'), f)
+        atomic_yaml_write(state_path, state_obj.model_dump(mode='json'))
 
     # SQLite Database Multi-manifestation initialization
     model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
@@ -607,8 +617,7 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
                     state_obj = SystemState(**yaml_safe_load(f))
                 if state_obj.active_session_id == session_id:
                     state_obj.active_session_id = None
-                with open(state_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(state_obj.model_dump(mode='json'), f)
+                atomic_yaml_write(state_path, state_obj.model_dump(mode='json'))
             except Exception:
                 pass
 
@@ -890,46 +899,50 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         from tur.models import Memory
 
         persona_dir = get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
+        session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+        with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
+            memory_manager = MemoryManager(base_dir=persona_dir)
 
-        all_memories = []
-        for row in staged_rows:
-            try:
-                data = json.loads(row['memory_data'])
-                mems = data.get('memories', []) if isinstance(data, dict) else data
-                all_memories.extend(mems)
-            except Exception:
-                pass
+            all_memories = []
+            for row in staged_rows:
+                try:
+                    data = json.loads(row['memory_data'])
+                    mems = data.get('memories', []) if isinstance(data, dict) else data
+                    all_memories.extend(mems)
+                except Exception:
+                    pass
 
-        unique_contents = set()
-        deduped_memories = []
-        for mem in all_memories:
-            content = mem.get('content', '').strip() if isinstance(mem, dict) else getattr(mem, 'content', '').strip()
-            if content and content not in unique_contents:
-                unique_contents.add(content)
-                deduped_memories.append(mem)
-
-        saved_count = 0
-        for mem_data in deduped_memories:
-            try:
-                memory = Memory(
-                    type=mem_data.get('type', 'fact') if isinstance(mem_data, dict) else mem_data.type,
-                    scope=mem_data.get('scope', 'local') if isinstance(mem_data, dict) else mem_data.scope,
-                    tags=[
-                        *(mem_data.get('tags', []) if isinstance(mem_data, dict) else mem_data.tags),
-                        'dreaming',
-                        'consolidated',
-                    ],
-                    content=(mem_data.get('content') if isinstance(mem_data, dict) else mem_data.content) or '',
-                    source_session=session_id,
+            unique_contents = set()
+            deduped_memories = []
+            for mem in all_memories:
+                content = (
+                    mem.get('content', '').strip() if isinstance(mem, dict) else getattr(mem, 'content', '').strip()
                 )
-                memory_manager.save(memory)
-                saved_count += 1
-            except Exception:
-                pass
+                if content and content not in unique_contents:
+                    unique_contents.add(content)
+                    deduped_memories.append(mem)
 
-        conn.execute('DELETE FROM staged_memories')
-        end_session_logic(session_id, identifier=active_id)
+            saved_count = 0
+            for mem_data in deduped_memories:
+                try:
+                    memory = Memory(
+                        type=mem_data.get('type', 'fact') if isinstance(mem_data, dict) else mem_data.type,
+                        scope=mem_data.get('scope', 'local') if isinstance(mem_data, dict) else mem_data.scope,
+                        tags=[
+                            *(mem_data.get('tags', []) if isinstance(mem_data, dict) else mem_data.tags),
+                            'dreaming',
+                            'consolidated',
+                        ],
+                        content=(mem_data.get('content') if isinstance(mem_data, dict) else mem_data.content) or '',
+                        source_session=session_id,
+                    )
+                    memory_manager.save(memory)
+                    saved_count += 1
+                except Exception:
+                    pass
+
+            conn.execute('DELETE FROM staged_memories')
+            end_session_logic(session_id, identifier=active_id)
 
     conn.close()
     return f'Consensus sleep reached. Consolidated {saved_count} memories across manifestations. Session ended.'
@@ -962,9 +975,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
 
             notes_list.append(Note(timestamp=datetime.now(), content=content.strip()))
             session_notes = SessionNotes(notes=notes_list)
-
-            with open(session_file, 'w', encoding='utf-8') as f:
-                yaml.dump(session_notes.model_dump(mode='json'), f)
+            atomic_yaml_write(session_file, session_notes.model_dump(mode='json'))
 
             index = load_session_index(persona_dir)
             existing_entry = next((s for s in index.sessions if s.id == resolved_session_id), None)

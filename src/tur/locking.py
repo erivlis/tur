@@ -35,11 +35,14 @@ class LockTimeoutError(TimeoutError):
         super().__init__(f'Could not acquire lock on {lock_path} after {timeout:.2f}s (held by another process)')
 
 
+_CACHED_HOSTNAME = socket.gethostname()
+
+
 def _stamp_lock_holder(fd: int) -> None:
     """Stamp holder PID and hostname into native lock descriptor for debugging."""
     try:
         os.lseek(fd, 0, os.SEEK_SET)
-        payload = f'pid={os.getpid()} host={socket.gethostname()}\n'.encode()
+        payload = f'pid={os.getpid()} host={_CACHED_HOSTNAME}\n'.encode()
         os.write(fd, payload)
         os.ftruncate(fd, len(payload))
     except OSError:
@@ -72,16 +75,13 @@ def state_lock(
     timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
     poll_interval: float = DEFAULT_POLL_INTERVAL_SECONDS,
 ) -> Iterator[FileLock]:
-    """Context manager for acquiring an advisory multi-process lock.
+    """Synchronous lock context manager with fast probe and fallback timeout.
 
-    Features:
-    - Path canonicalization and parent directory auto-creation.
-    - Singleton re-entrancy without self-deadlocks in the same thread.
-    - Preserves lock files on Windows to eliminate handle release collisions.
-    - Fast probe contention detection with diagnostic logging.
-    - Stamping owner PID/host into the lock file for post-mortem analysis.
+    1. Executes non-blocking probe (blocking=False) to acquire immediately.
+    2. If contended, logs INFO and blocks up to timeout with fast polling.
+    3. Stretches exception to typed LockTimeoutError upon deadline expiration.
     """
-    lock = get_file_lock(lock_path, timeout=timeout, poll_interval=poll_interval)
+    lock = get_file_lock(lock_path=lock_path, timeout=timeout, poll_interval=poll_interval)
 
     # 1. Fast probe: Check if immediately available without waiting
     try:
@@ -133,10 +133,18 @@ async def async_state_lock(
         is_singleton=True,
         preserve_lock_file=True,
         close_error_policy='suppress',
+        on_acquired=_stamp_lock_holder,
     )
-    async with task_lock:
+    try:
+        await asyncio.wait_for(task_lock.acquire(), timeout=timeout)
+    except TimeoutError as exc:
+        raise LockTimeoutError(lock_path=lock_path, timeout=timeout) from exc
+
+    try:
         try:
             async with lock:
                 yield lock
         except Timeout as exc:
             raise LockTimeoutError(lock_path=lock_path, timeout=timeout) from exc
+    finally:
+        task_lock.release()
