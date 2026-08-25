@@ -1,3 +1,15 @@
+## v0.11.0 (2026-08-26)
+
+### Feat
+
+- **locking**: integrate session locking with fast timeout and gitignore updates
+- **locking**: implement EP-0129 with multi-process state locks and async support
+- **paths**: implement EP-0128 for robust directory resolution with container fallbacks
+
+### Refactor
+
+- **paths**: standardize string literals and use contextlib for exception suppression
+
 ## v0.10.3 (2026-08-23)
 
 ### Refactor
