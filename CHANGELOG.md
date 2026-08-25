@@ -1,3 +1,9 @@
+## v0.11.1 (2026-08-26)
+
+### Refactor
+
+- **cli,locking**: improve error handling with LockTimeoutError across commands
+
 ## v0.11.0 (2026-08-26)
 
 ### Feat
