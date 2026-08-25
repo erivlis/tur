@@ -232,7 +232,7 @@ def persona_get() -> None:
                 persona_name = matched.name
                 version = matched.version
 
-        console.print(f"[bold green]Active Persona:[/bold green] {persona_name} (v{version}) [{active_uuid}]")
+        console.print(f'[bold green]Active Persona:[/bold green] {persona_name} (v{version}) [{active_uuid}]')
         console.print(f'[dim]Source: {state_path}[/dim]')
     except Exception as e:
         console.print(f'[red]Error getting active persona: {e}[/red]')

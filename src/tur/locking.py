@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 # Polling and Timeout Constants
 DEFAULT_POLL_INTERVAL_SECONDS: float = 0.005  # 5ms fast probe eliminates latency quantization
-FAST_LOCK_TIMEOUT_SECONDS: float = 3.0        # Interactive state mutations (session notes, telemetry)
-HEAVY_LOCK_TIMEOUT_SECONDS: float = 30.0      # Storage migrations and Merkle graph compaction
+FAST_LOCK_TIMEOUT_SECONDS: float = 3.0  # Interactive state mutations (session notes, telemetry)
+HEAVY_LOCK_TIMEOUT_SECONDS: float = 30.0  # Storage migrations and Merkle graph compaction
 DEFAULT_LOCK_TIMEOUT_SECONDS: float = FAST_LOCK_TIMEOUT_SECONDS
 
 
@@ -32,16 +32,14 @@ class LockTimeoutError(TimeoutError):
     def __init__(self, lock_path: Path, timeout: float) -> None:
         self.lock_path = lock_path
         self.timeout = timeout
-        super().__init__(
-            f"Could not acquire lock on {lock_path} after {timeout:.2f}s (held by another process)"
-        )
+        super().__init__(f'Could not acquire lock on {lock_path} after {timeout:.2f}s (held by another process)')
 
 
 def _stamp_lock_holder(fd: int) -> None:
     """Stamp holder PID and hostname into native lock descriptor for debugging."""
     try:
         os.lseek(fd, 0, os.SEEK_SET)
-        payload = f"pid={os.getpid()} host={socket.gethostname()}\n".encode()
+        payload = f'pid={os.getpid()} host={socket.gethostname()}\n'.encode()
         os.write(fd, payload)
         os.ftruncate(fd, len(payload))
     except OSError:
@@ -63,7 +61,7 @@ def get_file_lock(
         poll_interval=poll_interval,
         is_singleton=True,
         preserve_lock_file=True,
-        close_error_policy="suppress",
+        close_error_policy='suppress',
         on_acquired=_stamp_lock_holder,
     )
 
@@ -90,7 +88,7 @@ def state_lock(
         lock.acquire(blocking=False)
     except Timeout:
         logger.info(
-            "Lock %s is currently held by another process; waiting up to %.1fs...",
+            'Lock %s is currently held by another process; waiting up to %.1fs...',
             lock.lock_file,
             timeout,
         )
@@ -134,7 +132,7 @@ async def async_state_lock(
         poll_interval=poll_interval,
         is_singleton=True,
         preserve_lock_file=True,
-        close_error_policy="suppress",
+        close_error_policy='suppress',
     )
     async with task_lock:
         try:

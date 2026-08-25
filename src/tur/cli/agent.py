@@ -15,6 +15,7 @@ from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.compiler import compile_persona
 from tur.introspection import format_graph_as_mermaid, run_introspection
+from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
 from tur.models import (
     HarnessDelegationError,
@@ -39,17 +40,17 @@ app = typer.Typer(
 
 @app.command()
 def wake(
-        session_id: str | None = typer.Option(
-            None, help='The session ID to resume or wake under. If omitted, uses active or auto-starts one.'
-        ),
-        from_session: str | None = typer.Option(
-            None, help='Optional ID of a previous session whose last note will seed a newly started session.'
-        ),
-        agent_id: str | None = typer.Option(None, help='The unique agent ID representing this manifestation.'),
-        harness_conversation_id: str | None = typer.Option(None, help='The harness conversation ID.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    session_id: str | None = typer.Option(
+        None, help='The session ID to resume or wake under. If omitted, uses active or auto-starts one.'
+    ),
+    from_session: str | None = typer.Option(
+        None, help='Optional ID of a previous session whose last note will seed a newly started session.'
+    ),
+    agent_id: str | None = typer.Option(None, help='The unique agent ID representing this manifestation.'),
+    harness_conversation_id: str | None = typer.Option(None, help='The harness conversation ID.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ):
     """Wake the persona and compile the prompt."""
     try:
@@ -117,6 +118,9 @@ def wake(
         console.print(system_prompt)
         console.print('[bold green]--- SYSTEM READY ---[/bold green]')
 
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error during wake: {e}[/red]')
         raise typer.Exit(code=1)
@@ -124,16 +128,16 @@ def wake(
 
 @app.command()
 def learn(
-        content: str | None = typer.Argument(None, help='The content of the memory to store.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
-        type: MemoryType = typer.Option(MemoryType.INSIGHT, help='The type of memory.'),
-        scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help='The scope of the memory.'),
-        session_id: str = typer.Option(None, help='The name/ID of the session this memory belongs to'),
-        json_payload: list[str] | None = typer.Option(
-            None, '--json', help='Structured JSON payload(s), file paths, or globs to commit.'
-        ),
+    content: str | None = typer.Argument(None, help='The content of the memory to store.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    type: MemoryType = typer.Option(MemoryType.INSIGHT, help='The type of memory.'),
+    scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help='The scope of the memory.'),
+    session_id: str = typer.Option(None, help='The name/ID of the session this memory belongs to'),
+    json_payload: list[str] | None = typer.Option(
+        None, '--json', help='Structured JSON payload(s), file paths, or globs to commit.'
+    ),
 ):
     """Create a new memory for a persona, or commit structured JSON memories."""
     if not json_payload and not content:
@@ -188,6 +192,9 @@ def learn(
         saved_path = memory_manager.save(memory)
         console.print(f'[green]Memory saved to {saved_path}[/green]')
 
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
@@ -195,14 +202,13 @@ def learn(
 
 @app.command()
 def recall(
-        query: str = typer.Argument(..., help='The topic or concept to search for in past memories.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    query: str = typer.Argument(..., help='The topic or concept to search for in past memories.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ):
     """Search your deep memory bank for past events, decisions, or knowledge."""
     try:
-
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
 
@@ -216,16 +222,19 @@ def recall(
 
 @app.command()
 def note(
-        content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
-        session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
+    content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
 ):
     """Append a note to the active session's notes.yaml."""
     try:
         res = session.note_logic(content, session_id=session_id, identifier=identifier)
         console.print(f'[green]{res}[/green]')
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error saving note: {e}[/red]')
         raise typer.Exit(code=1)
@@ -233,9 +242,9 @@ def note(
 
 @app.command()
 def status(
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ):
     """Show the current persona, session, and memory status."""
 
@@ -346,6 +355,9 @@ def status(
 
         console.print(Panel(table, title='[bold]Tur Status[/bold]', border_style='cyan'))
 
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
@@ -353,16 +365,16 @@ def status(
 
 @app.command()
 def sleep(
-        log_path: str | None = typer.Argument(None, help='Path to the chat log file to be parsed.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
-        session_id: str = typer.Option(None, help='The name/ID of the session these memories belong to'),
-        model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for dreaming (insight extraction)'),
-        note: str = typer.Option(..., '-n', '--note', help='Final note/utterance to append before sleeping.'),
-        commit: list[str] | None = typer.Option(
-            None, '--commit', help='Structured JSON payload(s), file path(s), or glob(s) to commit directly.'
-        ),
+    log_path: str | None = typer.Argument(None, help='Path to the chat log file to be parsed.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    session_id: str = typer.Option(None, help='The name/ID of the session these memories belong to'),
+    model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for dreaming (insight extraction)'),
+    note: str = typer.Option(..., '-n', '--note', help='Final note/utterance to append before sleeping.'),
+    commit: list[str] | None = typer.Option(
+        None, '--commit', help='Structured JSON payload(s), file path(s), or glob(s) to commit directly.'
+    ),
 ):
     """Dehydrate a session by parsing a chat log to extract memories or commit structured JSON."""
     if not commit and not log_path:
@@ -393,6 +405,11 @@ def sleep(
                     commit_payload=commit,
                 )
                 console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
+            except LockTimeoutError as e:
+                console.print(
+                    f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]'
+                )
+                raise typer.Exit(code=1)
             except Exception as e:
                 console.print(f'[red]Error during committing dreams: {e}[/red]')
                 raise typer.Exit(code=1)
@@ -416,6 +433,9 @@ def sleep(
         except HarnessDelegationError as e:
             console.print(e.prompt)
             raise typer.Exit(code=0)
+        except LockTimeoutError as e:
+            console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+            raise typer.Exit(code=1)
         except Exception as e:
             console.print(f'[red]Error during dreaming: {e}[/red]')
 
@@ -423,6 +443,9 @@ def sleep(
 
     except typer.Exit:
         raise
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error during sleep: {e}[/red]')
         raise typer.Exit(code=1)
@@ -438,10 +461,10 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
     # 2. Resolve agent_id
     env_agent_id = os.getenv('TUR_AGENT_ID')
     if (
-            agent_id_opt
-            and env_agent_id
-            and agent_id_opt != env_agent_id
-            and not agent_id_opt.startswith(env_agent_id + '.')
+        agent_id_opt
+        and env_agent_id
+        and agent_id_opt != env_agent_id
+        and not agent_id_opt.startswith(env_agent_id + '.')
     ):
         console.print(
             f"[red]Error: Namespace violation: agent_id '{agent_id_opt}' "
@@ -478,8 +501,8 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
 
 @app.command()
 def list_agents(
-        session_id: str | None = typer.Option(None, help='Session ID. If omitted, uses active session.'),
-        json_mode: bool = typer.Option(False, '--json', help='Output in JSON format.'),
+    session_id: str | None = typer.Option(None, help='Session ID. If omitted, uses active session.'),
+    json_mode: bool = typer.Option(False, '--json', help='Output in JSON format.'),
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
@@ -489,10 +512,8 @@ def list_agents(
     try:
         agents = session.list_agents_logic(sess_id)
         if json_mode:
-
             console.print(json.dumps(agents, indent=2))
         else:
-
             table = Table(title=f'Manifestations in Session {sess_id}')
             table.add_column('Agent ID', style='cyan')
             table.add_column('Harness', style='magenta')
@@ -512,11 +533,11 @@ def list_agents(
 
 @app.command()
 def signal(
-        to: str = typer.Argument(..., help='The recipient agent ID or dot-notation handle, or "*" for broadcast.'),
-        content: str = typer.Argument(..., help='The content string of the signal.'),
-        type: str = typer.Option('inform', help='The signal type (inform, query, delegate, ack, warn, etc.).'),
-        agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    to: str = typer.Argument(..., help='The recipient agent ID or dot-notation handle, or "*" for broadcast.'),
+    content: str = typer.Argument(..., help='The content string of the signal.'),
+    type: str = typer.Option('inform', help='The signal type (inform, query, delegate, ack, warn, etc.).'),
+    agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     """Send a coordination message signal to another manifestation."""
     try:
@@ -530,10 +551,10 @@ def signal(
 
 @app.command()
 def read_signals(
-        unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread signals or all.'),
-        json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
-        agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread signals or all.'),
+    json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     """Retrieve incoming coordination signals."""
     try:
@@ -541,7 +562,6 @@ def read_signals(
         signals = session.read_signals_logic(sess_id, reader_id, unread_only)
 
         if json_mode:
-
             console.print(json.dumps(signals, indent=2))
         else:
             if not signals:
@@ -559,9 +579,9 @@ def read_signals(
 
 @app.command()
 def ack_signals(
-        signal_ids: str = typer.Argument(..., help='Comma-separated list of signal IDs to acknowledge.'),
-        agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    signal_ids: str = typer.Argument(..., help='Comma-separated list of signal IDs to acknowledge.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     """Acknowledge read signals to mark them as read."""
     try:
@@ -576,8 +596,8 @@ def ack_signals(
 
 @app.command()
 def read_notes(
-        limit: int = typer.Option(50, help='Max number of notes to retrieve.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    limit: int = typer.Option(50, help='Max number of notes to retrieve.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
@@ -600,10 +620,10 @@ def read_notes(
 
 @app.command()
 def whiteboard_write(
-        key: str = typer.Argument(..., help='The coordinate key.'),
-        value: str = typer.Argument(..., help='The value string.'),
-        agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    value: str = typer.Argument(..., help='The value string.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     """Write or update parameters on the shared session whiteboard."""
     try:
@@ -617,8 +637,8 @@ def whiteboard_write(
 
 @app.command()
 def whiteboard_read(
-        key: str = typer.Argument(..., help='The coordinate key.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
@@ -638,9 +658,9 @@ def whiteboard_read(
 
 @app.command()
 def tired(
-        agent_id: str | None = typer.Option(None, help='The agent ID.'),
-        session_id: str | None = typer.Option(None, help='The session ID.'),
-        transcript: str | None = typer.Option(None, help='Optional chat log transcript content.'),
+    agent_id: str | None = typer.Option(None, help='The agent ID.'),
+    session_id: str | None = typer.Option(None, help='The session ID.'),
+    transcript: str | None = typer.Option(None, help='Optional chat log transcript content.'),
 ):
     """Transition agent to idle, runs staged dreaming, and evaluates sleep consensus."""
     try:
@@ -654,9 +674,9 @@ def tired(
 
 @app.command()
 def verify(
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ):
     """Verify the cryptographic integrity of all memory files."""
     failures = None
@@ -684,26 +704,26 @@ def verify(
 
 @app.command()
 def introspect(
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
-        all: bool = typer.Option(
-            False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'
-        ),
-        visualize: bool = typer.Option(
-            False, '--visualize', help='Output a Mermaid representation of the Knowledge Graph.'
-        ),
-        model: str = typer.Option(
-            'gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'
-        ),
-        commit: list[str] | None = typer.Option(
-            None,
-            '--commit',
-            help='Structured JSON payload(s), file path(s), or glob(s) containing ExtractedGraph(s) to commit.',
-        ),
-        test_mode: bool = typer.Option(
-            False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'
-        ),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    all: bool = typer.Option(
+        False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'
+    ),
+    visualize: bool = typer.Option(
+        False, '--visualize', help='Output a Mermaid representation of the Knowledge Graph.'
+    ),
+    model: str = typer.Option(
+        'gemini-3.1-pro-preview', help='The model to use for extraction (MCP sampling emulator).'
+    ),
+    commit: list[str] | None = typer.Option(
+        None,
+        '--commit',
+        help='Structured JSON payload(s), file path(s), or glob(s) containing ExtractedGraph(s) to commit.',
+    ),
+    test_mode: bool = typer.Option(
+        False, '--test-mode', hidden=True, help='Enable mock mode for testing without GenAI key.'
+    ),
 ):
     """
     Compress L1 memories into the L2 Cognitive Map. Runs the Council Assembly pipeline.
@@ -740,16 +760,16 @@ def introspect(
 
 @app.command()
 def evolve(
-        memory_id: str = typer.Argument(..., help='The SHA-256 hash or part of the L1 memory ID to promote/refine.'),
-        core_type: str = typer.Option(
-            'existential_alignment',
-            help='The core transition category: existential_alignment, relational_discovery, or identity_transition.',
-        ),
-        principle: str = typer.Option(..., help='The concrete behavioral constraint/instruction (derived principle).'),
-        covenant: str = typer.Option(..., help='The ethical commitment/promise to the user or self.'),
-        identifier: str | None = typer.Argument(
-            None, help='The name or UUID of the persona. If omitted, uses the default.'
-        ),
+    memory_id: str = typer.Argument(..., help='The SHA-256 hash or part of the L1 memory ID to promote/refine.'),
+    core_type: str = typer.Option(
+        'existential_alignment',
+        help='The core transition category: existential_alignment, relational_discovery, or identity_transition.',
+    ),
+    principle: str = typer.Option(..., help='The concrete behavioral constraint/instruction (derived principle).'),
+    covenant: str = typer.Option(..., help='The ethical commitment/promise to the user or self.'),
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
 ):
     """Refine a lived experience (an existing memory or note) into a Core Memory with status pending_approval."""
     try:
@@ -794,6 +814,9 @@ def evolve(
         console.print(f"[green]Core Memory created and staged in 'pending_approval' status: {saved_path}[/green]")
         console.print(f'To approve and activate this axiom, run: [bold]tur approve {core_mem.id[:8]}[/bold]')
 
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)

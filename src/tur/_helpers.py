@@ -287,6 +287,7 @@ def require_inference(
     from tur.models import HarnessDelegationError
 
     if ctx is not None:
+
         async def do_sampling():
             return await _mcp_sample(ctx, prompt)
 
@@ -300,7 +301,7 @@ def require_inference(
             raise HarnessDelegationError(instructions)
         raise ValueError(
             f"Inference required for '{task_description}' but neither MCP context "
-            "nor TUR_LLM_API_KEY / GEMINI_API_KEY environment variable was provided."
+            'nor TUR_LLM_API_KEY / GEMINI_API_KEY environment variable was provided.'
         )
 
     raw_resp = _local_gemini_generate(
@@ -310,5 +311,3 @@ def require_inference(
         response_schema=response_schema,
     )
     return _clean_json_response(raw_resp)
-
-

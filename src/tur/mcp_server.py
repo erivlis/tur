@@ -11,6 +11,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from tur._helpers import yaml_safe_load
 from tur.compiler import compile_persona
 from tur.dreaming import perform_sleep_dreaming
+from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType, SessionNotes
 from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
@@ -129,6 +130,8 @@ def status() -> dict:
             'memory_stats': memory_stats,
             'l2_stats': l2_stats,
         }
+    except LockTimeoutError as e:
+        return {'status': 'contended', 'error': f'State lock is currently held by another process: {e}'}
     except Exception as e:
         return {'error': str(e)}
     else:
@@ -155,43 +158,49 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
         previous_session_id(str): Optional session ID to seed the opening note of a new session.
     """
     global _active_session_id
-    active_id = get_active_persona_id()
-    sess_id = session_id or _active_session_id or get_active_session_id()
-    if not sess_id:
-        import uuid
-        from datetime import datetime
+    try:
+        active_id = get_active_persona_id()
+        sess_id = session_id or _active_session_id or get_active_session_id()
+        if not sess_id:
+            import uuid
+            from datetime import datetime
 
-        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        short_hex = uuid.uuid4().hex[:8]
-        sess_id = f'{ts}_{short_hex}'
-        start_session_logic(sess_id, previous_session_id=previous_session_id)
-        _active_session_id = sess_id
-    else:
-        _active_session_id = sess_id
-    state = hydrate_session_state(active_id, session_id=sess_id)
-    system_prompt = compile_persona(state)
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            short_hex = uuid.uuid4().hex[:8]
+            sess_id = f'{ts}_{short_hex}'
+            start_session_logic(sess_id, previous_session_id=previous_session_id)
+            _active_session_id = sess_id
+        else:
+            _active_session_id = sess_id
+        state = hydrate_session_state(active_id, session_id=sess_id)
+        system_prompt = compile_persona(state)
 
-    # Append Telemetry Metadata
-    telemetry_engine = CognitiveTelemetry()
-    static_metrics = telemetry_engine.measure_static_load(system_prompt)
-    cp = telemetry_engine.calculate_constraint_dimensionality(state.persona)
+        # Append Telemetry Metadata
+        telemetry_engine = CognitiveTelemetry()
+        static_metrics = telemetry_engine.measure_static_load(system_prompt)
+        cp = telemetry_engine.calculate_constraint_dimensionality(state.persona)
 
-    telemetry_block = (
-        f'\n\n--- [SYSTEM METRICS] ---\n'
-        f'Active Persona ID: {active_id}\n'
-        f'Constraint Dimensionality (Cp): {cp}\n'
-        f'Static Token Cost: {static_metrics["est_tokens"]}\n'
-        f'Information Density: {static_metrics["density"]:.2f}\n'
-    )
+        telemetry_block = (
+            f'\n\n--- [SYSTEM METRICS] ---\n'
+            f'Active Persona ID: {active_id}\n'
+            f'Constraint Dimensionality (Cp): {cp}\n'
+            f'Static Token Cost: {static_metrics["est_tokens"]}\n'
+            f'Information Density: {static_metrics["density"]:.2f}\n'
+        )
 
-    return system_prompt + telemetry_block
+        return system_prompt + telemetry_block
+    except LockTimeoutError as e:
+        return (
+            f'Status: Contended. The state lock is currently held by another agent or process: {e}. '
+            'Please retry shortly.'
+        )
 
 
 @mcp.tool()
 def learn(
-        content: str,
-        type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
-        scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
+    content: str,
+    type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
+    scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
@@ -247,16 +256,19 @@ def learn(
         content=content,
         source_session=None,
     )
-    saved_path = manager.save(memory)
+    try:
+        saved_path = manager.save(memory)
+    except LockTimeoutError as e:
+        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
     return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
 
 
 @mcp.tool()
 def evolve(
-        memory_id: str,
-        core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
-        derived_principle: str,
-        ethical_covenant: str,
+    memory_id: str,
+    core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
+    derived_principle: str,
+    ethical_covenant: str,
 ) -> str:
     """
     Refine a lived experience (an existing memory/note) into a permanent Core Memory with status pending_approval.
@@ -298,7 +310,10 @@ def evolve(
         ethical_covenant=ethical_covenant,
         status='pending_approval',  # Steward: Pending approval workflow
     )
-    saved_path = manager.save(core_mem)
+    try:
+        saved_path = manager.save(core_mem)
+    except LockTimeoutError as e:
+        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
     return (
         f"Core Memory created and staged in 'pending_approval' status: {core_mem.id}. File: {saved_path.name}."
         f' Instruct the Architect to approve it with: tur-adm memory approve {core_mem.id[:8]}'
@@ -327,6 +342,8 @@ def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
         node_count = graph.number_of_nodes()
         edge_count = graph.number_of_edges()
         mermaid = format_graph_as_mermaid(graph)
+    except LockTimeoutError as e:
+        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
     except Exception as e:
         return f'Error during Council Introspection: {e}'
     else:
@@ -359,6 +376,11 @@ def note(content: str) -> str:
     global _active_session_id
     try:
         res = note_logic(content, session_id=_active_session_id)
+    except LockTimeoutError as e:
+        return (
+            f'Status: Contended. The state lock is currently held by another agent or process: {e}. '
+            'Please retry shortly.'
+        )
     except Exception as e:
         return f'Error updating note: {e}'
     else:
@@ -367,11 +389,11 @@ def note(content: str) -> str:
 
 @mcp.tool()
 def sleep(
-        note: str,
-        log_content: str,
-        session_id: str | None = None,
-        model: str = 'gemini-3.1-pro-preview',
-        ctx: Context | None = None,
+    note: str,
+    log_content: str,
+    session_id: str | None = None,
+    model: str = 'gemini-3.7-flash',
+    ctx: Context | None = None,
 ) -> str:
     """
     Dehydrate a session by parsing the active session's chat log to extract memories.
@@ -397,16 +419,31 @@ def sleep(
     if resolved_session_id:
         try:
             note_logic(note, session_id=resolved_session_id)
+        except LockTimeoutError as e:
+            return (
+                f'Status: Contended. Could not append final note because state lock is held by another process: {e}. '
+                'Please retry shortly.'
+            )
         except Exception as e:
             return f'Error appending final note: {e}'
         try:
             end_session_logic(resolved_session_id)
+        except LockTimeoutError as e:
+            return (
+                f'Status: Contended. Could not end session because state lock is held by another process: {e}. '
+                'Please retry shortly.'
+            )
         except Exception as e:
             return f'Error ending session: {e}'
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
             log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model, ctx=ctx
+        )
+    except LockTimeoutError as e:
+        return (
+            f'Status: Contended. State lock currently held during dreaming consolidation: {e}. '
+            'Please retry shortly.'
         )
     except Exception as e:
         return f'Error during dreaming: {e}'
@@ -586,7 +623,10 @@ def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
     active_agent = agent_id or env_agent_id or 'mcp_agent'
-    res = tired_logic(sess_id, active_agent, transcript)
+    try:
+        res = tired_logic(sess_id, active_agent, transcript)
+    except LockTimeoutError as e:
+        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
     if 'Consensus sleep reached' in res:
         _active_session_id = None
     return res

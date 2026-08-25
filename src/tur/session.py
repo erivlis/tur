@@ -873,9 +873,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
     with conn:
         cursor = conn.cursor()
         payload = f'{agent_id}|*|sleep_event|Consensus reached. Swarm sleeping.'
-        sig_id = hashlib.sha256(
-            f'{payload}|{datetime.now(UTC).isoformat()}|{uuid.uuid4().hex}'.encode()
-        ).hexdigest()
+        sig_id = hashlib.sha256(f'{payload}|{datetime.now(UTC).isoformat()}|{uuid.uuid4().hex}'.encode()).hexdigest()
         conn.execute(
             """
             INSERT INTO signals (id, sender, recipient, type, content)

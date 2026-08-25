@@ -126,7 +126,6 @@ class OntologyExtractor(IntrospectionSubagent):
     def __init__(self, name: str = 'OntologyExtractor', role: str = 'Ontological Logician'):
         super().__init__(name, role)
 
-
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         mems = context.get('raw_memories', [])
         if not mems and not context.get('commit_payload'):
@@ -259,6 +258,7 @@ class OntologyExtractor(IntrospectionSubagent):
             return graph, context
 
         from tur._helpers import require_inference
+
         model = context.get('model', 'gemini-3.1-pro-preview')
 
         resp_text = require_inference(
@@ -283,7 +283,7 @@ class OntologyExtractor(IntrospectionSubagent):
         return self._merge_extracted_graph(graph, extracted, context)
 
     def _merge_extracted_graph(
-            self, graph: nx.DiGraph, extracted: ExtractedGraph, context: dict
+        self, graph: nx.DiGraph, extracted: ExtractedGraph, context: dict
     ) -> tuple[nx.DiGraph, dict]:
         # Custom edge types from persona configuration
         custom_edge_types: set[str] = set()
@@ -376,8 +376,8 @@ class OntologyExtractor(IntrospectionSubagent):
                 # Relationship signature constraints:
                 # 1. precedes can only connect Decision and Fact nodes
                 if normalized_edge_type == EdgeType.PRECEDES.value and not (
-                        src_type in [NodeType.DECISION.value, NodeType.FACT.value]
-                        and tgt_type in [NodeType.DECISION.value, NodeType.FACT.value]
+                    src_type in [NodeType.DECISION.value, NodeType.FACT.value]
+                    and tgt_type in [NodeType.DECISION.value, NodeType.FACT.value]
                 ):
                     continue
                 # 2. refines only connects nodes of the same type
@@ -394,11 +394,12 @@ class OntologyExtractor(IntrospectionSubagent):
                         created_at=datetime.now(UTC).isoformat(),
                     )
                     if not nx.is_directed_acyclic_graph(
-                            nx.subgraph_view(
-                                graph,
-                                filter_edge=lambda u, v: graph[u][v].get('type')
-                                in [EdgeType.PRECEDES.value, EdgeType.DEPENDS_ON.value],
-                            )
+                        nx.subgraph_view(
+                            graph,
+                            filter_edge=lambda u, v: (
+                                graph[u][v].get('type') in [EdgeType.PRECEDES.value, EdgeType.DEPENDS_ON.value]
+                            ),
+                        )
                     ):
                         # If cycle is formed, remove to enforce DAG constraints
                         graph.remove_edge(src, tgt)
@@ -431,9 +432,9 @@ class TruthMaintenanceEngine(IntrospectionSubagent):
             if edge_type == 'superseded_by':
                 # u is superseded by v
                 if (
-                        graph.nodes.get(v, {}).get('status') == 'active'
-                        and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
-                        and graph.nodes[u].get('status') != 'superseded'
+                    graph.nodes.get(v, {}).get('status') == 'active'
+                    and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
+                    and graph.nodes[u].get('status') != 'superseded'
                 ):
                     graph.nodes[u]['status'] = 'superseded'
                     graph.nodes[u]['confidence'] = 0.0
@@ -441,9 +442,9 @@ class TruthMaintenanceEngine(IntrospectionSubagent):
             elif edge_type == 'refuted_by':
                 # u is refuted by v
                 if (
-                        graph.nodes.get(v, {}).get('status') == 'active'
-                        and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
-                        and graph.nodes[u].get('status') != 'superseded'
+                    graph.nodes.get(v, {}).get('status') == 'active'
+                    and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
+                    and graph.nodes[u].get('status') != 'superseded'
                 ):
                     graph.nodes[u]['status'] = 'superseded'
                     graph.nodes[u]['confidence'] = 0.0
@@ -550,7 +551,6 @@ class NoveltyExplorer(IntrospectionSubagent):
 
     def __init__(self, name: str = 'NoveltyExplorer', role: str = 'Conceptual Explorer'):
         super().__init__(name, role)
-
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
         # Connect isolated parts or add OpenQuestion placeholder if we find structural holes
@@ -717,7 +717,6 @@ class IntrospectionAssembly:
         for agent in self.agents:
             graph, context = agent.run(graph, context)
         return graph, context
-
 
 
 # Compacted L2 graph representation compiler
@@ -917,12 +916,12 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
 
 
 def run_introspection(
-        persona_dir: Path,
-        bootstrap: bool = False,
-        model: str = 'gemini-3.1-pro-preview',
-        test_mode: bool = False,
-        mcp_context: Any = None,
-        commit_payload: str | ExtractedGraph | dict | None = None,
+    persona_dir: Path,
+    bootstrap: bool = False,
+    model: str = 'gemini-3.1-pro-preview',
+    test_mode: bool = False,
+    mcp_context: Any = None,
+    commit_payload: str | ExtractedGraph | dict | None = None,
 ) -> nx.DiGraph:
     """
     Core entrypoint to run the introspection compaction loop.

@@ -65,7 +65,7 @@ def get_active_persona_id(identifier: str | None = None) -> str:
 
     names = ', '.join(p.name for p in index.personas)
     raise ValueError(
-        f"No active persona configured for this workspace. Multiple personas available: [{names}]. "
+        f'No active persona configured for this workspace. Multiple personas available: [{names}]. '
         "Please select one via 'tur-adm persona default <name>', specify an identifier (e.g. 'tur status <name>'), "
         "or set the 'TUR_ACTIVE_PERSONA_ID' environment variable."
     )

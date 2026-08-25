@@ -408,13 +408,15 @@ class MemoryManager:
         ]
 
         if self.local_dir is not None:
-            directories.extend([
-                self.local_dir,
-                self.local_archive_dir,
-                self.local_subsumed_dir,
-                self.local_dir.parent,
-                self.local_dir.parent.parent / 'subsumed',
-            ])
+            directories.extend(
+                [
+                    self.local_dir,
+                    self.local_archive_dir,
+                    self.local_subsumed_dir,
+                    self.local_dir.parent,
+                    self.local_dir.parent.parent / 'subsumed',
+                ]
+            )
 
         seen_paths = set()
         for directory in directories:
