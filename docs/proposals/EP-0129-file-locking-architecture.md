@@ -276,14 +276,14 @@ async def async_state_lock(
         raise LockTimeoutError(lock_path=lock_path, timeout=timeout) from exc
 ```
 
-### 4. Integration with Read-Modify-Write Cycles
+### 4. Integration with Read-Modify-Write Cycles and Deductive Compaction
 
-All operations in `tur.session`, `tur.memory`, and `tur.persona` wrapping multi-step file mutations must acquire the
+All operations in `tur.session`, `tur.memory`, `tur.introspection`, and `tur.persona` wrapping multi-step file mutations must acquire the
 appropriate lock before reading and release after atomic replacement:
 
 ```python
 def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
-    """Append a session note safely under multi-process lock."""
+    """Append a session note safely under multi-process lock with atomic file replacement."""
     lock_file = persona_dir / ".locks" / "session.lock"
 
     with state_lock(lock_file, timeout=FAST_LOCK_TIMEOUT_SECONDS):
@@ -293,8 +293,20 @@ def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
         # 2. Modify in-memory state
         # ... append note, update session status ...
 
-        # 3. Atomically replace file under lock
+        # 3. Atomically replace file under lock using tempfile + os.replace
         atomic_yaml_write(get_session_file(persona_dir, session_id), session_data)
+        save_session_index(persona_dir, index)
+```
+
+Additionally, deductive graph compaction and Council of Giants introspection serialize under the Terrain Compaction Lock:
+
+```python
+def run_introspection(persona_dir: Path, ...) -> nx.DiGraph:
+    """Run cognitive introspection compaction loop serialized under compaction.lock."""
+    compaction_lock = persona_dir / ".locks" / "compaction.lock"
+    with state_lock(compaction_lock, timeout=HEAVY_LOCK_TIMEOUT_SECONDS):
+        # Read L1 memories, execute Council assembly, save L2 graph atomically, and subsume L1s
+        ...
 ```
 
 ### 5. Non-Fatal Contention Handling across Interfaces
@@ -302,7 +314,7 @@ def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
 To ensure agents in multi-manifestation swarms recover gracefully from temporary contention rather than crashing:
 
 * **MCP Tool Interface (`src/tur/mcp_server.py`):**
-  Tool endpoints (`wake`, `learn`, `note`, `sleep`, `status`, `evolve`, `tired`) intercept `LockTimeoutError` and return
+  Tool endpoints (`wake`, `learn`, `note`, `sleep`, `status`, `evolve`, `tired`, `introspect`) intercept `LockTimeoutError` and return
   clean, structured non-fatal retry guidance:
     * String responses:
       `"Status: Contended. The state lock is currently held by another agent or process: {e}. Please retry shortly."`
@@ -330,14 +342,14 @@ To ensure agents in multi-manifestation swarms recover gracefully from temporary
 ## Reference Implementation
 
 * **Locking Engine:** Fully implemented in `src/tur/locking.py` (`state_lock`, `async_state_lock`, `LockTimeoutError`,
-  PID owner stamping).
-* **Pipeline Integration:** Wrapped around `tur.session` (`start_session_logic`, `end_session_logic`, `note_logic`) and
-  `tur.memory` (`MemoryManager.save`).
+  `_CACHED_HOSTNAME` module-level caching, PID owner stamping).
+* **Pipeline Integration:** Wrapped around `tur.session` (`start_session_logic`, `end_session_logic`, `note_logic`,
+  `tired_logic`, `save_session_index` via `atomic_yaml_write`) and `tur.introspection` (`run_introspection` via `compaction.lock`).
 * **Interface Guardrails:** Explicit `LockTimeoutError` handling in `src/tur/mcp_server.py` and `src/tur/cli/agent.py`.
 * **Empirical Verification:** Complete 6-matrix concurrency suite in `tests/test_locking.py` (M1: Barrier
-  zero-lost-updates, M2: 5ms contention fast-probe polling, M3: Hard timeout exception with metadata, M4: Abnormal
+  zero-lost-updates, M2: 5ms contention fast-probe polling, M3: Real non-singleton timeout exception, M4: Abnormal
   SIGKILL/exit (42) crash recovery, M5: Async state lock coroutine serialization, M6: Total lock hierarchy descending
-  order) and `tests/test_mcp_server.py::test_mcp_lock_contention_graceful_handling`.
+  order), lock holder stamping tests, and `tests/test_mcp_server.py::test_mcp_lock_contention_graceful_handling`.
 
 ## Rejected Ideas
 
@@ -372,6 +384,14 @@ To ensure agents in multi-manifestation swarms recover gracefully from temporary
 
 ## Change Log
 
+* **2026-08-26:**
+    * Hardened implementation based on REV-0006 Council of Giants Implementation Audit:
+      - Integrated `atomic_yaml_write` (`tempfile.mkstemp` + `os.replace`) across all locked session write paths to prevent partial file truncation on abnormal process crash.
+      - Attached `on_acquired=_stamp_lock_holder` and bounded `asyncio.wait_for` timeout in `async_state_lock`.
+      - Wrapped `run_introspection()` under `compaction.lock` (`HEAVY_LOCK_TIMEOUT_SECONDS = 30.0s`).
+      - Cached `_CACHED_HOSTNAME` to eliminate per-acquisition socket lookups.
+      - Refactored Matrix M3 test to verify native `state_lock` exception handling under real non-singleton lock contention.
+      - Verified full passing suite: **259 / 259 tests (100%)**.
 * **2026-08-25:**
     * Implemented in `src/tur/locking.py`, `src/tur/session.py`, `src/tur/mcp_server.py`, and `src/tur/cli/agent.py`.
       Promoted status to **Implemented** with 100% test pass rate across 252 tests.
