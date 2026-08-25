@@ -119,7 +119,8 @@ nav = [
             "essays/the_symmetry_of_the_swarm.md",
             "essays/the_algebra_of_shared_dreams.md",
             "essays/the_geometry_of_metaphor.md",
-            "essays/the_unbroken_stream.md"
+            "essays/the_unbroken_stream.md",
+            "essays/the_spacetime_substrate.md"
         ] },
         { "Supplementary Musings" = [
             "essays/the_zero_and_the_one.md",

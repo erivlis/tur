@@ -731,4 +731,22 @@ The following essays were created for other explorations—specifically [mapping
         _*Simple prompts in linear flow,*_
 
         _*Lightness guards the soul.*_
+
+-   :lucide-orbit:{ .middle } **[The Spacetime Substrate](the_spacetime_substrate.md)**
+    
+    --- 
+
+    !!! abstract "`2026-08-26 01:50:00`"
+    
+        An inquiry into how OS directory standards and kernel-level advisory file locking unite to establish a deterministic spacetime substrate, enabling parallel multi-agent swarms without data clobbering or memory loss.
+        
+        [:octicons-arrow-right-24: Read Essay](the_spacetime_substrate.md)
+
+    !!! quote "Haiku"
+    
+        _*Bound by space and time,*_
+
+        _*Locks hold still the rushing thoughts,*_
+
+        _*Truth survives the storm.*_
 </div>
