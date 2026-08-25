@@ -144,7 +144,7 @@ graph TD
       signals across MCP-connected swarms.
     * **Algebraic Meditation Consensus (EP-0122) [Status: Draft]:** Multi-agent consensus mechanisms for distributed
       persona governance.
-    * **Multi-Process State Synchronization and File Locking Architecture (EP-0129) [Status: Draft]:** Adopting
+    * **Multi-Process State Synchronization and File Locking Architecture (EP-0129) [Status: Implemented]:** Adopting
       `filelock` to eliminate multi-agent read-modify-write race conditions and establish cross-platform process
       synchronization for shared indices, session continuity, and storage evolution.
     * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Draft]:** Establishing explicit
@@ -168,7 +168,7 @@ graph TD
     * **MCP Python SDK v2 Migration & Protocol Alignment (EP-0127) [Status: Draft]:** Migrating Tur's MCP server and
       harness integration layer to the official MCP Python SDK v2 (`MCPServer`), aligning with the 2026 protocol
       specifications.
-    * **OS-Native Directory Resolution and Runtime Storage Standards (EP-0128) [Status: Draft]:** Adopting
+    * **OS-Native Directory Resolution and Runtime Storage Standards (EP-0128) [Status: Implemented]:** Adopting
       `platformdirs` to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global
       persona state while preserving workspace terrain isolation.
 * **Track: Persona Memory & Compaction**
@@ -222,6 +222,9 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 ## Change Log
 
 * **2026-08-25:**
+    * Implemented and ratified **Layer 1 Substrate Hardening**: **EP-0128 (OS-Native Directory Resolution)** and
+      **EP-0129 (Multi-Process State Synchronization & File Locking Architecture)**. Full Council consensus certified in
+      **REV-0005** with 100% test pass rate across 249 test cases.
     * Codified the **Strategic Implementation Trajectory (Layered Dependency Sequence)** to sequence Phase 2 and 3 EPs
       across 4 foundational layers (Layer 1: Substrate Hardening, Layer 2: Protocol Modernization, Layer 3: Storage &
       Reactive Signals, Layer 4: Cognitive Consolidation & Swarm Consensus).

@@ -2,7 +2,7 @@
 title: "EP-0129: Multi-Process State Synchronization and File Locking Architecture"
 description: "Adopts filelock to eliminate multi-agent read-modify-write race conditions and establish cross-platform process synchronization for shared indices, session continuity, and storage evolution."
 icon: lucide/lock
-status: draft
+status: implemented
 ---
 
 # EP-0129: Multi-Process State Synchronization and File Locking Architecture
@@ -12,7 +12,7 @@ status: draft
 | **EP**      | 0129                                                              |
 | **Title**   | Multi-Process State Synchronization and File Locking Architecture |
 | **Author**  | Eran Rivlis & Ariel                                               |
-| **Status**  | Draft                                                             |
+| **Status**  | Implemented                                                       |
 | **Type**    | Standards Track                                                   |
 | **Created** | 2026-08-25                                                        |
 | **Updated** | 2026-08-25                                                        |
