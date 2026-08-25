@@ -252,13 +252,16 @@ Drafted across `src/tur/paths.py` and integrated into `src/tur/session.py` signa
 
 ## Open Questions & Council Directives
 
-- [ ] **Container Fallback Testing (Popper & Bacon):** Assert that headless environments with missing `/run/user/<uid>` fall back cleanly to `tempfile.gettempdir() / f"tur-runtime-{uid}"` with 100% test coverage.
-- [ ] **Global Path Predicate Completeness (Steward):** Verify that `is_global_path()` correctly identifies paths inside `platformdirs.user_data_dir()`.
-- [ ] Should `tur-adm purge-cache` be introduced as a dedicated CLI command leveraging `resolve_cache_dir()`?
+- [x] **Container Fallback Testing (Popper & Bacon):** Assert that headless environments with missing `/run/user/<uid>` fall back cleanly to `tempfile.gettempdir() / f"tur-runtime-{uid}"` with 100% test coverage.
+  - *Resolution:* Implemented in `src/tur/paths.py` and verified via `test_resolve_runtime_dir_container_fallback` in `tests/test_paths.py`.
+- [x] **Global Path Predicate Completeness (Steward):** Verify that `is_global_path()` correctly identifies paths inside `platformdirs` runtime, data, cache, and log directories.
+  - *Resolution:* Fully implemented across all 4 store root getters in `src/tur/paths.py` and verified in `tests/test_paths.py`.
+- [x] **Cache Pruning CLI (`tur-adm purge-cache`):** Should `tur-adm purge-cache` be introduced as a dedicated CLI command leveraging `resolve_cache_dir()`?
+  - *Resolution:* Deferred to `tur-adm` maintenance suite in Phase 3 storage evolution (EP-0125), keeping the low-privilege `tur` agent CLI clean and non-administrative.
 
 ## Change Log
 
 * **2026-08-25:**
-    * Integrated Council of Giants Review hardening mandates: container `/run/user` fallback, POSIX `0700` runtime permissions, `@lru_cache` memoization, symmetric `TUR_RUNTIME_DIR`/`TUR_CACHE_DIR` environment overrides, and `is_global_path` coverage update.
-    * Initial Draft proposing `platformdirs` integration for OS-native directory standards and ephemeral runtime IPC
-      isolation.
+    * Implemented in `src/tur/paths.py` and verified with 100% test pass in `tests/test_paths.py`. Promoted status to **Implemented**.
+    * Integrated Council of Giants Review hardening mandates: container `/run/user` fallback, POSIX `0700` runtime permissions, symmetric `TUR_RUNTIME_DIR`/`TUR_CACHE_DIR`/`TUR_LOG_DIR` environment overrides, and `is_global_path` coverage update.
+    * Initial Draft proposing `platformdirs` integration for OS-native directory standards and ephemeral runtime IPC isolation.
