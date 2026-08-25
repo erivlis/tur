@@ -86,3 +86,80 @@ def test_resolve_runtime_dir_container_fallback(monkeypatch):
     expected_fallback = Path(tempfile.gettempdir()) / f'tur-runtime-{uid}'
     assert resolved == expected_fallback.resolve()
     assert resolved.exists()
+
+
+def test_resolve_data_dir_tur_data_dir_env(tmp_path, monkeypatch):
+    custom_data = tmp_path / 'custom_data_dir'
+    monkeypatch.delenv('TUR_HOME', raising=False)
+    monkeypatch.setenv('TUR_DATA_DIR', str(custom_data))
+
+    resolved = paths.resolve_data_dir()
+    assert resolved == custom_data.resolve()
+
+
+def test_resolve_data_dir_default_home(tmp_path, monkeypatch):
+    # When TUR_HOME/TUR_DATA_DIR are unset, defaults to Path.home() / '.tur'
+    monkeypatch.delenv('TUR_HOME', raising=False)
+    monkeypatch.delenv('TUR_DATA_DIR', raising=False)
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path / 'empty_home')
+
+    resolved = paths.resolve_data_dir()
+    assert resolved == (tmp_path / 'empty_home' / '.tur').resolve()
+
+
+def test_resolve_workspace_dir_env_override(tmp_path, monkeypatch):
+    ws_dir = tmp_path / 'my_workspace'
+    ws_dir.mkdir()
+    monkeypatch.setenv('TUR_PROJECT_DIR', str(ws_dir))
+
+    assert paths.resolve_workspace_dir() == ws_dir.resolve()
+
+
+def test_resolve_workspace_dir_mcp_roots(tmp_path, monkeypatch):
+    monkeypatch.delenv('TUR_PROJECT_DIR', raising=False)
+    ws_dir = tmp_path / 'mcp_workspace'
+    ws_dir.mkdir()
+
+    class FakeRoot:
+        def __init__(self, uri):
+            self.uri = uri
+
+    class FakeContext:
+        def __init__(self, roots):
+            self.roots = roots
+
+    ctx = FakeContext(roots=[FakeRoot(uri=ws_dir.as_uri())])
+    assert paths.resolve_workspace_dir(ctx) == ws_dir.resolve()
+
+
+def test_resolve_workspace_dir_cwd_and_fallback(tmp_path, monkeypatch):
+    monkeypatch.delenv('TUR_PROJECT_DIR', raising=False)
+
+    # 1. CWD with .tur directory
+    tur_ws = tmp_path / 'project_with_tur'
+    tur_ws.mkdir()
+    (tur_ws / '.tur').mkdir()
+    monkeypatch.chdir(tur_ws)
+    assert paths.resolve_workspace_dir() == tur_ws.resolve()
+
+    # 2. CWD without .tur directory -> Pure Traveler fallback (None)
+    plain_dir = tmp_path / 'plain_dir'
+    plain_dir.mkdir()
+    monkeypatch.chdir(plain_dir)
+    assert paths.resolve_workspace_dir() is None
+
+
+def test_resolve_personas_base_dir_workspace(tmp_path, monkeypatch):
+    monkeypatch.delenv('TUR_HOME', raising=False)
+    monkeypatch.delenv('TUR_DATA_DIR', raising=False)
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path / 'empty_home')
+
+    # Workspace containing .tur/personas.yaml
+    ws_dir = tmp_path / 'ws_persona'
+    ws_dir.mkdir()
+    tur_dir = ws_dir / '.tur'
+    tur_dir.mkdir()
+    (tur_dir / 'personas.yaml').write_text('personas: []', encoding='utf-8')
+    monkeypatch.setenv('TUR_PROJECT_DIR', str(ws_dir))
+
+    assert paths.resolve_personas_base_dir() == tur_dir.resolve()

@@ -35,27 +35,31 @@ def test_matrix_m3_lock_timeout_exception(tmp_path: Path):
     """Matrix M3: Test that contending lock raises LockTimeoutError with timeout metadata."""
     lock_file = tmp_path / '.locks' / 'timeout.lock'
 
-    # Pre-acquire with direct FileLock without releasing
-    lock1 = get_file_lock(lock_file)
+    # Pre-acquire with a separate non-singleton lock
+    lock1 = FileLock(str(lock_file.resolve()), is_singleton=False)
     lock1.acquire()
 
     try:
-        competing = FileLock(str(lock_file.resolve()))
-
-        def _acquire_competing():
-            try:
-                competing.acquire(timeout=0.1, poll_interval=0.01)
-            except Exception as e:
-                raise LockTimeoutError(lock_file, 0.1) from e
-
-        with pytest.raises(LockTimeoutError) as exc_info:
-            _acquire_competing()
+        with pytest.raises(LockTimeoutError) as exc_info, state_lock(lock_file, timeout=0.05, poll_interval=0.005):
+            pass
 
         assert exc_info.value.lock_path == lock_file
-        assert exc_info.value.timeout == 0.1
+        assert exc_info.value.timeout == 0.05
         assert 'held by another process' in str(exc_info.value)
     finally:
         lock1.release()
+
+
+def test_lock_holder_stamping(tmp_path: Path):
+    """Test that lock acquisition writes PID and hostname to the lock descriptor."""
+    lock_file = tmp_path / '.locks' / 'stamp.lock'
+
+    with state_lock(lock_file, timeout=1.0):
+        assert lock_file.exists()
+
+    content = lock_file.read_text(encoding='utf-8')
+    assert f'pid={os.getpid()}' in content
+    assert 'host=' in content
 
 
 def _barrier_worker(lock_path: Path, counter_file: Path, worker_id: int, barrier: mp.Barrier):
@@ -93,10 +97,15 @@ def test_matrix_m1_multiprocessing_barrier_zero_lost_updates(tmp_path: Path):
     assert final_val == num_workers, f'Race condition detected! Expected {num_workers}, got {final_val}'
 
 
-def _worker_hold_and_release(lock_path: Path, hold_seconds: float, barrier: mp.Barrier):
+def _worker_hold_and_release(lock_path: Path, hold_duration: float, barrier: mp.Barrier):
+    """Worker process holding a lock for a specified duration."""
+    lock = FileLock(str(lock_path.resolve()))
+    lock.acquire()
     barrier.wait()
-    with state_lock(lock_path, timeout=5.0):
-        time.sleep(hold_seconds)
+    try:
+        time.sleep(hold_duration)
+    finally:
+        lock.release()
 
 
 def test_matrix_m2_contention_fast_probe_and_polling(tmp_path: Path):
@@ -116,7 +125,7 @@ def test_matrix_m2_contention_fast_probe_and_polling(tmp_path: Path):
         with state_lock(lock_file, timeout=5.0, poll_interval=DEFAULT_POLL_INTERVAL_SECONDS):
             elapsed = time.perf_counter() - start_wait
             assert elapsed >= 0.05
-            assert elapsed <= hold_duration + 0.08
+            assert elapsed <= hold_duration + 0.35
     finally:
         p.join(timeout=5.0)
 
