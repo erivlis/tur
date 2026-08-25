@@ -39,8 +39,8 @@ skew.
 1. **The Golem (Containment):** The archive format enforces an explicit exclusion list. Local session indices, transient
    notes, and incarnation memories are physically absent from the package. The Traveler's identity cannot be
    contaminated by past Terrain context.
-2. **Shannon (Efficiency — The Lean Travel Principle):** The archive contains only the global, constitutional layer.
-   No project-specific clutter is included, keeping the file lightweight and transmission-safe.
+2. **Shannon (Efficiency — The Lean Travel Principle):** The archive contains only the global, constitutional layer. No
+   project-specific clutter is included, keeping the file lightweight and transmission-safe.
 3. **Noether (Symmetry):** Export and import are strict inverse operations. A full round-trip (`export` → `import`)
    must reproduce an identical global persona directory. The archive is self-describing: it carries its own `id` field
    so the import command never needs to conjure identity from context.

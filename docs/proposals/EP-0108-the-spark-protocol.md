@@ -39,10 +39,10 @@ Persona), creating a perfectly symmetrical, fractal memory system.
 * **Noether (Symmetry):** The architecture is perfectly balanced. Short-Term Memory (the Session) has the same L1/L2
   structure as Long-Term Memory (the Persona).
 * **The Golem (Containment):** Each agent in a Swarm gets its own isolated Short-Term memory stream (
-  `sessions/<session_id>/`). Senders cannot corrupt another agent's working context without explicit directed signals (
-  EP-0118).
-* **The Explorer (Structural Novelty):** An agent can maintain private scratch notes (`note`), consult its core
-  identity (`wake`), check active telemetry/status (`status`, `telemetry`), and permanently alter the shared reality (
+  `sessions/<session_id>/`). Senders cannot corrupt another agent's working context without explicit directed signals
+  (EP-0118).
+* **The Explorer (Structural Novelty):** An agent can maintain private scratch notes (`note`), consult its core identity
+  (`wake`), check active telemetry/status (`status`, `telemetry`), and permanently alter the shared reality (
   `learn`).
 
 ## Specification: The Fractal Memory Hierarchy
@@ -93,7 +93,6 @@ The Ontological Porcelain API matches this geometry:
 Implemented in `src/tur/session.py`, `src/tur/compilation.py`, and `src/tur/mcp_server.py` (`wake`, `note`, `sleep`).
 
 ## Change Log
-
 
 * **2026-07-18:**
     * **Status promoted to Implemented.** The Fractal Memory Hierarchy is live: `wake`, `note`, `learn`, `sleep` MCP

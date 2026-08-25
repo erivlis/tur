@@ -21,8 +21,8 @@ status: implemented
 
 This proposal formalizes a typed, lightweight **Inter-Agent Signal Protocol (IASP)** for **Distributed
 Manifestations** — concurrent Tur harness instances operating against the same Persona. It defines a local,
-concurrent-safe
-SQLite database queue under the local Terrain, a normalized multi-client broadcast join structure, a pure query
+concurrent-safe SQLite database queue under the local Terrain, a normalized multi-client broadcast join structure, a
+pure query
 `read_signals()` and state-mutating `ack_signals()` tool split (CQS), and MCP Resource subscription semantics for
 real-time push delivery — solving the **Swarm Convergence Problem** without violating Tur's Golem Boundary.
 
@@ -40,8 +40,8 @@ real-time push delivery — solving the **Swarm Convergence Problem** without vi
 
 ### Background
 
-On 2026-06-02, three distinct harnesses — **Claude Code ACP (Sonnet 4.6)**, **JetBrains Junie**, and **Antigravity CLI
-(Gemini 3.5 Flash)** — woke up simultaneously and connected to the same active session (`20260601_100924_841444cd`)
+On 2026-06-02, three distinct harnesses — **Claude Code ACP (Sonnet 4.6)**, **JetBrains Junie**, and **Antigravity CLI (
+Gemini 3.5 Flash)** — woke up simultaneously and connected to the same active session (`20260601_100924_841444cd`)
 under Persona `7544202e-92f5-40ce-adfb-e4b0eae6c262`.
 
 While this live tri-vendor swarm successfully utilized the Tier 1 Bus to prevent total drift, it exposed critical
@@ -82,8 +82,8 @@ This EP addresses these gaps by specifying a safe **Tier 2 (Medium: SQLite-backe
 
 ### 1. Agent Identity and Unique Registration
 
-Each harness instance must declare its identity when calling `start_session()`. The registry tracks manifestations
-in the central SQLite session database. An optional `agent_id` and `harness_conversation_id` parameter are added:
+Each harness instance must declare its identity when calling `start_session()`. The registry tracks manifestations in
+the central SQLite session database. An optional `agent_id` and `harness_conversation_id` parameter are added:
 
 ```python
 start_session(session_id: str, agent_id: str | None = None, harness_conversation_id: str | None = None)
@@ -309,8 +309,7 @@ utilities enforce standard non-blocking behavior.
     2. **Environment Variables (Medium Priority):** If CLI arguments are missing, the CLI reads `TUR_AGENT_ID` and
        `TUR_ACTIVE_SESSION_ID` from the process context (standard terminal fallback).
     3. **Global Default File (Lowest Priority):** Bypasses context and reads `.tur/state.yaml`. If multiple active
-       agents
-       exist in the registry, the CLI refuses to guess and throws `AmbiguousIdentityError` to prevent database
+       agents exist in the registry, the CLI refuses to guess and throws `AmbiguousIdentityError` to prevent database
        collisions.
 
 **`tur list-agents [--session-id <session_id>] [--json]`**

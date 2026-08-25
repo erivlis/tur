@@ -48,8 +48,8 @@ attack surface.
 
 1. **The Golem (Containment):** A soft TTY check is implicit magic. Physical binary separation eliminates the attack
    surface entirely — the agent cannot exploit code that is not present in its executable.
-2. **Shannon (Efficiency):** The agent-facing `tur` binary carries zero ASGI, networking, or TUI dependencies.
-   Startup latency and install footprint are minimized.
+2. **Shannon (Efficiency):** The agent-facing `tur` binary carries zero ASGI, networking, or TUI dependencies. Startup
+   latency and install footprint are minimized.
 3. **Noether (Symmetry):** The three binaries map cleanly and symmetrically onto the three pillars of the Tri-Partite
    Architecture: Traveler ↔ Mind (`tur`), Traveler ↔ Architect (`tur-admin`), Traveler ↔ Harness (`tur-mcp`).
 
@@ -126,8 +126,8 @@ physical binary isolation via the `extras` model is the defence-in-depth baselin
 * **Breaking Change:** The monolithic `tur` CLI entry point is replaced by three separate entry points. Any external
   script or harness configuration invoking `tur serve` or `tur admin` commands must be updated to use `tur-mcp serve`
   or `tur-admin` respectively.
-* **Migration Path:** The legacy `tur` entry point may emit a deprecation warning and delegate to the correct binary
-  for one minor release before removal.
+* **Migration Path:** The legacy `tur` entry point may emit a deprecation warning and delegate to the correct binary for
+  one minor release before removal.
 
 ## Reference Implementation
 
@@ -137,9 +137,9 @@ physical binary isolation via the `extras` model is the defence-in-depth baselin
 
 ## Change Log
 
-* **2026-07-18:** Status promoted from Final to Implemented. Three-part CLI boundary live: tur (agent-facing), tur-adm (
-  human-facing admin), tur-mcp (harness gateway). require_human decorator guards all admin commands.
+* **2026-07-18:** Status promoted from Final to Implemented. Three-part CLI boundary live: tur (agent-facing), tur-adm
+  (human-facing admin), tur-mcp (harness gateway). require_human decorator guards all admin commands.
 * **2026-05-31:**
     * Initial Draft.
-    * Council review: Golem and Noether approve binary separation; Shannon approves extras-based distribution;
-      Steward proposes the "Extras Compromise" to avoid a split PyPI package.
+    * Council review: Golem and Noether approve binary separation; Shannon approves extras-based distribution; Steward
+      proposes the "Extras Compromise" to avoid a split PyPI package.

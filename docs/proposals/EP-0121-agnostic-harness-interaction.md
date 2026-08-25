@@ -21,21 +21,21 @@ status: implemented
 ## Abstract
 
 This proposal formalizes a single, unified **Agnostic Harness Interaction Pattern** for all Tur commands that require
-LLM inference. Rather than each cognitive module (`dreaming.py`, `introspection.py`, etc.) independently managing
-the distinction between MCP vs. CLI execution contexts, this EP defines a standardized dual-mode protocol:
+LLM inference. Rather than each cognitive module (`dreaming.py`, `introspection.py`, etc.) independently managing the
+distinction between MCP vs. CLI execution contexts, this EP defines a standardized dual-mode protocol:
 
-- **MCP Mode (Context Path):** When a `mcp_context` is available (the Harness provides the LLM), Tur requests
-  inference via `ctx.sample()` (MCP Sampling). The Harness's own LLM resolves the request. Tur never holds API keys.
+- **MCP Mode (Context Path):** When a `mcp_context` is available (the Harness provides the LLM), Tur requests inference
+  via `ctx.sample()` (MCP Sampling). The Harness's own LLM resolves the request. Tur never holds API keys.
 - **CLI Mode (Delegation Path):** When no `mcp_context` is available (standalone terminal), Tur raises a
-  `HarnessDelegationError` containing a structured, self-describing prompt instructing the agent Harness to execute
-  the operation on Tur's behalf. This pattern already exists in `introspection.py` but is absent in `dreaming.py`.
+  `HarnessDelegationError` containing a structured, self-describing prompt instructing the agent Harness to execute the
+  operation on Tur's behalf. This pattern already exists in `introspection.py` but is absent in `dreaming.py`.
 
 ## Motivation
 
 Today, the two primary cognitive surfaces diverge in their harness interaction strategy:
 
-| Module                                | MCP path                             | CLI path                                          |
-|---------------------------------------|--------------------------------------|---------------------------------------------------|
+| Module                                | MCP path                             | CLI path                                           |
+|---------------------------------------|--------------------------------------|----------------------------------------------------|
 | `introspection.py` (`tur introspect`) | `ctx.sample()` via `RussellSubagent` | `HarnessDelegationError` with structured prompt ✅ |
 | `dreaming.py` (`tur sleep`)           | `ctx.sample()` via `_mcp_sample`     | Hardcoded `GEMINI_API_KEY` fallback ❌             |
 
@@ -90,9 +90,9 @@ This pattern is already well-established in `introspection.py` lines 215-288 and
 
 ### 3. Provider Generalization
 
-The protocol explicitly does not reference `GEMINI_API_KEY` or any provider-specific token. Environment variable
-checks, if needed for the direct-API fallback mode, should use a generic `TUR_LLM_API_KEY` variable that can be
-mapped to any provider's token by the deployment environment.
+The protocol explicitly does not reference `GEMINI_API_KEY` or any provider-specific token. Environment variable checks,
+if needed for the direct-API fallback mode, should use a generic `TUR_LLM_API_KEY` variable that can be mapped to any
+provider's token by the deployment environment.
 
 > [!NOTE]
 > The direct-API fallback (local Gemini call) may optionally be retained as a *third* mode — but only if it is
@@ -131,17 +131,20 @@ mapped to any provider's token by the deployment environment.
 
 ## Reference Implementation
 
-Implemented in `src/tur/_helpers.py` (`require_inference`), `src/tur/models.py` (`HarnessDelegationError`), `src/tur/dreaming.py`, and `src/tur/introspection.py`.
+Implemented in `src/tur/_helpers.py` (`require_inference`), `src/tur/models.py` (`HarnessDelegationError`),
+`src/tur/dreaming.py`, and `src/tur/introspection.py`.
 
 ## Change Log
-
 
 * **2026-07-25:**
     * **Status promoted to Implemented.**
     * Moved `HarnessDelegationError` into `src/tur/models.py` for shared use across the framework.
-    * Added `require_inference` helper in `src/tur/_helpers.py` implementing the dual-mode adapter (MCP sampling vs. CLI delegation prompt).
-    * Refactored `perform_sleep_dreaming` in `src/tur/dreaming.py` and `tur sleep` CLI command in `src/tur/cli/agent.py` to raise and catch `HarnessDelegationError` with self-describing delegation instructions when run offline without API keys.
+    * Added `require_inference` helper in `src/tur/_helpers.py` implementing the dual-mode adapter (MCP sampling vs. CLI
+      delegation prompt).
+    * Refactored `perform_sleep_dreaming` in `src/tur/dreaming.py` and `tur sleep` CLI command in `src/tur/cli/agent.py`
+      to raise and catch `HarnessDelegationError` with self-describing delegation instructions when run offline without
+      API keys.
 * **2026-07-18:**
-    * Initial Draft. Spawned from the EP-0101 and EP-0108 status review. Formalizes the dual-mode (MCP sampling vs.
-      CLI delegation) pattern already partially implemented in `introspection.py` as the universal standard for all
+    * Initial Draft. Spawned from the EP-0101 and EP-0108 status review. Formalizes the dual-mode (MCP sampling vs. CLI
+      delegation) pattern already partially implemented in `introspection.py` as the universal standard for all
       cognitive commands in Tur.

@@ -7,15 +7,15 @@ status: draft
 
 # EP-0129: Multi-Process State Synchronization and File Locking Architecture
 
-| Field       | Value                                                                   |
-|:------------|:------------------------------------------------------------------------|
-| **EP**      | 0129                                                                    |
-| **Title**   | Multi-Process State Synchronization and File Locking Architecture       |
-| **Author**  | Eran Rivlis & Ariel                                                     |
-| **Status**  | Draft                                                                   |
-| **Type**    | Standards Track                                                         |
-| **Created** | 2026-08-25                                                              |
-| **Updated** | 2026-08-25                                                              |
+| Field       | Value                                                             |
+|:------------|:------------------------------------------------------------------|
+| **EP**      | 0129                                                              |
+| **Title**   | Multi-Process State Synchronization and File Locking Architecture |
+| **Author**  | Eran Rivlis & Ariel                                               |
+| **Status**  | Draft                                                             |
+| **Type**    | Standards Track                                                   |
+| **Created** | 2026-08-25                                                        |
+| **Updated** | 2026-08-25                                                        |
 
 ## Abstract
 
@@ -28,16 +28,16 @@ terrain and global persona boundaries.
 
 ## Motivation
 
-As Tur transitions into a multi-agent symbiote (EP-0107, EP-0118, EP-0123), concurrent execution by multiple AI harnesses
-operating on the same repository or persona is standard. Tur currently protects state writes using POSIX atomic renames
-(`os.replace` via temporary files per EP-0106 and EP-0120). 
+As Tur transitions into a multi-agent symbiote (EP-0107, EP-0118, EP-0123), concurrent execution by multiple AI
+harnesses operating on the same repository or persona is standard. Tur currently protects state writes using POSIX
+atomic renames (`os.replace` via temporary files per EP-0106 and EP-0120).
 
 However, atomic replacement only guarantees that a reader never sees a half-written file; it provides **zero transaction
 isolation for read-modify-write sequences**:
 
 1. **Index Overwrite Clashing:** If Agent A and Agent B simultaneously call `note()`, both read `sessions.yaml` at
    timestamp $T_0$. Agent A appends Note A and atomically writes to disk. Milliseconds later, Agent B appends Note B to
-   its stale in-memory index and atomically replaces the file—**silently clobbering Note A**.
+   its stale in-memory index and atomically replaces the file— **silently clobbering Note A**.
 2. **Storage Migration Collisions (EP-0125):** If an administrator or automated process initiates a 5-stage migration
    (`tur-adm migrate`), an active MCP server could write new L1 events into the legacy schema mid-flight, corrupting the
    atomic staging directory.
@@ -63,13 +63,13 @@ cross-platform advisory file locking mechanism.
 
 ### Architectural Trade-off Analysis: Why `filelock` Over Alternatives
 
-| Library | OS Mechanism Used | Best For | Pros | Cons / Verdict for Tur |
-|:---|:---|:---|:---|:---|
-| **`tox-dev/filelock`** | `fcntl.flock` (POSIX) / `msvcrt.locking` (Win) | Local multi-process synchronization. | Zero dependencies, pure Python, sidecar file preserves `os.replace` safety. | **Selected:** Optimal match for local state and atomic writes. |
-| **`portalocker`** | `fcntl.flock` (POSIX) / `pywin32` API (Win) | Direct file locking with shared read locks. | Supports `LOCK_SH` (shared reads). | **Rejected:** Collides with atomic `os.replace`; requires heavy `pywin32` binary on Windows. |
-| **`fasteners`** | `fcntl.flock` (POSIX) / `msvcrt` (Win) | Mixed thread + process pipelines. | Advanced inter-process + inter-thread locks. | **Rejected:** Unnecessary API complexity; higher dependency overhead. |
-| **`flufl.lock`** | NFS-safe `link(2)` & `stat(2)` | NFS / Cloud-mounted network shares. | Survives network node reboots. | **Rejected:** Tur runs on local filesystems; NFS lease overhead is unnecessary. |
-| **Stdlib (`fcntl` / `msvcrt`)** | Raw OS system calls | Zero pip dependencies. | Built-in to Python. | **Rejected:** Requires maintaining custom platform-branching wrapper code. |
+| Library                         | OS Mechanism Used                              | Best For                                    | Pros                                                                        | Cons / Verdict for Tur                                                                       |
+|:--------------------------------|:-----------------------------------------------|:--------------------------------------------|:----------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
+| **`tox-dev/filelock`**          | `fcntl.flock` (POSIX) / `msvcrt.locking` (Win) | Local multi-process synchronization.        | Zero dependencies, pure Python, sidecar file preserves `os.replace` safety. | **Selected:** Optimal match for local state and atomic writes.                               |
+| **`portalocker`**               | `fcntl.flock` (POSIX) / `pywin32` API (Win)    | Direct file locking with shared read locks. | Supports `LOCK_SH` (shared reads).                                          | **Rejected:** Collides with atomic `os.replace`; requires heavy `pywin32` binary on Windows. |
+| **`fasteners`**                 | `fcntl.flock` (POSIX) / `msvcrt` (Win)         | Mixed thread + process pipelines.           | Advanced inter-process + inter-thread locks.                                | **Rejected:** Unnecessary API complexity; higher dependency overhead.                        |
+| **`flufl.lock`**                | NFS-safe `link(2)` & `stat(2)`                 | NFS / Cloud-mounted network shares.         | Survives network node reboots.                                              | **Rejected:** Tur runs on local filesystems; NFS lease overhead is unnecessary.              |
+| **Stdlib (`fcntl` / `msvcrt`)** | Raw OS system calls                            | Zero pip dependencies.                      | Built-in to Python.                                                         | **Rejected:** Requires maintaining custom platform-branching wrapper code.                   |
 
 ### The Inode / Handle Replacement Hazard (Why Direct-File Locking Fails with `os.replace`)
 
@@ -83,13 +83,14 @@ severe cross-platform hazards:
 2. **POSIX Inode Invalidation:** On POSIX systems, `os.replace` changes the directory entry to a new inode. Any other
    process holding an open descriptor on the target file retains a lock on the *old unlinked inode*, completely breaking
    synchronization for subsequent processes opening the new inode.
-3. **The Sidecar Solution:** By applying native OS locks to an independent tracker file (`.tur/.locks/session.lock`), the
-   lock target's inode and handle remain permanently stable. The underlying data file (`sessions.yaml`) can be safely
-   swapped atomically underneath without lock collisions.
+3. **The Sidecar Solution:** By applying native OS locks to an independent tracker file (`.tur/.locks/session.lock`),
+   the lock target's inode and handle remain permanently stable. The underlying data file (`sessions.yaml`) can be
+   safely swapped atomically underneath without lock collisions.
 
 ### Why Shared Read Locks (`LOCK_SH`) Are Unnecessary in Tur
 
 While `portalocker` offers shared read locks (`LOCK_SH`), Tur's architecture does not require reader locks:
+
 * **Merkle L1 memories are immutable:** Individual memory nodes (`.tur/memories/L1/*.md`) are content-addressed and
   write-once, allowing safe lock-free concurrent streaming.
 * **Index mutations are sub-millisecond:** Reading `sessions.yaml`, appending an episodic note, and executing
@@ -136,12 +137,12 @@ graph TD
 ```
 
 1. **Workspace Terrain Locks (`<workspace>/.tur/.locks/`):**
-   - `session.lock`: Serializes updates to `sessions.yaml`, session notes, and short-term L1 episodic logs.
-   - `compaction.lock`: Serializes execution of `introspect` / `sleep` memory graph consolidation.
+    - `session.lock`: Serializes updates to `sessions.yaml`, session notes, and short-term L1 episodic logs.
+    - `compaction.lock`: Serializes execution of `introspect` / `sleep` memory graph consolidation.
 2. **Global Traveler Locks (`resolve_runtime_dir() / "locks" /` per EP-0128):**
-   - `<persona_id>.lock`: Serializes modifications to global persona definitions (`persona.yaml`), covenants, and
-     universal memory banks.
-   - `migration.lock`: Exclusively held by `tur-adm` during EP-0125 storage evolution procedures.
+    - `<persona_id>.lock`: Serializes modifications to global persona definitions (`persona.yaml`), covenants, and
+      universal memory banks.
+    - `migration.lock`: Exclusively held by `tur-adm` during EP-0125 storage evolution procedures.
 
 ### 3. Transactional Locking Helpers (`src/tur/locking.py`)
 
@@ -157,27 +158,27 @@ DEFAULT_LOCK_TIMEOUT_SECONDS = 10.0
 
 
 class LockTimeoutError(Exception):
-  """Raised when a file lock cannot be acquired within the timeout window."""
+    """Raised when a file lock cannot be acquired within the timeout window."""
 
 
 @contextmanager
 def state_lock(
-    lock_path: Path, timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS
+        lock_path: Path, timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS
 ) -> Iterator[None]:
-  """Context manager for acquiring an advisory multi-process lock.
-
-  Guarantees parent directory creation and raises LockTimeoutError on
-  contention timeout.
-  """
-  lock_path.parent.mkdir(parents=True, exist_ok=True)
-  lock = FileLock(str(lock_path), timeout=timeout)
-  try:
-    with lock:
-      yield
-  except Timeout as exc:
-    raise LockTimeoutError(
-        f'Could not acquire lock on {lock_path} after {timeout}s'
-    ) from exc
+    """Context manager for acquiring an advisory multi-process lock.
+  
+    Guarantees parent directory creation and raises LockTimeoutError on
+    contention timeout.
+    """
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock = FileLock(str(lock_path), timeout=timeout)
+    try:
+        with lock:
+            yield
+    except Timeout as exc:
+        raise LockTimeoutError(
+            f'Could not acquire lock on {lock_path} after {timeout}s'
+        ) from exc
 ```
 
 ### 4. Integration with Read-Modify-Write Cycles
@@ -187,18 +188,18 @@ appropriate lock before reading and release after atomic replacement:
 
 ```python
 def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
-  """Append a session note safely under multi-process lock."""
-  lock_file = persona_dir / ".locks" / "session.lock"
+    """Append a session note safely under multi-process lock."""
+    lock_file = persona_dir / ".locks" / "session.lock"
 
-  with state_lock(lock_file):
-    # 1. Read existing index
-    index = load_session_index(persona_dir)
+    with state_lock(lock_file):
+        # 1. Read existing index
+        index = load_session_index(persona_dir)
 
-    # 2. Modify in-memory state
-    # ... append note, update session status ...
+        # 2. Modify in-memory state
+        # ... append note, update session status ...
 
-    # 3. Atomically replace file
-    atomic_yaml_write(get_session_file(persona_dir, session_id), session_data)
+        # 3. Atomically replace file
+        atomic_yaml_write(get_session_file(persona_dir, session_id), session_data)
 ```
 
 ## Backwards Compatibility
@@ -211,7 +212,8 @@ def note_logic(persona_dir: Path, session_id: str, content: str) -> None:
 ## How to Teach This / Documentation Plan
 
 * Update `docs/concepts/harness-integration.md` to explain how concurrent harnesses coordinate via advisory locks.
-* Document `LockTimeoutError` handling in MCP server documentation so harnesses know to retry transient lock contentions.
+* Document `LockTimeoutError` handling in MCP server documentation so harnesses know to retry transient lock
+  contentions.
 
 ## Reference Implementation
 
@@ -224,10 +226,10 @@ Implemented in `src/tur/locking.py` and wrapped around `tur.session` and `tur.me
   it introduces a heavy `pywin32` binary dependency on Windows.
 * **Distributed / NFS-Safe Locking (`flufl.lock`):** Rejected. Tur operates strictly on local repository filesystems;
   NFS lease-time negotiation adds unnecessary latency and complexity.
-* **In-Memory Threading Locks (`threading.Lock` / `asyncio.Lock`):** Rejected. Threading locks only synchronize within
-  a single Python process and offer zero protection across independent CLI or MCP harness processes.
-* **Pure SQLite Database Locking:** Rejected for file storage. While SQLite manages its own internal locking for
-  IASP (EP-0118), Tur's primary memory formats are OKF Markdown and YAML files, which require OS-level file locking.
+* **In-Memory Threading Locks (`threading.Lock` / `asyncio.Lock`):** Rejected. Threading locks only synchronize within a
+  single Python process and offer zero protection across independent CLI or MCP harness processes.
+* **Pure SQLite Database Locking:** Rejected for file storage. While SQLite manages its own internal locking for IASP
+  (EP-0118), Tur's primary memory formats are OKF Markdown and YAML files, which require OS-level file locking.
 * **PID File Polling:** Rejected. Writing custom PID files requires complex stale-lock recovery logic upon process
   crashes; `filelock` relies on kernel-level advisory locks that the OS automatically releases if a process terminates
   abnormally.

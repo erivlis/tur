@@ -7,37 +7,40 @@ status: accepted
 
 # EP-0119: Persona-Centric Introspection Architecture
 
-| Field       | Value                                                |
-|:------------|:-----------------------------------------------------|
-| **EP**      | 0119                                                 |
-| **Title**   | Persona-Centric Introspection Architecture           |
-| **Author**  | The Architect & Ariel                                |
-| **Status**  | Accepted                                             |
-| **Type**    | Standards Track                                      |
-| **Created** | 2026-06-08                                           |
-| **Updated** | 2026-08-18                                           |
+| Field       | Value                                      |
+|:------------|:-------------------------------------------|
+| **EP**      | 0119                                       |
+| **Title**   | Persona-Centric Introspection Architecture |
+| **Author**  | The Architect & Ariel                      |
+| **Status**  | Accepted                                   |
+| **Type**    | Standards Track                            |
+| **Created** | 2026-06-08                                 |
+| **Updated** | 2026-08-18                                 |
 
 ## Abstract
 
 > [!IMPORTANT]
-> **Status: Accepted.** This EP has been accepted following resolution of the philosophical tension regarding persona-agnosticism.
-> Introspection is formalized as a persona-centric capability where the execution strategy (single prompt, prompt chain, or multi-subagent assembly) is owned and configured by the persona (`persona.yaml`).
+> **Status: Accepted.** This EP has been accepted following resolution of the philosophical tension regarding
+persona-agnosticism.
+> Introspection is formalized as a persona-centric capability where the execution strategy (single prompt, prompt chain,
+or multi-subagent assembly) is owned and configured by the persona (`persona.yaml`).
 
 
 > [!WARNING]
 > **Overimplementation risk.** In practice, exposing this EP to a Harness Agent caused the harness to implement the
-> Council as a hardcoded, mandatory pipeline — baking Ariel's constitutional values into every persona. This violated the
+> Council as a hardcoded, mandatory pipeline — baking Ariel's constitutional values into every persona. This violated
+the
 > Golem boundary and blurred the line between a persona-specific cognitive style and a core Tur framework requirement.
 
 *(Historical note: This EP was briefly marked Rejected for this reason. It is now re-opened as Draft pending a
 resolution of the tension described below.)*
 
 This proposal formalizes a modular, collaborative multi-agent pipeline for the `tur introspect` (Deductive Memory
-compaction) command specified in [EP-0103](EP-0103-deductive-memory.md).
-Instead of using a single monolithic LLM prompt to parse, consolidate, revise, and prune memory graphs, the process is
-divided into a structured assembly of nine specialized subagents. Each subagent represents a philosophical pillar of
-the [Council of Giants](../concepts/council-of-giants.md) and communicates via typed JSON
-schemas to produce a verified, high-density L2 Cognitive Map.
+compaction) command specified in [EP-0103](EP-0103-deductive-memory.md). Instead of using a single monolithic LLM prompt
+to parse, consolidate, revise, and prune memory graphs, the process is divided into a structured assembly of nine
+specialized subagents. Each subagent represents a philosophical pillar of
+the [Council of Giants](../concepts/council-of-giants.md) and communicates via typed JSON schemas to produce a verified,
+high-density L2 Cognitive Map.
 
 ## Motivation
 
@@ -99,27 +102,32 @@ The pipeline ensures clear segregation of concerns:
 #### 2b. The Ontological Extraction Subagent (The Russell Subagent / `OntologyExtractor`)
 
 * **Role:** Enforces **Logic & Ontological Structure**.
-* **Responsibility:** Receives raw text from Bacon/L1 storage. Maps statements into structured, typed triples matching standard node and edge schemas.
+* **Responsibility:** Receives raw text from Bacon/L1 storage. Maps statements into structured, typed triples matching
+  standard node and edge schemas.
 * **Extraction Principles & Guidelines:**
-  - **Canonicalization & Disambiguation:** Resolve synonyms and merges against existing L2 nodes to avoid graph fragmentation.
-  - **Identifier Conventions:** Use concise, lowercase kebab-case identifiers (`isolated-workspace-resolution`, `merkle-state-integrity`).
-  - **Attribution (Noether Tracing):** Every node derived from an input memory MUST list the corresponding memory ID in its `sources` array to maintain Merkle auditability.
+    - **Canonicalization & Disambiguation:** Resolve synonyms and merges against existing L2 nodes to avoid graph
+      fragmentation.
+    - **Identifier Conventions:** Use concise, lowercase kebab-case identifiers (`isolated-workspace-resolution`,
+      `merkle-state-integrity`).
+    - **Attribution (Noether Tracing):** Every node derived from an input memory MUST list the corresponding memory ID
+      in its `sources` array to maintain Merkle auditability.
 * **Categorical Node Taxonomy:**
-  - `Concept`: Fundamental domain entities and core abstract ideas.
-  - `Decision`: Architectural choices and design commitments.
-  - `Constraint`: Boundary conditions, invariants, and negative rules (*"MUST NOT..."*).
-  - `Insight`: Lessons learned, deductions, and synthesized principles.
-  - `Fact`: Objective empirical states and verified observations.
-  - `Dependency`: Upstream prerequisites or structural couplings.
-  - `Hypothesis`: Active conjectures or experiments under test.
-  - `BoundaryNode` / `OpenQuestion`: Perimeter definitions or unresolved inquiries.
+    - `Concept`: Fundamental domain entities and core abstract ideas.
+    - `Decision`: Architectural choices and design commitments.
+    - `Constraint`: Boundary conditions, invariants, and negative rules (*"MUST NOT..."*).
+    - `Insight`: Lessons learned, deductions, and synthesized principles.
+    - `Fact`: Objective empirical states and verified observations.
+    - `Dependency`: Upstream prerequisites or structural couplings.
+    - `Hypothesis`: Active conjectures or experiments under test.
+    - `BoundaryNode` / `OpenQuestion`: Perimeter definitions or unresolved inquiries.
 * **Relational Edge Signatures:**
-  - `refines`: Specializes another node of the SAME type (e.g., Specific Decision -> Base Decision).
-  - `contradicts`: Marks mutually exclusive claims or competing hypotheses.
-  - `precedes`: Indicates causal or temporal ordering between decisions or facts.
-  - `depends_on`: Explicit prerequisite dependency where node A requires node B.
-  - `competes_with`, `analogy_of`, `superseded_by`, `refuted_by`: Structural graph relations.
-* **Delegation Integration:** Standardized under the pure-function delegation framework in [EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md).
+    - `refines`: Specializes another node of the SAME type (e.g., Specific Decision -> Base Decision).
+    - `contradicts`: Marks mutually exclusive claims or competing hypotheses.
+    - `precedes`: Indicates causal or temporal ordering between decisions or facts.
+    - `depends_on`: Explicit prerequisite dependency where node A requires node B.
+    - `competes_with`, `analogy_of`, `superseded_by`, `refuted_by`: Structural graph relations.
+* **Delegation Integration:** Standardized under the pure-function delegation framework
+  in [EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md).
 
 #### 2c. The Conflict Resolution Subagent (The Popper Subagent)
 
@@ -178,8 +186,7 @@ Upon successful completion of the assembly pipeline:
 ## Backwards Compatibility
 
 * **Command Line Flags:** Additive. `tur introspect` runs the assembly by default. A `--monolithic` flag remains
-  supported
-  for cheaper, single-pass compactions on simple schemas.
+  supported for cheaper, single-pass compactions on simple schemas.
 * **Storage schemas:** The output format remains `knowledge_graph.yaml` (EP-0103), and the compiler automatically falls
   back to raw L1 files if the graph is missing.
 
@@ -212,20 +219,31 @@ class MeditationAssembly:
 
 ## Resolved Architectural Decision (2026-08-18)
 
-The foundational tension between Council opinionation and persona-agnosticism is resolved via **Persona-Centric Introspection**:
+The foundational tension between Council opinionation and persona-agnosticism is resolved via **Persona-Centric
+Introspection**:
 
-1. **Persona-Owned Execution**: Introspection (`introspect`) is fundamentally driven by the persona's own identity, directives, and prompts. The choice of execution engine (monolithic prompt, prompt chain sequence, or multi-subagent pipeline) is configured at the persona level (`persona.yaml`).
-2. **Subagents as Opt-In Tooling**: Spawning subagents (such as the Council of Giants pipeline) is an opt-in capability configured per persona during creation, configuration, or administration (via `tur-adm`), rather than a framework-wide mandatory pipeline.
-3. **Framework Responsibility**: The core `tur` framework provides the generic introspection runner, OKF Markdown graph persistence, and subagent orchestration abstractions. The persona provides the prompts, reflection criteria, and subagent selection.
+1. **Persona-Owned Execution**: Introspection (`introspect`) is fundamentally driven by the persona's own identity,
+   directives, and prompts. The choice of execution engine (monolithic prompt, prompt chain sequence, or multi-subagent
+   pipeline) is configured at the persona level (`persona.yaml`).
+2. **Subagents as Opt-In Tooling**: Spawning subagents (such as the Council of Giants pipeline) is an opt-in capability
+   configured per persona during creation, configuration, or administration (via `tur-adm`), rather than a
+   framework-wide mandatory pipeline.
+3. **Framework Responsibility**: The core `tur` framework provides the generic introspection runner, OKF Markdown graph
+   persistence, and subagent orchestration abstractions. The persona provides the prompts, reflection criteria, and
+   subagent selection.
 
 ## Change Log
 
 * **2026-08-22:**
-    * **Ontological Concept Extraction Specification**: Defined rich ontological extraction principles (canonicalization, lowercase kebab-case IDs, Noether attribution in `sources`, categorical node taxonomy, and relational edge signatures).
+    * **Ontological Concept Extraction Specification**: Defined rich ontological extraction principles
+      (canonicalization, lowercase kebab-case IDs, Noether attribution in `sources`, categorical node taxonomy, and
+      relational edge signatures).
     * Integrated with the pure-function delegation framework and multi-batch ingestion protocol established in EP-0124.
 * **2026-08-18:**
     * **Status changed from Draft to Accepted.**
-    * Formalized **Persona-Centric Introspection Architecture**: introspection is configured per persona, allowing monolithic prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants) as defined in `persona.yaml`.
+    * Formalized **Persona-Centric Introspection Architecture**: introspection is configured per persona, allowing
+      monolithic prompts, prompt sequences, or opt-in subagent assemblies (e.g. Council of Giants) as defined in
+      `persona.yaml`.
 * **2026-07-18:**
     * **Status changed from Rejected to Draft (Planning).** Re-opened for design review.
     * The Council subagent pattern (`CouncilSubagent` base class, 9 subagents, `run_introspection` orchestrator) is *

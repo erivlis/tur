@@ -24,8 +24,8 @@ Language Model interactions within the Tur framework.
 
 However, **this approach has been explicitly superseded by a more radical architectural pivot**: Tur will no longer
 embed *any* LLM abstraction library (`pydantic-ai`, `google-genai`, etc.) within its core. Instead, Tur achieves perfect
-LLM Agnosticism by becoming an obligate symbiote to an MCP Client (the Host Application), delegating all cognitive
-tasks (like compiling knowledge graphs or summarizing logs) via **MCP Sampling Requests**.
+LLM Agnosticism by becoming an obligate symbiote to an MCP Client (the Host Application), delegating all cognitive tasks
+(like compiling knowledge graphs or summarizing logs) via **MCP Sampling Requests**.
 
 ## Motivation
 
@@ -80,7 +80,10 @@ Implemented in `src/tur/_helpers.py` (`_mcp_sample`), `src/tur/dreaming.py`, and
 ## Change Log
 
 * **2026-07-25:**
-    * **Status promoted to Implemented.** Implementation completed via **EP-0121 (Agnostic Harness Interaction Protocol)**. Both `tur sleep` and `tur introspect` now follow the dual-mode interaction pattern (MCP sampling via connected context, or `HarnessDelegationError` with self-describing delegation instructions when executed offline without API keys).
+    * **Status promoted to Implemented.** Implementation completed via **EP-0121 (Agnostic Harness Interaction
+      Protocol)**. Both `tur sleep` and `tur introspect` now follow the dual-mode interaction pattern (MCP sampling via
+      connected context, or `HarnessDelegationError` with self-describing delegation instructions when executed offline
+      without API keys).
 * **2026-07-18:**
     * **Status reverted from Implemented to Final.** The MCP path is correctly agnostic (the harness provides inference
       via `ctx.sample()` / MCP Sampling), and `introspect` has a `HarnessDelegationError` fallback for CLI usage without
@@ -103,4 +106,4 @@ Implemented in `src/tur/_helpers.py` (`_mcp_sample`), `src/tur/dreaming.py`, and
     * Updated status to `Active`.
     * Adopted the `pydantic-ai` library as the standard interface.
 * **2026-03-29:**
-    * Initial Draft.
+    * Initial Draft.

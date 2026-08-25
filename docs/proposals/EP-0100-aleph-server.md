@@ -12,7 +12,7 @@ status: superseded
 | **EP**      | 0100                               |
 | **Title**   | The Aleph Server (MCP Integration) |
 | **Author**  | Eran Rivlis, Ariel                 |
-| **Status**  | Superseded                          |
+| **Status**  | Superseded                         |
 | **Type**    | Informational                      |
 | **Created** | 2026-02-19                         |
 | **Updated** | 2026-04-12                         |
@@ -28,8 +28,8 @@ integrated implementation path for MCP.
 
 ## Motivation
 
-As Tur evolves beyond prompt generation (Phase 1) and context hydration (Phase 2), Personas will require active agency (
-Phase 3). They will need to interact with the world—browsing the web, managing persistent knowledge graphs, and
+As Tur evolves beyond prompt generation (Phase 1) and context hydration (Phase 2), Personas will require active agency
+(Phase 3). They will need to interact with the world—browsing the web, managing persistent knowledge graphs, and
 executing code.
 
 The Model Context Protocol (MCP) is the emerging standard for this. However, implementing an MCP server directly within
@@ -76,11 +76,12 @@ This is a forward-looking architectural document (Deferred). It does not break a
 
 ## Reference Implementation
 
-Conceptual proposal superseded by the MCP server implementation in [EP-0102](EP-0102-orchestration-engine.md) (`src/tur/mcp/server.py`).
+Conceptual proposal superseded by the MCP server implementation in [EP-0102](EP-0102-orchestration-engine.md)
+(`src/tur/mcp/server.py`).
 
 ## Change Log
 
 * **2026-04-12:**
     * Status changed to `Superseded by EP-0102`.
 * **2026-02-19:**
-    * Initial Draft (Deferred for future phases).
+    * Initial Draft (Deferred for future phases).

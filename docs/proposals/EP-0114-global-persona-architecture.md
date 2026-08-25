@@ -45,8 +45,7 @@ This local-first layout introduces three critical friction points:
 2. **Migration Friction:** Cloning a persona into a new repository requires physical file copies (`shutil.copytree`),
    duplicating state and cognitive load.
 3. **Redundant Identity:** The persona's core identity fragments across isolated project folders, violating the
-   principle
-   of a singular, continuously evolving Traveler.
+   principle of a singular, continuously evolving Traveler.
 
 ## Rationale (The Council Framework)
 

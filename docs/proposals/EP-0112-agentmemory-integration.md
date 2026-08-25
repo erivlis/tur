@@ -160,6 +160,5 @@ Integration pattern documented in `EP-0112` and enabled via companion `agentmemo
 
 ## Change Log
 
-
 * **2026-05-28:**
     * Initial Draft created by the Architect & Ariel to integrate agentmemory as the high-frequency storage companion.

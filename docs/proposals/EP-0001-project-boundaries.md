@@ -29,9 +29,8 @@ standardized mechanism (MCP) for integrating external tools without compromising
 ## Motivation
 
 As Tur grows, there will be a constant temptation to add utilities that make the Persona more capable (e.g., "Tur should
-be able to browse the web!").
-However, integrating these features directly into the core violates the **Tur Tur Principle** by introducing "Apparent
-Giants" (heavy dependencies like Chromium) into the system.
+be able to browse the web!"). However, integrating these features directly into the core violates the **Tur Tur
+Principle** by introducing "Apparent Giants" (heavy dependencies like Chromium) into the system.
 
 The `tools/smart_fetch.py` script serves as the canonical example of this tension. It requires `playwright`, a massive
 dependency. If this were added to `pyproject.toml`, every user would pay the cost of downloading browser binaries just
@@ -85,7 +84,6 @@ This document established core architectural boundaries. No software migration r
 Superseded by [EP-0102](EP-0102-orchestration-engine.md) and module layout under `src/tur/`.
 
 ## Change Log
-
 
 * **2026-04-12:**
     * Status changed to `Superseded by EP-0102`.

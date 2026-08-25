@@ -19,8 +19,8 @@ status: deferred
 
 ## Abstract
 
-This proposal formally gathers and addresses the architectural challenges of running multiple, concurrent MCP Agents (
-e.g., Claude Code, Gemini CLI, Cursor) against the same underlying Tur Persona. It outlines the transition from a pure
+This proposal formally gathers and addresses the architectural challenges of running multiple, concurrent MCP Agents
+(e.g., Claude Code, Gemini CLI, Cursor) against the same underlying Tur Persona. It outlines the transition from a pure
 Tool-based state interface to a Subscribable Resource model, preventing "context window overload" while maintaining
 real-time, optional synchronization across the Swarm.
 
@@ -42,8 +42,8 @@ simultaneously by multiple agents increases dramatically. This introduces two cr
 * **The Golem (Containment):** The underlying `.tur/` file store must be hardened against multi-process race conditions.
 * **Shannon (Efficiency):** We must provide a synchronization mechanism that agents can *opt into* (Subscriptions)
   rather than *forcing* updates into their context windows.
-* **Noether (Symmetry):** We must perfectly align Tur's architecture with the dual-nature of the MCP Protocol: Actions (
-  mutations) belong in **Tools**; State (read-only subscriptions) belong in **Resources**.
+* **Noether (Symmetry):** We must perfectly align Tur's architecture with the dual-nature of the MCP Protocol: Actions
+  (mutations) belong in **Tools**; State (read-only subscriptions) belong in **Resources**.
 
 ## Specification
 
@@ -80,10 +80,10 @@ native MCP **Resources**.
 
 ## Reference Implementation
 
-Implemented in `src/tur/mcp_server.py` (`signal`, `read_signals`, `ack_signals`, `list_agents`, `write_whiteboard`, `read_whiteboard`) and `src/tur/session.py`.
+Implemented in `src/tur/mcp_server.py` (`signal`, `read_signals`, `ack_signals`, `list_agents`, `write_whiteboard`,
+`read_whiteboard`) and `src/tur/session.py`.
 
 ## Change Log
-
 
 * **2026-04-18:**
     * Initial Draft created to capture the Architect's insights on swarm concurrency, atomic writes, and the necessity

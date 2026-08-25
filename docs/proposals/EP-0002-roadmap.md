@@ -80,8 +80,8 @@ graph TD
     EP0119 --> EP0122
 ```
 
-1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129`):** Integrate `platformdirs` and `filelock`
-   to establish canonical runtime directories (`resolve_runtime_dir()`, `resolve_cache_dir()`) and eliminate
+1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129`):** Integrate `platformdirs` and
+   `filelock` to establish canonical runtime directories (`resolve_runtime_dir()`, `resolve_cache_dir()`) and eliminate
    read-modify-write clobbering across parallel agent harnesses.
 2. **Layer 2: Protocol Modernization (`EP-0127`):** Migrate `tur-mcp` to official MCP Python SDK v2 (`MCPServer`),
    decoupling transport execution to `.run()` and standardizing on canonical `mcp-types`.
@@ -178,8 +178,9 @@ graph TD
     * **Persona-Centric Introspection Architecture (EP-0119) [Status: Accepted]:** Formalizing persona-owned deductive
       memory compaction pipelines, allowing monolithic reflection prompts, prompt sequences, or opt-in subagent
       assemblies (e.g. Council of Giants).
-    * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Implemented]:** Formalizing canonical `NodeType`
-      and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility for domain personas.
+    * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Implemented]:** Formalizing canonical
+      `NodeType` and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility
+      for domain personas.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
@@ -196,9 +197,8 @@ ensuring backwards compatibility during the OKF transition.
 
 ## How to Teach This / Documentation Plan
 
-The roadmap is maintained as the central architectural reference
-in `docs/proposals/EP-0002-roadmap.md` and indexed in `zensical.toml`.
-Any proposal accepted or superseded must update the corresponding phase track in this document.
+The roadmap is maintained as the central architectural reference in `docs/proposals/EP-0002-roadmap.md` and indexed in
+`zensical.toml`. Any proposal accepted or superseded must update the corresponding phase track in this document.
 
 ## Reference Implementation
 

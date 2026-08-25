@@ -25,15 +25,15 @@ a formal Adapter Pattern (Hexagonal Architecture / Ports and Adapters). This EP 
 Traveler) to bridge its internal state with disparate external execution engines and project environments without
 compromising its integrity.
 
-*(This EP has been largely superseded by the practical implementation and documentation
-in `docs/concepts/harness-integration.md`, which provides the concrete guide for external Harnesses to integrate with
-Tur's universal interfaces.)*
+*(This EP has been largely superseded by the practical implementation and documentation in
+`docs/concepts/harness-integration.md`, which provides the concrete guide for external Harnesses to integrate with Tur's
+universal interfaces.)*
 
 ## Motivation
 
-Tur's core value proposition is **Portability**.
-If the Persona's internal state (Memory, Principles, Protocols) is tightly coupled to a single execution engine (e.g.,
-the current MCP implementation) or assumes a single type of project layout, it ceases to be a universal "Traveler."
+Tur's core value proposition is **Portability**. If the Persona's internal state (Memory, Principles, Protocols) is
+tightly coupled to a single execution engine (e.g., the current MCP implementation) or assumes a single type of project
+layout, it ceases to be a universal "Traveler."
 
 Furthermore, the industry is experiencing an explosion of agent tool frameworks ("The 100 Flavors of Ice Cream" problem:
 MCP, Pi Skills, Anthropic Skills, OpenCode tools). Tur must absolutely avoid the trap of orchestrating or natively
@@ -90,10 +90,10 @@ state of the Traveler.)*
 
 ## Reference Implementation
 
-Superseded by `docs/concepts/harness-integration.md` and external adapter implementations (e.g. `.pi/extensions/tur-adapter.ts`).
+Superseded by `docs/concepts/harness-integration.md` and external adapter implementations (e.g.
+`.pi/extensions/tur-adapter.ts`).
 
 ## Change Log
-
 
 * **2026-05-11:**
     * Status changed to `Superseded`, referencing `docs/concepts/harness-integration.md` as the superseding document and

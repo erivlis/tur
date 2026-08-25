@@ -27,17 +27,16 @@ Communication Protocol).
 
 Tur currently operates as a static ontological framework (Wake, Memorize, Sleep). It generates highly structured,
 deterministic System Prompts (Personas) but lacks native sensory input (Tools) and the ability to distribute tasks
-across multiple identities (Networking).
-To prevent isolation and leverage the open agent ecosystem, Tur must support dynamic capability ingestion and
-standardized I/O.
+across multiple identities (Networking). To prevent isolation and leverage the open agent ecosystem, Tur must support
+dynamic capability ingestion and standardized I/O.
 
 ## Rationale
 
 This design aligns with the **Council Framework**:
 
 * **Symmetry (Noether):** The architecture is balanced. Skills represent internal logic (The Mind). MCP represents
-  external sensory input (The World) and exposure of the Mind to the IDE. ACP represents peer-to-peer networking (
-  Society).
+  external sensory input (The World) and exposure of the Mind to the IDE. ACP represents peer-to-peer networking
+  (Society).
 * **Curiosity (The Explorer):** By exposing standard interfaces, Tur Personas can explore external systems dynamically
   instead of relying solely on static CLI logs.
 * **Empiricism (Bacon):** MCP standardizes verifiable tool execution (e.g., Chronos, Abacus) over hallucination.
@@ -60,7 +59,9 @@ Tur implements a dual-sided MCP architecture.
 
 * **Mechanism:** Tur exposes its internal state and memory management to external LLMs/IDEs (e.g., Cursor, Claude
   Desktop) via a standard JSON-RPC stdio interface (`tur.mcp_server`).
-* **Tools Exposed:** Originally proposed `tur_wake`, `tur_compile`, `tur_memorize`, etc. These have been refactored and superseded by the Ontological Porcelain API (`status`, `wake`, `learn`, `note`, `sleep`, `recall`, etc.) specified in [EP-0105](EP-0105-mcp-sdk-integration.md).
+* **Tools Exposed:** Originally proposed `tur_wake`, `tur_compile`, `tur_memorize`, etc. These have been refactored and
+  superseded by the Ontological Porcelain API (`status`, `wake`, `learn`, `note`, `sleep`, `recall`, etc.) specified
+  in [EP-0105](EP-0105-mcp-sdk-integration.md).
 * **Result:** Other agents can autonomously read Tur constitutions and inject permanent memories.
 
 **2b. Tur as an MCP Client (Pending)**
@@ -94,7 +95,8 @@ function without MCP/ACP configuration. The core `.tur/` schema requires a new m
 
 * **2026-06-08:**
     * Updated Status to Deferred (parked for later consideration).
-    * Noted that Section 2a ("Tur as an MCP Server") is superseded by [EP-0105](EP-0105-mcp-sdk-integration.md) (FastMCP SDK integration & Ontological Porcelain).
+    * Noted that Section 2a ("Tur as an MCP Server") is superseded by [EP-0105](EP-0105-mcp-sdk-integration.md) (FastMCP
+      SDK integration & Ontological Porcelain).
 * **2026-04-12:**
     * Initial Draft.
     * Updated Status to Active.

@@ -140,11 +140,13 @@ tur evolve <memory_id> \
 
 ### 3. Human Governance & Activation (`tur-adm memory approve`)
 
-To uphold the **Steward Principle** and satisfy the **Physical Boundary Constraint (EP-0116)**, AI agents cannot unilaterally approve constitutional mutations. Core Memory promotion is strictly two-staged:
+To uphold the **Steward Principle** and satisfy the **Physical Boundary Constraint (EP-0116)**, AI agents cannot
+unilaterally approve constitutional mutations. Core Memory promotion is strictly two-staged:
 
 1. **Stage (`evolve`)**: The agent calls `tur evolve` (CLI or MCP), staging the memory with `status: pending_approval`.
 2. **Review & Inspect (`tur-adm memory list --pending`)**: The Human Architect inspects pending core memories.
-3. **Approve (`tur-adm memory approve <id>`)**: The Human Architect explicitly accepts the ethical covenant via the administrative CLI, transitioning its status from `pending_approval` to `active`.
+3. **Approve (`tur-adm memory approve <id>`)**: The Human Architect explicitly accepts the ethical covenant via the
+   administrative CLI, transitioning its status from `pending_approval` to `active`.
 
 ```bash
 # List pending core memories awaiting review
@@ -183,14 +185,22 @@ You have established the following relational anchors and existential axioms wit
 
 ## Reference Implementation
 
-Implemented in `src/tur/memory.py`, `src/tur/models.py` (`MemoryType.CORE`), `src/tur/mcp_server.py` (`evolve`), `src/tur/cli/admin.py` (`tur-adm memory approve`, `tur-adm memory list --pending`), and `src/tur/compilation.py`.
+Implemented in `src/tur/memory.py`, `src/tur/models.py` (`MemoryType.CORE`), `src/tur/mcp_server.py` (`evolve`),
+`src/tur/cli/admin.py` (`tur-adm memory approve`, `tur-adm memory list --pending`), and `src/tur/compilation.py`.
 
 ## Change Log
 
 * **2026-08-22:**
-    * **Governance Alignment (Physical Boundary Separation)**: Moved `approve` command exclusively to the human administrative interface (`tur-adm memory approve`) and removed the `approve` tool from the agent-facing MCP server. Added `--pending` filter to `tur-adm memory list`. Staged evolutions remain in `pending_approval` status until explicitly reviewed and accepted by the Human Architect.
+    * **Governance Alignment (Physical Boundary Separation)**: Moved `approve` command exclusively to the human
+      administrative interface (`tur-adm memory approve`) and removed the `approve` tool from the agent-facing MCP
+      server. Added `--pending` filter to `tur-adm memory list`. Staged evolutions remain in `pending_approval` status
+      until explicitly reviewed and accepted by the Human Architect.
 * **2026-07-12:**
-    * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve` and `approve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified all type safety and validation constraints. Aligned with the ontological constraint that evolution is strictly forward-facing (deactivation or negation is handled via further evolution, while technical forgetting/archiving remains an administrative action, removing the `devolve` verb from the agent CLI).
+    * **Status changed to Implemented.** Concluded Council review. Implemented Core Memory structures, added `evolve`
+      and `approve` commands and tools, established progressive disclosure rendering for compiled prompts, and verified
+      all type safety and validation constraints. Aligned with the ontological constraint that evolution is strictly
+      forward-facing (deactivation or negation is handled via further evolution, while technical forgetting/archiving
+      remains an administrative action, removing the `devolve` verb from the agent CLI).
     * **Redesigned Proposal**: Renamed the protocol to **Core Memory Protocol** (`CORE` type). Removed parameter bloat
       from `learn` in favor of a dedicated `evolve` verb that refines existing L1 events. Submitting for Council
       consensus review.

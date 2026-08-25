@@ -126,7 +126,10 @@ None at this time.
 ## Change Log
 
 * **2026-08-19:**
-    * Status changed to **Implemented**. Refactored `src/tur/introspection.py` subagents to functional computer science class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `NoveltyExplorer`, `HebbianGraphDecayer`, `BoundaryEnforcer`, `ClarityDistiller`, `GraphPruner`) while providing backwards-compatible aliases for legacy imports.
+    * Status changed to **Implemented**. Refactored `src/tur/introspection.py` subagents to functional computer science
+      class names (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`,
+      `NoveltyExplorer`, `HebbianGraphDecayer`, `BoundaryEnforcer`, `ClarityDistiller`, `GraphPruner`) while providing
+      backwards-compatible aliases for legacy imports.
 * **2026-08-18:**
     * Initial Draft accepted establishing EP-0003 (Policy vs. Mechanism).
 

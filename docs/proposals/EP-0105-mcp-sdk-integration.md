@@ -44,11 +44,12 @@ the Agent, while the CLI/TUI remains the literal "Scalpel" (Plumbing) for the hu
 
 ## Rationale
 
-1. **Symmetry (Noether):** Preserves clear boundary separation between the high-level semantic tools exposed to AI agents and the administrative lower-level CLI functions (`tur-adm`).
-2. **Efficiency (Shannon):** Eliminates hand-rolled JSON-RPC boilerplate in favor of FastMCP standard capabilities, transport, and schema generation.
+1. **Symmetry (Noether):** Preserves clear boundary separation between the high-level semantic tools exposed to AI
+   agents and the administrative lower-level CLI functions (`tur-adm`).
+2. **Efficiency (Shannon):** Eliminates hand-rolled JSON-RPC boilerplate in favor of FastMCP standard capabilities,
+   transport, and schema generation.
 
 ## Specification
-
 
 ### 1. Dependency Change
 
@@ -98,7 +99,6 @@ only via the TUI/CLI (`tur-adm`) for the human Architect:
 Implemented in `src/tur/mcp_server.py` using `mcp.server.fastmcp.FastMCP`.
 
 ## Change Log
-
 
 * **2026-07-18:** Status promoted from Final to Implemented. 18 MCP tools live in mcp_server.py (status, wake, learn,
   evolve, approve, introspect, note, sleep, recall, telemetry, signal, read_signals, ack_signals, list_agents,

@@ -20,19 +20,20 @@ status: superseded
 
 > [!IMPORTANT]
 > **This proposal has been superseded by [EP-0120 (OKF Storage Backend)](EP-0120-okf-storage-backend.md).**
-> The cognitive architecture (Council Assembly, TMS, Hebbian decay, spreading activation) defined here remains canonical. However, the physical storage format (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories. Refer to EP-0120 for the current storage specification.
+> The cognitive architecture (Council Assembly, TMS, Hebbian decay, spreading activation) defined here remains
+canonical. However, the physical storage format (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown
+directories. Refer to EP-0120 for the current storage specification.
 
 ## Abstract
 
-Evolve Tur's memory architecture from a linear, append-only event log into a compressed, topological Knowledge Graph (
-Deductive Memory) enriched with active cognitive dynamics: Ontological Schema Alignment, Chrono-Logic Belief Revision,
+Evolve Tur's memory architecture from a linear, append-only event log into a compressed, topological Knowledge Graph
+(Deductive Memory) enriched with active cognitive dynamics: Ontological Schema Alignment, Chrono-Logic Belief Revision,
 and Spreading Activation Decay. This architecture is designed in alignment with the **CoALA (Cognitive Architectures for
 Language Agents)** framework and the **Write-Manage-Read loop** memory taxonomy, as mapped in
-the [Sovereign Mind Memory Landscape](../concepts/memory-landscape.md). The active Persona
-Constitution will load only the high-density "Cognitive Map" (Semantic Memory), maintaining explicit pointers to raw
-event details (Episodic Memory) when deep resolution is required. Superfluous or fully subsumed L1 memories will be
-automatically archived to prevent disk bloat, provided their semantic meaning is rigorously verified as conserved within
-the L2 graph.
+the [Sovereign Mind Memory Landscape](../concepts/memory-landscape.md). The active Persona Constitution will load only
+the high-density "Cognitive Map" (Semantic Memory), maintaining explicit pointers to raw event details (Episodic Memory)
+when deep resolution is required. Superfluous or fully subsumed L1 memories will be automatically archived to prevent
+disk bloat, provided their semantic meaning is rigorously verified as conserved within the L2 graph.
 
 ## Motivation
 
@@ -228,11 +229,17 @@ The `tur introspect` command will be implemented as a two-stage pipeline:
 
 * **2026-07-18:**
     * CLI surface implemented: `tur introspect` (with `--all` for bootstrap mode, `--visualize` for Mermaid output).
-    * MCP tool `introspect(bootstrap, ctx)` added to the Ontological Porcelain API, fully wired to route extraction through the MCP host/harness using MCP Sampling rather than calling the Google GenAI library directly.
-    * Implemented **Harness Delegation Protocol** in CLI mode: when run without a local `GEMINI_API_KEY`, `tur introspect` prints a structured delegation prompt requesting the Harness agent to perform the file modifications (writing OKF files and compiling the graph) on its behalf, exiting cleanly with code 0.
+    * MCP tool `introspect(bootstrap, ctx)` added to the Ontological Porcelain API, fully wired to route extraction
+      through the MCP host/harness using MCP Sampling rather than calling the Google GenAI library directly.
+    * Implemented **Harness Delegation Protocol** in CLI mode: when run without a local `GEMINI_API_KEY`,
+      `tur introspect` prints a structured delegation prompt requesting the Harness agent to perform the file
+      modifications (writing OKF files and compiling the graph) on its behalf, exiting cleanly with code 0.
     * Full Council Assembly pipeline (9 subagents) wired and operational.
 * **2026-07-11:**
-    * Status changed to **Superseded** by EP-0120. The cognitive architecture (Council Assembly, subagent pipeline, TMS belief revision, spreading activation, Hebbian decay) remains canonical, but the physical storage layer (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories under `concepts/active/` and `concepts/archive/`.
+    * Status changed to **Superseded** by EP-0120. The cognitive architecture (Council Assembly, subagent pipeline, TMS
+      belief revision, spreading activation, Hebbian decay) remains canonical, but the physical storage layer
+      (centralized `knowledge_graph.yaml`) has been replaced by OKF markdown directories under `concepts/active/` and
+      `concepts/archive/`.
 * **2026-06-08:**
     * Expanded proposal with advanced cognitive primitives: Ontological Schema Alignment, Chrono-Logic Belief Revision,
       Spreading Activation Decay, and Hybrid Retrieval fallback following architectural research.

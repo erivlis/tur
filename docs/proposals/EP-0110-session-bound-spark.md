@@ -104,12 +104,11 @@ Implemented in `src/tur/session.py` (`SessionNotes`, `note_logic`, `compile_sess
 
 ## Change Log
 
-
 * **2026-07-18:** Status promoted from Final to Implemented. Session-bound note protocol live in session.py (note_logic,
-  compile_session_notes). MCP tool note() and CLI tur note both implemented.
+  compile_session_notes). MCP tool note () and CLI tur note both implemented.
 * **2026-05-29:**
-    * Approved & Completed: Decoupled the single global Sparks into session-bound flat `<session_id>.yaml` (
-      SessionNotes) files, purged all legacy spark files, finalized terminology shift, and fully eliminated the
+    * Approved & Completed: Decoupled the single global Sparks into session-bound flat `<session_id>.yaml`
+      (SessionNotes) files, purged all legacy spark files, finalized terminology shift, and fully eliminated the
       `main.py` monolithic facade in favor of direct sub-domain architecture.
 * **2026-05-11:**
     * Initial Draft created to formalize the Session-Bound Spark Protocol, ensuring a consistent timeline across

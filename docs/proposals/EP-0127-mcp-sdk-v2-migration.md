@@ -7,23 +7,22 @@ status: draft
 
 # EP-0127: Model Context Protocol Python SDK v2 Migration & Protocol Alignment
 
-| Field       | Value                                                                |
-|:------------|:---------------------------------------------------------------------|
-| **EP**      | 0127                                                                 |
+| Field       | Value                                                               |
+|:------------|:--------------------------------------------------------------------|
+| **EP**      | 0127                                                                |
 | **Title**   | Model Context Protocol Python SDK v2 Migration & Protocol Alignment |
-| **Author**  | Eran Rivlis & Ariel                                                  |
-| **Status**  | Draft                                                                |
-| **Type**    | Standards Track                                                      |
-| **Created** | 2026-08-24                                                           |
-| **Updated** | 2026-08-24                                                           |
+| **Author**  | Eran Rivlis & Ariel                                                 |
+| **Status**  | Draft                                                               |
+| **Type**    | Standards Track                                                     |
+| **Created** | 2026-08-24                                                          |
+| **Updated** | 2026-08-24                                                          |
 
 ## Abstract
 
-This proposal specifies the architectural and technical migration of Tur's Model Context Protocol (MCP) server
-subsystem from the legacy `mcp` v1.x SDK (`FastMCP`) to the official MCP Python SDK v2 (`MCPServer`) and the 2026
-protocol specifications. It establishes a modernized, type-safe interface for tool registration, lifecycle management,
-resource exposure, and LLM-agnostic sampling interaction while shedding legacy protocol overhead and deprecated wire
-conventions.
+This proposal specifies the architectural and technical migration of Tur's Model Context Protocol (MCP) server subsystem
+from the legacy `mcp` v1.x SDK (`FastMCP`) to the official MCP Python SDK v2 (`MCPServer`) and the 2026 protocol
+specifications. It establishes a modernized, type-safe interface for tool registration, lifecycle management, resource
+exposure, and LLM-agnostic sampling interaction while shedding legacy protocol overhead and deprecated wire conventions.
 
 ## Motivation
 

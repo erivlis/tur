@@ -66,13 +66,13 @@ specific instance).
 The `tur.models.Memory` schema will be updated:
 
 1. **Remove `status`:** The `status` field (`MemoryStatus`) will be permanently deleted. The status of a memory is not
-   an intrinsic property; it is a derived topological property. If a file is in the `memories/` directory, it is
-   Active (L1). If it is in the `archive/` directory, it is Subsumed/Subconscious (L0). Storing status *inside* a hashed
-   file creates a cryptographic paradox (moving the file would require changing the internal status string, which would
+   an intrinsic property; it is a derived topological property. If a file is in the `memories/` directory, it is Active
+   (L1). If it is in the `archive/` directory, it is Subsumed/Subconscious (L0). Storing status *inside* a hashed file
+   creates a cryptographic paradox (moving the file would require changing the internal status string, which would
    change the hash, breaking all historical pointers).
-2. **Deterministic ID:** The `id` field will no longer default to a random UUID. Instead, it will
-   be calculated deterministically at instantiation. The `id` will be a SHA-256 hash computed over a normalized,
-   serialized string of the *entire* memory's core informational fields:
+2. **Deterministic ID:** The `id` field will no longer default to a random UUID. Instead, it will be calculated
+   deterministically at instantiation. The `id` will be a SHA-256 hash computed over a normalized, serialized string of
+   the *entire* memory's core informational fields:
     * `type`
     * `scope`
     * `content`
@@ -265,9 +265,8 @@ Implemented in `src/tur/merkle.py`, `src/tur/memory.py`, `src/tur/models.py`, an
 
 ## Change Log
 
-
-* **2026-07-18:** Status promoted from Final to Implemented. SHA-256 content-addressing live in memory.py; Golem's
-  Seal (atomic write + lock) implemented; integrity audit via memory.py MemoryManager.audit_integrity().
+* **2026-07-18:** Status promoted from Final to Implemented. SHA-256 content-addressing live in memory.py; Golem's Seal
+  (atomic write + lock) implemented; integrity audit via memory.py MemoryManager.audit_integrity ().
 * **2026-04-18:**
     * Added detailed explanation and logic for the standalone `scripts/migrate_to_merkle.py` migration script.
     * Embedded the migration source code directly into the EP for absolute reference.

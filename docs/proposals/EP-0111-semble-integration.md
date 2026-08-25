@@ -28,8 +28,8 @@ context window bloat: **Tur** manages the **Traveler** (Identity, State, and Mem
 
 ## Motivation
 
-In the Tri-Partite Architecture, an agent's reality is bisected into the *Traveler* (Mind/State) and the *Terrain* (
-Codebase/Environment).
+In the Tri-Partite Architecture, an agent's reality is bisected into the *Traveler* (Mind/State) and the *Terrain*
+(Codebase/Environment).
 
 While EP-0109 successfully established the **Boundary of Orchestration** (stating that Tur must *never* natively
 orchestrate tool execution or read codebase files to avoid duplicate context), agents still require a high-fidelity
@@ -152,7 +152,6 @@ semantic similarity searches over past session ledgers without needing expensive
 Configured via dual-MCP client setup (`semble[mcp]`) and documented in `AGENTS.md`.
 
 ## Change Log
-
 
 * **2026-05-28:**
     * Initial Draft created by the Architect & Ariel to integrate Semble as the official Terrain Search Engine.

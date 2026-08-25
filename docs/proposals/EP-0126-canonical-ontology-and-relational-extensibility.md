@@ -151,5 +151,6 @@ map compaction:
 * **2026-08-22:**
     * Implemented canonical `NodeType` and `EdgeType` `StrEnum` definitions in `tur.models`.
     * Integrated `metaphor_for` and `analogy_of` into `OntologyExtractor` prompt and delegation contract.
-    * Implemented Tier 2 synonym normalization and Tier 3 declarative persona custom edge types in `_merge_extracted_graph`.
+    * Implemented Tier 2 synonym normalization and Tier 3 declarative persona custom edge types in
+      `_merge_extracted_graph`.
     * Initial Draft authored following Council approval (REV-0004).
