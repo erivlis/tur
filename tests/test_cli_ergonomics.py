@@ -16,6 +16,7 @@ def test_admin_cli_loads_without_textual(monkeypatch):
     """Asserts that tur.cli.admin has zero dependency on textual and imports cleanly."""
     monkeypatch.setitem(sys.modules, 'textual', None)
     import tur.cli.admin
+
     assert hasattr(tur.cli.admin, 'app')
 
 
@@ -61,4 +62,4 @@ def test_helpers_missing_google_genai(monkeypatch):
         _local_gemini_generate('Test prompt', api_key='test-key')
 
     assert "The 'google-genai' package is required for direct Gemini API calls." in str(exc_info.value)
-    assert "tur[gemini]" in str(exc_info.value)
+    assert 'tur[gemini]' in str(exc_info.value)

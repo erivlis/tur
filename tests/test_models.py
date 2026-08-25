@@ -169,4 +169,3 @@ def test_node_type_and_edge_type_enums():
     assert EdgeType.REFUTED_BY == 'refuted_by'
     assert EdgeType.ANALOGY_OF == 'analogy_of'
     assert EdgeType.METAPHOR_FOR == 'metaphor_for'
-

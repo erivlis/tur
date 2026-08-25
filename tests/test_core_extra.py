@@ -73,12 +73,15 @@ def test_get_active_persona_id_multiple_personas_error(mock_core_workspace):
 
     index_path = Path('.tur/personas.yaml')
     with open(index_path, 'w', encoding='utf-8') as f:
-        yaml.dump({
-            'personas': [
-                {'id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'name': 'Ariel', 'version': '1.0'},
-                {'id': '8544202e-92f5-40ce-adfb-e4b0eae6c263', 'name': 'Popper', 'version': '1.0'}
-            ]
-        }, f)
+        yaml.dump(
+            {
+                'personas': [
+                    {'id': '7544202e-92f5-40ce-adfb-e4b0eae6c262', 'name': 'Ariel', 'version': '1.0'},
+                    {'id': '8544202e-92f5-40ce-adfb-e4b0eae6c263', 'name': 'Popper', 'version': '1.0'},
+                ]
+            },
+            f,
+        )
 
     with pytest.raises(ValueError) as exc:
         persona.get_active_persona_id()

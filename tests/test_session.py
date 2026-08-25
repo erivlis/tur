@@ -351,9 +351,9 @@ def test_tired_logic_staged_dreaming_consensus(mock_session_workspace, monkeypat
     session.start_session_logic('sess-tired', agent_id='agent_2', identifier=persona_id)
 
     # Agent 1 calls tired with staged memories -> should be in standby since agent_2 is active
-    staged_payload = json.dumps([
-        {'type': 'fact', 'scope': 'incarnation', 'tags': ['test'], 'content': 'Staged fact 1'}
-    ])
+    staged_payload = json.dumps(
+        [{'type': 'fact', 'scope': 'incarnation', 'tags': ['test'], 'content': 'Staged fact 1'}]
+    )
     monkeypatch.setattr('tur.dreaming.stage_sleep_dreaming', lambda *args, **kwargs: staged_payload)
 
     res1 = session.tired_logic('sess-tired', agent_id='agent_1', transcript='agent 1 log')

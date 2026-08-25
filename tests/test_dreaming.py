@@ -79,4 +79,3 @@ def test_perform_sleep_dreaming_missing_api_key(mock_workspace, monkeypatch):
     assert 'tur sleep --commit' in exc.value.prompt
     assert 'Memory Extraction Principles & Scoping Rules' in exc.value.prompt
     assert 'Subagent Execution (Recommended)' in exc.value.prompt
-

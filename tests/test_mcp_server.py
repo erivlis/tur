@@ -224,7 +224,7 @@ def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
     assert 'Human' in res_low['class']
 
     # Medium CP (5-9)
-    principles_med = "\n".join([f"  - name: P{i}\n    role: R{i}\n    weight: 1.0" for i in range(6)])
+    principles_med = '\n'.join([f'  - name: P{i}\n    role: R{i}\n    weight: 1.0' for i in range(6)])
     persona_yaml.write_text(
         f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_med}\n',
         encoding='utf-8',
@@ -233,7 +233,7 @@ def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
     assert 'Giant' in res_med['class']
 
     # High CP (>=10)
-    principles_high = "\n".join([f"  - name: P{i}\n    role: R{i}\n    weight: 1.0" for i in range(12)])
+    principles_high = '\n'.join([f'  - name: P{i}\n    role: R{i}\n    weight: 1.0' for i in range(12)])
     persona_yaml.write_text(
         f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_high}\n',
         encoding='utf-8',
@@ -285,9 +285,7 @@ def test_mcp_status_with_persona_and_session(mock_mcp_env, monkeypatch):
     # Setup session notes
     mcp_server._active_session_id = 'sess-status-1'
 
-    idx = SessionIndex(sessions=[
-        SessionEntry(id='sess-status-1', status='active')
-    ])
+    idx = SessionIndex(sessions=[SessionEntry(id='sess-status-1', status='active')])
     save_session_index(persona_dir, idx)
 
     note_path = get_session_file(persona_dir, 'sess-status-1')
@@ -315,9 +313,7 @@ def test_mcp_status_past_session_in_index(mock_mcp_env, monkeypatch):
     mcp_server._active_session_id = None
     monkeypatch.setattr(mcp_server, 'get_active_session_id', lambda: None)
 
-    idx = SessionIndex(sessions=[
-        SessionEntry(id='past-sess', status='ended')
-    ])
+    idx = SessionIndex(sessions=[SessionEntry(id='past-sess', status='ended')])
     save_session_index(persona_dir, idx)
 
     res = mcp_server.status()
@@ -551,3 +547,40 @@ def test_mcp_introspect(mock_mcp_env, monkeypatch):
     monkeypatch.setattr(tur.introspection, 'run_introspection', MagicMock(side_effect=RuntimeError('Council failure')))
     res_err = mcp_server.introspect()
     assert 'Error during Council Introspection: Council failure' in res_err
+
+
+def test_mcp_lock_contention_graceful_handling(mock_mcp_env, monkeypatch):
+    """Test that all MCP tools return structured non-fatal retry guidance on LockTimeoutError."""
+    from tur.locking import LockTimeoutError
+
+    dummy_lock = Path('/dummy/state.lock')
+
+    # 1. note() contention
+    monkeypatch.setattr(
+        mcp_server,
+        'note_logic',
+        MagicMock(side_effect=LockTimeoutError(dummy_lock, 3.0)),
+    )
+    res_note = mcp_server.note('Contended note')
+    assert 'Status: Contended' in res_note
+    assert 'Please retry shortly' in res_note
+
+    # 2. wake() contention
+    monkeypatch.setattr(
+        mcp_server,
+        'hydrate_session_state',
+        MagicMock(side_effect=LockTimeoutError(dummy_lock, 3.0)),
+    )
+    res_wake = mcp_server.wake(session_id='sess-contended')
+    assert 'Status: Contended' in res_wake
+    assert 'Please retry shortly' in res_wake
+
+    # 3. status() contention
+    monkeypatch.setattr(
+        mcp_server,
+        'load_session_index',
+        MagicMock(side_effect=LockTimeoutError(dummy_lock, 3.0)),
+    )
+    res_status = mcp_server.status()
+    assert res_status.get('status') == 'contended'
+    assert 'held by another process' in res_status.get('error', '')

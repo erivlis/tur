@@ -659,4 +659,3 @@ def test_synonym_normalization_and_custom_persona_ontology():
     # Declared custom edge type accepted
     assert merged.has_edge('current-matter', 'precedent-case')
     assert merged.edges['current-matter', 'precedent-case']['type'] == 'cites_precedent'
-
