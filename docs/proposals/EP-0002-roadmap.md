@@ -23,8 +23,8 @@ This document outlines the strategic roadmap for the Tur project. It defines the
 goals for the framework, providing a clear trajectory for development. It has been updated to reflect the architectural
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
 "Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124),
-Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), and MCP Python SDK
-v2 Migration (EP-0127).
+Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), MCP Python SDK
+v2 Migration (EP-0127), OS-Native Directory Resolution (EP-0128), and Multi-Process File Locking (EP-0129).
 
 ## Motivation
 
@@ -97,6 +97,9 @@ semantic engine supporting external agents via MCP.
       signals across MCP-connected swarms.
     * **Algebraic Meditation Consensus (EP-0122) [Status: Draft]:** Multi-agent consensus mechanisms for distributed
       persona governance.
+    * **Multi-Process State Synchronization and File Locking Architecture (EP-0129) [Status: Draft]:** Adopting
+      `filelock` to eliminate multi-agent read-modify-write race conditions and establish cross-platform process
+      synchronization for shared indices, session continuity, and storage evolution.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
@@ -115,6 +118,9 @@ semantic engine supporting external agents via MCP.
     * **MCP Python SDK v2 Migration & Protocol Alignment (EP-0127) [Status: Draft]:** Migrating Tur's MCP server and
       harness integration layer to the official MCP Python SDK v2 (`MCPServer`), aligning with the 2026 protocol
       specifications.
+    * **OS-Native Directory Resolution and Runtime Storage Standards (EP-0128) [Status: Draft]:** Adopting
+      `platformdirs` to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global
+      persona state while preserving workspace terrain isolation.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -165,6 +171,12 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-25:**
+    * Registered **EP-0128 (OS-Native Directory Resolution and Runtime Storage Standards)** under Phase 3 (Persona
+      Lifecycle & Creation) to standardize cross-platform directory resolution via `platformdirs` while preserving
+      workspace terrain isolation.
+    * Registered **EP-0129 (Multi-Process State Synchronization and File Locking Architecture)** under Phase 2 (LLM
+      Agnosticism & Swarms) to eliminate multi-agent read-modify-write race conditions via `filelock`.
 * **2026-08-24:**
     * Registered **EP-0127 (Model Context Protocol Python SDK v2 Migration & Protocol Alignment)** under Phase 3
       (Persona Lifecycle & Creation) to track migration from `FastMCP` to `MCPServer` and align with the 2026 MCP

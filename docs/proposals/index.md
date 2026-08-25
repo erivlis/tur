@@ -50,6 +50,8 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 | **[0125](EP-0125-storage-evolution-and-migration-protocol.md)**        | [Storage Evolution and Migration Protocol](EP-0125-storage-evolution-and-migration-protocol.md)                                       |     *Draft*     | Standards Track | Establishes an atomic, non-destructive migration lifecycle and verification standard for evolving Tur storage schemas with zero data corruption.                                                          |
 | **[0126](EP-0126-canonical-ontology-and-relational-extensibility.md)** | [Canonical Ontology and Relational Extensibility](EP-0126-canonical-ontology-and-relational-extensibility.md)                         | **Implemented** | Standards Track | Formalizes canonical NodeType and EdgeType Enums (including metaphor_for) with controlled, declarative schema extensibility for domain personas.                                                          |
 | **[0127](EP-0127-mcp-sdk-v2-migration.md)**                            | [Model Context Protocol Python SDK v2 Migration & Protocol Alignment](EP-0127-mcp-sdk-v2-migration.md)                               |     *Draft*     | Standards Track | Migrates Tur's MCP server and harness integration layer to the official MCP Python SDK v2, aligning with the 2026 protocol specifications.                                                                |
+| **[0128](EP-0128-os-native-directory-resolution.md)**                 | [OS-Native Directory Resolution and Runtime Storage Standards](EP-0128-os-native-directory-resolution.md)                             |     *Draft*     | Standards Track | Adopts platformdirs to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global persona state while preserving workspace terrain isolation.                         |
+| **[0129](EP-0129-file-locking-architecture.md)**                      | [Multi-Process State Synchronization and File Locking Architecture](EP-0129-file-locking-architecture.md)                             |     *Draft*     | Standards Track | Adopts filelock to eliminate multi-agent read-modify-write race conditions and establish cross-platform process synchronization for shared indices, session continuity, and storage evolution.             |
 
 ---
 
@@ -86,12 +88,14 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 - **[EP-0121](EP-0121-agnostic-harness-interaction.md)**: The Agnostic Harness Interaction Protocol
 - **[EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md)**: Terrain Isolation and Workspace Resolution
 - **[EP-0127](EP-0127-mcp-sdk-v2-migration.md)**: Model Context Protocol Python SDK v2 Migration & Protocol Alignment
+- **[EP-0128](EP-0128-os-native-directory-resolution.md)**: OS-Native Directory Resolution and Runtime Storage Standards
 
 ### 4. Multi-Agent Swarms & Synchronization
 - **[EP-0107](EP-0107-multi-agent-swarms.md)**: Multi-Agent Swarm Readiness *(Deferred)*
 - **[EP-0118](EP-0118-inter-agent-signal-protocol.md)**: Inter-Agent Signal Protocol (IASP)
 - **[EP-0122](EP-0122-algebraic-meditation-consensus.md)**: Algebraic Meditation Consensus (Provenance Semirings)
 - **[EP-0123](EP-0123-reactive-signal-delivery.md)**: Reactive Signal Delivery and Harness Notification Architecture
+- **[EP-0129](EP-0129-file-locking-architecture.md)**: Multi-Process State Synchronization and File Locking Architecture
 
 ### 5. Benchmark & External Integrations (Deferred/Rejected)
 - **[EP-0111](EP-0111-semble-integration.md)**: Federated Code Search (Semble Integration) *(Rejected)*

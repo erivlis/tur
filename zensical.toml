@@ -68,7 +68,9 @@ nav = [
         "proposals/EP-0124-terrain-isolation-and-workspace-resolution.md",
         "proposals/EP-0125-storage-evolution-and-migration-protocol.md",
         "proposals/EP-0126-canonical-ontology-and-relational-extensibility.md",
-        "proposals/EP-0127-mcp-sdk-v2-migration.md"
+        "proposals/EP-0127-mcp-sdk-v2-migration.md",
+        "proposals/EP-0128-os-native-directory-resolution.md",
+        "proposals/EP-0129-file-locking-architecture.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
