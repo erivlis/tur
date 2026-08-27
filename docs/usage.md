@@ -88,7 +88,7 @@ actions across three distinct executables (EP-0004 / EP-0116):
 
 | Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                      |
 |:--------------|:------------------------------|:------------------------|:------------------------------------------------------------------------------------------------------------------|
-| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `telemetry`, `sleep`                                                 |
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `metrics`, `sleep`                                                   |
 | **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean` |
 | **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                    |
 
@@ -205,13 +205,13 @@ To include archived (forgotten) memories in the list:
 tur-adm memory list --include-archived
 ```
 
-### 8. Measure Cognitive Load (`telemetry`)
+### 8. Measure Cognitive Complexity (`metrics`)
 
-Calculates the "Constraint Dimensionality" ($C_p$) of a persona based on its principles and weights. This helps you
+Calculates the "Constraint Dimensionality" ($C_p$) and static token weight of a persona based on its principles and rules. This helps you
 understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
 
 ```shell
-tur telemetry
+tur metrics
 ```
 
 ### 9. Forget a Memory (`forget`)

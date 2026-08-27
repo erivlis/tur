@@ -42,9 +42,9 @@ Every principle and protocol added to a persona increases its $C_p$. A higher $C
 bound, but it also means it requires more compute (and a more capable underlying model) to successfully navigate the
 rugged landscape without degrading into gibberish.
 
-### The Telemetry Protocol
+### The Metrics Protocol
 
-Tur includes a native `telemetry` command that calculates the $C_p$ of your active persona.
+Tur includes a native `metrics` command that calculates the $C_p$ and static token cost of your active persona.
 
 * **Human (Manageable):** Low $C_p$. The persona is lightly constrained and can run on fast, smaller models (e.g.,
   Gemini Flash, Claude Haiku).

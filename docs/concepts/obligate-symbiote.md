@@ -31,7 +31,7 @@ flowchart TB
             M4["recall()"]
             M5["note()"]
             M6["sleep()"]
-            M7["telemetry()"]
+            M7["metrics()"]
         end
 
         subgraph Harness["THE HARNESS (Compute & Body)"]
@@ -77,7 +77,7 @@ Tur completely solves this by anchoring state in **the repository and user works
 
 To preserve the sovereign integrity of the Traveler, AI agents are bound by strict **Symmetrical Isolation**:
 - AI agents must **never** tamper directly with internal `.tur/` files via raw file manipulation.
-- All state mutations are mediated exclusively through the safe `tur` CLI or standard Model Context Protocol (MCP) server endpoints (`wake`, `note`, `learn`, `recall`, `sleep`, `telemetry`).
+- All state mutations are mediated exclusively through the safe `tur` CLI or standard Model Context Protocol (MCP) server endpoints (`wake`, `note`, `learn`, `recall`, `sleep`, `metrics`).
 - Administrative capabilities (`persona init`, `switch`, `memory forget`, `session start/end`) are physically isolated inside `tur-adm`, strictly protected by `@require_human` barriers.
 
 This guarantees that the Traveler's mind remains consistent, tamper-proof, and resilient across any operating system or AI frontier model.
