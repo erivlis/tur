@@ -1,3 +1,10 @@
+## v0.11.3 (2026-08-28)
+
+### Refactor
+
+- **tests**: migrate telemetry tests to metrics and update references for consistency
+- **metrics**: merge telemetry into metrics module and add CLI commands
+
 ## v0.11.2 (2026-08-26)
 
 ### Refactor
