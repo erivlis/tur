@@ -3,7 +3,6 @@ import os
 import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Literal
 
 from mcp.server.fastmcp import Context, FastMCP
@@ -13,8 +12,8 @@ from tur.compiler import compile_persona
 from tur.dreaming import perform_sleep_dreaming
 from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
+from tur.metrics import CognitiveMetrics, compute_persona_metrics
 from tur.models import Memory, MemoryScope, MemoryType, SessionNotes
-from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
 from tur.persona import get_active_persona_id, get_persona_path
 from tur.session import (
     ack_signals_logic,
@@ -33,7 +32,6 @@ from tur.session import (
     tired_logic,
     write_whiteboard_logic,
 )
-from tur.telemetry import CognitiveTelemetry
 
 logger = logging.getLogger('tur.mcp')
 
@@ -175,12 +173,12 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
         state = hydrate_session_state(active_id, session_id=sess_id)
         system_prompt = compile_persona(state)
 
-        # Append Telemetry Metadata
-        telemetry_engine = CognitiveTelemetry()
-        static_metrics = telemetry_engine.measure_static_load(system_prompt)
-        cp = telemetry_engine.calculate_constraint_dimensionality(state.persona)
+        # Append System Metrics Metadata
+        metrics_engine = CognitiveMetrics()
+        static_metrics = metrics_engine.measure_static_load(system_prompt)
+        cp = metrics_engine.calculate_constraint_dimensionality(state.persona)
 
-        telemetry_block = (
+        metrics_block = (
             f'\n\n--- [SYSTEM METRICS] ---\n'
             f'Active Persona ID: {active_id}\n'
             f'Constraint Dimensionality (Cp): {cp}\n'
@@ -188,7 +186,7 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
             f'Information Density: {static_metrics["density"]:.2f}\n'
         )
 
-        return system_prompt + telemetry_block
+        return system_prompt + metrics_block
     except LockTimeoutError as e:
         return (
             f'Status: Contended. The state lock is currently held by another agent or process: {e}. '
@@ -441,10 +439,7 @@ def sleep(
             log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model, ctx=ctx
         )
     except LockTimeoutError as e:
-        return (
-            f'Status: Contended. State lock currently held during dreaming consolidation: {e}. '
-            'Please retry shortly.'
-        )
+        return f'Status: Contended. State lock currently held during dreaming consolidation: {e}. Please retry shortly.'
     except Exception as e:
         return f'Error during dreaming: {e}'
     else:
@@ -468,7 +463,7 @@ def recall(query: str) -> str:
 
 
 @mcp.tool()
-def telemetry(identifier: str | None = None) -> dict:
+def metrics(identifier: str | None = None) -> dict:
     """
     Calculate Constraint Dimensionality (Cp) and cognitive load metrics for a persona.
 
@@ -476,44 +471,27 @@ def telemetry(identifier: str | None = None) -> dict:
         identifier: The name or UUID of the persona. If omitted, uses the default.
     """
     try:
-        from tur.models import Persona, SessionState
-        from tur.user import get_user_profile
-
-        active_id = get_active_persona_id(identifier)
-        persona_dir = get_persona_path(active_id)
-        file_path = persona_dir / 'persona.yaml'
-
-        with open(file_path, encoding='utf-8') as f:
-            data = yaml_safe_load(f)
-
-        persona_obj = Persona(**data)
-
-        # Mock state for compilation measurement
-        user_profile = get_user_profile()
-        state = SessionState(persona=persona_obj, user=user_profile, memories=[], epilogue=None, knowledge_graph=None)
-        system_prompt = compile_persona(state)
-
-        telemetry_engine = CognitiveTelemetry()
-        static_metrics = telemetry_engine.measure_static_load(system_prompt)
-        cp = telemetry_engine.calculate_constraint_dimensionality(persona_obj)
-
-        if cp < 5:
-            rating = 'Human (Manageable)'
-        elif cp < 10:
-            rating = 'Giant (Heavy Load)'
-        else:
-            rating = 'Titan (Inference Warning)'
+        report = compute_persona_metrics(identifier)
     except Exception as e:
         return {'error': str(e)}
     else:
         return {
-            'persona_id': active_id,
-            'persona_name': persona_obj.name,
-            'constraint_dimensionality': cp,
-            'class': rating,
-            'static_token_cost': static_metrics['est_tokens'],
-            'information_density': static_metrics['density'],
+            'persona_id': report.persona_id,
+            'persona_name': report.persona_name,
+            'constraint_dimensionality': report.constraint_dimensionality,
+            'class': report.rating_class,
+            'static_token_cost': report.static_token_cost,
+            'information_density': report.information_density,
         }
+
+
+@mcp.tool()
+def telemetry(identifier: str | None = None) -> dict:
+    """
+    Backwards-compatible alias for metrics().
+    Calculate Constraint Dimensionality (Cp) and cognitive load metrics for a persona.
+    """
+    return metrics(identifier=identifier)
 
 
 @mcp.tool()

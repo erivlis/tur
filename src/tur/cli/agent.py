@@ -17,6 +17,7 @@ from tur.compiler import compile_persona
 from tur.introspection import format_graph_as_mermaid, run_introspection
 from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
+from tur.metrics import compute_persona_metrics
 from tur.models import (
     HarnessDelegationError,
     Memory,
@@ -361,6 +362,60 @@ def status(
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
+
+
+@app.command()
+def metrics(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    json_output: bool = typer.Option(False, '--json', help='Output metrics as raw JSON.'),
+):
+    """Calculate Constraint Dimensionality (C_p) and cognitive load metrics for a persona."""
+    try:
+        report = compute_persona_metrics(identifier)
+
+        if json_output:
+            console.print(
+                json.dumps(
+                    report.to_dict(),
+                    indent=2,
+                )
+            )
+            return
+
+        table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+        table.add_column('Key', style='bold cyan', no_wrap=True)
+        table.add_column('Value', style='white')
+
+        table.add_row('Persona', f'{report.persona_name} [dim]({report.persona_id})[/dim]')
+        table.add_row('Principles (N)', str(report.num_principles))
+        table.add_row('Constraint Dim (Cp)', f'{report.constraint_dimensionality} [dim]({report.rating_class})[/dim]')
+        table.add_row('', '')
+        table.add_row('Static Token Cost', f'~{report.static_token_cost}')
+        table.add_row('Information Density', f'{report.information_density}')
+
+        console.print(Panel(table, title=f'[bold]System Metrics: {report.persona_name}[/bold]', border_style='cyan'))
+
+    except LockTimeoutError as e:
+        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
+        raise typer.Exit(code=1)
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f'[red]Error calculating metrics: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@app.command(name='telemetry', hidden=True)
+def telemetry(
+    identifier: str | None = typer.Argument(
+        None, help='The name or UUID of the persona. If omitted, uses the default.'
+    ),
+    json_output: bool = typer.Option(False, '--json', help='Output metrics as raw JSON.'),
+):
+    """Backwards-compatible alias for metrics."""
+    return metrics(identifier=identifier, json_output=json_output)
 
 
 @app.command()
