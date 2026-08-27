@@ -71,7 +71,11 @@ nav = [
         "proposals/EP-0127-mcp-sdk-v2-migration.md",
         "proposals/EP-0128-os-native-directory-resolution.md",
         "proposals/EP-0129-file-locking-architecture.md",
-        "proposals/EP-0130-session-lineage-and-continuity-protocol.md"
+        "proposals/EP-0130-session-lineage-and-continuity-protocol.md",
+        "proposals/EP-0131-memory-provenance-and-staleness-decay.md",
+        "proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md",
+        "proposals/EP-0133-session-memory-observability-and-diff.md",
+        "proposals/EP-0134-active-tms-contradiction-interruption.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
