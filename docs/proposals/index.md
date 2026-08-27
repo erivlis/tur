@@ -53,6 +53,10 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 | **[0128](EP-0128-os-native-directory-resolution.md)**                  | [OS-Native Directory Resolution and Runtime Storage Standards](EP-0128-os-native-directory-resolution.md)                             | **Implemented** | Standards Track | Adopts platformdirs to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global persona state while preserving workspace terrain isolation.                         |
 | **[0129](EP-0129-file-locking-architecture.md)**                       | [Multi-Process State Synchronization and File Locking Architecture](EP-0129-file-locking-architecture.md)                             | **Implemented** | Standards Track | Adopts filelock to eliminate multi-agent read-modify-write race conditions and establish cross-platform process synchronization for shared indices, session continuity, and storage evolution.            |
 | **[0130](EP-0130-session-lineage-and-continuity-protocol.md)**         | [Session Lineage and Cross-Session Continuity Protocol](EP-0130-session-lineage-and-continuity-protocol.md)                           |     *Draft*     | Standards Track | Establishes explicit parent-session lineage tracking, automatic continuity seeding at wake, bounded cross-session note discovery, and dual-backend fallback for signal reading.                           |
+| **[0131](EP-0131-memory-provenance-and-staleness-decay.md)**           | [Memory Provenance, Temporal Anchoring, and Staleness Decay](EP-0131-memory-provenance-and-staleness-decay.md)                         |     *Draft*     | Standards Track | Introduces git-anchored observation provenance, confidence scoring, TTL-based staleness decay, and hypothesis cache semantics to L1 memory records.                                                       |
+| **[0132](EP-0132-budgeted-wake-and-dynamic-retrieval.md)**             | [Budgeted Wake and Dynamic Memory Context Retrieval](EP-0132-budgeted-wake-and-dynamic-retrieval.md)                                   |     *Draft*     | Standards Track | Establishes token-bounded Turn Zero wake payloads and defines the pre-turn dynamic memory recall hook protocol.                                                                                            |
+| **[0133](EP-0133-session-memory-observability-and-diff.md)**           | [Session Memory Observability and Delta Tracking](EP-0133-session-memory-observability-and-diff.md)                                     |     *Draft*     | Standards Track | Introduces the tur diff CLI command and MCP tool to inspect memory mutations, additions, supersessions, and contradictions across sessions.                                                                |
+| **[0134](EP-0134-active-tms-contradiction-interruption.md)**           | [Active TMS Contradiction Interruption Protocol](EP-0134-active-tms-contradiction-interruption.md)                                     |     *Draft*     | Standards Track | Defines real-time inference and ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System.                                                     |
 
 ---
 
@@ -76,6 +80,8 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 - **[EP-0120](EP-0120-okf-storage-backend.md)**: Open Knowledge Format (OKF) Storage Backend
 - **[EP-0125](EP-0125-storage-evolution-and-migration-protocol.md)**: Storage Evolution and Migration Protocol
 - **[EP-0126](EP-0126-canonical-ontology-and-relational-extensibility.md)**: Canonical Ontology and Relational Extensibility
+- **[EP-0131](EP-0131-memory-provenance-and-staleness-decay.md)**: Memory Provenance, Temporal Anchoring, and Staleness Decay
+- **[EP-0134](EP-0134-active-tms-contradiction-interruption.md)**: Active TMS Contradiction Interruption Protocol
 
 ### 3. Architecture, Interfaces & Security
 - **[EP-0100](EP-0100-aleph-server.md)**: The Aleph Server (MCP Integration) *(Superseded)*
@@ -90,6 +96,8 @@ Tur Enhancement Proposals (EPs) are the primary mechanism for proposing new feat
 - **[EP-0124](EP-0124-terrain-isolation-and-workspace-resolution.md)**: Terrain Isolation and Workspace Resolution
 - **[EP-0127](EP-0127-mcp-sdk-v2-migration.md)**: Model Context Protocol Python SDK v2 Migration & Protocol Alignment
 - **[EP-0128](EP-0128-os-native-directory-resolution.md)**: OS-Native Directory Resolution and Runtime Storage Standards
+- **[EP-0132](EP-0132-budgeted-wake-and-dynamic-retrieval.md)**: Budgeted Wake and Dynamic Memory Context Retrieval
+- **[EP-0133](EP-0133-session-memory-observability-and-diff.md)**: Session Memory Observability and Delta Tracking (`tur diff`)
 
 ### 4. Multi-Agent Swarms & Synchronization
 - **[EP-0107](EP-0107-multi-agent-swarms.md)**: Multi-Agent Swarm Readiness *(Deferred)*
