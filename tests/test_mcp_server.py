@@ -195,23 +195,27 @@ def test_mcp_server_module_main(monkeypatch):
     mock_run.assert_called_with(transport='stdio')
 
 
-def test_mcp_telemetry(mock_mcp_env, monkeypatch):
+def test_mcp_metrics(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
 
-    # Setup persona file for telemetry with required 'aleph' field
+    # Setup persona file for metrics with required 'aleph' field
     persona_yaml = persona_dir / 'persona.yaml'
     persona_yaml.write_text(
         'name: MockAriel\nversion: 5.4.0\naleph: To design test scenarios.\nprinciples: []\n', encoding='utf-8'
     )
 
-    res = mcp_server.telemetry(identifier='12345678-1234-5678-1234-567812345678')
+    res = mcp_server.metrics(identifier='12345678-1234-5678-1234-567812345678')
     assert res['persona_name'] == 'MockAriel'
     assert res['constraint_dimensionality'] == 0
     assert 'class' in res
     assert 'static_token_cost' in res
 
+    # Test telemetry alias
+    res_alias = mcp_server.telemetry(identifier='12345678-1234-5678-1234-567812345678')
+    assert res_alias == res
 
-def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
+
+def test_mcp_metrics_thresholds(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
 
     # Low CP (<5)
@@ -220,7 +224,7 @@ def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
         'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples: []\n',
         encoding='utf-8',
     )
-    res_low = mcp_server.telemetry()
+    res_low = mcp_server.metrics()
     assert 'Human' in res_low['class']
 
     # Medium CP (5-9)
@@ -229,7 +233,7 @@ def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
         f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_med}\n',
         encoding='utf-8',
     )
-    res_med = mcp_server.telemetry()
+    res_med = mcp_server.metrics()
     assert 'Giant' in res_med['class']
 
     # High CP (>=10)
@@ -238,15 +242,15 @@ def test_mcp_telemetry_thresholds(mock_mcp_env, monkeypatch):
         f'name: MockAriel\nversion: 5.4.0\naleph: Aleph.\nprinciples:\n{principles_high}\n',
         encoding='utf-8',
     )
-    res_high = mcp_server.telemetry()
+    res_high = mcp_server.metrics()
     assert 'Titan' in res_high['class']
 
 
-def test_mcp_telemetry_error(mock_mcp_env, monkeypatch):
-    monkeypatch.setattr(mcp_server, 'get_persona_path', MagicMock(side_effect=RuntimeError('Tele failure')))
-    res = mcp_server.telemetry()
+def test_mcp_metrics_error(mock_mcp_env, monkeypatch):
+    monkeypatch.setattr(mcp_server, 'compute_persona_metrics', MagicMock(side_effect=RuntimeError('Metrics failure')))
+    res = mcp_server.metrics()
     assert 'error' in res
-    assert 'Tele failure' in res['error']
+    assert 'Metrics failure' in res['error']
 
 
 def test_mcp_wake_reuses_active_session(mock_mcp_env, monkeypatch):

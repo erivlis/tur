@@ -248,6 +248,39 @@ def test_agent_status_error(mock_workspace, monkeypatch):
     assert 'Error: Status error' in result.stdout
 
 
+def test_agent_metrics(mock_workspace):
+    result = runner.invoke(agent_app, ['metrics'])
+    assert result.exit_code == 0
+    assert 'System Metrics' in result.stdout
+    assert 'Ariel' in result.stdout
+    assert 'Constraint Dim (Cp)' in result.stdout
+    assert 'Static Token Cost' in result.stdout
+
+    # Test legacy alias
+    result_alias = runner.invoke(agent_app, ['telemetry'])
+    assert result_alias.exit_code == 0
+    assert 'System Metrics' in result_alias.stdout
+
+
+def test_agent_metrics_json(mock_workspace):
+    result = runner.invoke(agent_app, ['metrics', '--json'])
+    assert result.exit_code == 0
+    assert '"persona_name": "Ariel"' in result.stdout
+    assert '"constraint_dimensionality"' in result.stdout
+    assert '"static_token_cost"' in result.stdout
+
+
+def test_agent_metrics_error(mock_workspace, monkeypatch):
+    def mock_raise(*args, **kwargs):
+        raise RuntimeError('Metrics calculation failed')
+
+    monkeypatch.setattr(persona, 'get_active_persona_id', mock_raise)
+
+    result = runner.invoke(agent_app, ['metrics'])
+    assert result.exit_code == 1
+    assert 'Error calculating metrics' in result.stdout
+
+
 def test_agent_wake_auto_start(mock_workspace):
     # Ensure active_session_id is None under state.yaml
     state_path = Path('.tur/state.yaml')
