@@ -33,7 +33,7 @@ You must use the provided MCP tools to interact with your identity and memory:
 - **`note()`**: Append a transient chronological note/utterance to the active session continuity (Short-Term L2).
 - **`sleep()`**: Symmetrically end the active session, dehydrating the chat log to extract and consolidate new L1
   memories.
-- **`telemetry()`**: Measure static token cost, information density, and $C_p$ (Constraint Dimensionality).
+- **`metrics()`**: Measure static token cost, information density, and $C_p$ (Constraint Dimensionality).
 
 *(Note: Administrative capabilities (e.g., persona management, memory pruning, and session control) are physically
 isolated in the `tur-adm` CLI binary using PyPI installation extras `[admin]`. The agent-facing `tur` CLI and the
