@@ -75,7 +75,14 @@ nav = [
         "proposals/EP-0131-memory-provenance-and-staleness-decay.md",
         "proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md",
         "proposals/EP-0133-session-memory-observability-and-diff.md",
-        "proposals/EP-0134-active-tms-contradiction-interruption.md"
+        "proposals/EP-0134-active-tms-contradiction-interruption.md",
+        "proposals/EP-0135-modular-scaffolding-protocol.md",
+        "proposals/EP-0136-graph-theoretic-semantic-retrieval-and-topological-metrics.md",
+        "proposals/EP-0137-contract-driven-cognitive-skills-and-forge-architecture.md",
+        "proposals/EP-0138-dynamic-epistemic-elevation-and-principle-crystallization.md",
+        "proposals/EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md",
+        "proposals/EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md",
+        "proposals/EP-0141-causal-vector-clocks-in-iasp.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
