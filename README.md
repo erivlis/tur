@@ -1,5 +1,9 @@
 # Tur: Persistent State and Memory Engine for AI Agents
 
+> [!NOTE]
+> **Public Alpha**: Tur is currently in active Phase 1/2 development.
+> See the [Project Roadmap (EP-0002)](docs/proposals/EP-0002-roadmap.md) for current features and upcoming milestones.
+
 <img width="40%" src="https://erivlis.github.io/tur/assets/images/logo-light.png#only-light" alt="Tur Logo" style="float:right; width:40%; max-width:40%; height:auto; margin:1rem 1rem 1rem 1rem; vertical-align: center">
 
 <p>
@@ -19,10 +23,6 @@ structured, version-controlled files.
 
 The project is inspired by the **Tur Tur Principle**: The complexity of AI behavior can be made more focused and
 manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
-
-> [!NOTE]
-> **Public Alpha**: Tur is currently in active Phase 1/2 development.
-> See the [Project Roadmap (EP-0002)](docs/proposals/EP-0002-roadmap.md) for current features and upcoming milestones.
 
 </p>
 
