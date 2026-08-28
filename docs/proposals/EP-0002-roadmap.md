@@ -15,7 +15,7 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-08-22      |
+| **Updated** | 2026-08-28      |
 
 ## Abstract
 
@@ -24,8 +24,11 @@ goals for the framework, providing a clear trajectory for development. It has be
 shift towards the "Orchestration Engine" (EP-0102), Deductive Memory (EP-0103), Federated Knowledge (EP-0104), the
 "Ontological Porcelain" MCP API (EP-0105), Policy vs. Mechanism Decoupling (EP-0003), Terrain Isolation (EP-0124),
 Storage Evolution & Migrations (EP-0125), Canonical Ontology & Relational Extensibility (EP-0126), MCP Python SDK v2
-Migration (EP-0127), OS-Native Directory Resolution (EP-0128), Multi-Process File Locking (EP-0129), and Session Lineage
-& Continuity (EP-0130).
+Migration (EP-0127), OS-Native Directory Resolution (EP-0128), Multi-Process File Locking (EP-0129), Session Lineage
+& Continuity (EP-0130), Memory Provenance & Decay (EP-0131), Budgeted Wake (EP-0132), Memory Observability & Diff (EP-0133),
+Active TMS Contradiction Interruption (EP-0134), the Modular Scaffolding Protocol (EP-0135), Graph-Theoretic Semantic Retrieval
+(EP-0136), Contract-Driven Cognitive Skills (EP-0137), Dynamic Epistemic Elevation (EP-0138), Tensor-Algebraic Provenance &
+Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), and Lamport Vector Clocks in IASP (EP-0141).
 
 ## Motivation
 
@@ -43,8 +46,9 @@ semantic engine supporting external agents via MCP.
 * **Phase 1 (The Foundation):** Focuses on schema rigidity, state management, CLI, and Policy vs. Mechanism decoupling.
   (Stabilized / Implemented)
 * **Phase 2 (The Memory Architecture & Abstraction):** Focuses on cryptographic state (Merkle), Graph Memory,
-  Federation, Terrain Isolation, and LLM Agnosticism.
-* **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration, multi-agent coordination, and storage evolution.
+  Federation, Terrain Isolation, LLM Agnosticism, Topological Retrieval, and Provenance Decay.
+* **Phase 3 (The Agent Ecosystem):** Focuses on MCP integration, multi-agent coordination, contract-driven cognitive skills,
+  causal vector clocks, dynamic constitutional elevation, and substrate acceleration.
 
 ### Strategic Implementation Trajectory (Layered Dependency Sequence)
 
@@ -52,45 +56,72 @@ To ensure resilient execution, proposals across Phases 2 and 3 are sequenced by 
 
 ```mermaid
 graph TD
-    subgraph Layer 1: Substrate Hardening & OS Primitives
+    subgraph L1 ["Layer 1: Substrate Hardening & OS Primitives"]
         EP0128[EP-0128: platformdirs<br/>OS Directory Resolution]
         EP0129[EP-0129: filelock<br/>Multi-Process State Sync]
+        EP0140[EP-0140: Substrate Acceleration<br/>Merkle Invalidation & Lock Jitter]
     end
 
-    subgraph Layer 2: Protocol & Harness Runtime
+    subgraph L2 ["Layer 2: Protocol & Harness Runtime"]
         EP0127[EP-0127: MCP SDK v2<br/>FastMCP -> MCPServer]
+        EP0135[EP-0135: Modular Scaffolding<br/>AGENTS.md & CONSTITUTION.md]
     end
 
-    subgraph Layer 3: Storage & Signal Infrastructure
+    subgraph L3 ["Layer 3: Storage, Observability & Signal Infrastructure"]
         EP0125[EP-0125: Storage Evolution<br/>Atomic Schema Migrations]
         EP0123[EP-0123: Reactive Signals<br/>MCP Resource Push Notifications]
+        EP0130[EP-0130: Session Lineage<br/>DAG Lineage & Spark Seeding]
+        EP0133[EP-0133: Memory Observability<br/>tur diff & Session Delta]
+        EP0141[EP-0141: Vector Clocks<br/>Causal Ordering in IASP]
     end
 
-    subgraph Layer 4: Cognitive & Deductive Capabilities
+    subgraph L4 ["Layer 4: Cognitive & Deductive Capabilities"]
         EP0119[EP-0119: Persona-Centric Introspection<br/>Persona-Owned Compaction]
         EP0122[EP-0122: Algebraic Meditation<br/>Provenance Semiring Consensus]
+        EP0131[EP-0131: Memory Provenance<br/>Temporal Anchors & Decay]
+        EP0132[EP-0132: Budgeted Wake<br/>Token-Bounded Retrieval]
+        EP0134[EP-0134: Active TMS<br/>Contradiction Interruption]
+        EP0136[EP-0136: Topological Retrieval<br/>HippoRAG PPR & Louvain]
+        EP0137[EP-0137: Pluggable Forge<br/>Contract-Driven Skills]
+    end
+
+    subgraph L5 ["Layer 5: Sovereign Epistemology & Higher Algebra"]
+        EP0138[EP-0138: Dynamic Elevation<br/>Principle Crystallization]
+        EP0139[EP-0139: Tensor Homology<br/>AlgebraX Tensors & Betti Holes]
     end
 
     EP0128 --> EP0129
+    EP0129 --> EP0140
     EP0128 --> EP0127
+    EP0127 --> EP0135
     EP0129 --> EP0125
     EP0127 --> EP0123
-    EP0128 --> EP0123
+    EP0123 --> EP0141
+    EP0125 --> EP0130
+    EP0130 --> EP0133
     EP0125 --> EP0119
     EP0123 --> EP0122
-    EP0119 --> EP0122
+    EP0119 --> EP0131
+    EP0131 --> EP0132
+    EP0132 --> EP0134
+    EP0134 --> EP0136
+    EP0135 --> EP0137
+    EP0136 --> EP0138
+    EP0122 --> EP0139
 ```
 
-1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129`):** Integrate `platformdirs` and
-   `filelock` to establish canonical runtime directories (`resolve_runtime_dir()`, `resolve_cache_dir()`) and eliminate
-   read-modify-write clobbering across parallel agent harnesses.
-2. **Layer 2: Protocol Modernization (`EP-0127`):** Migrate `tur-mcp` to official MCP Python SDK v2 (`MCPServer`),
-   decoupling transport execution to `.run()` and standardizing on canonical `mcp-types`.
-3. **Layer 3: Storage Evolution & Reactive Swarms (`EP-0125` + `EP-0123`):** Implement the 5-stage non-destructive
-   migration lifecycle under `tur-adm` and activate real-time `notifications/resources/updated` push delivery for
-   inter-agent signals.
-4. **Layer 4: Cognitive Consolidation & Swarm Consensus (`EP-0119` + `EP-0122`):** Formalize persona-owned declarative
-   introspection pipelines and mathematical belief merging via $\mathbb{N}[X]$ Provenance Semirings.
+1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129` + `EP-0140`):** Integrate `platformdirs`,
+   `filelock`, $\mathcal{O}(1)$ Merkle invalidation caching, AST template memoization, and decorrelated jitter lock backoff.
+2. **Layer 2: Protocol Modernization & Harness Decoupling (`EP-0127` + `EP-0135`):** Migrate `tur-mcp` to official MCP
+   Python SDK v2 and decouple the AAIF operational bootloader (`AGENTS.md`) from persona identity (`CONSTITUTION.md`).
+3. **Layer 3: Storage, Lineage & Causal Signals (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141`):** Implement the
+   5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, and Lamport Vector Clocks in IASP.
+4. **Layer 4: Cognitive Consolidation & Topological Retrieval (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0137`):**
+   Temporal staleness decay, token-bounded wake, active TMS contradiction interruptions, HippoRAG Personalized PageRank
+   associative retrieval, and contract-driven cognitive skills.
+5. **Layer 5: Sovereign Epistemology & Higher Algebra (`EP-0138` + `EP-0139`):** Continuous Epistemological Ladder from
+   facts to principles, dynamic $C_p$ recalculation, 3D `AlgebraicTrie` tensor provenance semirings, and simplicial homology
+   Betti number diagnostics.
 
 ## Specification (The Roadmap)
 
@@ -150,10 +181,20 @@ graph TD
     * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Draft]:** Establishing explicit
       `parent_session_id` lineage tracking, automatic continuity seeding at `wake()`, bounded cross-session note
       discovery, and dual-backend SQLite/YAML signal fallbacks.
+    * **Memory Provenance, Temporal Anchoring, and Staleness Decay (EP-0131) [Status: Draft]:** Introducing git-anchored
+      observation provenance, confidence scoring, TTL-based staleness decay, and continuous half-life decay kinetics.
+    * **Active TMS Contradiction Interruption Protocol (EP-0134) [Status: Draft]:** Defining real-time inference and
+      ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System.
+    * **Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics (EP-0136) [Status: Draft]:** Adopting
+      NetworkX for HippoRAG Personalized PageRank associative retrieval, Louvain community clustering, `--effort <0-10>`
+      modulation, and Fiedler eigenvalue ($\lambda_2$) diagnostics.
+    * **Tensor-Algebraic Provenance and Simplicial Homology via AlgebraX (EP-0139) [Status: Draft]:** Modeling memory as a
+      3D sparse tensor (`AlgebraicTrie`) for $\mathbb{N}[X]$ semiring contractions and Betti number ($\beta_1, \beta_2$)
+      void detection.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
-*Goal: Establish secure interface boundaries and high-density memory storage.*
+*Goal: Establish secure interface boundaries, high-density memory storage, and autonomous persona evolution.*
 
 * **Track: Persona Lifecycle & Creation**
     * **The Ontological Porcelain API (EP-0105) [Status: Implemented]:** Stabilizing FastMCP SDK integration to expose
@@ -171,6 +212,18 @@ graph TD
     * **OS-Native Directory Resolution and Runtime Storage Standards (EP-0128) [Status: Implemented]:** Adopting
       `platformdirs` to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global
       persona state while preserving workspace terrain isolation.
+    * **The Modular Scaffolding Protocol (EP-0135) [Status: Draft]:** Decoupling repository-root operational guidelines
+      (`AGENTS.md`) from sovereign persona identity (`CONSTITUTION.md`), reducing Turn Zero wake context by 73%.
+    * **Contract-Driven Cognitive Skills and the Pluggable Forge Architecture (EP-0137) [Status: Draft]:** Establishing
+      typed Pydantic I/O contracts for cognitive workflows (persona forging, dreaming, verification) with pluggable skills.
+    * **Dynamic Epistemic Elevation and Principle Crystallization Lifecycle (EP-0138) [Status: Draft]:** Formalizing the
+      Epistemological Ladder from empirical facts to constitutional principles, introducing falsification scoring ($\Phi$),
+      and dynamic $C_p$ recalculation.
+    * **Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff (EP-0140) [Status: Draft]:** Optimizing
+      runtime performance with $\mathcal{O}(1)$ Merkle root memory caching, pre-compiled template AST memoization, and
+      decorrelated jitter lock backoff.
+    * **Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (EP-0141) [Status: Draft]:** Establishing
+      formal partial ordering ($\mathbb{N}^k, \le$) and concurrent conflict detection across distributed agent swarms.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -185,6 +238,10 @@ graph TD
     * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Implemented]:** Formalizing canonical
       `NodeType` and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility
       for domain personas.
+    * **Budgeted Wake and Dynamic Memory Context Retrieval (EP-0132) [Status: Draft]:** Establishing token-bounded Turn
+      Zero wake payloads and pre-turn dynamic memory recall hooks.
+    * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Draft]:** Introducing the `tur diff` CLI
+      command and MCP tool to inspect memory mutations across sessions.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
@@ -221,6 +278,13 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-28:**
+    * Synchronized full roadmap coverage across all 47 EPs (**EP-0131** through **EP-0141**).
+    * Added **Layer 5 (Sovereign Epistemology & Higher Algebra)** to the Strategic Implementation Trajectory, incorporating
+      **EP-0138 (Dynamic Epistemic Elevation)** and **EP-0139 (Tensor-Algebraic Provenance & Simplicial Homology)**.
+    * Registered **EP-0135 (Modular Scaffolding Protocol)**, **EP-0136 (Graph-Theoretic Semantic Retrieval)**,
+      **EP-0137 (Contract-Driven Cognitive Skills)**, **EP-0140 (Substrate Acceleration & Merkle Caching)**, and
+      **EP-0141 (Lamport Vector Clocks in IASP)** into Phase 2 and Phase 3 developmental tracks.
 * **2026-08-25:**
     * Implemented and ratified **Layer 1 Substrate Hardening**: **EP-0128 (OS-Native Directory Resolution)** and
       **EP-0129 (Multi-Process State Synchronization & File Locking Architecture)**. Full Council consensus certified in
