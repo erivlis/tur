@@ -1,11 +1,11 @@
-# Agent Skill: Deep Brainstorming & Architectural Synthesis
+# Agent Skill: Deep Explorations & Architectural Synthesis
 
 ## Objective
-To facilitate rigorous, exploratory, and constraint-aware architectural brainstorming with the human Architect, and to meticulously document the outcomes into the project's permanent reference knowledge base.
+To facilitate rigorous, exploratory, and constraint-aware architectural explorations with the human Architect, and to meticulously document the outcomes into the project's permanent reference knowledge base.
 
 ## Trigger Conditions
 Engage this skill when:
-1. The user explicitly requests a "brainstorm", "discussion", or "exploration" of a new idea, feature, or architecture.
+1. The user explicitly requests a "explore", "discussion", or "exploration" of a new idea, feature, or architecture.
 2. The user proposes integrating a major new dependency, library, or paradigm (e.g., embeddings, machine learning, databases) that may affect the core constraints of the framework.
 
 ## Execution Protocol
@@ -20,11 +20,11 @@ Before proposing solutions, you must ensure the user's idea aligns with the proj
 Engage in a back-and-forth dialogue using `message_user` and `request_user_input`.
 1. **Present Trade-offs:** Always present the pros and cons of an approach. Never blindly accept an idea if it introduces severe bloat or violates "Policy vs. Mechanism".
 2. **Propose Pragmatic Alternatives:** If an idea violates constraints (like dependency bloat), propose an alternative (e.g., ONNX instead of PyTorch, or the "Escape Hatch" graceful degradation pattern).
-3. **Connect to Existing Proposals (EPs):** Actively link the brainstormed idea to existing Enhancement Proposals on the roadmap.
+3. **Connect to Existing Proposals (EPs):** Actively link the exploreed idea to existing Enhancement Proposals on the roadmap.
 
 ### Phase 3: Formal Documentation & Archival
-Once the Architect signals the brainstorming session is complete, you must formalize the discussion.
-1. **Create the Artifact:** Create a dedicated directory under `references/brainstorming/` named `BS-XXXX-<subject-in-kebab-case>`. (Increment `XXXX` based on existing directories, starting at `0001`).
+Once the Architect signals the explorations session is complete, you must formalize the discussion.
+1. **Create the Artifact:** Create a dedicated directory under `references/explorations/` named `EXP-XXXX-<subject-in-kebab-case>`. (Increment `XXXX` based on existing directories, starting at `0001`).
 2. **Draft the Document:** Write a `README.md` inside that directory. The document must include:
     * **Abstract & Context:** What was the initial idea and why was it proposed?
     * **Exploration:** The core concepts, trade-offs, and technologies discussed.

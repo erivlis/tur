@@ -1,7 +1,7 @@
-# BS-0001: Recall Embeddings & AlgebraX Integration
+# EXP-0001: Recall Embeddings & AlgebraX Integration
 
 ## 1. Abstract & Context
-This brainstorming session explored the architectural implications of upgrading Tur's `recall` command. Currently, `recall` relies on pure substring/keyword matching combined with a 2-hop topological spreading activation via `networkx`. The goal was to explore how to integrate Dense Vector Embeddings (specifically `SentenceTransformers`) to solve the "vocabulary mismatch" problem, while adhering to Tur's strict constraints: lightweight, fast CLI startup, deterministic, and dependency-minimal (The Tur Tur Principle).
+This exploration session explored the architectural implications of upgrading Tur's `recall` command. Currently, `recall` relies on pure substring/keyword matching combined with a 2-hop topological spreading activation via `networkx`. The goal was to explore how to integrate Dense Vector Embeddings (specifically `SentenceTransformers`) to solve the "vocabulary mismatch" problem, while adhering to Tur's strict constraints: lightweight, fast CLI startup, deterministic, and dependency-minimal (The Tur Tur Principle).
 
 ## 2. Dense Vector Search (`SentenceTransformers`)
 The initial idea proposed integrating `SentenceTransformers` to enable semantic search over the L2 Knowledge Graph.
