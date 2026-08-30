@@ -167,7 +167,7 @@ Tur supports three interchangeable execution modes for all cognitive contracts:
 - Schemas: `src/tur/contracts/`
 - Delegation Engine: `src/tur/delegation.py`
 - Research reference:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/04_contract_driven_cognitive_skills_and_forge.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/04_contract_driven_cognitive_skills_and_forge.md`
 
 ---
 

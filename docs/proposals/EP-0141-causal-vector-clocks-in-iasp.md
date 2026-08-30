@@ -146,7 +146,7 @@ def is_causally_ready(sig_clock: dict[str, int], agent_clock: dict[str, int], se
 - Signal Subsystem: `src/tur/session.py`
 - Clock Utilities: `src/tur/vector_clock.py`
 - Research reference:
-  `references/discussions/2026-08-28-mathematical-and-graph-theoretic-code-audit/05_non_ep_code_path_mathematical_optimizations.md`
+  `references/explorations/EXP-0005-mathematical-and-graph-theoretic-code-audit/05_non_ep_code_path_mathematical_optimizations.md`
 
 ---
 

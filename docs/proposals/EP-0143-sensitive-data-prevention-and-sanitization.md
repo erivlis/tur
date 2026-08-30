@@ -25,7 +25,7 @@ status: draft
 
 As an open-source persistent memory and identity state engine for AI agents, Tur maintains long-term state across
 sessions, harnesses, and environments. This proposal formalizes a multi-layered **Sensitive Data Prevention and
-Sanitization Protocol** (originating in `EXP-0002`). It introduces deterministic pre-ingest regex filters and Shannon
+Sanitization Protocol** (originating in `EXP-0006`). It introduces deterministic pre-ingest regex filters and Shannon
 entropy scanners in `src/tur/sanitizer.py`, prompt-layer negative elicitation in `tur.dreaming`, and a cryptographically
 sound **Merkle Tombstone Redaction** command in `tur-adm` (`tur-adm memory redact <hash>`) that purges secrets without
 corrupting historical lineage.
@@ -156,7 +156,7 @@ tur-adm memory redact <hash> --reason "Contained staging API secret"
 - Sanitizer module: `src/tur/sanitizer.py`
 - Dream prompts: `src/tur/dreaming.py`
 - Admin redact command: `src/tur/cli/admin.py`
-- Exploration reference: `references/explorations/EXP-0002-sensitive-data-prevention-and-sanitization.md`
+- Exploration reference: `references/explorations/EXP-0006-sensitive-data-prevention-and-sanitization/README.md`
 
 ---
 
@@ -176,4 +176,4 @@ tur-adm memory redact <hash> --reason "Contained staging API secret"
 ## Change Log
 
 * **2026-08-30:**
-    * Initial Draft authored based on EXP-0002.
+    * Initial Draft authored based on EXP-0006.

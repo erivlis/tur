@@ -160,7 +160,7 @@ def compute_jittered_poll_interval(
 - Template Memoization: `src/tur/compiler.py`
 - Jittered Locking: `src/tur/locking.py`
 - Research reference:
-  `references/discussions/2026-08-28-mathematical-and-graph-theoretic-code-audit/05_non_ep_code_path_mathematical_optimizations.md`
+  `references/explorations/EXP-0005-mathematical-and-graph-theoretic-code-audit/05_non_ep_code_path_mathematical_optimizations.md`
 
 ---
 

@@ -160,7 +160,7 @@ Upon constitutional ratification:
 - Elevation State Machine: `src/tur/evolution.py`
 - Admin Approval: `src/tur/cli/admin.py`
 - Research reference:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/01_epistemological_ladder_and_memory_physics.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/01_epistemological_ladder_and_memory_physics.md`
 
 ---
 
