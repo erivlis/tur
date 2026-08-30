@@ -28,7 +28,8 @@ Migration (EP-0127), OS-Native Directory Resolution (EP-0128), Multi-Process Fil
 & Continuity (EP-0130), Memory Provenance & Decay (EP-0131), Budgeted Wake (EP-0132), Memory Observability & Diff (EP-0133),
 Active TMS Contradiction Interruption (EP-0134), the Modular Scaffolding Protocol (EP-0135), Graph-Theoretic Semantic Retrieval
 (EP-0136), Contract-Driven Cognitive Skills (EP-0137), Dynamic Epistemic Elevation (EP-0138), Tensor-Algebraic Provenance &
-Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), and Lamport Vector Clocks in IASP (EP-0141).
+Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), Lamport Vector Clocks in IASP (EP-0141),
+and Progressive Execution Observability & Streaming Telemetry (EP-0142).
 
 ## Motivation
 
@@ -65,6 +66,7 @@ graph TD
     subgraph L2 ["Layer 2: Protocol & Harness Runtime"]
         EP0127[EP-0127: MCP SDK v2<br/>FastMCP -> MCPServer]
         EP0135[EP-0135: Modular Scaffolding<br/>AGENTS.md & CONSTITUTION.md]
+        EP0142[EP-0142: Progressive Telemetry<br/>Live Spinners & MCP Stream]
     end
 
     subgraph L3 ["Layer 3: Storage, Observability & Signal Infrastructure"]
@@ -94,6 +96,7 @@ graph TD
     EP0129 --> EP0140
     EP0128 --> EP0127
     EP0127 --> EP0135
+    EP0127 --> EP0142
     EP0129 --> EP0125
     EP0127 --> EP0123
     EP0123 --> EP0141
@@ -112,8 +115,8 @@ graph TD
 
 1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129` + `EP-0140`):** Integrate `platformdirs`,
    `filelock`, $\mathcal{O}(1)$ Merkle invalidation caching, AST template memoization, and decorrelated jitter lock backoff.
-2. **Layer 2: Protocol Modernization & Harness Decoupling (`EP-0127` + `EP-0135`):** Migrate `tur-mcp` to official MCP
-   Python SDK v2 and decouple the AAIF operational bootloader (`AGENTS.md`) from persona identity (`CONSTITUTION.md`).
+2. **Layer 2: Protocol Modernization & Progressive Telemetry (`EP-0127` + `EP-0135` + `EP-0142`):** Migrate `tur-mcp` to
+   official MCP Python SDK v2 (`MCPServer`), decouple `AGENTS.md` from `CONSTITUTION.md`, and stream live progress notifications.
 3. **Layer 3: Storage, Lineage & Causal Signals (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141`):** Implement the
    5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, and Lamport Vector Clocks in IASP.
 4. **Layer 4: Cognitive Consolidation & Topological Retrieval (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0137`):**
@@ -122,6 +125,26 @@ graph TD
 5. **Layer 5: Sovereign Epistemology & Higher Algebra (`EP-0138` + `EP-0139`):** Continuous Epistemological Ladder from
    facts to principles, dynamic $C_p$ recalculation, 3D `AlgebraicTrie` tensor provenance semirings, and simplicial homology
    Betti number diagnostics.
+
+### Strategic Confluences and Multi-EP Synergies
+
+The maturation of the 100-series proposals produces five emergent architectural confluences:
+
+1. **The Unified Reactive Wire (`EP-0127` + `EP-0123` + `EP-0141` + `EP-0142`):** `MCPServer` SDK v2 provides a unified
+   async notification dispatcher serving both live streaming sleep/introspection progress (`notifications/progress`) and
+   causally ordered inter-agent swarm signals (`notifications/resources/updated`) stamped with Lamport Vector Clocks ($\mathbf{V} \in \mathbb{N}^k$).
+2. **High-Speed Cognitive Subgraph Engine (`EP-0140` + `EP-0136` + `EP-0139`):** Sub-millisecond $\mathcal{O}(1)$ Merkle
+   invalidation memory caching enables rapid on-the-fly construction of NetworkX graphs and sparse 3D tensors for HippoRAG
+   Personalized PageRank associative recall and Simplicial Homology Betti hole detection without disk bottlenecks.
+3. **Contract-Driven Sovereign Evolution (`EP-0137` + `EP-0138`):** Typed Pydantic I/O contracts allow externalized
+   cognitive skills to autonomously execute Popperian falsification scoring ($\Phi$) and propose principle crystallizations
+   without polluting the minimal core execution kernel.
+4. **Active TMS Interruption & Epistemic Delta Tracking (`EP-0134` + `EP-0133`):** Active Truth Maintenance conflict
+   detection pairs with `tur diff` to expose structured epistemic mutation graphs (added, subsumed, superseded, contradicted)
+   across session boundaries.
+5. **Zero-Waste Context Engine (`EP-0135` + `EP-0132` + `EP-0136`):** Decoupling operational scaffolding (`AGENTS.md`)
+   from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack
+   budgeting with the highest-relevance associative memory subgraphs.
 
 ## Specification (The Roadmap)
 
@@ -224,6 +247,9 @@ graph TD
       decorrelated jitter lock backoff.
     * **Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (EP-0141) [Status: Draft]:** Establishing
       formal partial ordering ($\mathbb{N}^k, \le$) and concurrent conflict detection across distributed agent swarms.
+    * **Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry (EP-0142) [Status: Draft]:**
+      Eliminating silent execution bottlenecks across CLI and MCP interfaces via Rich live spinners, pipeline trackers,
+      and native `notifications/progress` streaming telemetry.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -278,6 +304,12 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-08-30:**
+    * Codified the **Strategic Confluences and Multi-EP Synergies** across 5 architectural intersections (The Unified
+      Reactive Wire, High-Speed Cognitive Subgraph Engine, Contract-Driven Sovereign Evolution, Active TMS & Epistemic Diff,
+      and Zero-Waste Context Engine).
+    * Integrated **EP-0142 (Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry)** into
+      Layer 2 (Protocol & Harness Runtime) and Phase 3 developmental tracks.
 * **2026-08-28:**
     * Synchronized full roadmap coverage across all 47 EPs (**EP-0131** through **EP-0141**).
     * Added **Layer 5 (Sovereign Epistemology & Higher Algebra)** to the Strategic Implementation Trajectory, incorporating
