@@ -3,36 +3,27 @@ name: explorations
 description: Facilitate rigorous, exploratory, and constraint-aware architectural explorations with the human Architect, and meticulously document the outcomes into the project's permanent reference knowledge base. Use when users want to discuss new ideas, evaluate architectural trade-offs, or propose integrating major new dependencies (e.g., embeddings, machine learning, databases) that may affect the core constraints of the framework.
 ---
 
-# Explorations
+# Explorations Skill
 
-A skill for conducting deep architectural brainstorming sessions and formalizing their outcomes into permanent project
-reference documents.
+A skill for conducting deep architectural brainstorming sessions, evaluating research hypotheses, and formalizing their
+outcomes into permanent, self-contained **Data & Research Compendiums** in the repository's permanent reference
+knowledge base (`references/explorations/`).
 
-At a high level, the process of architectural exploration goes like this:
+---
 
-- **Clarify & Bound:** Decide what the user wants to explore and whether they intend to *implement* the idea immediately
-  or purely *discuss* the feasibility.
-- **Cross-Reference Constraints:** Check the idea against core documents (`MANIFESTO.md`, `EP-0002-roadmap.md`,
-  `AGENTS.md`) and identify friction points (e.g., dependency bloat, performance).
-- **Interview & Synthesize:** Engage in a back-and-forth dialogue to weigh pros and cons. Propose pragmatic alternatives
-  if an idea violates project constraints.
-- **Formalize:** Once the exploration concludes, draft a comprehensive Markdown artifact in the
-  `references/explorations/` directory summarizing the trade-offs, synthesis, and the final architectural verdict.
+## The Exploration as a Self-Contained Compendium
 
-Your job when using this skill is to act as a rigorous technical sounding board. You must protect the project's
-invariants while remaining open to innovative solutions (e.g., suggesting graceful degradation patterns or lightweight
-alternatives to heavy dependencies).
+An Exploration in Tur is not merely a single markdown file; it is an **immutable research compendium** that preserves
+complete historical and empirical provenance.
 
-Cool? Cool.
+Every exploration directory (`references/explorations/EXP-XXXX-<kebab-case>/`) MUST bundle:
 
-## Communicating with the user
-
-The Architect (the user) is highly technical but relies on you to enforce the project's philosophy.
-
-- Always present trade-offs clearly.
-- Never blindly accept an idea if it introduces severe bloat or violates "Policy vs. Mechanism".
-- It is expected that you actively challenge proposals that threaten the core constraints (e.g., "The Tur Tur
-  Principle"), while simultaneously offering constructive workarounds (e.g., ONNX instead of PyTorch).
+1. **The Synthesized Report (`README.md`)**: The canonical analysis following the standard 5-section layout and metadata
+   table.
+2. **The Original Data & Source Artifacts**: Exact copies of raw conversation transcripts, downloaded research papers
+   (PDF/HTML), web dumps, scraped benchmark datasets, and code prototypes studied during the exploration. These must be
+   preserved in the exploration directory (or subfolders like `raw/`, `papers/`, `sources/`, `data/`) so that research
+   provenance is never lost.
 
 ---
 
@@ -40,65 +31,81 @@ The Architect (the user) is highly technical but relies on you to enforce the pr
 
 ### 1. Capture Intent (The Deep Planning Mode)
 
-Start by understanding the user's intent. Do they want code written right now, or are we just brainstorming?
+- Understand the core architectural question or hypothesis being investigated.
+- Cross-reference against core constraints (`MANIFESTO.md`, `EP-0002-roadmap.md`, `AGENTS.md`).
+- Actively protect core invariants ("The Tur Tur Principle", Policy vs. Mechanism).
 
-1. What is the core mechanism they want to explore?
-2. Are they aware of the potential dependency weight this might add?
-3. How does this map to the existing Enhancement Proposals (EPs) on the roadmap?
+### 2. Research, Interview & Data Ingestion
 
-*Crucially: Verify intent with `request_user_input` before writing any code.*
-
-### 2. Interview and Research
-
-Proactively ask questions about edge cases, target hardware, scaling limits, data storage implications, and fallback
-mechanisms.
-
-If the idea involves heavy ML models, vector databases, or complex multi-agent frameworks, challenge the necessity of
-heavy dependencies and propose native or lightweight alternatives (e.g., `algebrax` for native tensor math, or
-`sqlite-vec` instead of standalone vector DBs).
+- Collect and preserve original source materials (e.g. download papers, save full chat transcripts, extract web
+  resources).
+- Challenge heavy dependencies and propose native or lightweight alternatives (e.g. ONNX instead of PyTorch, `algebrax`
+  sparse tensors for pure-Python fallback, `sqlite-vec` instead of standalone vector DBs).
 
 ### 3. Exploratory Synthesis
 
-Engage in a structured back-and-forth dialogue:
-
-- **Present Trade-offs:** Outline the Pros and Cons.
-- **Propose Pragmatic Alternatives:** Use patterns like the "Escape Hatch" (graceful degradation)—falling back to
-  zero-dependency pure Python implementations while offering C-accelerated paths (like NumPy) as optional extras.
-- **Connect to Existing EPs:** Actively link the explored idea to the strategic implementation trajectory in
-  `EP-0002-roadmap.md`.
+- **Present Trade-offs:** Rigorous Pros and Cons analysis.
+- **The "Escape Hatch" Pattern:** Graceful degradation from zero-dependency pure Python to hardware-accelerated extras.
+- **Connect to Standards Track:** Map the exploration outcomes directly to existing or new Enhancement Proposals (EPs).
 
 ---
 
-## Formal Documentation & Archival
+## Formal Compendium Structure
 
-Once the Architect signals the exploration session is complete, you must formalize the discussion so it isn't lost.
+### 1. Dedicated Directory Structure
 
-### 1. Create the Artifact Directory
+Create `references/explorations/EXP-XXXX-<subject-in-kebab-case>/`:
 
-Create a dedicated directory under `references/explorations/` named `EXP-XXXX-<subject-in-kebab-case>`. (Increment
-`XXXX` based on existing directories, starting at `0001`).
+```
+references/explorations/EXP-XXXX-<subject-in-kebab-case>/
+├── README.md                 # Canonical synthesis and verdict
+├── raw/                      # (Optional) Raw transcripts and dialogue dumps
+├── papers/                   # (Optional) Downloaded research papers / PDFs / HTMLs
+└── [data / source files]     # Original benchmarks, code prototypes, and referenced monographs
+```
 
-### 2. Draft the Document
-
-Write a `README.md` inside that directory. The document must follow this exact structure:
+### 2. Canonical `README.md` Format
 
 ```markdown
 # EXP-XXXX: [Title]
 
+| Field           | Value                                            |
+|:----------------|:-------------------------------------------------|
+| **EXP**         | XXXX                                             |
+| **Title**       | [Full Title]                                     |
+| **Author**      | [Authors]                                        |
+| **Status**      | Concluded / Active / Deferred                    |
+| **Type**        | Architectural & Research Exploration             |
+| **Created**     | YYYY-MM-DD                                       |
+| **Updated**     | YYYY-MM-DD                                       |
+| **Related EPs** | [EP-0XXX](../../docs/proposals/EP-0XXX-title.md) |
+
+---
+
 ## 1. Abstract & Context
 
-What was the initial idea and why was it proposed?
+What was the initial question, hypothesis, or engineering need?
 
-## 2. Exploration
+## 2. Exploration & Options Analysis
 
-The core concepts, trade-offs (pros/cons), and technologies discussed.
+Core concepts, comparative evaluation of options, trade-offs, and empirical findings.
 
-## 3. Architectural Synthesis
+## 3. Architectural Synthesis & Constraint Alignment
 
-How the idea maps to the project's specific constraints (e.g., OKF storage, memory limits, The Tur Tur Principle).
+How the proposal maps to Tur's specific constraints (OKF storage, memory limits, The Tur Tur Principle, Policy vs.
+Mechanism).
 
 ## 4. The Verdict / Actionable Design
 
-The final agreed-upon architecture, including any fallback mechanisms, "Escape Hatch" patterns, or deployment
-strategies.
+The agreed-upon architecture, fallback mechanisms, "Escape Hatch" patterns, or phased rollout plan.
+
+## 5. Related Enhancement Proposals & Artifacts
+
+Cross-references to resulting Standards-Track EPs and bundled data artifacts in this compendium.
 ```
+
+### 3. Master Index Registration
+
+Every exploration MUST be registered in [
+`references/explorations/README.md`](file:///C:/dev/erivlis/tur/references/explorations/README.md) with its EXP ID,
+Title, Status, Date, Resulting EPs, and Directory Link.
