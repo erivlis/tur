@@ -137,7 +137,7 @@ def serve(
 - Mermaid compilation: `src/tur/recall.py`
 - Admin graph server: `src/tur/cli/admin.py`
 - Research reference:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/12_graphinate_networkx_mermaid_and_mappingtools_ecosystem.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/12_graphinate_networkx_mermaid_and_mappingtools_ecosystem.md`
 
 ---
 

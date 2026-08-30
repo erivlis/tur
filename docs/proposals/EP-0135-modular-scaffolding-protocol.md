@@ -211,7 +211,7 @@ Draft implementation coordinates:
 - CLI command: `@app.command() def scaffold(...)` in `src/tur/cli/agent.py` and `src/tur/cli/admin.py`
 - Streamlined template: `src/tur/templates/persona.j2`
 - Research reference:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/02_decoupled_bootloader_and_agents_md_standard.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/02_decoupled_bootloader_and_agents_md_standard.md`
 
 ---
 

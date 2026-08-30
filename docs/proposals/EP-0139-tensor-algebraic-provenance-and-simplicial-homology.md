@@ -141,7 +141,7 @@ To preserve Tur's minimal core runtime footprint:
 - Tensor Engine: `src/tur/algebra/tensors.py`
 - Homology Engine: `src/tur/algebra/homology.py`
 - Research reference:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/11_algebrax_synergy_and_tensor_provenance.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/11_algebrax_synergy_and_tensor_provenance.md`
 
 ---
 

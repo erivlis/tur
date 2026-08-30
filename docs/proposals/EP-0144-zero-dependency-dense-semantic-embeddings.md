@@ -25,7 +25,7 @@ status: draft
 
 This proposal integrates **Dense Semantic Vector Embeddings** into Tur's `recall` command, resolving the "vocabulary
 mismatch" problem (e.g. searching for "fast" failing to match "performant") while strictly adhering to the **Tur Tur
-Principle** (lightweight, minimal dependencies, fast startup). Originating from `EXP-0001`, this EP introduces an
+Principle** (lightweight, minimal dependencies, fast startup). Originating from `EXP-0003`, this EP introduces an
 optional `tur[embeddings]` extra powered by the **ONNX Runtime** (`all-MiniLM-L6-v2_onnx_int8`, $\sim 80\text{MB}$
 memory footprint) and a pure-Python fallback using `algebrax` sparse vector math, completely avoiding
 the $\sim 2\text{GB}$ PyTorch dependency overhead.
@@ -152,7 +152,7 @@ The HippoRAG random walker diffuses from these semantic entrypoints across the L
 
 - Vector engine: `src/tur/embeddings.py`
 - Recall integration: `src/tur/recall.py`
-- Exploration reference: `references/explorations/EXP-0001-recall-embeddings-and-algebrax/README.md`
+- Exploration reference: `references/explorations/EXP-0003-recall-embeddings-and-algebrax/README.md`
 
 ---
 
@@ -172,4 +172,4 @@ The HippoRAG random walker diffuses from these semantic entrypoints across the L
 ## Change Log
 
 * **2026-08-30:**
-    * Initial Draft authored based on EXP-0001.
+    * Initial Draft authored based on EXP-0003.

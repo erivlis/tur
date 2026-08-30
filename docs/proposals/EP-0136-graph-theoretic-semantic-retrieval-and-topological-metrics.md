@@ -165,7 +165,7 @@ tur recall "file locking architecture" --deep --mermaid
 - Graph Engine: `src/tur/recall.py`
 - Spectral Metrics: `src/tur/metrics.py`
 - Research references:
-  `references/discussions/2026-08-28-persona-and-memory-crystallization/03_graph_theoretic_memory_and_topological_retrieval.md`
+  `references/explorations/EXP-0004-persona-and-memory-crystallization/03_graph_theoretic_memory_and_topological_retrieval.md`
 
 ---
 
