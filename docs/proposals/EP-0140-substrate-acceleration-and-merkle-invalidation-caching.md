@@ -2,7 +2,7 @@
 title: "EP-0140: Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff"
 description: "Optimizes Tur runtime performance with O(1) Merkle root memory invalidation caching, pre-compiled Jinja2 template AST memoization, and decorrelated jitter lock backoff."
 icon: lucide/zap
-status: draft
+status: final
 ---
 
 # EP-0140: Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff
@@ -14,10 +14,11 @@ status: draft
 | **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                          |
 | **Sponsor**  | Council of Giants                                                              |
 | **Delegate** | Shannon (Channel & Compute Efficiency), Bacon (Empirical Latency Verification) |
-| **Status**   | Draft                                                                          |
+| **Status**   | Final                                                                          |
 | **Type**     | Standards Track                                                                |
 | **Created**  | 2026-08-28                                                                     |
-| **Updated**  | 2026-08-28                                                                     |
+| **Updated**  | 2026-08-30                                                                     |
+
 
 ---
 
@@ -103,7 +104,7 @@ class MemoryManager:
 `src/tur/compiler.py` initializes a module-level cached Jinja2 environment and pre-compiles the template AST:
 
 ```python
-_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
+_TEMPLATE_DIR = Path(__file__).parent / 'templates'
 _JINJA_ENV = Environment(
     loader=FileSystemLoader(_TEMPLATE_DIR),
     autoescape=select_autoescape(['html', 'xml']),
