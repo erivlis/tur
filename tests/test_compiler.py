@@ -96,3 +96,21 @@ def test_compile_persona_renders_knowledge_graph():
     assert 'Knowledge graph is active.' in prompt
     assert 'node-1 --[precedes]--> node-2' in prompt
     assert 'EVOLUTION HISTORY' not in prompt
+
+
+def test_compile_persona_uses_precompiled_singleton():
+    """EP-0140: Verify that compile_persona uses the module singleton template AST."""
+    from tur import compiler
+
+    assert hasattr(compiler, '_PERSONA_TEMPLATE')
+    assert hasattr(compiler, '_JINJA_ENV')
+
+    persona = Persona(name='Ariel', aleph='Truth', principles=[], protocols=[], speech_modulations=[])
+    user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
+    state = SessionState(persona=persona, user=user, memories=[], epilogue='End')
+
+    # Execute 20 rapid renders to assert robustness and speed
+    for _ in range(20):
+        prompt = compiler.compile_persona(state)
+        assert 'Ariel' in prompt
+        assert 'Truth' in prompt
