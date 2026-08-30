@@ -82,7 +82,8 @@ nav = [
         "proposals/EP-0138-dynamic-epistemic-elevation-and-principle-crystallization.md",
         "proposals/EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md",
         "proposals/EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md",
-        "proposals/EP-0141-causal-vector-clocks-in-iasp.md"
+        "proposals/EP-0141-causal-vector-clocks-in-iasp.md",
+        "proposals/EP-0142-progressive-execution-observability-and-streaming-telemetry.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
