@@ -1,3 +1,12 @@
+## v0.11.4 (2026-08-31)
+
+### Refactor
+
+- streamline memory storage management with caching and modular utility methods
+- introduce jittered backoff and improve locking mechanisms
+- optimize template loading in compiler by pre-compiling Jinja environment
+- relocate benchmark tests and update CodSpeed workflow paths
+
 ## v0.11.3 (2026-08-28)
 
 ### Refactor
