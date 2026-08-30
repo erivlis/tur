@@ -1,0 +1,52 @@
+name: CodSpeed
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write # for OpenID Connect authentication with CodSpeed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+      - name: Install dependencies (test group)
+        run: uv sync --no-default-groups --group test
+      # The CodSpeed runner installs its valgrind instrument and libc6-dbg through
+      # apt. The Azure package mirror configured in the runner image is not
+      # reachable here, so point apt at the canonical archive and fetch the glibc
+      # debug symbols directly, which keeps the instrument install offline-free.
+      - name: Install CodSpeed instrument prerequisites
+        run: |
+          echo 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          printf 'Acquire::Retries "3";\nAcquire::Languages "none";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nDPkg::Lock::Timeout "300";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99-codspeed > /dev/null
+          sudo mkdir -p /etc/needrestart/conf.d
+          echo "\$nrconf{restart} = 'a';" | sudo tee /etc/needrestart/conf.d/99-codspeed.conf > /dev/null
+          libc_version="$(dpkg-query -W -f='${Version}' libc6)"
+          if curl -fsSL --retry 3 --max-time 300 -o /tmp/libc6-dbg.deb \
+              "https://archive.ubuntu.com/ubuntu/pool/main/g/glibc/libc6-dbg_${libc_version}_amd64.deb"; then
+            sudo dpkg -i /tmp/libc6-dbg.deb
+          else
+            sudo DEBIAN_FRONTEND=noninteractive timeout 420 apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive timeout 420 apt-get install -y libc6-dbg
+          fi
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          run: uv run pytest tests/benchmarks --codspeed
