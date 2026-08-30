@@ -10,9 +10,13 @@ from filelock import FileLock
 from tur.locking import (
     DEFAULT_POLL_INTERVAL_SECONDS,
     FAST_LOCK_TIMEOUT_SECONDS,
+    MAX_POLL_INTERVAL_SECONDS,
     LockTimeoutError,
     async_state_lock,
+    compute_jittered_poll_interval,
+    get_async_file_lock,
     get_file_lock,
+    jittered_backoff_delays,
     state_lock,
 )
 
@@ -192,3 +196,52 @@ def test_matrix_m6_total_lock_hierarchy_ordering(tmp_path: Path):
         state_lock(local_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS),
     ):
         pass
+
+
+def test_compute_jittered_poll_interval_bounds():
+    """EP-0140: Verify decorrelated jitter mathematically satisfies lower/upper bounds."""
+    base = 0.005
+    max_sleep = 0.25
+
+    # Test starting from base
+    prev = base
+    for _ in range(100):
+        interval = compute_jittered_poll_interval(prev, base=base, max_sleep=max_sleep)
+        assert base <= interval <= max_sleep, f'Interval {interval} out of bounds [{base}, {max_sleep}]'
+        prev = interval
+
+    # Test edge case: prev = 0.0
+    zero_prev = compute_jittered_poll_interval(0.0, base=base, max_sleep=max_sleep)
+    assert base <= zero_prev <= max_sleep
+
+    # Test edge case: prev >> max_sleep
+    huge_prev = compute_jittered_poll_interval(100.0, base=base, max_sleep=max_sleep)
+    assert huge_prev == max_sleep
+
+
+def test_compute_jittered_poll_interval_distribution():
+    """EP-0140: Verify decorrelated jitter produces stochastic values (not fixed intervals)."""
+    base = 0.005
+    max_sleep = 0.25
+    prev = 0.05
+    samples = [compute_jittered_poll_interval(prev, base=base, max_sleep=max_sleep) for _ in range(50)]
+    assert len(set(samples)) > 20, 'Samples should have stochastic diversity'
+
+
+def test_jittered_backoff_delays_exhaustion():
+    """EP-0140: Verify jittered_backoff_delays generator stops when timeout deadline expires."""
+    delays = []
+    for d in jittered_backoff_delays(timeout=0.05, base=0.005, max_sleep=0.02):
+        delays.append(d)
+        time.sleep(d)
+
+    assert len(delays) >= 2
+    assert all(0 < d <= 0.02 for d in delays)
+
+
+def test_get_async_file_lock_creation(tmp_path: Path):
+    """EP-0140: Verify get_async_file_lock instantiates configured AsyncFileLock."""
+    lock_file = tmp_path / '.locks' / 'async_inst.lock'
+    async_lock = get_async_file_lock(lock_file, timeout=2.0)
+    assert async_lock.is_singleton
+    assert lock_file.parent.exists()
