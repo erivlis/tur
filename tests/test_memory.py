@@ -478,3 +478,117 @@ def test_memory_get_stats(temp_home_and_base):
     assert stats['subsumed'] == 0
     assert stats['by_scope'] == {'incarnation': 1, 'universal': 2}
     assert stats['by_type'] == {'fact': 1, 'axiom': 1, 'insight': 1}
+
+
+def test_merkle_invalidation_cache_hit_and_miss(temp_home_and_base, monkeypatch):
+    """EP-0140: Verify O(1) cache hits and cache invalidation on save."""
+    _fake_home, local_base = temp_home_and_base
+    MemoryManager.clear_cache()
+    manager = MemoryManager(base_dir=local_base)
+
+    mem1 = Memory(
+        timestamp=datetime(2026, 8, 28, 10, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['cache-test'],
+        content='Cached memory 1',
+    )
+    manager.save(mem1)
+
+    # Initial load (cache miss -> populates cache)
+    loaded1 = manager.load_all()
+    assert len(loaded1) == 1
+    assert loaded1[0].id == mem1.id
+
+    # Second load: monkeypatch _load_from_disk to ensure it is NOT called (cache hit)
+    called = []
+
+    def mock_load_from_disk(*args, **kwargs):
+        called.append(True)
+        return []
+
+    monkeypatch.setattr(manager, '_load_from_disk', mock_load_from_disk)
+    loaded2 = manager.load_all()
+    assert len(loaded2) == 1
+    assert loaded2[0].id == mem1.id
+    assert len(called) == 0, 'load_all should have hit cache and avoided _load_from_disk'
+
+    # Save a second memory: should invalidate cache
+    monkeypatch.undo()
+    mem2 = Memory(
+        timestamp=datetime(2026, 8, 28, 10, 5, 0),
+        type=MemoryType.INSIGHT,
+        scope=MemoryScope.INCARNATION,
+        tags=['cache-test'],
+        content='Cached memory 2',
+    )
+    manager.save(mem2)
+
+    loaded3 = manager.load_all()
+    assert len(loaded3) == 2
+
+
+def test_merkle_invalidation_cache_detects_external_file_change(temp_home_and_base):
+    """EP-0140: External file addition or modification changes digest and invalidates cache."""
+    _fake_home, local_base = temp_home_and_base
+    MemoryManager.clear_cache()
+    manager = MemoryManager(base_dir=local_base)
+
+    mem = Memory(
+        timestamp=datetime(2026, 8, 28, 10, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['cache-test'],
+        content='Initial memory',
+    )
+    saved_path = manager.save(mem)
+    assert len(manager.load_all()) == 1
+
+    # Simulate an external tool modifying the file timestamp
+    st = saved_path.stat()
+    os.utime(saved_path, (st.st_atime + 10, st.st_mtime + 10))
+
+    # Digest changes, cache should miss and reload seamlessly
+    digest = manager._compute_directory_digest()
+    assert digest is not None
+    loaded = manager.load_all()
+    assert len(loaded) == 1
+
+
+def test_merkle_invalidation_cache_archive_and_subsume(temp_home_and_base):
+    """EP-0140: Archiving or subsuming memories invalidates the active cache."""
+    _fake_home, local_base = temp_home_and_base
+    MemoryManager.clear_cache()
+    manager = MemoryManager(base_dir=local_base)
+
+    mem1 = Memory(
+        timestamp=datetime(2026, 8, 28, 10, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='To be archived',
+    )
+    mem2 = Memory(
+        timestamp=datetime(2026, 8, 28, 10, 1, 0),
+        type=MemoryType.INSIGHT,
+        scope=MemoryScope.INCARNATION,
+        tags=['test'],
+        content='To be subsumed',
+    )
+    manager.save(mem1)
+    manager.save(mem2)
+
+    assert len(manager.load_all(include_archived=False)) == 2
+
+    # Archive mem1
+    manager.archive(mem1.id)
+    active_after_archive = manager.load_all(include_archived=False)
+    assert len(active_after_archive) == 1
+    assert active_after_archive[0].id == mem2.id
+    assert len(manager.load_all(include_archived=True)) == 2
+
+    # Subsume mem2
+    manager.subsume(mem2.id)
+    active_after_subsume = manager.load_all(include_archived=False)
+    assert len(active_after_subsume) == 0
+    assert len(manager.load_subsumed()) == 1
