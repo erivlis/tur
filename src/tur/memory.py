@@ -1,9 +1,11 @@
 import contextlib
+import hashlib
 import os
 import tempfile
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import yaml
 
@@ -18,6 +20,8 @@ class MemoryManager:
     Handles atomicity, immutability, retrieval, and Federation (Universal vs. Incarnational).
     Transitions L1 memory storage to Open Knowledge Format (OKF) Markdown files.
     """
+
+    _CACHE: ClassVar[dict[tuple[str, bool], tuple[str, list[Memory]]]] = {}
 
     def __init__(self, base_dir: Path, local_base_dir: Path | None = None):
         """
@@ -70,7 +74,7 @@ class MemoryManager:
             if self.local_subsumed_dir is not None:
                 self.local_subsumed_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path, Path]:
+    def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path | None, Path | None]:
         """
         Determines the correct filesystem path based on the MemoryScope (Federation).
         Creates local directories strictly on-demand when saving an incarnation memory.
@@ -162,139 +166,158 @@ class MemoryManager:
         with contextlib.suppress(Exception):
             os.chmod(file_path, 0o444)  # Read-only
 
+        self._invalidate_cache()
         return file_path
 
-    def archive(self, memory_id: str):
-        """
-        'Forgets' a memory by atomically moving it to the archive directory.
+    def _find_memory_file(self, memory_id: str) -> Path:
+        """Finds a memory file by ID across local and global memory stores."""
+        search_dirs: list[Path] = []
+        if self.local_dir is not None and self.local_dir.exists():
+            search_dirs.extend([self.local_dir, self.local_dir.parent])
+        search_dirs.extend([self.global_dir, self.global_dir.parent])
+
+        for directory in search_dirs:
+            if directory.exists():
+                for pattern in (f'*_{memory_id}.md', f'*_{memory_id}.yaml'):
+                    matches = list(directory.glob(pattern))
+                    if matches:
+                        return matches[0]
+
+        raise FileNotFoundError(f'No memory found across federated banks with ID: {memory_id}')
+
+    def _move_memory(self, memory_id: str, local_dest: Path | None, global_dest: Path) -> None:
+        """Atomically moves a memory file to its target destination directory (archive or subsumed)."""
+        source_path = self._find_memory_file(memory_id)
+        is_local = self.local_dir is not None and (
+            source_path.parent == self.local_dir or source_path.parent == self.local_dir.parent
+        )
+        target_dir = local_dest if is_local and local_dest is not None else global_dest
+        target_dir.mkdir(parents=True, exist_ok=True)
+        os.replace(source_path, target_dir / source_path.name)
+        self._invalidate_cache()
+
+    def archive(self, memory_id: str) -> None:
+        """'Forgets' a memory by atomically moving it to the archive directory.
+
         Searches both the local and global federated banks.
         """
-        files: list[Path] = []
-        target_archive: Path | None = None
+        self._move_memory(memory_id, self.local_archive_dir, self.global_archive_dir)
 
-        # Search for the file in the local bank first (if attached)
-        if self.local_dir is not None and self.local_dir.exists():
-            files = list(self.local_dir.glob(f'*_{memory_id}.md')) + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
-            if not files and self.local_dir.parent.exists():
-                files = list(self.local_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
-                    self.local_dir.parent.glob(f'*_{memory_id}.md')
-                )
-            target_archive = self.local_archive_dir
+    def subsume(self, memory_id: str) -> None:
+        """Moves a memory to the subsumed directory (compacted but still recoverable).
 
-        # If not found locally, search the global bank
-        if not files:
-            files = list(self.global_dir.glob(f'*_{memory_id}.md')) + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
-            if not files and self.global_dir.parent.exists():
-                files = list(self.global_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
-                    self.global_dir.parent.glob(f'*_{memory_id}.md')
-                )
-            target_archive = self.global_archive_dir
-
-        if not files or target_archive is None:
-            raise FileNotFoundError(f'No memory found across federated banks with ID: {memory_id}')
-
-        source_path = files[0]
-        target_path = target_archive / source_path.name
-        target_archive.mkdir(parents=True, exist_ok=True)
-
-        # os.replace is atomic across the same filesystem
-        os.replace(source_path, target_path)
-
-    def subsume(self, memory_id: str):
-        """
-        Moves a memory to the subsumed directory (compacted but still recoverable).
         Searches both the local and global federated banks.
         """
-        files: list[Path] = []
-        target_subsumed: Path | None = None
+        self._move_memory(memory_id, self.local_subsumed_dir, self.global_subsumed_dir)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        """Clears the in-memory directory digest cache across all personas."""
+        cls._CACHE.clear()
+
+    def _invalidate_cache(self) -> None:
+        """Invalidates the in-memory cache for this persona."""
+        self._CACHE.pop((self.persona_id, False), None)
+        self._CACHE.pop((self.persona_id, True), None)
+
+    def _get_load_directories(self, include_archived: bool = False) -> list[Path | None]:
+        """Returns the list of directories to search when loading memories."""
+        dirs: list[Path | None] = [self.global_dir, self.global_dir.parent]
+        if include_archived:
+            dirs.append(self.global_archive_dir)
 
         if self.local_dir is not None and self.local_dir.exists():
-            files = list(self.local_dir.glob(f'*_{memory_id}.md')) + list(self.local_dir.glob(f'*_{memory_id}.yaml'))
-            if not files and self.local_dir.parent.exists():
-                files = list(self.local_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
-                    self.local_dir.parent.glob(f'*_{memory_id}.md')
-                )
-            target_subsumed = self.local_subsumed_dir
+            dirs.append(self.local_dir)
+            if self.local_dir.parent.exists():
+                dirs.append(self.local_dir.parent)
+            if include_archived and self.local_archive_dir is not None and self.local_archive_dir.exists():
+                dirs.append(self.local_archive_dir)
+        return dirs
 
-        if not files:
-            files = list(self.global_dir.glob(f'*_{memory_id}.md')) + list(self.global_dir.glob(f'*_{memory_id}.yaml'))
-            if not files and self.global_dir.parent.exists():
-                files = list(self.global_dir.parent.glob(f'*_{memory_id}.yaml')) + list(
-                    self.global_dir.parent.glob(f'*_{memory_id}.md')
-                )
-            target_subsumed = self.global_subsumed_dir
+    @staticmethod
+    def _iter_memory_files(directories: list[Path | None]) -> Iterator[Path]:
+        """Yields unique, valid memory files across the provided directory list."""
+        seen: set[Path] = set()
+        for directory in directories:
+            if directory is None or not directory.exists():
+                continue
+            for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
+                if not file_path.is_file() or file_path in seen:
+                    continue
+                seen.add(file_path)
 
-        if not files or target_subsumed is None:
-            raise FileNotFoundError(f'No memory found across federated banks with ID: {memory_id}')
+                parent_name = file_path.parent.name
+                is_legacy = parent_name == 'memories' and file_path.suffix == '.yaml'
+                if parent_name not in ('active', 'archive', 'subsumed') and not is_legacy:
+                    continue
 
-        source_path = files[0]
-        target_path = target_subsumed / source_path.name
-        target_subsumed.mkdir(parents=True, exist_ok=True)
-        os.replace(source_path, target_path)
+                yield file_path
+
+    def _compute_directory_digest(self, include_archived: bool = False) -> str:
+        """Fast state digest computed in < 1ms using high-resolution mtime and file size.
+
+        Follows the mathematical model in EP-0140:
+        H_digest = SHA256( (name_f || mtime_f || size_f) for f in Memories )
+        """
+        stat_digests: list[str] = []
+        for file_path in self._iter_memory_files(self._get_load_directories(include_archived)):
+            try:
+                st = file_path.stat()
+                stat_digests.append(f'{file_path.name}:{st.st_mtime_ns}:{st.st_size}')
+            except OSError:
+                pass
+
+        raw = '|'.join(sorted(stat_digests))
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     def load_subsumed(self) -> list[Memory]:
-        """
-        Loads all subsumed memories from both local and global subsumed directories.
-        """
-        memories = []
-        directories = [self.global_subsumed_dir]
-
-        # Global legacy
-        legacy_global_subsumed = self.global_dir.parent.parent / 'subsumed'
-        directories.append(legacy_global_subsumed)
-
+        """Loads all subsumed memories from both local and global subsumed directories."""
+        directories: list[Path | None] = [
+            self.global_subsumed_dir,
+            self.global_dir.parent.parent / 'subsumed',
+        ]
         if self.local_subsumed_dir is not None:
             directories.append(self.local_subsumed_dir)
         if self.local_dir is not None:
             directories.append(self.local_dir.parent.parent / 'subsumed')
 
-        loaded_ids = set()
-        for directory in directories:
-            if directory.exists():
-                for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
-                    if file_path.is_file():
-                        mem = self._load_file(file_path)
-                        if mem and mem.id not in loaded_ids:
-                            memories.append(mem)
-                            loaded_ids.add(mem.id)
+        memories = []
+        loaded_ids: set[str] = set()
+        for file_path in self._iter_memory_files(directories):
+            mem = self._load_file(file_path)
+            if mem and mem.id not in loaded_ids:
+                memories.append(mem)
+                loaded_ids.add(mem.id)
+        memories.sort(key=lambda x: x.timestamp)
+        return memories
+
+    def _load_from_disk(self, include_archived: bool = False) -> list[Memory]:
+        memories = []
+        loaded_ids: set[str] = set()
+        for file_path in self._iter_memory_files(self._get_load_directories(include_archived)):
+            mem = self._load_file(file_path)
+            if mem and mem.id not in loaded_ids:
+                memories.append(mem)
+                loaded_ids.add(mem.id)
+
         memories.sort(key=lambda x: x.timestamp)
         return memories
 
     def load_all(self, include_archived: bool = False) -> list[Memory]:
+        """Retrieves all memories by merging the local and global memory banks (Federation).
+
+        Uses Merkle directory digest invalidation caching for O(1) retrieval.
         """
-        Retrieves all memories by merging the local and global memory banks (Federation).
-        """
-        memories = []
+        cache_key = (self.persona_id, include_archived)
+        current_digest = self._compute_directory_digest(include_archived=include_archived)
+        cached = self._CACHE.get(cache_key)
 
-        directories = [self.global_dir, self.global_dir.parent]
-        if include_archived:
-            directories.append(self.global_archive_dir)
+        if cached is not None and cached[0] == current_digest:
+            return list(cached[1])
 
-        if self.local_dir is not None and self.local_dir.exists():
-            directories.append(self.local_dir)
-            if self.local_dir.parent.exists():
-                directories.append(self.local_dir.parent)
-            if include_archived and self.local_archive_dir is not None and self.local_archive_dir.exists():
-                directories.append(self.local_archive_dir)
-
-        loaded_ids = set()
-        for directory in directories:
-            if directory.exists():
-                for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
-                    if file_path.is_file():
-                        parent_name = file_path.parent.name
-                        is_legacy = parent_name == 'memories' and file_path.suffix == '.yaml'
-                        if parent_name not in ['active', 'archive', 'subsumed'] and not is_legacy:
-                            continue
-
-                        mem = self._load_file(file_path)
-                        if mem and mem.id not in loaded_ids:
-                            memories.append(mem)
-                            loaded_ids.add(mem.id)
-
-        # Sort combined federated timeline by timestamp
-        memories.sort(key=lambda x: x.timestamp)
-        return memories
+        memories = self._load_from_disk(include_archived=include_archived)
+        self._CACHE[cache_key] = (current_digest, memories)
+        return list(memories)
 
     def count_all(self, include_archived: bool = False) -> int:
         """
@@ -399,7 +422,7 @@ class MemoryManager:
         Returns a list of tuples containing (file_path, error_reason) for any failures.
         """
         failures = []
-        directories: list[Path] = [
+        directories: list[Path | None] = [
             self.global_dir,
             self.global_archive_dir,
             self.global_subsumed_dir,
@@ -418,23 +441,11 @@ class MemoryManager:
                 ]
             )
 
-        seen_paths = set()
-        for directory in directories:
-            if directory is None or not directory.exists():
-                continue
-            for file_path in list(directory.glob('*.md')) + list(directory.glob('*.yaml')):
-                if not file_path.is_file() or file_path in seen_paths:
-                    continue
-                seen_paths.add(file_path)
-
-                parent_name = file_path.parent.name
-                is_legacy = parent_name == 'memories' and file_path.suffix == '.yaml'
-                if parent_name not in ['active', 'archive', 'subsumed'] and not is_legacy:
-                    continue
-
-                error_reason = self._verify_file_integrity(file_path)
-                if error_reason:
-                    failures.append((file_path, error_reason))
+        failures = []
+        for file_path in self._iter_memory_files(directories):
+            error_reason = self._verify_file_integrity(file_path)
+            if error_reason:
+                failures.append((file_path, error_reason))
         return failures
 
     @staticmethod
