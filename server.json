@@ -1,0 +1,99 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schema/server.json",
+  "name": "tur-mcp",
+  "title": "Tur — Sovereign State & Memory Engine",
+  "description": "Persistent, local-first state, cognitive memory hierarchy, and persona governance engine for AI pair programmers.",
+  "version": "0.11.3",
+  "author": {
+    "name": "Eran Rivlis",
+    "url": "https://github.com/erivlis"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erivlis/tur"
+  },
+  "homepage": "https://erivlis.github.io/tur/",
+  "license": "MIT",
+  "packages": [
+    {
+      "registry": "pypi",
+      "name": "tur",
+      "version": ">=0.11.3",
+      "executable": "tur-mcp",
+      "transport": {
+        "type": "stdio"
+      },
+      "installInstructions": "uvx --from tur tur-mcp"
+    }
+  ],
+  "tools": [
+    {
+      "name": "status",
+      "description": "Return the current persona, session, and memory status as a structured dictionary."
+    },
+    {
+      "name": "wake",
+      "description": "Read core persona identity, directives, and system metrics (The Long-Term Constitution)."
+    },
+    {
+      "name": "note",
+      "description": "Append a transient chronological note/utterance to the active session continuity (Short-Term L2)."
+    },
+    {
+      "name": "read_notes",
+      "description": "Return the chronological session notes history for the active session."
+    },
+    {
+      "name": "learn",
+      "description": "Assimilate a new invariant, fact, or insight into permanent cross-session memory (The Long-Term Ledger)."
+    },
+    {
+      "name": "evolve",
+      "description": "Stage an existential axiom or principle for elevation into core memory."
+    },
+    {
+      "name": "recall",
+      "description": "Search the deep memory bank and L2 Cognitive Map for past events, decisions, or knowledge."
+    },
+    {
+      "name": "metrics",
+      "description": "Measure static token cost, information density, and Cp (Constraint Dimensionality)."
+    },
+    {
+      "name": "sleep",
+      "description": "Symmetrically end the active session, dehydrating the chat log to extract and consolidate new L1 memories."
+    },
+    {
+      "name": "introspect",
+      "description": "Execute ontological introspection over L1 memories to update the L2 Cognitive Map."
+    },
+    {
+      "name": "signal",
+      "description": "Send a typed inter-agent signal to broadcast coordinates or coordinate with peer manifestations."
+    },
+    {
+      "name": "read_signals",
+      "description": "Read unacknowledged signals directed to this agent from the shared session queue."
+    },
+    {
+      "name": "ack_signals",
+      "description": "Acknowledge processed signals in the session queue."
+    },
+    {
+      "name": "write_whiteboard",
+      "description": "Write shared state parameters or architectural coordinates to the session whiteboard."
+    },
+    {
+      "name": "read_whiteboard",
+      "description": "Read shared state parameters from the session whiteboard."
+    },
+    {
+      "name": "list_agents",
+      "description": "List all active and registered agent manifestations in the session."
+    },
+    {
+      "name": "tired",
+      "description": "Signal completion and stage memories for swarm consolidation without abruptly cutting connection."
+    }
+  ]
+}
