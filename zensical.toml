@@ -83,7 +83,10 @@ nav = [
         "proposals/EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md",
         "proposals/EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md",
         "proposals/EP-0141-causal-vector-clocks-in-iasp.md",
-        "proposals/EP-0142-progressive-execution-observability-and-streaming-telemetry.md"
+        "proposals/EP-0142-progressive-execution-observability-and-streaming-telemetry.md",
+        "proposals/EP-0143-sensitive-data-prevention-and-sanitization.md",
+        "proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md",
+        "proposals/EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",
@@ -132,7 +135,8 @@ nav = [
             "essays/the_algebra_of_shared_dreams.md",
             "essays/the_geometry_of_metaphor.md",
             "essays/the_unbroken_stream.md",
-            "essays/the_spacetime_substrate.md"
+            "essays/the_spacetime_substrate.md",
+            "essays/the_grand_convergence.md"
         ] },
         { "Supplementary Musings" = [
             "essays/the_zero_and_the_one.md",
