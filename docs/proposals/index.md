@@ -65,8 +65,10 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
 | **[0138](EP-0138-dynamic-epistemic-elevation-and-principle-crystallization.md)**  | [Dynamic Epistemic Elevation and Principle Crystallization Lifecycle](EP-0138-dynamic-epistemic-elevation-and-principle-crystallization.md)            |     *Draft*     | Standards Track | Formalizes the continuous Epistemological Ladder from empirical facts to constitutional principles, introducing falsification scoring (Φ), principle staging, and dynamic Cp recalculation.               |
 | **[0139](EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md)**        | [Tensor-Algebraic Provenance and Simplicial Homology via AlgebraX](EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md)                     |     *Draft*     | Standards Track | Integrates AlgebraX's AlgebraicTrie for sparse tensor provenance semirings (N[X]) in multi-agent consensus, lattice-based truth maintenance, and simplicial homology (Betti numbers) for void detection.  |
 | **[0140](EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md)**     | [Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff](EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md)    |     *Draft*     | Standards Track | Optimizes Tur runtime performance with O(1) Merkle root memory invalidation caching, pre-compiled Jinja2 template AST memoization, and decorrelated jitter lock backoff.                                  |
-| **[0141](EP-0141-causal-vector-clocks-in-iasp.md)**                               | [Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol](EP-0141-causal-vector-clocks-in-iasp.md)                                 |     *Draft*     | Standards Track | Replaces scalar integer autoincrements in IASP with Lamport Vector Clocks, establishing formal partial ordering (N^k, <=), causal delivery, and concurrent conflict detection.                            |
 | **[0142](EP-0142-progressive-execution-observability-and-streaming-telemetry.md)**| [Progressive Execution Observability and Streaming Telemetry](EP-0142-progressive-execution-observability-and-streaming-telemetry.md)                   |     *Draft*     | Standards Track | Establishes progressive execution observability across Tur CLI commands and MCP tools via Rich live spinners, pipeline trackers, and MCP streaming progress notifications. |
+| **[0143](EP-0143-sensitive-data-prevention-and-sanitization.md)**                 | [Sensitive Data Prevention, Secret Redaction, and Memory Sanitization](EP-0143-sensitive-data-prevention-and-sanitization.md)                           |     *Draft*     | Standards Track | Establishes a defense-in-depth sanitization and secrets redaction framework featuring high-entropy detection, pre-ingest filters, and Merkle tombstoning.  |
+| **[0144](EP-0144-zero-dependency-dense-semantic-embeddings.md)**                  | [Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval](EP-0144-zero-dependency-dense-semantic-embeddings.md)                             |     *Draft*     | Standards Track | Introduces zero-dependency dense semantic embedding retrieval via ONNX runtime and AlgebraX sparse cosine math, solving the vocabulary mismatch problem.    |
+| **[0145](EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md)**        | [Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization](EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md)| *Draft*         | Standards Track | Integrates networkx-mermaid for robust L2 subgraph rendering and graphinate under tur-adm for interactive browser-based persona topology inspection.       |
 
 ---
 
@@ -104,6 +106,8 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
   Subgraph Retrieval and Topological Cognitive Metrics
 - **[EP-0139](EP-0139-tensor-algebraic-provenance-and-simplicial-homology.md)**: Tensor-Algebraic Provenance and
   Simplicial Homology via AlgebraX
+- **[EP-0144](EP-0144-zero-dependency-dense-semantic-embeddings.md)**: Zero-Dependency Dense Semantic Embeddings and
+  ONNX Vector Retrieval
 
 ### 3. Architecture, Interfaces & Security
 
@@ -130,6 +134,10 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
   Invalidation Caching, and Jittered Lock Backoff
 - **[EP-0142](EP-0142-progressive-execution-observability-and-streaming-telemetry.md)**: Progressive Execution
   Observability, Live Status Spinners, and Streaming MCP Telemetry
+- **[EP-0143](EP-0143-sensitive-data-prevention-and-sanitization.md)**: Sensitive Data Prevention, Secret Redaction,
+  and Memory Sanitization
+- **[EP-0145](EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md)**: Declarative Knowledge Graph Modeling,
+  Interactive Dashboard, and Mermaid Visualization
 
 ### 4. Multi-Agent Swarms & Synchronization
 

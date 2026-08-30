@@ -29,7 +29,8 @@ Migration (EP-0127), OS-Native Directory Resolution (EP-0128), Multi-Process Fil
 Active TMS Contradiction Interruption (EP-0134), the Modular Scaffolding Protocol (EP-0135), Graph-Theoretic Semantic Retrieval
 (EP-0136), Contract-Driven Cognitive Skills (EP-0137), Dynamic Epistemic Elevation (EP-0138), Tensor-Algebraic Provenance &
 Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), Lamport Vector Clocks in IASP (EP-0141),
-and Progressive Execution Observability & Streaming Telemetry (EP-0142).
+Progressive Execution Observability & Streaming Telemetry (EP-0142), Sensitive Data Prevention & Sanitization (EP-0143),
+Zero-Dependency Dense Semantic Embeddings (EP-0144), and Declarative Knowledge Graph Modeling & Visual Dashboard (EP-0145).
 
 ## Motivation
 
@@ -63,10 +64,11 @@ graph TD
         EP0140[EP-0140: Substrate Acceleration<br/>Merkle Invalidation & Lock Jitter]
     end
 
-    subgraph L2 ["Layer 2: Protocol & Harness Runtime"]
+    subgraph L2 ["Layer 2: Protocol, Scaffolding & Boundary Sanitization"]
         EP0127[EP-0127: MCP SDK v2<br/>FastMCP -> MCPServer]
         EP0135[EP-0135: Modular Scaffolding<br/>AGENTS.md & CONSTITUTION.md]
         EP0142[EP-0142: Progressive Telemetry<br/>Live Spinners & MCP Stream]
+        EP0143[EP-0143: Sensitive Sanitization<br/>Entropy Scan & Tombstones]
     end
 
     subgraph L3 ["Layer 3: Storage, Observability & Signal Infrastructure"]
@@ -84,12 +86,14 @@ graph TD
         EP0132[EP-0132: Budgeted Wake<br/>Token-Bounded Retrieval]
         EP0134[EP-0134: Active TMS<br/>Contradiction Interruption]
         EP0136[EP-0136: Topological Retrieval<br/>HippoRAG PPR & Louvain]
+        EP0144[EP-0144: Dense Embeddings<br/>ONNX & AlgebraX Fallback]
         EP0137[EP-0137: Pluggable Forge<br/>Contract-Driven Skills]
     end
 
-    subgraph L5 ["Layer 5: Sovereign Epistemology & Higher Algebra"]
+    subgraph L5 ["Layer 5: Sovereign Epistemology & Visual Observability"]
         EP0138[EP-0138: Dynamic Elevation<br/>Principle Crystallization]
         EP0139[EP-0139: Tensor Homology<br/>AlgebraX Tensors & Betti Holes]
+        EP0145[EP-0145: Visual Dashboard<br/>Graphinate & networkx-mermaid]
     end
 
     EP0128 --> EP0129
@@ -97,6 +101,7 @@ graph TD
     EP0128 --> EP0127
     EP0127 --> EP0135
     EP0127 --> EP0142
+    EP0135 --> EP0143
     EP0129 --> EP0125
     EP0127 --> EP0123
     EP0123 --> EP0141
@@ -108,27 +113,30 @@ graph TD
     EP0131 --> EP0132
     EP0132 --> EP0134
     EP0134 --> EP0136
+    EP0136 --> EP0144
     EP0135 --> EP0137
     EP0136 --> EP0138
     EP0122 --> EP0139
+    EP0138 --> EP0145
+    EP0139 --> EP0145
 ```
 
 1. **Layer 1: Substrate Hardening & Concurrency Safety (`EP-0128` + `EP-0129` + `EP-0140`):** Integrate `platformdirs`,
    `filelock`, $\mathcal{O}(1)$ Merkle invalidation caching, AST template memoization, and decorrelated jitter lock backoff.
-2. **Layer 2: Protocol Modernization & Progressive Telemetry (`EP-0127` + `EP-0135` + `EP-0142`):** Migrate `tur-mcp` to
-   official MCP Python SDK v2 (`MCPServer`), decouple `AGENTS.md` from `CONSTITUTION.md`, and stream live progress notifications.
+2. **Layer 2: Protocol Modernization, Scaffolding & Sanitization (`EP-0127` + `EP-0135` + `EP-0142` + `EP-0143`):** Migrate
+   `tur-mcp` to MCP SDK v2, decouple `AGENTS.md` from `CONSTITUTION.md`, stream live progress, and filter sensitive credentials.
 3. **Layer 3: Storage, Lineage & Causal Signals (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141`):** Implement the
    5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, and Lamport Vector Clocks in IASP.
-4. **Layer 4: Cognitive Consolidation & Topological Retrieval (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0137`):**
+4. **Layer 4: Cognitive Consolidation, Dense Retrieval & Budgeted Wake (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0144` + `EP-0137`):**
    Temporal staleness decay, token-bounded wake, active TMS contradiction interruptions, HippoRAG Personalized PageRank
-   associative retrieval, and contract-driven cognitive skills.
-5. **Layer 5: Sovereign Epistemology & Higher Algebra (`EP-0138` + `EP-0139`):** Continuous Epistemological Ladder from
-   facts to principles, dynamic $C_p$ recalculation, 3D `AlgebraicTrie` tensor provenance semirings, and simplicial homology
-   Betti number diagnostics.
+   associative retrieval seeded by ONNX vector embeddings, and contract-driven cognitive skills.
+5. **Layer 5: Sovereign Epistemology & Visual Observability (`EP-0138` + `EP-0139` + `EP-0145`):** Continuous Epistemological
+   Ladder from facts to principles, dynamic $C_p$ recalculation, 3D `AlgebraicTrie` tensor provenance semirings, simplicial
+   homology Betti numbers, and Graphinate interactive browser topology dashboard.
 
 ### Strategic Confluences and Multi-EP Synergies
 
-The maturation of the 100-series proposals produces five emergent architectural confluences:
+The maturation of the 100-series proposals produces eight emergent architectural confluences:
 
 1. **The Unified Reactive Wire (`EP-0127` + `EP-0123` + `EP-0141` + `EP-0142`):** `MCPServer` SDK v2 provides a unified
    async notification dispatcher serving both live streaming sleep/introspection progress (`notifications/progress`) and
@@ -145,6 +153,15 @@ The maturation of the 100-series proposals produces five emergent architectural 
 5. **Zero-Waste Context Engine (`EP-0135` + `EP-0132` + `EP-0136`):** Decoupling operational scaffolding (`AGENTS.md`)
    from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack
    budgeting with the highest-relevance associative memory subgraphs.
+6. **High-Recall Hybrid Semantic Diffusion (`EP-0144` + `EP-0136` + `EP-0140` + `EP-0132`):** Dense ONNX vector embeddings
+   seed Personalized PageRank diffusion across the L2 graph, solving the vocabulary mismatch problem without PyTorch bloat
+   and packing results into token budgets with sub-millisecond $\mathcal{O}(1)$ cached execution.
+7. **Cryptographic Boundary & Tombstone Defense (`EP-0143` + `EP-0106` + `EP-0115` + `EP-0135`):** Pre-ingest regex and
+   Shannon entropy scanners sanitize credentials before persistence, while Merkle tombstoning allows purging compromised
+   tokens without corrupting content-addressable history or persona export archives.
+8. **Interactive Epistemic Topology Observability (`EP-0145` + `EP-0138` + `EP-0139` + `EP-0134`):** Graphinate local web
+   dashboard and schema-verified `networkx-mermaid` compilation render interactive 3D/2D visual inspections of Popperian
+   elevation chains, simplicial homology voids, and JTMS contradiction boundaries.
 
 ## Specification (The Roadmap)
 
@@ -214,6 +231,9 @@ The maturation of the 100-series proposals produces five emergent architectural 
     * **Tensor-Algebraic Provenance and Simplicial Homology via AlgebraX (EP-0139) [Status: Draft]:** Modeling memory as a
       3D sparse tensor (`AlgebraicTrie`) for $\mathbb{N}[X]$ semiring contractions and Betti number ($\beta_1, \beta_2$)
       void detection.
+    * **Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval (EP-0144) [Status: Draft]:** Introducing
+      zero-dependency semantic embedding retrieval via ONNX Runtime (`all-MiniLM-L6-v2_onnx_int8`) and AlgebraX sparse
+      cosine similarity.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
@@ -250,6 +270,11 @@ The maturation of the 100-series proposals produces five emergent architectural 
     * **Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry (EP-0142) [Status: Draft]:**
       Eliminating silent execution bottlenecks across CLI and MCP interfaces via Rich live spinners, pipeline trackers,
       and native `notifications/progress` streaming telemetry.
+    * **Sensitive Data Prevention, Secret Redaction, and Memory Sanitization (EP-0143) [Status: Draft]:** Establishing
+      high-entropy token detection, pre-ingest regex filters, and Merkle tombstoning under `tur-adm memory redact`.
+    * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
+      Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
+      under `tur-adm graph serve`.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -305,11 +330,10 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 ## Change Log
 
 * **2026-08-30:**
-    * Codified the **Strategic Confluences and Multi-EP Synergies** across 5 architectural intersections (The Unified
-      Reactive Wire, High-Speed Cognitive Subgraph Engine, Contract-Driven Sovereign Evolution, Active TMS & Epistemic Diff,
-      and Zero-Waste Context Engine).
-    * Integrated **EP-0142 (Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry)** into
-      Layer 2 (Protocol & Harness Runtime) and Phase 3 developmental tracks.
+    * Codified the **Strategic Confluences and Multi-EP Synergies** across 5 architectural intersections.
+    * Registered **EP-0142 (Progressive Execution Observability)**, **EP-0143 (Sensitive Data Prevention & Sanitization)**,
+      **EP-0144 (Zero-Dependency Dense Semantic Embeddings via ONNX)**, and **EP-0145 (Declarative Graph Modeling & Visual Dashboard)**
+      into Phase 2 and Phase 3 developmental tracks, establishing complete roadmap coverage across all 51 EPs.
 * **2026-08-28:**
     * Synchronized full roadmap coverage across all 47 EPs (**EP-0131** through **EP-0141**).
     * Added **Layer 5 (Sovereign Epistemology & Higher Algebra)** to the Strategic Implementation Trajectory, incorporating
