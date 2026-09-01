@@ -166,12 +166,16 @@ class Memory(BaseModel):
     @classmethod
     def sanitize_memory_content(cls, data: Any) -> Any:
         """Deterministic pre-ingest sanitization of memory content (EP-0143)."""
-        if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
-            if not data.get('redacted'):
-                from tur.sanitizer import sanitize_text
+        if (
+            isinstance(data, dict)
+            and 'content' in data
+            and isinstance(data['content'], str)
+            and not data.get('redacted')
+        ):
+            from tur.sanitizer import sanitize_text
 
-                sanitized, _ = sanitize_text(data['content'])
-                data['content'] = sanitized
+            sanitized, _ = sanitize_text(data['content'])
+            data['content'] = sanitized
         return data
 
     @model_validator(mode='after')
@@ -290,9 +294,16 @@ class SessionEntry(BaseModel):
     """
 
     id: str = Field(..., description='The unique session ID.')
+    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG (EP-0130).')
     created_at: datetime = Field(default_factory=datetime.now, description='When the session was started.')
     updated_at: datetime = Field(default_factory=datetime.now, description='When the session was last updated.')
     status: str = Field('active', description="The status of the session ('active' or 'ended').")
+
+    @model_validator(mode='after')
+    def validate_lineage(self) -> 'SessionEntry':
+        if self.parent_session_id is not None and self.parent_session_id == self.id:
+            raise ValueError(f"Session '{self.id}' cannot be its own parent.")
+        return self
 
 
 class SessionIndex(BaseModel):
@@ -337,10 +348,22 @@ class Note(BaseModel):
 class SessionNotes(BaseModel):
     """
     A collection of chronological notes for a specific session.
-    Stored as .tur/personas/<uuid>/sessions/<session_id>/notes.yaml
+    Stored as .tur/personas/<uuid>/sessions/<session_id>.yaml
     """
 
+    session_id: str | None = Field(default=None, description='The session ID.')
+    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG (EP-0130).')
     notes: list[Note] = Field(default_factory=list, description='Chronological notes.')
+
+    @model_validator(mode='after')
+    def validate_lineage(self) -> 'SessionNotes':
+        if (
+            self.parent_session_id is not None
+            and self.session_id is not None
+            and self.parent_session_id == self.session_id
+        ):
+            raise ValueError(f"Session '{self.session_id}' cannot be its own parent.")
+        return self
 
 
 class HarnessDelegationError(ValueError):

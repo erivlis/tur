@@ -46,7 +46,8 @@ DREAMING_EXTRACTION_PRINCIPLES = """- Scope Assignment:
   - Extract only high-density, durable invariants that should survive session resets.
 - Exclusion & Sanitization Directives:
   - NEVER extract or store passwords, API keys, session tokens, or private credentials.
-  - If a secret is observed in the transcript, extract only the architectural role (e.g. "Uses AWS S3 with IAM authentication") and omit the credential string entirely."""
+  - If a secret is observed in the transcript, extract only the architectural role
+    (e.g. "Uses AWS S3 with IAM authentication") and omit the credential string entirely."""
 
 
 def build_dreaming_prompt(log_content: str) -> str:
@@ -175,4 +176,3 @@ def stage_sleep_dreaming(
         response_schema=Dream.model_json_schema(),
     )
     return _clean_json_response(resp_text)
-

@@ -113,8 +113,78 @@ def save_session_index(persona_dir: Path, index: SessionIndex):
     atomic_yaml_write(index_path, index.model_dump(mode='json'))
 
 
+SESSION_ID_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')
+
+
+def validate_session_id(session_id: str) -> None:
+    """Validates that a session_id conforms to safe alphanumeric format and prevents path traversal (EP-0130)."""
+    if not session_id or not SESSION_ID_REGEX.match(session_id):
+        raise ValueError(f"Invalid session_id format: '{session_id}'. Must match ^[a-zA-Z0-9_-]+$")
+
+
+def get_parent_session_id(session_id: str | None, persona_dir: Path | None = None) -> str | None:
+    """
+    Returns the parent session ID in the lineage DAG for the given session ID (EP-0130).
+    Checks both the session flat YAML file and sessions.yaml index.
+    """
+    if not session_id:
+        return None
+    validate_session_id(session_id)
+    if persona_dir is None:
+        active_id = get_active_persona_id()
+        persona_dir = get_persona_path(active_id)
+
+    # Check session YAML first
+    session_file = get_session_file(persona_dir, session_id)
+    if session_file.exists():
+        try:
+            with open(session_file, encoding='utf-8') as f:
+                notes_data = yaml_safe_load(f)
+            if notes_data and isinstance(notes_data, dict):
+                parent_id = notes_data.get('parent_session_id')
+                if parent_id:
+                    return str(parent_id)
+        except Exception:
+            pass
+
+    # Fallback to session index
+    index = load_session_index(persona_dir)
+    for entry in index.sessions:
+        if entry.id == session_id and entry.parent_session_id:
+            return entry.parent_session_id
+
+    return None
+
+
+def get_session_lineage(session_id: str, persona_dir: Path | None = None, max_depth: int = 10) -> list[str]:
+    """
+    Traverses parent_session_id pointers up the DAG to return the lineage sequence:
+    [session_id, parent_id, grandparent_id, ...] up to max_depth (EP-0130).
+    Guards against cyclic loops via a visited set.
+    """
+    validate_session_id(session_id)
+    if persona_dir is None:
+        active_id = get_active_persona_id()
+        persona_dir = get_persona_path(active_id)
+
+    lineage: list[str] = [session_id]
+    visited: set[str] = {session_id}
+    curr = session_id
+
+    while len(lineage) < max_depth:
+        parent = get_parent_session_id(curr, persona_dir)
+        if not parent or parent in visited:
+            break
+        visited.add(parent)
+        lineage.append(parent)
+        curr = parent
+
+    return lineage
+
+
 def get_session_file(persona_dir: Path, session_id: str) -> Path:
     """Returns the flat YAML file path for a session: sessions/<session_id>.yaml"""
+    validate_session_id(session_id)
     return get_local_persona_dir(persona_dir) / 'sessions' / f'{session_id}.yaml'  # read-only path query
 
 
@@ -470,6 +540,10 @@ def start_session_logic(
     Creates the flat session YAML file and sets up/registers the manifestation
     in the session SQLite database.
     """
+    validate_session_id(session_id)
+    if previous_session_id:
+        validate_session_id(previous_session_id)
+
     active_id = get_active_persona_id(identifier)
     persona_dir = get_persona_path(active_id)
 
@@ -480,24 +554,52 @@ def start_session_logic(
         sessions_dir.mkdir(parents=True, exist_ok=True)
         session_file = get_session_file(persona_dir, session_id)
 
+        index = load_session_index(persona_dir)
+
+        # EP-0130: Resolve parent session ID
+        parent_id = previous_session_id
+        if not parent_id and index.sessions:
+            prior_sessions = [s for s in index.sessions if s.id != session_id]
+            if prior_sessions:
+                sorted_prior = sorted(
+                    prior_sessions,
+                    key=lambda s: (s.updated_at, s.created_at, s.id),
+                    reverse=True,
+                )
+                parent_id = sorted_prior[0].id
+
         if not session_file.exists():
             seed_content = 'Session started.'
-            if previous_session_id:
-                prev_content = compile_session_notes(persona_dir, previous_session_id)
-                if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
-                    seed_content = prev_content
-            session_notes = SessionNotes(notes=[Note(timestamp=datetime.now(), content=seed_content)])
+            if parent_id:
+                # Continuity Staleness TTL: only auto-seed if parent was updated within 48h (or explicitly passed)
+                parent_entry = next((s for s in index.sessions if s.id == parent_id), None)
+                is_fresh = True
+                if parent_entry and previous_session_id is None:
+                    is_fresh = (datetime.now() - parent_entry.updated_at).total_seconds() <= 48 * 3600
+
+                if is_fresh:
+                    prev_content = compile_session_notes(persona_dir, parent_id)
+                    if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
+                        # Clamp auto-seeded spark to 256 characters (EP-0130)
+                        seed_content = prev_content[:256].strip()
+
+            session_notes = SessionNotes(
+                session_id=session_id,
+                parent_session_id=parent_id,
+                notes=[Note(timestamp=datetime.now(), content=seed_content)],
+            )
             atomic_yaml_write(session_file, session_notes.model_dump(mode='json'))
 
-        index = load_session_index(persona_dir)
         index.active_session_id = session_id
 
         existing_entry = next((s for s in index.sessions if s.id == session_id), None)
         if existing_entry:
             existing_entry.updated_at = datetime.now()
             existing_entry.status = 'active'
+            if parent_id and not existing_entry.parent_session_id:
+                existing_entry.parent_session_id = parent_id
         else:
-            new_entry = SessionEntry(id=session_id, status='active')
+            new_entry = SessionEntry(id=session_id, parent_session_id=parent_id, status='active')
             index.sessions.append(new_entry)
 
         save_session_index(persona_dir, index)
@@ -817,24 +919,100 @@ def list_agents_logic(session_id: str) -> list[dict]:
     return [dict(row) for row in rows]
 
 
-@db_retry()
-def read_notes_logic(session_id: str, limit: int = 50) -> list[dict]:
-    """Returns the broadcast signals history in strict ascending sequence order."""
-    conn = get_db_connection(session_id)
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT id, sender, recipient, type, content, timestamp, sequence
-        FROM signals
-        WHERE recipient = '*'
-        ORDER BY sequence ASC
+def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> list[dict]:
+    # 1. Primary: SQLite
+    try:
+        conn = get_db_connection(sess_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, sender, recipient, type, content, timestamp, sequence
+            FROM signals
+            WHERE recipient = '*'
+            ORDER BY sequence ASC
             LIMIT ?
-        """,
-        (limit,),
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+            """,
+            (fetch_limit,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        if rows:
+            return [dict(row) for row in rows]
+    except Exception:
+        pass
+
+    # 2. Fallback: Flat YAML sessions/<session_id>.yaml
+    session_file = get_session_file(p_dir, sess_id)
+    if session_file.exists():
+        try:
+            with open(session_file, encoding='utf-8') as f:
+                data = yaml_safe_load(f) or {}
+            s_notes = SessionNotes(**data)
+            results = []
+            for idx, n in enumerate(s_notes.notes[:fetch_limit]):
+                ts_str = n.timestamp.isoformat() if hasattr(n.timestamp, 'isoformat') else str(n.timestamp)
+                sig_id = hashlib.sha256(f'{ts_str}|{n.content}'.encode()).hexdigest()
+                results.append(
+                    {
+                        'id': sig_id,
+                        'sender': 'system',
+                        'recipient': '*',
+                        'type': 'inform',
+                        'content': n.content,
+                        'timestamp': ts_str,
+                        'sequence': idx + 1,
+                    }
+                )
+        except Exception:
+            pass
+        else:
+            return results
+
+    return []
+
+
+def read_notes_logic(
+    session_id: str,
+    limit: int = 50,
+    include_previous: bool = False,
+    identifier: str | None = None,
+    persona_dir: Path | None = None,
+) -> list[dict]:
+    """
+    Returns broadcast notes in ascending sequence order with dual-backend fallback (SQLite + YAML)
+    and cross-session lineage support (EP-0130).
+    """
+    if persona_dir is None:
+        active_id = get_active_persona_id(identifier)
+        persona_dir = get_persona_path(active_id)
+
+    target_session_id = session_id
+
+    if target_session_id == 'previous':
+        active_sess = get_active_session_id()
+        parent_id = get_parent_session_id(active_sess, persona_dir) if active_sess else None
+        if not parent_id:
+            index = load_session_index(persona_dir)
+            priors = [s for s in index.sessions if s.id != active_sess]
+            if priors:
+                sorted_priors = sorted(priors, key=lambda s: (s.updated_at, s.created_at, s.id), reverse=True)
+                parent_id = sorted_priors[0].id
+        if not parent_id:
+            return []
+        target_session_id = parent_id
+
+    validate_session_id(target_session_id)
+
+    if include_previous:
+        parent_id = get_parent_session_id(target_session_id, persona_dir)
+        parent_notes = _fetch_single_session_notes(parent_id, limit, persona_dir) if parent_id else []
+        curr_notes = _fetch_single_session_notes(target_session_id, limit, persona_dir)
+        combined = parent_notes + curr_notes
+        if len(combined) > limit:
+            combined = combined[-limit:]
+        return combined
+
+    return _fetch_single_session_notes(target_session_id, limit, persona_dir)
 
 
 @db_retry()
@@ -974,26 +1152,34 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
             session_file.parent.mkdir(parents=True, exist_ok=True)
 
             notes_list = []
+            parent_id = None
             if session_file.exists():
                 try:
                     with open(session_file, encoding='utf-8') as f:
                         notes_data = yaml_safe_load(f)
                     session_notes = SessionNotes(**notes_data)
                     notes_list = session_notes.notes
+                    parent_id = session_notes.parent_session_id
                 except Exception:
                     pass
 
             note_item = Note(timestamp=datetime.now(), content=content.strip())
             notes_list.append(note_item)
-            session_notes = SessionNotes(notes=notes_list)
+            session_notes = SessionNotes(
+                session_id=resolved_session_id,
+                parent_session_id=parent_id,
+                notes=notes_list,
+            )
             atomic_yaml_write(session_file, session_notes.model_dump(mode='json'))
 
             index = load_session_index(persona_dir)
             existing_entry = next((s for s in index.sessions if s.id == resolved_session_id), None)
             if existing_entry:
                 existing_entry.updated_at = datetime.now()
+                if parent_id and not existing_entry.parent_session_id:
+                    existing_entry.parent_session_id = parent_id
             else:
-                new_entry = SessionEntry(id=resolved_session_id, status='active')
+                new_entry = SessionEntry(id=resolved_session_id, parent_session_id=parent_id, status='active')
                 index.sessions.append(new_entry)
             save_session_index(persona_dir, index)
 

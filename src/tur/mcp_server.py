@@ -255,7 +255,7 @@ def learn(
         scope=mem_scope,
         tags=['mcp', 'agent'],
         content=content,
-        source_session=None,
+        source_session=_active_session_id or get_active_session_id(),
     )
     try:
         saved_path = manager.save(memory)
@@ -541,14 +541,66 @@ def telemetry(identifier: str | None = None) -> dict:
 
 
 @mcp.tool()
-def read_notes(session_id: str | None = None, limit: int = 50) -> list[dict]:
+def diff_memories(
+    base_session_id: str | None = None,
+    target_session_id: str | None = None,
+    type_filter: str | None = None,
+    scope_filter: str | None = None,
+) -> list[dict]:
+    """
+    Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133).
+    Categorizes deltas into ADDED, SUPERSEDED, REFUTED, DECAYED, and MODIFIED.
+
+    Args:
+        base_session_id: Base session ID to compare against (defaults to target session's parent in lineage DAG).
+        target_session_id: Target session ID (defaults to active session).
+        type_filter: Optional filter by memory type (e.g. 'fact', 'insight', 'preference', 'axiom').
+        scope_filter: Optional filter by memory scope (e.g. 'incarnation', 'universal').
+    """
+    from tur.diff import compute_session_diff, format_diff_json
+
+    resolved_target = target_session_id or _active_session_id or get_active_session_id()
+    deltas = compute_session_diff(
+        base_session_id=base_session_id,
+        target_session_id=resolved_target,
+        type_filter=type_filter,
+        scope_filter=scope_filter,
+    )
+    return format_diff_json(deltas)
+
+
+@mcp.tool()
+def diff(
+    base_session_id: str | None = None,
+    target_session_id: str | None = None,
+    type_filter: str | None = None,
+    scope_filter: str | None = None,
+) -> list[dict]:
+    """
+    Alias for diff_memories(). Inspect memory mutations across sessions (EP-0133).
+    """
+    return diff_memories(
+        base_session_id=base_session_id,
+        target_session_id=target_session_id,
+        type_filter=type_filter,
+        scope_filter=scope_filter,
+    )
+
+
+@mcp.tool()
+def read_notes(session_id: str | None = None, include_previous: bool = False, limit: int = 50) -> list[dict]:
     """
     Returns the session broadcast notes in strict ascending sequence order.
+
+    Args:
+        session_id: Optional specific session ID, or 'previous' to resolve immediate parent.
+        include_previous: If True, prepends notes from the parent session up to limit.
+        limit: Maximum number of notes to retrieve.
     """
     sess_id = session_id or _active_session_id or get_active_session_id()
     if not sess_id:
         raise ValueError('No active session ID found.')
-    return read_notes_logic(sess_id, limit)
+    return read_notes_logic(sess_id, limit=limit, include_previous=include_previous)
 
 
 @mcp.tool()

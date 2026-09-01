@@ -148,7 +148,7 @@ def learn(
                     scope=m_scope,
                     tags=m_tags,
                     content=m_content,
-                    source_session=session_id or mem_dict.get('source_session'),
+                    source_session=session_id or mem_dict.get('source_session') or session.get_active_session_id(),
                 )
                 saved_path = memory_manager.save(memory)
                 count += 1
@@ -163,7 +163,7 @@ def learn(
             scope=scope,
             tags=['manual', 'cli'],
             content=content,
-            source_session=session_id,
+            source_session=session_id or session.get_active_session_id(),
         )
         saved_path = memory_manager.save(memory)
         console.print(f'[green]Memory saved to {saved_path}[/green]')
@@ -591,9 +591,41 @@ def ack_signals(
 
 
 @app.command()
+def diff(
+    base_session_id: str | None = typer.Argument(None, help='Base session ID (or predecessor if omitted).'),
+    target_session_id: str | None = typer.Argument(None, help='Target session ID (or active session if omitted).'),
+    json_output: bool = typer.Option(False, '--json', help='Output diff as structured JSON.'),
+    type_filter: str | None = typer.Option(None, '--type', help='Filter by memory type (e.g. fact, insight).'),
+    scope_filter: str | None = typer.Option(
+        None, '--scope', help='Filter by memory scope (e.g. incarnation, universal).'
+    ),
+    identifier: str | None = typer.Option(None, '--persona', help='Persona identifier (default: active persona).'),
+):
+    """Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133)."""
+    try:
+        from tur.diff import compute_session_diff, format_diff_json, format_diff_terminal
+
+        deltas = compute_session_diff(
+            base_session_id=base_session_id,
+            target_session_id=target_session_id,
+            persona_id=identifier,
+            type_filter=type_filter,
+            scope_filter=scope_filter,
+        )
+
+        if json_output:
+            console.print(json.dumps(format_diff_json(deltas), indent=2))
+        else:
+            console.print(format_diff_terminal(deltas, session_id=target_session_id))
+    except Exception as e:
+        handle_cli_error(e, 'Error during diff')
+
+
+@app.command()
 def read_notes(
     limit: int = typer.Option(50, help='Max number of notes to retrieve.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help="The session ID, or 'previous' for immediate parent session."),
+    include_previous: bool = typer.Option(False, '--include-previous', help='Prepend notes from the parent session.'),
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
@@ -601,7 +633,7 @@ def read_notes(
         raise typer.Exit(code=1)
 
     try:
-        notes = session.read_notes_logic(sess_id, limit)
+        notes = session.read_notes_logic(sess_id, limit=limit, include_previous=include_previous)
         if not notes:
             console.print('[dim]No broadcast notes found.[/dim]')
             return
