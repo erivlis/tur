@@ -88,7 +88,7 @@ actions across three distinct executables (EP-0004 / EP-0116):
 
 | Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                      |
 |:--------------|:------------------------------|:------------------------|:------------------------------------------------------------------------------------------------------------------|
-| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `learn`, `recall`, `status`, `metrics`, `sleep`                                                   |
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `read-notes`, `learn`, `diff`, `recall`, `status`, `metrics`, `sleep`                             |
 | **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean` |
 | **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                    |
 
@@ -207,8 +207,8 @@ tur-adm memory list --include-archived
 
 ### 8. Measure Cognitive Complexity (`metrics`)
 
-Calculates the "Constraint Dimensionality" ($C_p$) and static token weight of a persona based on its principles and rules. This helps you
-understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
+Calculates the "Constraint Dimensionality" ($C_p$) and static token weight of a persona based on its principles and
+rules. This helps you understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
 
 ```shell
 tur metrics
@@ -254,7 +254,45 @@ Renders a rich, structured status panel displaying:
 tur status
 ```
 
-### 11. Search Memories (`recall`)
+### 12. Inspect Memory Deltas (`diff`)
+
+**Epistemic Observability (EP-0133):** Inspect memory mutations, additions, supersessions, refutations, and staleness
+decays across session boundaries.
+
+```shell
+# Compare active session against its predecessor in the lineage DAG
+tur diff
+
+# Compare a specific session against its predecessor
+tur diff 20260827_150000_841444cd
+
+# Compare two explicit session checkpoints
+tur diff 20260825_190758_86152dcb 20260827_150000_841444cd
+
+# Filter by memory type or scope
+tur diff --type fact --scope universal
+
+# Output structured JSON
+tur diff --json
+```
+
+### 13. Read Session Notes & Lineage Continuity (`read-notes`)
+
+**Cross-Session Continuity (EP-0130):** Inspect chronological scratchpad notes from the active session or traverse
+predecessor history along the session lineage DAG.
+
+```shell
+# Read notes from active session
+tur read-notes
+
+# Read notes from the immediate parent session
+tur read-notes --session-id previous
+
+# Read notes from active session and predecessor in a continuous trail
+tur read-notes --include-previous --limit 20
+```
+
+### 14. Search Memories (`recall`)
 
 Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching
 insights or facts.
@@ -263,7 +301,7 @@ insights or facts.
 tur recall "Noether"
 ```
 
-### 12. Manage Sessions (`session` Subgroup)
+### 15. Manage Sessions (`session` Subgroup)
 
 Administrative tools to manually start and end sessions for a persona.
 
@@ -281,7 +319,7 @@ tur-adm session start my-session-123
 tur-adm session end my-session-123
 ```
 
-### 13. Append a Note (`note`)
+### 16. Append a Note (`note`)
 
 Append a narrative note/utterance to the active session. These notes form the continuity bridge of your persona's
 sessions.
@@ -290,7 +328,7 @@ sessions.
 tur note "Added status command and cleaned up legacy files."
 ```
 
-### 14. Configure Workspace Persona (`get` & `set`)
+### 17. Configure Workspace Persona (`get` & `set`)
 
 Query or configure the active persona for your workspace in `.tur/state.yaml`:
 
@@ -305,7 +343,7 @@ tur-adm persona set Ariel
 tur-adm persona set
 ```
 
-### 15. Export Persona (`export`)
+### 18. Export Persona (`export`)
 
 **Portability:** Packages a global persona's core configuration and universal memories into a portable `.tur`
 gzip-compressed archive (excluding project-local incarnation-specific memories).
@@ -317,7 +355,7 @@ gzip-compressed archive (excluding project-local incarnation-specific memories).
 tur-adm persona export ariel -o ariel.tur
 ```
 
-### 16. Import Persona (`import`)
+### 19. Import Persona (`import`)
 
 **Portability:** Unpacks a `.tur` archive and registers it globally as a new persona on the local system. The framework
 sanitizes all Member paths prior to extraction to guarantee safety against path traversal vulnerabilities.

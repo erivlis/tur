@@ -33,16 +33,15 @@ Am."
 This memory tier is volatile and isolated to a specific Agent or Task (`session_id`). It prevents concurrent agents from
 overwriting each other's immediate working context. It defines "What I Am Doing."
 
-* **Short-Term L1 (The Scratchpad):** An append-only log of immediate thoughts, sub-task outputs, and scratch notes.
-* **Short-Term L2 (The Spark):** The immediate, unbroken train of thought representing the Persona's immediate context.
-  This ensures that if the IDE or Agent Framework crashes, the next instance wakes up with its exact train of thought
-  intact.
+* **Short-Term L1 (The Scratchpad):** An append-only log of immediate thoughts, sub-task outputs, and scratch notes (`sessions/<session_id>.yaml`).
+* **Short-Term L2 (The Spark & Lineage DAG):** The immediate, unbroken train of thought representing the Persona's immediate context. Sessions are explicitly chained via `parent_session_id` into a Directed Acyclic Graph (DAG), ensuring that if the IDE or Agent Framework restarts, the newly awakened instance automatically inherits its predecessor's continuity spark.
 
-**MCP Verbs:**
+**MCP & CLI Verbs:**
 
-* `start_session()` -> Reads Short-Term L2 (The Spark).
-* `note()` -> Writes to Short-Term L1.
-* `spark()` -> Updates Short-Term L2.
+* `wake()` / `start_session()` -> Resolves lineage parent, seeds the continuity spark, and compiles context.
+* `note()` -> Appends a narrative snapshot to Short-Term L1 (mirrored across YAML and SQLite).
+* `read_notes(include_previous=True)` -> Queries broadcast notes with seamless dual-backend fallback (SQLite with flat YAML fallback) across ancestor sessions.
+* `diff()` / `diff_memories()` -> Epistemic mutation delta tracking (`ADDED`, `SUPERSEDED`, `REFUTED`, `DECAYED`, `MODIFIED`) comparing sessions against predecessor checkpoints.
 
 ## Truth Maintenance & Refutation Cascades
 
