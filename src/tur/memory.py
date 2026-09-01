@@ -210,6 +210,27 @@ class MemoryManager:
         """
         self._move_memory(memory_id, self.local_subsumed_dir, self.global_subsumed_dir)
 
+    def approve_core_memory(self, memory_id: str) -> tuple[Memory, bool]:
+        """Approve and activate a pending Core memory matching ID prefix.
+
+        Returns (matching_memory, was_already_active).
+        Raises FileNotFoundError if no matching Core memory exists.
+        """
+        all_mems = self.load_all()
+        matching_mem = next(
+            (m for m in all_mems if m.id.startswith(memory_id) and m.type == MemoryType.CORE),
+            None,
+        )
+        if not matching_mem:
+            raise FileNotFoundError(f"No Core memory found matching ID '{memory_id}'")
+
+        if getattr(matching_mem, 'status', None) == 'active':
+            return matching_mem, True
+
+        matching_mem.status = 'active'
+        self.save(matching_mem)
+        return matching_mem, False
+
     @classmethod
     def clear_cache(cls) -> None:
         """Clears the in-memory directory digest cache across all personas."""

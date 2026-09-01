@@ -145,18 +145,11 @@ def get_active_persona_id(identifier: str | None = None) -> str:
                     return str(entry.id)
         return env_id
 
-    ws = resolve_workspace_dir() or Path.cwd()
-    state_path = ws / '.tur' / 'state.yaml'
-    if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_data = yaml_safe_load(f)
-            state_obj = SystemState(**state_data)
-        except Exception:
-            pass
-        else:
-            if state_obj.active_persona_id:
-                return str(state_obj.active_persona_id)
+    from tur.session import load_system_state
+
+    state_obj = load_system_state()
+    if state_obj.active_persona_id:
+        return str(state_obj.active_persona_id)
 
     if index is None:
         raise FileNotFoundError('No personas found. Please run `tur-adm init` to create one.')

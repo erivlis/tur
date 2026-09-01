@@ -11,12 +11,16 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from tur import dreaming, persona, scaffold, session
+from tur import dreaming, persona, session
 from tur._helpers import yaml_safe_load
-from tur.cli.common import console
+from tur.cli.common import (
+    console,
+    get_session_status_style,
+    handle_cli_error,
+    run_scaffold_cli,
+)
 from tur.compiler import compile_persona
 from tur.introspection import format_graph_as_mermaid, run_introspection
-from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
 from tur.metrics import compute_persona_metrics
 from tur.models import (
@@ -26,9 +30,9 @@ from tur.models import (
     MemoryScope,
     MemoryType,
     SessionNotes,
-    SystemState,
 )
 from tur.recall import topological_recall
+from tur.session import update_system_state
 
 app = typer.Typer(
     help='Tur: Persona safe agent runtime.',
@@ -76,33 +80,7 @@ def wake(
             harness_conversation_id=harness_conversation_id,
         )
 
-        # Update .tur/state.yaml
-        state_path = Path('.tur/state.yaml')
-        if state_path.exists():
-            try:
-                with open(state_path, encoding='utf-8') as f:
-                    state_data = yaml_safe_load(f)
-                state_obj = SystemState(**state_data)
-                changed = False
-                if state_obj.active_persona_id != UUID(active_id):
-                    state_obj.active_persona_id = UUID(active_id)
-                    changed = True
-                if state_obj.active_session_id != resolved_session_id:
-                    state_obj.active_session_id = resolved_session_id
-                    changed = True
-                if changed:
-                    with open(state_path, 'w', encoding='utf-8') as f:
-                        yaml.dump(state_obj.model_dump(mode='json'), f)
-            except Exception:
-                pass
-        else:
-            try:
-                state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=resolved_session_id)
-                state_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(state_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(state_obj.model_dump(mode='json'), f)
-            except Exception:
-                pass
+        update_system_state(active_persona_id=active_id, active_session_id=resolved_session_id)
 
         state = session.hydrate_session_state(active_id, session_id=resolved_session_id)
 
@@ -120,12 +98,8 @@ def wake(
         console.print(system_prompt)
         console.print('[bold green]--- SYSTEM READY ---[/bold green]')
 
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error during wake: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error during wake')
 
 
 @app.command()
@@ -194,12 +168,8 @@ def learn(
         saved_path = memory_manager.save(memory)
         console.print(f'[green]Memory saved to {saved_path}[/green]')
 
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e)
 
 
 @app.command()
@@ -218,8 +188,7 @@ def recall(
         console.print(result_json)
 
     except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e)
 
 
 @app.command()
@@ -234,12 +203,8 @@ def note(
     try:
         res = session.note_logic(content, session_id=session_id, identifier=identifier)
         console.print(f'[green]{res}[/green]')
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error saving note: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error saving note')
 
 
 @app.command()
@@ -332,10 +297,7 @@ def status(
         table.add_row('Persona ID', active_id)
         table.add_row('', '')
         table.add_row('Session ID', session_id or '[dim]none[/dim]')
-        table.add_row(
-            'Status',
-            f'[green]{session_status}[/green]' if session_status == 'active' else f'[dim]{session_status}[/dim]',
-        )
+        table.add_row('Status', get_session_status_style(session_status))
         table.add_row('Started', session_created)
         table.add_row('Updated', session_updated)
         table.add_row('Notes', str(note_count))
@@ -354,12 +316,8 @@ def status(
 
         console.print(Panel(table, title='[bold]Tur Status[/bold]', border_style='cyan'))
 
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e)
 
 
 @app.command()
@@ -395,14 +353,8 @@ def metrics(
 
         console.print(Panel(table, title=f'[bold]System Metrics: {report.persona_name}[/bold]', border_style='cyan'))
 
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
-    except typer.Exit:
-        raise
     except Exception as e:
-        console.print(f'[red]Error calculating metrics: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error calculating metrics')
 
 
 @app.command(name='telemetry', hidden=True)
@@ -462,14 +414,8 @@ def sleep(
                         commit_payload=commit,
                     )
                 console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
-            except LockTimeoutError as e:
-                console.print(
-                    f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]'
-                )
-                raise typer.Exit(code=1)
             except Exception as e:
-                console.print(f'[red]Error during committing dreams: {e}[/red]')
-                raise typer.Exit(code=1)
+                handle_cli_error(e, 'Error during committing dreams')
 
             console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
             return
@@ -492,22 +438,13 @@ def sleep(
         except HarnessDelegationError as e:
             console.print(e.prompt)
             raise typer.Exit(code=0)
-        except LockTimeoutError as e:
-            console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-            raise typer.Exit(code=1)
         except Exception as e:
             console.print(f'[red]Error during dreaming: {e}[/red]')
 
         console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
 
-    except typer.Exit:
-        raise
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error during sleep: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error during sleep')
 
 
 def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
@@ -895,12 +832,8 @@ def evolve(
         console.print(f"[green]Core Memory created and staged in 'pending_approval' status: {saved_path}[/green]")
         console.print(f'To approve and activate this axiom, run: [bold]tur approve {core_mem.id[:8]}[/bold]')
 
-    except LockTimeoutError as e:
-        console.print(f'[bold yellow]Contention Warning: State lock is held by another process: {e}[/bold yellow]')
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e)
 
 
 @app.command(name='scaffold', help='Generate repository-level AI agent scaffolding (AGENTS.md or CLAUDE.md).')
@@ -912,15 +845,7 @@ def scaffold_cmd(
     force: bool = typer.Option(False, '--force', help='Overwrite existing scaffold file without error'),
 ) -> None:
     """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
-    try:
-        path = scaffold.scaffold_workspace(format=format, force=force, output_file=output)
-        console.print(f"[green]Successfully generated agent scaffolding at '[bold]{path}[/bold]'[/green]")
-    except FileExistsError as e:
-        console.print(f'[yellow]{e}[/yellow]')
-        raise typer.Exit(code=1) from e
-    except Exception as e:
-        console.print(f'[red]Error scaffolding workspace: {e}[/red]')
-        raise typer.Exit(code=1) from e
+    run_scaffold_cli(format=format, output=output, force=force)
 
 
 def main():

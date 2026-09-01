@@ -118,6 +118,46 @@ def get_session_file(persona_dir: Path, session_id: str) -> Path:
     return get_local_persona_dir(persona_dir) / 'sessions' / f'{session_id}.yaml'  # read-only path query
 
 
+def load_system_state(workspace_dir: Path | None = None) -> SystemState:
+    """Load SystemState from .tur/state.yaml or return a default empty SystemState."""
+    ws = workspace_dir or resolve_workspace_dir()
+    state_path = (ws / '.tur' / 'state.yaml') if ws is not None else Path('.tur/state.yaml')
+    if state_path.exists():
+        try:
+            with open(state_path, encoding='utf-8') as f:
+                state_data = yaml_safe_load(f)
+            if state_data:
+                return SystemState(**state_data)
+        except Exception:
+            pass
+    return SystemState()
+
+
+def save_system_state(state: SystemState, workspace_dir: Path | None = None) -> None:
+    """Save SystemState atomically to .tur/state.yaml."""
+    ws = workspace_dir or resolve_workspace_dir() or Path.cwd()
+    state_path = ws / '.tur' / 'state.yaml'
+    atomic_yaml_write(state_path, state.model_dump(mode='json'))
+
+
+def update_system_state(
+    active_persona_id: UUID | str | None = None,
+    active_session_id: str | None = None,
+    reset_session: bool = False,
+    workspace_dir: Path | None = None,
+) -> SystemState:
+    """Atomically update and save SystemState."""
+    state = load_system_state(workspace_dir)
+    if active_persona_id is not None:
+        state.active_persona_id = UUID(str(active_persona_id))
+    if reset_session:
+        state.active_session_id = None
+    elif active_session_id is not None:
+        state.active_session_id = active_session_id
+    save_system_state(state, workspace_dir)
+    return state
+
+
 def get_active_session_id(workspace_dir: Path | None = None) -> str | None:
     """
     Resolves the active session ID.
@@ -127,19 +167,7 @@ def get_active_session_id(workspace_dir: Path | None = None) -> str | None:
     env_id = os.environ.get('TUR_ACTIVE_SESSION_ID')
     if env_id:
         return env_id
-
-    ws = workspace_dir or resolve_workspace_dir()
-    state_path = (ws / '.tur' / 'state.yaml') if ws is not None else Path('.tur/state.yaml')
-    if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_data = yaml_safe_load(f)
-            state_obj = SystemState(**state_data)
-        except Exception:
-            pass
-        else:
-            return state_obj.active_session_id
-    return None
+    return load_system_state(workspace_dir).active_session_id
 
 
 def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
@@ -474,20 +502,7 @@ def start_session_logic(
 
         save_session_index(persona_dir, index)
 
-        ws = resolve_workspace_dir() or Path.cwd()
-        state_path = ws / '.tur' / 'state.yaml'
-        if state_path.exists():
-            try:
-                with open(state_path, encoding='utf-8') as f:
-                    state_data = yaml_safe_load(f)
-                state_obj = SystemState(**state_data)
-                state_obj.active_session_id = session_id
-            except Exception:
-                state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
-        else:
-            state_obj = SystemState(active_persona_id=UUID(active_id), active_session_id=session_id)
-
-        atomic_yaml_write(state_path, state_obj.model_dump(mode='json'))
+        update_system_state(active_persona_id=active_id, active_session_id=session_id)
 
     # SQLite Database Multi-manifestation initialization
     model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')

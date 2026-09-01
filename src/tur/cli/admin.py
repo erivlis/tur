@@ -12,18 +12,25 @@ from rich import box
 from rich.panel import Panel
 from rich.table import Table
 
-from tur import persona, scaffold, session
+from tur import persona, session
 from tur._helpers import yaml_safe_load
 from tur.cli import wizards
-from tur.cli.common import console, require_human
+from tur.cli.common import (
+    console,
+    get_memory_status_style,
+    get_session_status_style,
+    handle_cli_error,
+    require_human,
+    run_scaffold_cli,
+)
 from tur.memory import MemoryManager
 from tur.models import (
     MemoryType,
     PersonaIndex,
     SessionNotes,
-    SystemState,
 )
 from tur.paths import get_global_tur_dir, resolve_personas_base_dir, resolve_workspace_dir
+from tur.session import load_system_state, update_system_state
 
 app = typer.Typer(
     help='Tur: Administrative persona management CLI.',
@@ -203,16 +210,8 @@ def persona_view(
 def persona_get() -> None:
     """Get the active persona configured for this workspace in .tur/state.yaml."""
     try:
-        ws = resolve_workspace_dir() or Path.cwd()
-        state_path = ws / '.tur' / 'state.yaml'
-        active_uuid = None
-        if state_path.exists():
-            try:
-                with open(state_path, encoding='utf-8') as f:
-                    state_obj = SystemState(**yaml_safe_load(f))
-                    active_uuid = str(state_obj.active_persona_id) if state_obj.active_persona_id else None
-            except Exception:
-                pass
+        state_obj = load_system_state()
+        active_uuid = str(state_obj.active_persona_id) if state_obj.active_persona_id else None
 
         if not active_uuid:
             console.print('[yellow]No active persona configured for this workspace (.tur/state.yaml).[/yellow]')
@@ -232,11 +231,12 @@ def persona_get() -> None:
                 persona_name = matched.name
                 version = matched.version
 
+        ws = resolve_workspace_dir() or Path.cwd()
+        state_path = ws / '.tur' / 'state.yaml'
         console.print(f'[bold green]Active Persona:[/bold green] {persona_name} (v{version}) [{active_uuid}]')
         console.print(f'[dim]Source: {state_path}[/dim]')
     except Exception as e:
-        console.print(f'[red]Error getting active persona: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error getting active persona')
 
 
 @persona_app.command('set')
@@ -266,27 +266,13 @@ def persona_set(
             matched = next((p for p in index.personas if str(p.id) == selected_id), None)
             persona_name = matched.name if matched else selected_id
 
-            ws = resolve_workspace_dir() or Path.cwd()
-            state_path = ws / '.tur' / 'state.yaml'
-            state_obj = SystemState()
-            if state_path.exists():
-                try:
-                    with open(state_path, encoding='utf-8') as f:
-                        state_data = yaml_safe_load(f)
-                    state_obj = SystemState(**state_data)
-                except Exception:
-                    pass
-            state_obj.active_persona_id = UUID(selected_id)
-            state_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(state_path, 'w', encoding='utf-8') as f:
-                yaml.dump(state_obj.model_dump(mode='json'), f)
+            update_system_state(active_persona_id=selected_id)
 
             console.print(f"[green]Active workspace persona set to: '{persona_name}' ({selected_id})[/green]")
         else:
             console.print('[yellow]Action cancelled.[/yellow]')
     except Exception as e:
-        console.print(f'[red]Error setting persona: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error setting persona')
 
 
 @persona_app.command('export')
@@ -517,30 +503,14 @@ def persona_import(
 
             # 4. Optionally set active default in .tur/state.yaml
             if set_active:
-                state_path = Path('.tur/state.yaml')
-                state_path.parent.mkdir(parents=True, exist_ok=True)
-                if state_path.exists():
-                    try:
-                        with open(state_path, encoding='utf-8') as f:
-                            state_data: dict = yaml_safe_load(f) or {}
-                        state_obj = SystemState(**state_data)
-                        state_obj.active_persona_id = UUID(persona_id)
-                        state_obj.active_session_id = None  # Reset active session on persona switch
-                    except Exception:
-                        state_obj = SystemState(active_persona_id=UUID(persona_id), active_session_id=None)
-                else:
-                    state_obj = SystemState(active_persona_id=UUID(persona_id), active_session_id=None)
-
-                with open(state_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(state_obj.model_dump(mode='json'), f)
+                update_system_state(active_persona_id=persona_id, reset_session=True)
                 console.print(f"[green]Set active persona default to: '{persona_name}' ({persona_id})[/green]")
 
         console.print(
             f"[green]Persona '{persona_name}' ({persona_id}) successfully imported from '{archive_path}'[/green]"
         )
     except Exception as e:
-        console.print(f'[red]Error importing persona: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error importing persona')
 
 
 # -----------------------------------------------------------------------------
@@ -582,22 +552,12 @@ def memory_list(
         for m in mems:
             content_snippet = (m.content[:80] + '..') if len(m.content) > 80 else m.content
             raw_status = getattr(m, 'status', None)
-            if raw_status == 'archived':
-                status_display = 'archived'
-                row_style = 'dim'
-            elif raw_status == 'pending_approval':
-                status_display = 'pending_approval'
-                row_style = 'yellow'
-            else:
-                status_display = 'active'
-                row_style = ''
-
+            status_display, row_style = get_memory_status_style(raw_status)
             table.add_row(str(m.id), m.type.value, m.scope.value, status_display, content_snippet, style=row_style)
 
         console.print(table)
     except Exception as e:
-        console.print(f'[red]Error listing memories: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error listing memories')
 
 
 @memory_app.command('approve')
@@ -613,32 +573,17 @@ def memory_approve(
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
         memory_manager = MemoryManager(base_dir=persona_dir)
-        all_mems = memory_manager.load_all()
-    except Exception as e:
+        matching_mem, already_active = memory_manager.approve_core_memory(memory_id)
+
+        if already_active:
+            console.print(f"[yellow]Core Memory '{matching_mem.id[:8]}' is already active.[/yellow]")
+        else:
+            console.print(f"[green]Core Memory '{matching_mem.id[:8]}' approved and activated successfully.[/green]")
+    except FileNotFoundError as e:
         console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
-
-    matching_mem = None
-    for m in all_mems:
-        if m.id.startswith(memory_id) and m.type == MemoryType.CORE:
-            matching_mem = m
-            break
-
-    if not matching_mem:
-        console.print(f"[red]Error: No Core memory found matching ID '{memory_id}'[/red]")
-        raise typer.Exit(code=1)
-
-    if getattr(matching_mem, 'status', None) == 'active':
-        console.print(f"[yellow]Core Memory '{matching_mem.id[:8]}' is already active.[/yellow]")
-        return
-
-    try:
-        matching_mem.status = 'active'
-        memory_manager.save(matching_mem)
-        console.print(f"[green]Core Memory '{matching_mem.id[:8]}' approved and activated successfully.[/green]")
+        raise typer.Exit(code=1) from e
     except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e)
 
 
 @memory_app.command('view')
@@ -723,17 +668,15 @@ def session_list(
         table.add_column('Updated At')
 
         for s in index.sessions:
-            status_color = 'green' if s.status == 'active' else 'dim'
             table.add_row(
                 s.id,
-                f'[{status_color}]{s.status}[/{status_color}]',
+                get_session_status_style(s.status),
                 s.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 s.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
             )
         console.print(table)
     except Exception as e:
-        console.print(f'[red]Error listing sessions: {e}[/red]')
-        raise typer.Exit(code=1)
+        handle_cli_error(e, 'Error listing sessions')
 
 
 @session_app.command('start')
@@ -972,15 +915,7 @@ def scaffold_cmd(
     force: bool = typer.Option(False, '--force', help='Overwrite existing scaffold file without error'),
 ) -> None:
     """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
-    try:
-        path = scaffold.scaffold_workspace(format=format, force=force, output_file=output)
-        console.print(f"[green]Successfully generated agent scaffolding at '[bold]{path}[/bold]'[/green]")
-    except FileExistsError as e:
-        console.print(f'[yellow]{e}[/yellow]')
-        raise typer.Exit(code=1) from e
-    except Exception as e:
-        console.print(f'[red]Error scaffolding workspace: {e}[/red]')
-        raise typer.Exit(code=1) from e
+    run_scaffold_cli(format=format, output=output, force=force)
 
 
 def main():

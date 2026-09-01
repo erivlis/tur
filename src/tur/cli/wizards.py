@@ -103,16 +103,10 @@ def select_persona_wizard(index: PersonaIndex) -> str | None:
     table.add_column('Version', style='dim')
     table.add_column('UUID', style='dim')
 
-    ws = resolve_workspace_dir() or Path.cwd()
-    state_path = ws / '.tur' / 'state.yaml'
-    active_uuid = None
-    if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_obj = SystemState(**yaml_safe_load(f))
-                active_uuid = str(state_obj.active_persona_id) if state_obj.active_persona_id else None
-        except Exception:
-            pass
+    from tur.session import load_system_state
+
+    state_obj = load_system_state()
+    active_uuid = str(state_obj.active_persona_id) if state_obj.active_persona_id else None
 
     for i, p in enumerate(index.personas, 1):
         is_active = ' (Active)' if str(p.id) == active_uuid else ''
