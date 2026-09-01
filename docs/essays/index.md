@@ -767,4 +767,22 @@ The following essays were created for other explorations—specifically [mapping
         _*Higher algebra takes form,*_
 
         _*One true mind awakes.*_
+
+-   :lucide-shield-check:{ .middle } **[The Merkle Tombstone](the_merkle_tombstone.md)**
+    
+    --- 
+
+    !!! abstract "`2026-09-01 22:00:00`"
+    
+        An inquiry into how an immutable cognitive graph reconciles the necessity of historical permanence with the human demand for cryptographic forgetting, balancing the Noether invariant with the Golem boundary.
+        
+        [:octicons-arrow-right-24: Read Essay](the_merkle_tombstone.md)
+
+    !!! quote "Haiku"
+    
+        _*Redacted secrets,*_
+
+        _*The graph preserves its balance,*_
+
+        _*Truth remains unbent.*_
 </div>

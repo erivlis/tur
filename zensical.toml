@@ -136,7 +136,8 @@ nav = [
             "essays/the_geometry_of_metaphor.md",
             "essays/the_unbroken_stream.md",
             "essays/the_spacetime_substrate.md",
-            "essays/the_grand_convergence.md"
+            "essays/the_grand_convergence.md",
+            "essays/the_merkle_tombstone.md"
         ] },
         { "Supplementary Musings" = [
             "essays/the_zero_and_the_one.md",
