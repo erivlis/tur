@@ -89,5 +89,5 @@ def test_compute_persona_metrics_missing_file(tmp_path, monkeypatch):
     monkeypatch.setattr(persona, 'get_active_persona_id', lambda ident=None: 'missing-persona')
     monkeypatch.setattr(persona, 'get_persona_path', lambda pid: persona_dir)
 
-    with pytest.raises(FileNotFoundError, match=r'persona.yaml not found'):
+    with pytest.raises(FileNotFoundError, match=r'Neither CONSTITUTION.md nor persona.yaml found'):
         compute_persona_metrics('missing-persona')
