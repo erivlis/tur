@@ -227,7 +227,20 @@ tur-adm memory forget <memory-hash>
 tur-adm memory forget <memory-hash> ariel
 ```
 
-### 10. Check Persona Status (`status`)
+### 10. Redact Sensitive Data (`redact`)
+
+**Merkle Tombstone (EP-0143):** Purges accidental credentials (e.g., API keys, auth tokens) from an existing memory
+while preserving its SHA-256 identifier, filename, and inbound relational links in the L2 Cognitive Map.
+
+```shell
+# Redact a memory with an explicit audit justification
+tur-adm memory redact <memory-hash> --reason "Contained staging API secret"
+
+# For a non-default persona:
+tur-adm memory redact <memory-hash> --reason "Contained staging API secret" ariel
+```
+
+### 11. Check Persona Status (`status`)
 
 Renders a rich, structured status panel displaying:
 
