@@ -2,7 +2,7 @@
 title: "EP-0130: Session Lineage and Cross-Session Continuity Protocol"
 description: "Establishes explicit parent-session lineage tracking, automatic continuity seeding at wake, bounded cross-session note discovery, and dual-backend fallback for signal reading."
 icon: lucide/git-merge
-status: draft
+status: implemented
 ---
 
 # EP-0130: Session Lineage and Cross-Session Continuity Protocol
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0130                                                  |
 | **Title**   | Session Lineage and Cross-Session Continuity Protocol |
 | **Author**  | Eran Rivlis & Ariel                                   |
-| **Status**  | Draft                                                 |
+| **Status**  | Implemented                                           |
 | **Type**    | Standards Track                                       |
 | **Created** | 2026-08-25                                            |
-| **Updated** | 2026-08-25                                            |
+| **Updated** | 2026-09-02                                            |
 
 ## Abstract
 
@@ -219,19 +219,22 @@ Draft implementation components:
 
 ## Open Questions & Council Directives
 
-- [ ] **Path Traversal Sanitization (Maharal):** Enforce `SESSION_ID_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')` and
+- [x] **Path Traversal Sanitization (Maharal):** Enforce `SESSION_ID_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')` and
   `is_relative_to()` boundary checks across all session path constructors.
-- [ ] **DAG Acyclicity & Loop Defense (Russell & Popper):** Enforce `parent_session_id != id` via Pydantic model
+- [x] **DAG Acyclicity & Loop Defense (Russell & Popper):** Enforce `parent_session_id != id` via Pydantic model
   validator and track `visited: set[str]` with recursion depth bound $D_{\max} = 10$ during multi-session traversals.
-- [ ] **Token Budget & Spark Clamping (Shannon):** Lower default `limit` in `read_notes` to 20, and enforce a
+- [x] **Token Budget & Spark Clamping (Shannon):** Lower default `limit` in `read_notes` to 20, and enforce a
   256-character / 50-token clamp on auto-seeded continuity sparks at `wake()`.
-- [ ] **Continuity Staleness TTL (Popper):** Introduce a staleness threshold (e.g. 48 hours) to prevent ancient or stale
+- [x] **Continuity Staleness TTL (Popper):** Introduce a staleness threshold (e.g. 48 hours) to prevent ancient or stale
   error logs from auto-seeding into turn-zero prompts.
-- [ ] **Deterministic Lineage Sorting (Russell & Bacon):** Sort prior sessions by `(updated_at, created_at, id)`
+- [x] **Deterministic Lineage Sorting (Russell & Bacon):** Sort prior sessions by `(updated_at, created_at, id)`
   descending during parent resolution.
 
 ## Change Log
 
+* **2026-09-02:**
+    * Implemented in `src/tur/session.py`, `src/tur/models.py`, `src/tur/cli/agent.py`, and `src/tur/mcp_server.py`.
+    * Validated with unit/integration tests in `tests/test_session.py`, `tests/test_models.py`, and `tests/test_cli_agent.py`.
 * **2026-08-25:**
     * Integrated Council of Giants Review hardening mandates (path traversal sanitization, DAG cycle prevention, token
       budget clamping, deterministic sorting, and continuity TTL).

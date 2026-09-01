@@ -2,7 +2,7 @@
 title: "EP-0133: Session Memory Observability and Delta Tracking"
 description: "Introduces the tur diff CLI command and MCP tool to inspect memory mutations, additions, supersessions, and contradictions across sessions."
 icon: lucide/git-commit
-status: draft
+status: implemented
 ---
 
 # EP-0133: Session Memory Observability and Delta Tracking
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0133                                                          |
 | **Title**   | Session Memory Observability and Delta Tracking               |
 | **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Draft                                                         |
+| **Status**  | Implemented                                                   |
 | **Type**    | Standards Track                                               |
 | **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-08-27                                                    |
+| **Updated** | 2026-09-02                                                    |
 
 ## Abstract
 
@@ -153,11 +153,15 @@ def compute_session_diff(base_memories: dict[str, MemoryRecord], target_memories
 
 - **Raw Git-Only Diffing:** Relying on `git diff .tur/memories/` was rejected because it exposes raw unformatted YAML, leaks Merkle hashes, and fails to parse semantic relationships (such as supersession and TMS refutation edges).
 
-## Open Questions
+## Open Questions & Decisions
 
-- [ ] Should `tur diff` support filtering by memory type (e.g. `tur diff --type fact`) or scope (e.g. `tur diff --scope universal`)?
+- [x] **Filtering Support:** Supported filtering by memory type (`tur diff --type fact`) and scope (`tur diff --scope universal`) in both CLI and MCP tools.
+- [x] **Direct MCP Tool Alias:** Exposing both `diff_memories()` and `diff()` in `src/tur/mcp_server.py`.
 
 ## Change Log
 
+* **2026-09-02:**
+    * Implemented in `src/tur/diff.py`, `src/tur/cli/agent.py`, and `src/tur/mcp_server.py`.
+    * Validated with unit/integration tests in `tests/test_diff.py`, `tests/test_cli_agent.py`, and `tests/test_mcp_server.py`.
 * **2026-08-27:**
     * Initial Draft formulated following architectural critique.

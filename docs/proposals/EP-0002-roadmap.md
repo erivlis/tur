@@ -218,7 +218,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Multi-Process State Synchronization and File Locking Architecture (EP-0129) [Status: Implemented]:** Adopting
       `filelock` to eliminate multi-agent read-modify-write race conditions and establish cross-platform process
       synchronization for shared indices, session continuity, and storage evolution.
-    * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Draft]:** Establishing explicit
+    * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Implemented]:** Establishing explicit
       `parent_session_id` lineage tracking, automatic continuity seeding at `wake()`, bounded cross-session note
       discovery, and dual-backend SQLite/YAML signal fallbacks.
     * **Memory Provenance, Temporal Anchoring, and Staleness Decay (EP-0131) [Status: Draft]:** Introducing git-anchored
@@ -291,7 +291,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
       for domain personas.
     * **Budgeted Wake and Dynamic Memory Context Retrieval (EP-0132) [Status: Draft]:** Establishing token-bounded Turn
       Zero wake payloads and pre-turn dynamic memory recall hooks.
-    * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Draft]:** Introducing the `tur diff` CLI
+    * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Implemented]:** Introducing the `tur diff` CLI
       command and MCP tool to inspect memory mutations across sessions.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
