@@ -983,7 +983,8 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
                 except Exception:
                     pass
 
-            notes_list.append(Note(timestamp=datetime.now(), content=content.strip()))
+            note_item = Note(timestamp=datetime.now(), content=content.strip())
+            notes_list.append(note_item)
             session_notes = SessionNotes(notes=notes_list)
             atomic_yaml_write(session_file, session_notes.model_dump(mode='json'))
 
@@ -1002,7 +1003,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
                 session_id=resolved_session_id,
                 sender=os.environ.get('TUR_AGENT_ID') or 'legacy_agent',
                 recipient='*',
-                content=content,
+                content=note_item.content,
                 type_='inform',
             )
 

@@ -137,6 +137,18 @@ class MemoryManager:
         if memory.status:
             frontmatter['status'] = memory.status
 
+        # Merkle Tombstone & Redaction fields (EP-0143)
+        if memory.redacted:
+            frontmatter['redacted'] = True
+            if memory.redacted_at:
+                frontmatter['redacted_at'] = (
+                    memory.redacted_at.isoformat()
+                    if isinstance(memory.redacted_at, datetime)
+                    else str(memory.redacted_at)
+                )
+            if memory.redaction_reason:
+                frontmatter['redaction_reason'] = memory.redaction_reason
+
         yaml_part = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
         okf_content = f'---\n{yaml_part}---\n\n{memory.content}\n'
 
@@ -230,6 +242,51 @@ class MemoryManager:
         matching_mem.status = 'active'
         self.save(matching_mem)
         return matching_mem, False
+
+    def redact(self, memory_id: str, reason: str) -> Path:
+        """
+        Merkle Tombstone Redaction (EP-0143).
+        Replaces the body of a memory with a tombstone marker while preserving
+        frontmatter hash and original file path to prevent breaking inbound L2 graph links.
+        """
+        file_path = self._find_memory_file(memory_id)
+        with open(file_path, encoding='utf-8') as f:
+            content = f.read()
+
+        if not content.startswith('---'):
+            raise ValueError(f"Memory file '{file_path.name}' is not in OKF format and cannot be tombstoned.")
+
+        parts = content.split('---', 2)
+        if len(parts) < 3:
+            raise ValueError(f"Invalid OKF structure in '{file_path.name}'.")
+
+        yaml_part = parts[1]
+        data = yaml_safe_load(yaml_part) or {}
+
+        now_iso = datetime.now().astimezone().isoformat()
+        data['redacted'] = True
+        data['redacted_at'] = now_iso
+        data['redaction_reason'] = reason
+        data['description'] = f'[REDACTED: {reason}]'
+
+        tombstone_body = f'[TOMBSTONE: REDACTED DUE TO SECURITY POLICY - {reason}]'
+
+        yaml_out = yaml.dump(data, sort_keys=False, default_flow_style=False)
+        new_content = f'---\n{yaml_out}---\n\n{tombstone_body}\n'
+
+        with contextlib.suppress(Exception):
+            os.chmod(file_path, 0o666)
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+            f.flush()
+            os.fsync(f.fileno())
+
+        with contextlib.suppress(Exception):
+            os.chmod(file_path, 0o444)
+
+        self._invalidate_cache()
+        return file_path
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -403,6 +460,11 @@ class MemoryManager:
             if not file_path.name.endswith(expected_suffix):
                 return f'Filename does not match stored ID: {stored_id}'
 
+            # Merkle Tombstone Redaction (EP-0143): Content was purged/redacted post-facto.
+            # Hash in filename and frontmatter is preserved for relational graph continuity.
+            if data.get('redacted'):
+                return None
+
             if content.startswith('---'):
                 scope_val = data.get('scope', '').lower()
                 type_val = data.get('memory_type', '').lower()
@@ -488,6 +550,11 @@ class MemoryManager:
                 links_data = data.get('links', [])
                 links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
 
+                redacted_val = bool(data.get('redacted', False))
+                redacted_at_raw = data.get('redacted_at')
+                redacted_at_val = datetime.fromisoformat(str(redacted_at_raw)) if redacted_at_raw else None
+                redaction_reason_val = data.get('redaction_reason')
+
                 return Memory(
                     id=data.get('hash', ''),
                     timestamp=datetime.fromisoformat(str(data.get('timestamp'))),
@@ -501,6 +568,9 @@ class MemoryManager:
                     derived_principle=data.get('derived_principle'),
                     ethical_covenant=data.get('ethical_covenant'),
                     status=data.get('status', 'active'),
+                    redacted=redacted_val,
+                    redacted_at=redacted_at_val,
+                    redaction_reason=redaction_reason_val,
                 )
 
             # Legacy YAML file load fallback

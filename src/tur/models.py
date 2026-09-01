@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -156,6 +157,23 @@ class Memory(BaseModel):
     )
     status: str | None = Field(default='active', description='active, pending_approval, superseded, or falsified')
 
+    # Merkle Tombstone & Redaction fields (EP-0143)
+    redacted: bool = Field(default=False, description='Whether this memory has been redacted due to sensitive data')
+    redacted_at: datetime | None = Field(default=None, description='Timestamp of redaction')
+    redaction_reason: str | None = Field(default=None, description='Reason/policy justification for redaction')
+
+    @model_validator(mode='before')
+    @classmethod
+    def sanitize_memory_content(cls, data: Any) -> Any:
+        """Deterministic pre-ingest sanitization of memory content (EP-0143)."""
+        if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
+            if not data.get('redacted'):
+                from tur.sanitizer import sanitize_text
+
+                sanitized, _ = sanitize_text(data['content'])
+                data['content'] = sanitized
+        return data
+
     @model_validator(mode='after')
     def compute_merkle_hash(self) -> 'Memory':
         """
@@ -303,6 +321,17 @@ class Note(BaseModel):
 
     timestamp: datetime = Field(default_factory=datetime.now, description='When this note was written.')
     content: str = Field(..., description='The narrative continuity summary content.')
+
+    @model_validator(mode='before')
+    @classmethod
+    def sanitize_note_content(cls, data: Any) -> Any:
+        """Deterministic pre-ingest sanitization of note content (EP-0143)."""
+        if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
+            from tur.sanitizer import sanitize_text
+
+            sanitized, _ = sanitize_text(data['content'])
+            data['content'] = sanitized
+        return data
 
 
 class SessionNotes(BaseModel):

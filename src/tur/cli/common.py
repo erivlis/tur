@@ -40,8 +40,10 @@ def run_scaffold_cli(format: str, output: Path | None, force: bool) -> None:
         handle_cli_error(e, 'Error scaffolding workspace')
 
 
-def get_memory_status_style(status: str | None) -> tuple[str, str]:
+def get_memory_status_style(status: str | None, redacted: bool = False) -> tuple[str, str]:
     """Returns (status_display, row_style) for memory table rendering."""
+    if redacted:
+        return 'redacted', 'bold red'
     if status == 'archived':
         return 'archived', 'dim'
     if status == 'pending_approval':

@@ -552,7 +552,8 @@ def memory_list(
         for m in mems:
             content_snippet = (m.content[:80] + '..') if len(m.content) > 80 else m.content
             raw_status = getattr(m, 'status', None)
-            status_display, row_style = get_memory_status_style(raw_status)
+            is_redacted = getattr(m, 'redacted', False)
+            status_display, row_style = get_memory_status_style(raw_status, redacted=is_redacted)
             table.add_row(str(m.id), m.type.value, m.scope.value, status_display, content_snippet, style=row_style)
 
         console.print(table)
@@ -616,6 +617,17 @@ def memory_view(
         table.add_row('Content', matched.content)
         if matched.source_session:
             table.add_row('Source Session', matched.source_session)
+        if matched.redacted:
+            table.add_row('Redacted', '[bold red]TRUE[/bold red]')
+            if matched.redacted_at:
+                table.add_row(
+                    'Redacted At',
+                    matched.redacted_at.isoformat()
+                    if hasattr(matched.redacted_at, 'isoformat')
+                    else str(matched.redacted_at),
+                )
+            if matched.redaction_reason:
+                table.add_row('Redaction Reason', matched.redaction_reason)
 
         console.print(Panel(table, title='[bold]Memory Detail[/bold]', border_style='cyan'))
     except Exception as e:
@@ -639,6 +651,29 @@ def memory_forget(
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
+
+
+@memory_app.command('redact')
+@require_human
+def memory_redact(
+    memory_id: str = typer.Argument(..., help='The ID (hash) or prefix of the memory to redact.'),
+    reason: str = typer.Option(..., '--reason', '-r', help='The justification/reason for the redaction.'),
+    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+) -> None:
+    """Tombstone and purge sensitive data from a memory while preserving graph integrity."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        redacted_path = memory_manager.redact(memory_id, reason=reason)
+        console.print(
+            f"[green]Memory '{memory_id}' successfully tombstoned and redacted at '{redacted_path.name}'[/green]"
+        )
+    except FileNotFoundError as e:
+        console.print(f'[red]Error: {e}[/red]')
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        handle_cli_error(e, 'Error redacting memory')
 
 
 # -----------------------------------------------------------------------------
