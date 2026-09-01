@@ -2,7 +2,7 @@
 title: "EP-0143: Sensitive Data Prevention, Secret Redaction, and Memory Sanitization"
 description: "Establishes a defense-in-depth sanitization and secrets redaction framework across the Tri-Partite architecture, featuring high-entropy token detection, deterministic pre-ingest filters, and Merkle tombstoning."
 icon: lucide/shield-alert
-status: draft
+status: Final
 ---
 
 # EP-0143: Sensitive Data Prevention, Secret Redaction, and Memory Sanitization
@@ -14,10 +14,10 @@ status: draft
 | **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel, Jules                         |
 | **Sponsor**  | Council of Giants                                                    |
 | **Delegate** | Golem (Containment & Boundaries), Noether (State Invariants)         |
-| **Status**   | Draft                                                                |
+| **Status**   | Final                                                                |
 | **Type**     | Standards Track                                                      |
 | **Created**  | 2026-08-30                                                           |
-| **Updated**  | 2026-08-30                                                           |
+| **Updated**  | 2026-09-01                                                           |
 
 ---
 
