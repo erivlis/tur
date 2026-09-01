@@ -650,3 +650,28 @@ async def test_mcp_introspect_streaming_telemetry(mock_mcp_env, monkeypatch):
     assert mock_ctx.progress_calls[0] == (1, 9, None)
     assert mock_ctx.progress_calls[-1] == (9, 9, None)
     assert mock_ctx.info_calls == ['[1/9] Stage 1', '[5/9] Stage 5', '[9/9] Stage 9']
+
+
+def test_mcp_diff_memories(mock_mcp_env, monkeypatch):
+    from tur.diff import DeltaStatus, MemoryDelta
+    from tur.models import Memory, MemoryType
+
+    m = Memory(id='mem-diff-1', type=MemoryType.FACT, content='Diff fact 1')
+    mock_deltas = [MemoryDelta(status=DeltaStatus.ADDED, memory=m)]
+
+    monkeypatch.setattr('tur.diff.compute_session_diff', lambda **kwargs: mock_deltas)
+
+    res = mcp_server.diff_memories()
+    assert isinstance(res, list)
+    assert len(res) == 1
+    assert res[0]['status'] == 'ADDED'
+    assert res[0]['id'] == 'mem-diff-1'
+
+
+def test_mcp_read_notes_include_previous(mock_mcp_env, monkeypatch):
+    mock_read_notes = MagicMock(return_value=[{'id': 'sig-1', 'content': 'note-1'}])
+    monkeypatch.setattr(mcp_server, 'read_notes_logic', mock_read_notes)
+
+    res = mcp_server.read_notes(session_id='previous', include_previous=True, limit=20)
+    assert res == [{'id': 'sig-1', 'content': 'note-1'}]
+    mock_read_notes.assert_called_once_with('previous', limit=20, include_previous=True)

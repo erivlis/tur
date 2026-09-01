@@ -715,3 +715,44 @@ def test_agent_coordination_no_session_errors(mock_workspace, monkeypatch):
     assert runner.invoke(agent_app, ['whiteboard-write', 'key', 'val']).exit_code == 1
     # Read notes should fail
     assert runner.invoke(agent_app, ['read-notes']).exit_code == 1
+
+
+def test_agent_diff_cli(mock_workspace):
+    # Wake to start session
+    runner.invoke(agent_app, ['wake'])
+    # Store a memory in active session
+    runner.invoke(agent_app, ['learn', 'Test memory for diff', '--type', 'fact', '--scope', 'incarnation'])
+
+    # Test diff
+    diff_res = runner.invoke(agent_app, ['diff'])
+    assert diff_res.exit_code == 0
+    assert 'Memory Delta' in diff_res.stdout
+
+    # Test diff JSON
+    diff_json = runner.invoke(agent_app, ['diff', '--json'])
+    assert diff_json.exit_code == 0
+    import json
+
+    data = json.loads(diff_json.stdout)
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]['content'] == 'Test memory for diff'
+
+
+def test_agent_read_notes_include_previous(mock_workspace):
+    runner.invoke(agent_app, ['wake', '--session-id', 'sess-parent'])
+    runner.invoke(agent_app, ['note', 'Parent note content'])
+
+    runner.invoke(agent_app, ['wake', '--session-id', 'sess-child', '--from-session', 'sess-parent'])
+    runner.invoke(agent_app, ['note', 'Child note content'])
+
+    # Read notes with include_previous
+    res = runner.invoke(agent_app, ['read-notes', '--include-previous'])
+    assert res.exit_code == 0
+    assert 'Parent note content' in res.stdout
+    assert 'Child note content' in res.stdout
+
+    # Read notes with session-id previous
+    res_prev = runner.invoke(agent_app, ['read-notes', '--session-id', 'previous'])
+    assert res_prev.exit_code == 0
+    assert 'Parent note content' in res_prev.stdout

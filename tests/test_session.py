@@ -369,3 +369,103 @@ def test_tired_logic_staged_dreaming_consensus(mock_session_workspace, monkeypat
     res2 = session.tired_logic('sess-tired', agent_id='agent_2', transcript='agent 2 log')
     assert 'Consensus sleep reached' in res2
     assert 'Consolidated 1 memories' in res2
+
+
+def test_session_lineage_dag_and_auto_parent(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    # 1. Start initial root session
+    session.start_session_logic('sess-root', identifier=persona_id)
+    session.note_logic('Root milestone completed.', session_id='sess-root', identifier=persona_id)
+
+    # 2. Start child session without passing previous_session_id (should auto-resolve sess-root)
+    session.start_session_logic('sess-child', identifier=persona_id)
+    parent_id = session.get_parent_session_id('sess-child', p_dir)
+    assert parent_id == 'sess-root'
+
+    # Check that seed note contains predecessor spark
+    child_notes = session.read_notes_logic('sess-child', persona_dir=p_dir)
+    assert len(child_notes) >= 1
+    assert 'Root milestone completed.' in child_notes[0]['content']
+
+    # 3. Start grandchild session
+    session.note_logic('Child progress snapshot.', session_id='sess-child', identifier=persona_id)
+    session.start_session_logic('sess-grandchild', identifier=persona_id)
+    assert session.get_parent_session_id('sess-grandchild', p_dir) == 'sess-child'
+
+    # 4. Check DAG lineage traversal
+    lineage = session.get_session_lineage('sess-grandchild', p_dir)
+    assert lineage == ['sess-grandchild', 'sess-child', 'sess-root']
+
+
+def test_session_lineage_spark_clamping_and_staleness(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    # Long note > 256 chars
+    long_content = 'A' * 300
+    session.start_session_logic('sess-long', identifier=persona_id)
+    session.note_logic(long_content, session_id='sess-long', identifier=persona_id)
+
+    session.start_session_logic('sess-next', identifier=persona_id)
+    notes = session.read_notes_logic('sess-next', persona_dir=p_dir)
+    # Check clamping to 256 characters (EP-0130)
+    assert len(notes[0]['content']) <= 256
+
+    # Test staleness TTL: simulate prior sessions updated 50 hours ago
+    index = session.load_session_index(p_dir)
+    for s in index.sessions:
+        s.updated_at = datetime.now() - timedelta(hours=50)
+    session.save_session_index(p_dir, index)
+
+    # Start new session after stale parent
+    session.start_session_logic('sess-after-stale', identifier=persona_id)
+    stale_seeded_notes = session.read_notes_logic('sess-after-stale', persona_dir=p_dir)
+    # Stale parent should not auto-seed prompt spark, falls back to "Session started."
+    assert stale_seeded_notes[0]['content'] == 'Session started.'
+
+
+def test_read_notes_dual_backend_fallback(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    # Create a session YAML directly (predates SQLite or DB table missing)
+    session_file = session.get_session_file(p_dir, 'sess-yaml-only')
+    session_file.parent.mkdir(parents=True, exist_ok=True)
+    notes_obj = SessionNotes(
+        session_id='sess-yaml-only',
+        notes=[
+            Note(timestamp=datetime.now(), content='Note 1 from flat YAML'),
+            Note(timestamp=datetime.now(), content='Note 2 from flat YAML'),
+        ],
+    )
+    session.atomic_yaml_write(session_file, notes_obj.model_dump(mode='json'))
+
+    # read_notes_logic should fall back to YAML without throwing SQLite exceptions
+    notes = session.read_notes_logic('sess-yaml-only', persona_dir=p_dir)
+    assert len(notes) == 2
+    assert notes[0]['content'] == 'Note 1 from flat YAML'
+    assert notes[1]['content'] == 'Note 2 from flat YAML'
+
+
+def test_read_notes_include_previous_and_previous_keyword(mock_session_workspace):
+    _tmp_path, persona_id = mock_session_workspace
+    p_dir = persona.get_persona_path(persona_id)
+
+    session.start_session_logic('sess-p1', identifier=persona_id)
+    session.note_logic('P1 Note', session_id='sess-p1', identifier=persona_id)
+
+    session.start_session_logic('sess-p2', previous_session_id='sess-p1', identifier=persona_id)
+    session.note_logic('P2 Note', session_id='sess-p2', identifier=persona_id)
+
+    # Read previous session using 'previous' keyword
+    prev_notes = session.read_notes_logic('previous', persona_dir=p_dir)
+    assert len(prev_notes) >= 1
+    assert any('P1 Note' in n['content'] for n in prev_notes)
+
+    # Read continuous trail across lineage using include_previous=True
+    combined_notes = session.read_notes_logic('sess-p2', include_previous=True, persona_dir=p_dir)
+    contents = [n['content'] for n in combined_notes]
+    assert any('P1 Note' in c for c in contents)
+    assert any('P2 Note' in c for c in contents)

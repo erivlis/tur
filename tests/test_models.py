@@ -169,3 +169,29 @@ def test_node_type_and_edge_type_enums():
     assert EdgeType.REFUTED_BY == 'refuted_by'
     assert EdgeType.ANALOGY_OF == 'analogy_of'
     assert EdgeType.METAPHOR_FOR == 'metaphor_for'
+
+
+def test_session_lineage_models():
+    from tur.models import Note, SessionEntry, SessionNotes
+
+    # Valid lineage
+    entry = SessionEntry(id='sess-child', parent_session_id='sess-parent')
+    assert entry.id == 'sess-child'
+    assert entry.parent_session_id == 'sess-parent'
+
+    # Self parent error in SessionEntry
+    with pytest.raises(ValidationError, match='cannot be its own parent'):
+        SessionEntry(id='sess-self', parent_session_id='sess-self')
+
+    # Valid SessionNotes
+    s_notes = SessionNotes(
+        session_id='sess-child',
+        parent_session_id='sess-parent',
+        notes=[Note(content='test note')],
+    )
+    assert s_notes.session_id == 'sess-child'
+    assert s_notes.parent_session_id == 'sess-parent'
+
+    # Self parent error in SessionNotes
+    with pytest.raises(ValidationError, match='cannot be its own parent'):
+        SessionNotes(session_id='sess-loop', parent_session_id='sess-loop')
