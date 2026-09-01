@@ -898,16 +898,17 @@ def _execute_hygiene_removals(orphaned_dirs: list[tuple[str, Path]], dangling_fi
 def _verify_retained_stores(retained_personas: list[Path]) -> int:
     console.print('\n[bold cyan]Running Merkle Integrity Verification on Retained Stores...[/bold cyan]')
     total_failures = 0
-    for p_dir in retained_personas:
-        mm = MemoryManager(base_dir=p_dir)
-        failures = mm.verify_integrity()
-        if failures:
-            total_failures += len(failures)
-            console.print(f"[red]Integrity check failed for persona '{p_dir.name}':[/red]")
-            for f_path, reason in failures:
-                console.print(f'  [red]{f_path.name}:[/red] {reason}')
-        else:
-            console.print(f"[green]Persona '{p_dir.name}': 100% Merkle integrity verified.[/green]")
+    with console.status('[bold cyan]Verifying cryptographic Merkle integrity...[/bold cyan]', spinner='dots'):
+        for p_dir in retained_personas:
+            mm = MemoryManager(base_dir=p_dir)
+            failures = mm.verify_integrity()
+            if failures:
+                total_failures += len(failures)
+                console.print(f"[red]Integrity check failed for persona '{p_dir.name}':[/red]")
+                for f_path, reason in failures:
+                    console.print(f'  [red]{f_path.name}:[/red] {reason}')
+            else:
+                console.print(f"[green]Persona '{p_dir.name}': 100% Merkle integrity verified.[/green]")
     return total_failures
 
 

@@ -4,6 +4,7 @@ import os
 import re
 import tempfile
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -16,6 +17,20 @@ from tur._helpers import yaml_safe_load
 from tur.locking import HEAVY_LOCK_TIMEOUT_SECONDS, state_lock
 from tur.memory import MemoryManager
 from tur.models import EdgeType, HarnessDelegationError, MemoryType, NodeType
+
+ProgressCallback = Callable[[int, int, str], Any]
+
+STAGE_DESCRIPTIONS: dict[str, str] = {
+    'IntegrityVerifier': 'Verifying cryptographic Merkle integrity...',
+    'OntologyExtractor': 'Extracting ontological concepts & relationships...',
+    'TruthMaintenanceEngine': 'Resolving JTMS contradictions & deactivations...',
+    'SymmetryValidator': 'Validating semantic conservation laws...',
+    'NoveltyExplorer': 'Exploring associative semantic expansions...',
+    'HebbianGraphDecayer': 'Applying temporal decay kinetics...',
+    'BoundaryEnforcer': 'Enforcing ontological boundary constraints...',
+    'ClarityDistiller': 'Distilling and refining graph nodes...',
+    'GraphPruner': 'Pruning subsumed & orphaned graph edges...',
+}
 
 
 # Core exceptions for persona-centric introspection
@@ -714,8 +729,17 @@ class IntrospectionAssembly:
                 GraphPruner(),
             ]
 
-    def execute(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
-        for agent in self.agents:
+    def execute(
+        self,
+        graph: nx.DiGraph,
+        context: dict,
+        progress_callback: ProgressCallback | None = None,
+    ) -> tuple[nx.DiGraph, dict]:
+        total = len(self.agents)
+        for i, agent in enumerate(self.agents, 1):
+            desc = STAGE_DESCRIPTIONS.get(agent.name, f'Executing {agent.name}...')
+            if progress_callback:
+                progress_callback(i, total, desc)
             graph, context = agent.run(graph, context)
         return graph, context
 
@@ -923,6 +947,7 @@ def run_introspection(
     test_mode: bool = False,
     mcp_context: Any = None,
     commit_payload: str | ExtractedGraph | dict | None = None,
+    progress_callback: ProgressCallback | None = None,
 ) -> nx.DiGraph:
     """
     Core entrypoint to run the introspection compaction loop.
@@ -970,7 +995,7 @@ def run_introspection(
 
         # Run subagent assembly
         assembly = IntrospectionAssembly(compaction_config)
-        graph, context = assembly.execute(graph, context)
+        graph, context = assembly.execute(graph, context, progress_callback=progress_callback)
 
         # Save L2 Graph Atomically (Maharal constraint)
         kg_temp_fd, kg_temp_path = tempfile.mkstemp(dir=persona_dir, prefix='kg.tmp.')

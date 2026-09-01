@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 import os
 import sys
@@ -5,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Literal
 
+import anyio
 from mcp.server.fastmcp import Context, FastMCP
 
 from tur._helpers import yaml_safe_load
@@ -318,8 +321,11 @@ def evolve(
     )
 
 
+_background_tasks: set[asyncio.Task] = set()
+
+
 @mcp.tool()
-def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
+async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
     """
     Compress L1 event logs into the L2 Cognitive Map using the Council Assembly pipeline.
     This runs the full introspection compaction loop, consolidating raw memories
@@ -335,7 +341,31 @@ def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
         persona_id = get_active_persona_id()
         persona_dir = get_persona_path(persona_id)
 
-        graph = run_introspection(persona_dir, bootstrap=bootstrap, mcp_context=ctx)
+        def on_mcp_progress(current: int, total: int, description: str) -> None:
+            if ctx is not None:
+                try:
+                    anyio.from_thread.run(ctx.report_progress, current, total)
+                    anyio.from_thread.run(ctx.info, f'[{current}/{total}] {description}')
+                except Exception:
+                    try:
+                        loop = asyncio.get_running_loop()
+                        t1 = loop.create_task(ctx.report_progress(progress=current, total=total))
+                        _background_tasks.add(t1)
+                        t1.add_done_callback(_background_tasks.discard)
+
+                        t2 = loop.create_task(ctx.info(f'[{current}/{total}] {description}'))
+                        _background_tasks.add(t2)
+                        t2.add_done_callback(_background_tasks.discard)
+                    except Exception:
+                        pass
+
+        graph = run_introspection(
+            persona_dir,
+            bootstrap=bootstrap,
+            mcp_context=ctx,
+            progress_callback=on_mcp_progress,
+        )
+        await asyncio.sleep(0)
 
         node_count = graph.number_of_nodes()
         edge_count = graph.number_of_edges()
@@ -386,7 +416,7 @@ def note(content: str) -> str:
 
 
 @mcp.tool()
-def sleep(
+async def sleep(
     note: str,
     log_content: str,
     session_id: str | None = None,
@@ -413,6 +443,12 @@ def sleep(
     """
     global _active_session_id
     resolved_session_id = session_id or _active_session_id
+
+    if ctx is not None:
+        with contextlib.suppress(Exception):
+            await ctx.info(f"Appending final session note: '{note[:40]}...'")
+            await ctx.report_progress(progress=1, total=3)
+
     # Append mandatory final note and auto-end session on sleep
     if resolved_session_id:
         try:
@@ -433,11 +469,21 @@ def sleep(
             )
         except Exception as e:
             return f'Error ending session: {e}'
+
+    if ctx is not None:
+        with contextlib.suppress(Exception):
+            await ctx.info('Dehydrating session transcript & extracting insights (Dreaming)...')
+            await ctx.report_progress(progress=2, total=3)
+
     try:
         active_id = get_active_persona_id()
         count = perform_sleep_dreaming(
             log_content=log_content, active_id=active_id, session_id=resolved_session_id, model=model, ctx=ctx
         )
+        if ctx is not None:
+            with contextlib.suppress(Exception):
+                await ctx.report_progress(progress=3, total=3)
+                await ctx.info(f'Consolidated {count} memories. Persona is now sleeping.')
     except LockTimeoutError as e:
         return f'Status: Contended. State lock currently held during dreaming consolidation: {e}. Please retry shortly.'
     except Exception as e:

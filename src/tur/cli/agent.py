@@ -8,6 +8,7 @@ import typer
 import yaml
 from rich import box
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 from tur import dreaming, persona, scaffold, session
@@ -449,13 +450,17 @@ def sleep(
         if commit:
             console.print(f"Committing dreams directly for '{active_id}'...")
             try:
-                count = dreaming.perform_sleep_dreaming(
-                    log_content='',
-                    active_id=active_id,
-                    session_id=resolved_session_id,
-                    model=model,
-                    commit_payload=commit,
-                )
+                with console.status(
+                    f"[bold cyan]Committing insights & consolidating memories for '{active_id}'...[/bold cyan]",
+                    spinner='dots',
+                ):
+                    count = dreaming.perform_sleep_dreaming(
+                        log_content='',
+                        active_id=active_id,
+                        session_id=resolved_session_id,
+                        model=model,
+                        commit_payload=commit,
+                    )
                 console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
             except LockTimeoutError as e:
                 console.print(
@@ -470,15 +475,17 @@ def sleep(
             return
 
         console.print(f"Processing session log for '{active_id}' from {log_path}...")
-        console.print(f'Extracting insights using {model}... (Dreaming)')
-
         try:
-            count = dreaming.perform_sleep_dreaming(
-                log_content=Path(log_path).read_text(encoding='utf-8'),
-                active_id=active_id,
-                session_id=resolved_session_id,
-                model=model,
-            )
+            with console.status(
+                f'[bold cyan]Extracting insights & consolidating memories via {model}... (Dreaming)[/bold cyan]',
+                spinner='dots',
+            ):
+                count = dreaming.perform_sleep_dreaming(
+                    log_content=Path(log_path).read_text(encoding='utf-8'),
+                    active_id=active_id,
+                    session_id=resolved_session_id,
+                    model=model,
+                )
 
             console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
 
@@ -786,13 +793,35 @@ def introspect(
         persona_dir = persona.get_persona_path(active_id)
 
         console.print(f"Running Council Introspection Assembly for persona '{active_id}'...")
-        graph = run_introspection(
-            persona_dir,
-            bootstrap=all,
-            model=model,
-            test_mode=test_mode,
-            commit_payload=commit,
-        )
+        with Progress(
+            SpinnerColumn(),
+            TextColumn('[progress.description]{task.description}'),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeElapsedColumn(),
+            console=console,
+            transient=False,
+        ) as progress:
+            task = progress.add_task('[cyan]Introspecting L2 Cognitive Map...[/cyan]', total=9)
+
+            def on_progress(current: int, total: int, description: str) -> None:
+                progress.update(
+                    task,
+                    total=total,
+                    completed=current - 1,
+                    description=f'[cyan][{current}/{total}] {description}[/cyan]',
+                )
+
+            graph = run_introspection(
+                persona_dir,
+                bootstrap=all,
+                model=model,
+                test_mode=test_mode,
+                commit_payload=commit,
+                progress_callback=on_progress,
+            )
+            progress.update(task, completed=9, description='[bold green]✓ Introspection complete.[/bold green]')
+
         console.print(
             '[bold green]Introspection Assembly completed successfully. L2 Cognitive Map updated.[/bold green]'
         )
