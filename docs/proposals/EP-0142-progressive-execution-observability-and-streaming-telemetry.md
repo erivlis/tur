@@ -2,7 +2,7 @@
 title: "EP-0142: Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry"
 description: "Establishes progressive execution observability across Tur CLI commands and MCP tools, introducing Rich live spinners, multi-stage pipeline trackers, and MCP streaming progress notifications (notifications/progress)."
 icon: lucide/loader-2
-status: draft
+status: Final
 ---
 
 # EP-0142: Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry
@@ -14,10 +14,10 @@ status: draft
 | **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                                  |
 | **Sponsor**  | Council of Giants                                                                      |
 | **Delegate** | Shannon (Telemetry & Channel Observability), Bacon (Empirical Runtime Feedback)        |
-| **Status**   | Draft                                                                                  |
+| **Status**   | Final                                                                                  |
 | **Type**     | Standards Track                                                                        |
 | **Created**  | 2026-08-30                                                                             |
-| **Updated**  | 2026-08-30                                                                             |
+| **Updated**  | 2026-09-01                                                                             |
 
 ---
 
