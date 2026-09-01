@@ -659,3 +659,29 @@ def test_synonym_normalization_and_custom_persona_ontology():
     # Declared custom edge type accepted
     assert merged.has_edge('current-matter', 'precedent-case')
     assert merged.edges['current-matter', 'precedent-case']['type'] == 'cites_precedent'
+
+
+def test_introspection_progress_callback(temp_workspace):
+    """Verify IntrospectionAssembly and run_introspection execute progress_callback across all 9 stages."""
+    _, persona_dir = temp_workspace
+    memory_manager = MemoryManager(base_dir=persona_dir)
+
+    mem = Memory(
+        timestamp=datetime(2026, 6, 8, 12, 0, 0),
+        type=MemoryType.FACT,
+        scope=MemoryScope.INCARNATION,
+        content='Progress telemetry test fact.',
+    )
+    memory_manager.save(mem)
+
+    steps_recorded = []
+
+    def callback(current: int, total: int, description: str) -> None:
+        steps_recorded.append((current, total, description))
+
+    graph = run_introspection(persona_dir, bootstrap=True, test_mode=True, progress_callback=callback)
+
+    assert graph.number_of_nodes() == 1
+    assert len(steps_recorded) == 9
+    assert steps_recorded[0] == (1, 9, 'Verifying cryptographic Merkle integrity...')
+    assert steps_recorded[-1] == (9, 9, 'Pruning subsumed & orphaned graph edges...')

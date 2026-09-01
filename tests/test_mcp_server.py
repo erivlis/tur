@@ -107,32 +107,32 @@ def test_mcp_recall(mock_mcp_env, monkeypatch):
     assert 'No memories found' in fail_res
 
 
-def test_mcp_sleep(mock_mcp_env, monkeypatch):
+async def test_mcp_sleep(mock_mcp_env, monkeypatch):
     # Mock perform_sleep_dreaming to prevent hitting real Gemini API
     monkeypatch.setattr(mcp_server, 'perform_sleep_dreaming', lambda **kwargs: 3)
 
-    res = mcp_server.sleep(log_content='Log trace', note='Test sleep note', session_id='sess-1')
+    res = await mcp_server.sleep(log_content='Log trace', note='Test sleep note', session_id='sess-1')
     assert 'Dreams consolidated. 3 new memories formed' in res
 
 
-def test_mcp_sleep_exception(mock_mcp_env, monkeypatch):
+async def test_mcp_sleep_exception(mock_mcp_env, monkeypatch):
     def raise_err(**kwargs):
         raise ValueError('Simulated Gemini Failure')
 
     monkeypatch.setattr(mcp_server, 'perform_sleep_dreaming', raise_err)
 
-    res = mcp_server.sleep(log_content='Log trace', note='Test sleep note')
+    res = await mcp_server.sleep(log_content='Log trace', note='Test sleep note')
     assert 'Error during dreaming: Simulated Gemini Failure' in res
 
 
-def test_mcp_sleep_note_or_end_error(mock_mcp_env, monkeypatch):
+async def test_mcp_sleep_note_or_end_error(mock_mcp_env, monkeypatch):
     mcp_server._active_session_id = 'sess-err'
 
     def mock_note_fail(*args, **kwargs):
         raise ValueError('Note fail')
 
     monkeypatch.setattr(mcp_server, 'note_logic', mock_note_fail)
-    res_note = mcp_server.sleep(note='bye', log_content='log')
+    res_note = await mcp_server.sleep(note='bye', log_content='log')
     assert 'Error appending final note: Note fail' in res_note
 
     monkeypatch.setattr(mcp_server, 'note_logic', lambda *args, **kwargs: 'ok')
@@ -141,7 +141,7 @@ def test_mcp_sleep_note_or_end_error(mock_mcp_env, monkeypatch):
         raise ValueError('End fail')
 
     monkeypatch.setattr(mcp_server, 'end_session_logic', mock_end_fail)
-    res_end = mcp_server.sleep(note='bye', log_content='log')
+    res_end = await mcp_server.sleep(note='bye', log_content='log')
     assert 'Error ending session: End fail' in res_end
 
 
@@ -354,7 +354,7 @@ def test_mcp_note_failure(mock_mcp_env, monkeypatch):
     assert 'Error updating note: Note appending failure' in res
 
 
-def test_mcp_sleep_additional(mock_mcp_env, monkeypatch):
+async def test_mcp_sleep_additional(mock_mcp_env, monkeypatch):
     mcp_server._active_session_id = 'sess-active'
 
     monkeypatch.setattr(mcp_server, 'perform_sleep_dreaming', lambda **kwargs: 1)
@@ -364,7 +364,7 @@ def test_mcp_sleep_additional(mock_mcp_env, monkeypatch):
     monkeypatch.setattr(mcp_server, 'note_logic', mock_note)
     monkeypatch.setattr(mcp_server, 'end_session_logic', mock_end)
 
-    res = mcp_server.sleep(note='Goodbye', log_content='Chat content')
+    res = await mcp_server.sleep(note='Goodbye', log_content='Chat content')
     assert 'Dreams consolidated' in res
     assert mcp_server._active_session_id is None
 
@@ -528,7 +528,7 @@ def test_mcp_core_memory_evolution(mock_mcp_env, monkeypatch):
     assert 'No L1 memory found' in evolve_err
 
 
-def test_mcp_introspect(mock_mcp_env, monkeypatch):
+async def test_mcp_introspect(mock_mcp_env, monkeypatch):
     """Test the introspect MCP tool runs the introspection pipeline."""
     import networkx as nx
 
@@ -542,14 +542,14 @@ def test_mcp_introspect(mock_mcp_env, monkeypatch):
 
     monkeypatch.setattr(tur.introspection, 'run_introspection', lambda *args, **kwargs: stub_graph)
 
-    result = mcp_server.introspect(bootstrap=True)
+    result = await mcp_server.introspect(bootstrap=True)
     assert 'Council Introspection complete' in result
     assert '1 nodes' in result
     assert 'mermaid' in result
 
     # Test error in introspection
     monkeypatch.setattr(tur.introspection, 'run_introspection', MagicMock(side_effect=RuntimeError('Council failure')))
-    res_err = mcp_server.introspect()
+    res_err = await mcp_server.introspect()
     assert 'Error during Council Introspection: Council failure' in res_err
 
 
@@ -588,3 +588,65 @@ def test_mcp_lock_contention_graceful_handling(mock_mcp_env, monkeypatch):
     res_status = mcp_server.status()
     assert res_status.get('status') == 'contended'
     assert 'held by another process' in res_status.get('error', '')
+
+
+class MockFastMCPContext:
+    def __init__(self):
+        self.progress_calls = []
+        self.info_calls = []
+
+    async def report_progress(self, progress: float, total: float | None = None, message: str | None = None) -> None:
+        self.progress_calls.append((progress, total, message))
+
+    async def info(self, message: str, **extra) -> None:
+        self.info_calls.append(message)
+
+
+async def test_mcp_sleep_streaming_telemetry(mock_mcp_env, monkeypatch):
+    """Verify sleep MCP tool emits progressive streaming telemetry via FastMCP Context."""
+    monkeypatch.setattr(mcp_server, 'perform_sleep_dreaming', lambda **kwargs: 2)
+
+    mock_ctx = MockFastMCPContext()
+    res = await mcp_server.sleep(
+        log_content='Chat history',
+        note='Finishing epic',
+        session_id='sess-telemetry',
+        ctx=mock_ctx,
+    )
+
+    assert 'Dreams consolidated. 2 new memories formed' in res
+    # 3 progress reports: (1, 3), (2, 3), (3, 3)
+    assert len(mock_ctx.progress_calls) == 3
+    assert mock_ctx.progress_calls[0][0] == 1
+    assert mock_ctx.progress_calls[1][0] == 2
+    assert mock_ctx.progress_calls[2][0] == 3
+    assert any('Appending final session note' in msg for msg in mock_ctx.info_calls)
+    assert any('Consolidated 2 memories' in msg for msg in mock_ctx.info_calls)
+
+
+async def test_mcp_introspect_streaming_telemetry(mock_mcp_env, monkeypatch):
+    """Verify introspect MCP tool pipes progress callback into FastMCP Context."""
+    import networkx as nx
+
+    import tur.introspection
+
+    def mock_run_intro(*args, **kwargs):
+        progress_cb = kwargs.get('progress_callback')
+        if progress_cb:
+            progress_cb(1, 9, 'Stage 1')
+            progress_cb(5, 9, 'Stage 5')
+            progress_cb(9, 9, 'Stage 9')
+        g = nx.DiGraph()
+        g.add_node('c1', type='Fact', content='Fact 1')
+        return g
+
+    monkeypatch.setattr(tur.introspection, 'run_introspection', mock_run_intro)
+
+    mock_ctx = MockFastMCPContext()
+    res = await mcp_server.introspect(bootstrap=False, ctx=mock_ctx)
+
+    assert 'Council Introspection complete' in res
+    assert len(mock_ctx.progress_calls) == 3
+    assert mock_ctx.progress_calls[0] == (1, 9, None)
+    assert mock_ctx.progress_calls[-1] == (9, 9, None)
+    assert mock_ctx.info_calls == ['[1/9] Stage 1', '[5/9] Stage 5', '[9/9] Stage 9']
