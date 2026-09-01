@@ -147,7 +147,7 @@ Upon constitutional ratification:
 
 ## How to Teach This / Documentation Plan
 
-- Update [`docs/usage.md`](file:///C:/dev/erivlis/tur/docs/usage.md) with the `tur evolve --type principle` and
+- Update [`docs/usage.md`](../usage.md) with the `tur evolve --type principle` and
   `tur-adm persona approve-principle` workflow.
 - Publish a conceptual essay in `docs/concepts/the-epistemological-ladder.md` explaining the memory physics and
   thermodynamic half-lives.

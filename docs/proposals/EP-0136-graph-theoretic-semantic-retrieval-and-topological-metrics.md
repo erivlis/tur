@@ -151,11 +151,9 @@ tur recall "file locking architecture" --deep --mermaid
 
 ## How to Teach This / Documentation Plan
 
-- Update [`docs/usage.md`](file:///C:/dev/erivlis/tur/docs/usage.md) with examples of `tur recall --effort <N>`,
+- Update [`docs/usage.md`](../usage.md) with examples of `tur recall --effort <N>`,
   `tur recall --deep`, and `--mermaid`.
-- Update [
-  `.agents/skills/tur/references/commands-and-mcp-tools.md`](file:///C:/dev/erivlis/tur/.agents/skills/tur/references/commands-and-mcp-tools.md)
-  to document the effort spectrum.
+- Update `.agents/skills/tur/references/commands-and-mcp-tools.md` to document the effort spectrum.
 - Add an informational essay on GraphRAG and HippoRAG associative retrieval in `docs/concepts/`.
 
 ---

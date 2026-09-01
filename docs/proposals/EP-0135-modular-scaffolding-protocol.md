@@ -246,12 +246,10 @@ Evaluating the epistemic and operational strength of direct marker injection ver
 
 ## How to Teach This / Documentation Plan
 
-- Update [`docs/usage.md`](file:///C:/dev/erivlis/tur/docs/usage.md) with the new `CONSTITUTION.md` layout and
+- Update [`docs/usage.md`](../usage.md) with the new `CONSTITUTION.md` layout and
   `tur-adm scaffold` administration.
 - Update `AGENTS.md` in the repository root as the living canonical example of the AAIF format.
-- Update [
-  `.agents/skills/tur/references/commands-and-mcp-tools.md`](file:///C:/dev/erivlis/tur/.agents/skills/tur/references/commands-and-mcp-tools.md)
-  to document the decoupled constitution workflow.
+- Update `.agents/skills/tur/references/commands-and-mcp-tools.md` to document the decoupled constitution workflow.
 
 ---
 
