@@ -17,6 +17,8 @@ from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.models import Persona, PersonaIndex, PersonaIndexEntry, Principle, SystemState
 from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
+from tur.persona import save_constitution
+from tur.scaffold import scaffold_workspace
 
 
 def init_wizard() -> str:
@@ -54,8 +56,10 @@ def init_wizard() -> str:
     persona_id = uuid.uuid4()
     persona_folder = personas_dir / str(persona_id)
     persona_folder.mkdir(exist_ok=True)
-    file_path = persona_folder / 'persona.yaml'
 
+    # Save CONSTITUTION.md (EP-0135) and persona.yaml (backwards compatibility)
+    save_constitution(persona_folder, persona)
+    file_path = persona_folder / 'persona.yaml'
     with open(file_path, 'w', encoding='utf-8') as f:
         yaml.dump(persona.model_dump(mode='json'), f, sort_keys=False)
 
@@ -72,7 +76,15 @@ def init_wizard() -> str:
     with open(index_path, 'w', encoding='utf-8') as f:
         yaml.dump(index.model_dump(mode='json'), f, sort_keys=False)
 
-    msg = f"Persona '{name}' created successfully in .tur/personas/{persona_id}/persona.yaml"
+    # Automatically scaffold AGENTS.md in workspace if not already present
+    try:
+        scaffold_workspace(force=False)
+    except FileExistsError:
+        pass
+    except Exception:
+        pass
+
+    msg = f"Persona '{name}' created successfully in .tur/personas/{persona_id}/CONSTITUTION.md"
     console.print(f'[bold green]{msg}[/bold green]')
     return msg
 

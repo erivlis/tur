@@ -29,7 +29,7 @@ from tur.models import (
     SystemState,
 )
 from tur.paths import is_global_path, resolve_workspace_dir
-from tur.persona import get_active_persona_id, get_persona_path
+from tur.persona import get_active_persona_id, get_persona_path, load_persona
 from tur.user import get_user_profile
 
 
@@ -169,12 +169,7 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
 def hydrate_session_state(active_id: str, session_id: str | None = None) -> SessionState:
     """Hydrates the full SessionState (Persona, User, Memories, Epilogue) from the filesystem."""
     persona_dir = get_persona_path(active_id)
-    file_path = persona_dir / 'persona.yaml'
-
-    with open(file_path, encoding='utf-8') as f:
-        data = yaml_safe_load(f)
-
-    persona = Persona(**data)
+    persona = load_persona(persona_dir)
     user = get_user_profile()
     memory_manager = MemoryManager(base_dir=persona_dir)
     all_memories = memory_manager.load_all()

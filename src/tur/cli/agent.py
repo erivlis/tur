@@ -10,7 +10,7 @@ from rich import box
 from rich.panel import Panel
 from rich.table import Table
 
-from tur import dreaming, persona, session
+from tur import dreaming, persona, scaffold, session
 from tur._helpers import yaml_safe_load
 from tur.cli.common import console
 from tur.compiler import compile_persona
@@ -254,17 +254,14 @@ def status(
         persona_dir = persona.get_persona_path(active_id)
 
         # --- Persona info ---
-        persona_yaml = persona_dir / 'persona.yaml'
         persona_name = active_id
         persona_version = 'unknown'
-        if persona_yaml.exists():
-            try:
-                with open(persona_yaml, encoding='utf-8') as f:
-                    pdata = yaml_safe_load(f)
-                persona_name = pdata.get('name', active_id)
-                persona_version = pdata.get('version', 'unknown')
-            except Exception:
-                pass
+        try:
+            persona_obj = persona.load_persona(persona_dir)
+            persona_name = persona_obj.name
+            persona_version = persona_obj.version
+        except Exception:
+            pass
 
         # --- Session info ---
         session_id = session.get_active_session_id()
@@ -875,6 +872,26 @@ def evolve(
     except Exception as e:
         console.print(f'[red]Error: {e}[/red]')
         raise typer.Exit(code=1)
+
+
+@app.command(name='scaffold', help='Generate repository-level AI agent scaffolding (AGENTS.md or CLAUDE.md).')
+def scaffold_cmd(
+    format: str = typer.Option('aaif', '--format', '-f', help='Scaffold format: "aaif" (default) or "claude"'),
+    output: Path | None = typer.Option(
+        None, '--output', '-o', help='Target output filepath (defaults to AGENTS.md or CLAUDE.md)'
+    ),
+    force: bool = typer.Option(False, '--force', help='Overwrite existing scaffold file without error'),
+) -> None:
+    """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
+    try:
+        path = scaffold.scaffold_workspace(format=format, force=force, output_file=output)
+        console.print(f"[green]Successfully generated agent scaffolding at '[bold]{path}[/bold]'[/green]")
+    except FileExistsError as e:
+        console.print(f'[yellow]{e}[/yellow]')
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        console.print(f'[red]Error scaffolding workspace: {e}[/red]')
+        raise typer.Exit(code=1) from e
 
 
 def main():

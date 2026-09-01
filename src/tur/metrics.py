@@ -91,15 +91,7 @@ def compute_persona_metrics(identifier: str | None = None) -> MetricsReport:
     """
     active_id = persona.get_active_persona_id(identifier)
     persona_dir = persona.get_persona_path(active_id)
-    file_path = persona_dir / 'persona.yaml'
-
-    if not file_path.exists():
-        raise FileNotFoundError(f"persona.yaml not found for persona '{active_id}' at {file_path}")
-
-    with open(file_path, encoding='utf-8') as f:
-        data = yaml_safe_load(f)
-
-    persona_obj = Persona(**data)
+    persona_obj = persona.load_persona(persona_dir)
 
     user_profile = user.get_user_profile()
     state = SessionState(persona=persona_obj, user=user_profile, memories=[], epilogue=None, knowledge_graph=None)

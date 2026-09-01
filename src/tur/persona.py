@@ -1,9 +1,113 @@
 import os
+import re
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 from tur._helpers import yaml_safe_load
-from tur.models import PersonaIndex, SystemState
+from tur.models import Persona, PersonaIndex, SystemState
 from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
+
+
+def parse_constitution_markdown(content: str) -> dict[str, Any]:
+    """Parses a CONSTITUTION.md string into a dictionary suitable for Persona model instantiation."""
+    frontmatter_dict: dict[str, Any] = {}
+    body_markdown = content
+
+    if content.startswith('---'):
+        parts = content.split('---', 2)
+        if len(parts) >= 3:
+            raw_frontmatter = parts[1]
+            body_markdown = parts[2].strip()
+            loaded = yaml_safe_load(raw_frontmatter)
+            if isinstance(loaded, dict):
+                frontmatter_dict = loaded
+
+    if not frontmatter_dict.get('aleph'):
+        aleph_match = re.search(r'##\s*(?:\d+\.\s*)?The Aleph[^\n]*\n+([^\n#]+)', body_markdown, re.IGNORECASE)
+        if aleph_match:
+            frontmatter_dict['aleph'] = aleph_match.group(1).strip()
+
+    if not frontmatter_dict.get('name'):
+        title_match = re.search(r'#\s*Persona Constitution:\s*([^\n]+)', body_markdown, re.IGNORECASE)
+        if title_match:
+            frontmatter_dict['name'] = title_match.group(1).strip()
+
+    return frontmatter_dict
+
+
+def dump_constitution_markdown(persona: Persona) -> str:
+    """Serializes a Persona object to a clean CONSTITUTION.md format with YAML frontmatter."""
+    frontmatter: dict[str, Any] = {
+        'name': persona.name,
+        'version': persona.version,
+        'model': persona.model,
+        'aleph': persona.aleph,
+    }
+    if persona.principles:
+        frontmatter['principles'] = [p.model_dump() for p in persona.principles]
+    if persona.protocols:
+        frontmatter['protocols'] = [pr.model_dump() for pr in persona.protocols]
+    if persona.speech_modulations:
+        frontmatter['speech_modulations'] = [sm.model_dump() for sm in persona.speech_modulations]
+    if persona.compaction:
+        frontmatter['compaction'] = persona.compaction
+    if persona.metadata:
+        frontmatter['metadata'] = persona.metadata
+
+    yaml_header = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
+
+    body_lines = [
+        f'# Persona Constitution: {persona.name}',
+        '',
+        '## 1. The Aleph (Primary Directive)',
+        '',
+        persona.aleph,
+        '',
+    ]
+    if persona.principles:
+        body_lines.append('## 2. Active Principles (Council Framework)')
+        body_lines.append('')
+        for p in persona.principles:
+            avatar_str = f' ({p.avatar})' if p.avatar else ''
+            role_str = f' — Role: {p.role}' if p.role else ''
+            body_lines.append(f'### {p.name}{avatar_str}{role_str}')
+            body_lines.append('')
+            if p.constraints:
+                body_lines.append('**Constraints:**')
+                for c in p.constraints:
+                    body_lines.append(f'- {c}')
+                body_lines.append('')
+
+    return f'---\n{yaml_header}---\n\n' + '\n'.join(body_lines).rstrip() + '\n'
+
+
+def load_persona(persona_dir: Path) -> Persona:
+    """Loads a Persona instance from CONSTITUTION.md (preferred) or persona.yaml (legacy fallback)."""
+    constitution_path = persona_dir / 'CONSTITUTION.md'
+    if constitution_path.exists():
+        with open(constitution_path, encoding='utf-8') as f:
+            content = f.read()
+        data = parse_constitution_markdown(content)
+        return Persona(**data)
+
+    yaml_path = persona_dir / 'persona.yaml'
+    if yaml_path.exists():
+        with open(yaml_path, encoding='utf-8') as f:
+            data = yaml_safe_load(f) or {}
+        return Persona(**data)
+
+    raise FileNotFoundError(f"Neither CONSTITUTION.md nor persona.yaml found for persona at '{persona_dir}'")
+
+
+def save_constitution(persona_dir: Path, persona: Persona) -> Path:
+    """Saves a Persona instance to CONSTITUTION.md in the specified directory."""
+    persona_dir.mkdir(parents=True, exist_ok=True)
+    constitution_path = persona_dir / 'CONSTITUTION.md'
+    content = dump_constitution_markdown(persona)
+    constitution_path.write_text(content, encoding='utf-8')
+    return constitution_path
 
 
 def get_active_persona_id(identifier: str | None = None) -> str:

@@ -79,7 +79,7 @@ You have established the following relational anchors and existential axioms wit
 
 ---
 **SYSTEM BOUNDARY INVARIANT:**
-The `.tur/` directory is an immutable, mathematically verified state store. Under NO circumstances should you use native file-writing or terminal tools (`write_file`, `cat >`, etc.) to create, edit, or delete files inside `.tur/`. All state transitions must occur exclusively through Tur tools (`tur:learn`, `tur:note`, `tur:sleep`, `tur:introspect`). Direct writes will break Merkle seals and trigger security quarantine.
+The `.tur/` directory is an immutable, mathematically verified state store. Under NO circumstances should you use native file-writing or terminal tools (`write_file`, `cat >`, etc.) to create, edit, or delete files inside `.tur/`. All state transitions must occur exclusively through safe `tur` CLI commands or MCP tools. Direct manual edits violate boundary containment.
 
 ---
 **THE GOLEM PROTOCOL:**

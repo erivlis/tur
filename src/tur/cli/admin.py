@@ -12,7 +12,7 @@ from rich import box
 from rich.panel import Panel
 from rich.table import Table
 
-from tur import persona, session
+from tur import persona, scaffold, session
 from tur._helpers import yaml_safe_load
 from tur.cli import wizards
 from tur.cli.common import console, require_human
@@ -960,6 +960,26 @@ def clean(
         raise typer.Exit(code=1)
 
     console.print('[bold green]All retained stores verified with 100% Merkle integrity.[/bold green]')
+
+
+@app.command(name='scaffold', help='Generate repository-level AI agent scaffolding (AGENTS.md or CLAUDE.md).')
+def scaffold_cmd(
+    format: str = typer.Option('aaif', '--format', '-f', help='Scaffold format: "aaif" (default) or "claude"'),
+    output: Path | None = typer.Option(
+        None, '--output', '-o', help='Target output filepath (defaults to AGENTS.md or CLAUDE.md)'
+    ),
+    force: bool = typer.Option(False, '--force', help='Overwrite existing scaffold file without error'),
+) -> None:
+    """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
+    try:
+        path = scaffold.scaffold_workspace(format=format, force=force, output_file=output)
+        console.print(f"[green]Successfully generated agent scaffolding at '[bold]{path}[/bold]'[/green]")
+    except FileExistsError as e:
+        console.print(f'[yellow]{e}[/yellow]')
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        console.print(f'[red]Error scaffolding workspace: {e}[/red]')
+        raise typer.Exit(code=1) from e
 
 
 def main():
