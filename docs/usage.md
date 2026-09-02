@@ -370,6 +370,33 @@ tur-adm persona import ariel.tur
 tur-adm persona import ariel.tur --force --set-active
 ```
 
+### 20. Inter-Agent Signal Protocol & Vector Clocks (`signal`, `read-signals`, `tur-adm signal inspect`)
+
+**Causal Partial Ordering (EP-0118, EP-0141):** Asynchronous message passing between subagent manifestations within a
+shared session, stamped with Lamport Vector Clocks for deterministic causal partial ordering ($\mathbb{N}^k, \le$) and
+concurrent event detection.
+
+```shell
+# Broadcast a coordination signal to all manifestations in the session
+tur signal "*" "Database migrations completed. Safe to start worker pool."
+
+# Send targeted signal to a specific subagent manifestation
+tur signal "worker.1" "Process task chunk 42" --type delegate
+
+# Read unread incoming signals (ordered by causal delivery)
+tur read-signals
+
+# Output raw JSON with attached vector clocks
+tur read-signals --json
+
+# Acknowledge processed signals (merges vector clocks and advances local logical clock)
+tur ack-signals <signal-id-1>,<signal-id-2>
+
+# Human inspection of session signals and vector clocks (requires tur-adm)
+tur-adm signal inspect
+tur-adm signal inspect <session-id> --json
+```
+
 ## Customization
 
 ### Theming
