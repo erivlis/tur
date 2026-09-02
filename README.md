@@ -127,46 +127,13 @@ Tur respects a standard configuration hierarchy:
   `.tur/` folder containing the Personas bound to that specific Terrain. A local `user.yaml` here will override the
   global profile.
 
-```
-./.tur/
-├── user.yaml                 # Local user profile override
-├── personas.yaml             # Index mapping persona names to UUIDs
-├── state.yaml                # Stores the active/default persona UUID
-└── personas/
-    ├── <persona-uuid-1>/
-    │   ├── persona.yaml      # The DNA/Kernel for the persona
-    │   ├── sessions.yaml     # The session index
-    │   ├── sessions/         # Flat session files
-    │   │   ├── 20260529_185258_143a5bc0.yaml
-    │   │   └── 20260529_173616_c2212cf6.yaml
-    │   └── memories/         # Content-Addressable Storage (Merkle Memory)
-    │       ├── archive/
-    │       ├── 20260412_025949_axiom_e1324...yaml
-    │       └── 20260418_160825_event_c98f1...yaml
-    └── <persona-uuid-2>/
-        ├── persona.yaml
-        └── memories/
-```
-
-The core application logic resides in `src/tur/`:
-
-- **`cli/`**: The package folder housing our split executables: `cli/agent.py` (runtime CLI), `cli/admin.py`
-  (human administrative CLI), and `cli/mcp.py` (Harness MCP gateway).
-- **`mcp_server.py`**: The Model Context Protocol server (The Porcelain for LLM interaction).
-- **`models.py`**: The Pydantic data models (The "Law" of the system).
-- **`user.py`**: User profile bootstrapping and domain management.
-- **`persona.py`**: Active persona resolution and path trace management.
-- **`session.py`**: Flat session trackers, session index consolidation, and epilogue note logic.
-- **`dreaming.py`**: Insight extraction, memory parsing, and LLM dreaming consolidation.
-- **`compiler.py`**: Renders the final System Prompt from the persona state.
-
 ## 🚀 Usage
 
 Tur divides its execution footprint along strict Tri-Partite security boundaries using distinct command-line binaries:
 
 ### 1. Installation & Setup
 
-#### System-Wide CLI Tools via `uv tool` (Recommended)
+#### System-Wide CLI Tools via `uv tool`
 
 Installs Tur into an isolated environment and makes the executables (`tur`, `tur-adm`, `tur-mcp`) globally available on
 your system `PATH`:
@@ -302,7 +269,7 @@ tur-adm persona set
 
 > *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
 >
-> — *Jim Knopf und Lukas der Lokomotivführer* by Michael Ende
+> — *[Jim Knopf und Lukas der Lokomotivführer](https://www.goodreads.com/en/book/show/1534314.Jim_Knopf_und_Lukas_der_Lokomotivf_hrer)* by Michael Ende
 
 The project is inspired by the **Tur Tur Principle**: The complexity of AI behavior can be made more focused and
 manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
