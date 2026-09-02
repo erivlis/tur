@@ -39,9 +39,26 @@ def mock_signal_workspace(tmp_path, monkeypatch):
         yaml.dump(state_data, f)
 
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('TUR_PROJECT_DIR', str(tmp_path))
     fake_home = tmp_path / 'fake_home'
     fake_home.mkdir()
     monkeypatch.setattr(Path, 'home', lambda: fake_home)
+
+    import sys
+
+    class StdoutProxy:
+        def __getattr__(self, attr):
+            if attr == 'isatty':
+                return lambda: True
+            return getattr(sys.stdout, attr)
+
+    class SysProxy:
+        def __getattr__(self, name):
+            if name == 'stdout':
+                return StdoutProxy()
+            return getattr(sys, name)
+
+    monkeypatch.setattr('tur.cli.common.sys', SysProxy())
 
     return tmp_path, persona_id
 
@@ -249,3 +266,62 @@ def test_windows_file_locking_concurrency(mock_signal_workspace):
         thread.join()
 
     assert len(errors) == 0, f'Write concurrency errors: {errors}'
+
+
+def test_vector_clock_emission_and_ack_merge(mock_signal_workspace):
+    _, _ = mock_signal_workspace
+    session_id = 'sess_vc_test'
+
+    session.start_session_logic(session_id, agent_id='agent_A')
+    session.start_session_logic(session_id, agent_id='agent_B')
+
+    # 1. Agent A sends first signal (should tick agent_A: 1)
+    sig_1_id = session.signal_logic(session_id, sender='agent_A', recipient='agent_B', content='Message 1')
+    signals_b = session.read_signals_logic(session_id, agent_id='agent_B', unread_only=True)
+    assert len(signals_b) == 1
+    assert signals_b[0]['vector_clock'] == {'agent_A': 1}
+
+    # 2. Agent A sends second signal (should tick agent_A: 2)
+    session.signal_logic(session_id, sender='agent_A', recipient='agent_B', content='Message 2')
+    signals_b_all = session.read_signals_logic(session_id, agent_id='agent_B', unread_only=True)
+    assert len(signals_b_all) == 2
+    assert signals_b_all[1]['vector_clock'] == {'agent_A': 2}
+
+    # 3. Agent B acknowledges sig_1 (merges {agent_A: 1} and ticks agent_B: 1 -> {agent_A: 1, agent_B: 1})
+    session.ack_signals_logic(session_id, agent_id='agent_B', signal_ids=[sig_1_id])
+
+    # 4. Agent B replies to Agent A (ticks agent_B: 2 -> {agent_A: 1, agent_B: 2})
+    session.signal_logic(session_id, sender='agent_B', recipient='agent_A', content='Reply 1')
+    signals_a = session.read_signals_logic(session_id, agent_id='agent_A', unread_only=True)
+    assert len(signals_a) == 1
+    assert signals_a[0]['vector_clock'] == {'agent_A': 1, 'agent_B': 2}
+
+
+def test_cli_admin_signal_inspect(mock_signal_workspace):
+    from typer.testing import CliRunner
+
+    from tur.cli.admin import app as admin_app
+
+    runner = CliRunner()
+    _, _ = mock_signal_workspace
+    session_id = 'sess_admin_sig_inspect'
+
+    session.start_session_logic(session_id, agent_id='agent_A')
+    session.signal_logic(session_id, sender='agent_A', recipient='*', content='Broadcast hello')
+
+    # Test terminal table output
+    res = runner.invoke(admin_app, ['signal', 'inspect', session_id])
+    assert res.exit_code == 0
+    assert 'IASP Signals & Vector Clocks' in res.stdout
+    assert 'agent_A -> *' in res.stdout
+    assert 'agent_A' in res.stdout
+
+    # Test JSON output
+    res_json = runner.invoke(admin_app, ['signal', 'inspect', session_id, '--json'])
+    assert res_json.exit_code == 0
+    import json
+
+    data = json.loads(res_json.stdout)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]['vector_clock'] == {'agent_A': 1}
