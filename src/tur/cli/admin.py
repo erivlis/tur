@@ -1,4 +1,5 @@
 import io
+import json
 import shutil
 import sys
 import tarfile
@@ -44,10 +45,12 @@ app = typer.Typer(
 persona_app = typer.Typer(help='Manage persona configurations and identities.')
 memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger.')
 session_app = typer.Typer(help='Start, end, and inspect session state and notes.')
+signal_app = typer.Typer(help='Inspect inter-agent signals and Lamport Vector Clocks (EP-0118, EP-0141).')
 
 app.add_typer(persona_app, name='persona')
 app.add_typer(memory_app, name='memory')
 app.add_typer(session_app, name='session')
+app.add_typer(signal_app, name='signal')
 
 
 # -----------------------------------------------------------------------------
@@ -796,6 +799,75 @@ def session_note(
         )
     except Exception as e:
         console.print(f'[red]Error viewing session note: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+# -----------------------------------------------------------------------------
+# SIGNAL COMMANDS GROUP (EP-0118, EP-0141)
+# -----------------------------------------------------------------------------
+
+
+@signal_app.command('inspect')
+@require_human
+def signal_inspect(
+    session_id: str | None = typer.Argument(None, help='The session ID (defaults to active session).'),
+    json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
+) -> None:
+    """Inspect the inter-agent signal queue and Lamport Vector Clocks (EP-0141)."""
+    try:
+        resolved_sess_id = session_id or session.get_active_session_id()
+        if not resolved_sess_id:
+            console.print('[red]Error: No active session found. Please specify session_id.[/red]')
+            raise typer.Exit(code=1)  # noqa: TRY301
+
+        conn = session.get_db_connection(resolved_sess_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, sequence, timestamp, sender, recipient, type, content, vector_clock
+            FROM signals
+            ORDER BY sequence ASC
+            """
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        from tur.vector_clock import VectorClock
+
+        signals = []
+        for r in rows:
+            d = dict(r)
+            d['vector_clock'] = VectorClock(d.get('vector_clock'))
+            signals.append(d)
+
+        if json_mode:
+            console.print(json.dumps(signals, indent=2))
+            return
+
+        if not signals:
+            console.print(f"No signals found in session '{resolved_sess_id}'.")
+            return
+
+        table = Table(title=f'IASP Signals & Vector Clocks ({resolved_sess_id})', show_lines=True)
+        table.add_column('Seq', style='dim', justify='right')
+        table.add_column('Sender -> Recipient', style='cyan')
+        table.add_column('Type', style='magenta')
+        table.add_column('Vector Clock', style='green')
+        table.add_column('Content')
+
+        for sig in signals:
+            v_clock_str = json.dumps(sig['vector_clock']) if sig['vector_clock'] else '{}'
+            content_snippet = sig['content'][:80] + ('...' if len(sig['content']) > 80 else '')
+            table.add_row(
+                str(sig['sequence']),
+                f'{sig["sender"]} -> {sig["recipient"]}',
+                sig['type'],
+                v_clock_str,
+                content_snippet,
+            )
+        console.print(table)
+    except Exception as e:
+        console.print(f'[red]Error inspecting signals: {e}[/red]')
         raise typer.Exit(code=1)
 
 

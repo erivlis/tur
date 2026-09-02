@@ -31,6 +31,7 @@ from tur.models import (
 from tur.paths import is_global_path, resolve_workspace_dir
 from tur.persona import get_active_persona_id, get_persona_path, load_persona
 from tur.user import get_user_profile
+from tur.vector_clock import VectorClock
 
 
 def get_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = None) -> Path:
@@ -381,7 +382,8 @@ def init_db(conn: sqlite3.Connection):
                  )),
                      last_heartbeat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                      run_token TEXT NOT NULL,
-                     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                     vector_clock TEXT NOT NULL DEFAULT '{}'
                      );
                  """)
     conn.execute("""
@@ -426,9 +428,25 @@ def init_db(conn: sqlite3.Connection):
                      'sleep_request'
                  )
                      ),
-                     content TEXT NOT NULL
+                     content TEXT NOT NULL,
+                     vector_clock TEXT NOT NULL DEFAULT '{}'
                      );
                  """)
+
+    # Schema migration checks (EP-0141)
+    try:
+        cursor = conn.cursor()
+        cursor.execute('PRAGMA table_info(agents);')
+        agent_cols = [row[1] for row in cursor.fetchall()]
+        if agent_cols and 'vector_clock' not in agent_cols:
+            conn.execute("ALTER TABLE agents ADD COLUMN vector_clock TEXT NOT NULL DEFAULT '{}';")
+
+        cursor.execute('PRAGMA table_info(signals);')
+        signal_cols = [row[1] for row in cursor.fetchall()]
+        if signal_cols and 'vector_clock' not in signal_cols:
+            conn.execute("ALTER TABLE signals ADD COLUMN vector_clock TEXT NOT NULL DEFAULT '{}';")
+    except Exception:
+        pass
     conn.execute("""
                  CREATE TABLE IF NOT EXISTS signal_reads
                  (
@@ -527,6 +545,25 @@ def update_heartbeat(session_id: str, agent_id: str):
             (agent_id, run_token),
         )
     conn.close()
+
+
+def get_agent_vector_clock(conn: sqlite3.Connection, agent_id: str) -> VectorClock:
+    """Retrieves the Lamport Vector Clock for a specific agent (EP-0141)."""
+    cursor = conn.cursor()
+    cursor.execute('SELECT vector_clock FROM agents WHERE id = ?', (agent_id,))
+    row = cursor.fetchone()
+    if row and row['vector_clock']:
+        return VectorClock(row['vector_clock'])
+    return VectorClock()
+
+
+def update_agent_vector_clock(conn: sqlite3.Connection, agent_id: str, clock: dict[str, int]) -> None:
+    """Updates the Lamport Vector Clock for an agent (EP-0141)."""
+    clock_json = json.dumps(clock)
+    conn.execute(
+        'UPDATE agents SET vector_clock = ? WHERE id = ?',
+        (clock_json, agent_id),
+    )
 
 
 def start_session_logic(
@@ -686,8 +723,8 @@ def start_session_logic(
         else:
             cursor.execute(
                 """
-                INSERT INTO agents (id, harness, substrate, status, run_token)
-                VALUES (?, ?, ?, 'active', ?)
+                INSERT INTO agents (id, harness, substrate, status, run_token, vector_clock)
+                VALUES (?, ?, ?, 'active', ?, '{}')
                 """,
                 (agent_id, harness_name, substrate_name, run_token),
             )
@@ -724,14 +761,13 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
         ws = resolve_workspace_dir() or Path.cwd()
         state_path = ws / '.tur' / 'state.yaml'
         if state_path.exists():
-            try:
+            with contextlib.suppress(Exception):
                 with open(state_path, encoding='utf-8') as f:
                     state_obj = SystemState(**yaml_safe_load(f))
                 if state_obj.active_session_id == session_id:
                     state_obj.active_session_id = None
-                atomic_yaml_write(state_path, state_obj.model_dump(mode='json'))
-            except Exception:
-                pass
+                with open(state_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(state_obj.model_dump(mode='json'), f)
 
     return f"Session '{session_id}' ended successfully."
 
@@ -743,8 +779,9 @@ def signal_logic(
     recipient: str,
     content: str,
     type_: str = 'inform',
+    vector_clock: dict[str, int] | None = None,
 ) -> str:
-    """Sends a message signal transactionally, validating boundaries and rate-limits."""
+    """Sends a message signal transactionally with Lamport Vector Clock ticking (EP-0141)."""
     if not re.match(r'^[a-zA-Z0-9_\.-]+$', sender):
         raise ValueError(f"Invalid sender ID: '{sender}'")
     if recipient != '*' and not re.match(r'^[a-zA-Z0-9_\.-]+$', recipient):
@@ -769,25 +806,37 @@ def signal_logic(
     timestamp_str = datetime.now(UTC).isoformat()
     signal_id = hashlib.sha256(f'{payload}|{timestamp_str}|{uuid.uuid4().hex}'.encode()).hexdigest()
 
+    # EP-0141: Vector Clock local emission ticking (Rule 1)
+    sender_clock = get_agent_vector_clock(conn, sender)
+    if vector_clock:
+        sender_clock = sender_clock | VectorClock(vector_clock)
+    sender_clock = sender_clock.tick(sender)
+    clock_json = json.dumps(sender_clock)
+
     with conn:
         conn.execute(
             """
-            INSERT INTO signals (id, sender, recipient, type, content)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO signals (id, sender, recipient, type, content, vector_clock)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (signal_id, sender, recipient, type_, content),
+            (signal_id, sender, recipient, type_, content, clock_json),
         )
         conn.execute(
             """
             UPDATE agents
-            SET last_heartbeat = CURRENT_TIMESTAMP
+            SET last_heartbeat = CURRENT_TIMESTAMP, vector_clock = ?
             WHERE id = ?
             """,
-            (sender,),
+            (clock_json, sender),
         )
 
     conn.close()
     return signal_id
+
+
+def sort_signals_causally(signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sorts incoming IASP signal dictionaries in causal delivery order using VectorClock (EP-0141)."""
+    return VectorClock.sort(signals, key=lambda s: s.get('vector_clock', {}))
 
 
 @db_retry()
@@ -795,13 +844,14 @@ def read_signals_logic(
     session_id: str,
     agent_id: str,
     unread_only: bool = True,
+    causal_delivery: bool = True,
 ) -> list[dict]:
-    """Peeks incoming signals matching caller handle or dot subagent namespaces."""
+    """Peeks incoming signals matching caller handle or dot subagent namespaces with causal ordering (EP-0141)."""
     conn = get_db_connection(session_id)
     cursor = conn.cursor()
 
     query = """
-            SELECT s.id, s.sequence, s.timestamp, s.sender, s.recipient, s.type, s.content
+            SELECT s.id, s.sequence, s.timestamp, s.sender, s.recipient, s.type, s.content, s.vector_clock
             FROM signals s
             WHERE (s.recipient = :agent_id OR s.recipient = '*' OR s.recipient LIKE :sub_pattern) \
             """
@@ -819,7 +869,14 @@ def read_signals_logic(
     cursor.execute(query, {'agent_id': agent_id, 'sub_pattern': f'{agent_id}.%'})
 
     rows = cursor.fetchall()
-    results = [dict(row) for row in rows]
+    results = []
+    for row in rows:
+        d = dict(row)
+        d['vector_clock'] = VectorClock(d.get('vector_clock'))
+        results.append(d)
+
+    if causal_delivery and results:
+        results = sort_signals_causally(results)
 
     with conn:
         conn.execute(
@@ -841,25 +898,42 @@ def ack_signals_logic(
     agent_id: str,
     signal_ids: list[str],
 ) -> str:
-    """Acknowledges signals by registering read entries in the signal_reads table."""
+    """
+    Acknowledges signals by registering read entries in the signal_reads table
+    and merging vector clocks (EP-0141).
+    """
     conn = get_db_connection(session_id)
+    agent_clock = get_agent_vector_clock(conn, agent_id)
+    merged = False
+
     with conn:
         for sig_id in signal_ids:
             conn.execute(
                 """
-                INSERT
-                OR IGNORE INTO signal_reads (signal_id, agent_id)
+                INSERT OR IGNORE INTO signal_reads (signal_id, agent_id)
                 VALUES (?, ?)
                 """,
                 (sig_id, agent_id),
             )
+            cursor = conn.cursor()
+            cursor.execute('SELECT vector_clock FROM signals WHERE id = ?', (sig_id,))
+            sig_row = cursor.fetchone()
+            if sig_row and sig_row['vector_clock']:
+                sig_clock = VectorClock(sig_row['vector_clock'])
+                agent_clock = agent_clock | sig_clock
+                merged = True
+
+        if merged:
+            # Rule 2: Agent increments own local logical counter on receive & merge
+            agent_clock = agent_clock.tick(agent_id)
+
         conn.execute(
             """
             UPDATE agents
-            SET last_heartbeat = CURRENT_TIMESTAMP
+            SET last_heartbeat = CURRENT_TIMESTAMP, vector_clock = ?
             WHERE id = ?
             """,
-            (agent_id,),
+            (json.dumps(agent_clock), agent_id),
         )
     conn.close()
     return f'Acknowledged {len(signal_ids)} signals.'
@@ -926,7 +1000,7 @@ def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> 
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, sender, recipient, type, content, timestamp, sequence
+            SELECT id, sender, recipient, type, content, timestamp, sequence, vector_clock
             FROM signals
             WHERE recipient = '*'
             ORDER BY sequence ASC
@@ -937,7 +1011,12 @@ def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> 
         rows = cursor.fetchall()
         conn.close()
         if rows:
-            return [dict(row) for row in rows]
+            results = []
+            for row in rows:
+                d = dict(row)
+                d['vector_clock'] = VectorClock(d.get('vector_clock'))
+                results.append(d)
+            return results
     except Exception:
         pass
 
@@ -1071,14 +1150,18 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         cursor = conn.cursor()
         payload = f'{agent_id}|*|sleep_event|Consensus reached. Swarm sleeping.'
         sig_id = hashlib.sha256(f'{payload}|{datetime.now(UTC).isoformat()}|{uuid.uuid4().hex}'.encode()).hexdigest()
+
+        agent_clock = get_agent_vector_clock(conn, agent_id).tick(agent_id)
+        clock_json = json.dumps(agent_clock)
+
         conn.execute(
             """
-            INSERT INTO signals (id, sender, recipient, type, content)
-            VALUES (?, ?, '*', 'sleep_event', 'Consensus reached. Swarm sleeping.')
+            INSERT INTO signals (id, sender, recipient, type, content, vector_clock)
+            VALUES (?, ?, '*', 'sleep_event', 'Consensus reached. Swarm sleeping.', ?)
             """,
-            (sig_id, agent_id),
+            (sig_id, agent_id, clock_json),
         )
-        conn.execute("UPDATE agents SET status = 'sleeping'")
+        conn.execute("UPDATE agents SET status = 'sleeping', vector_clock = ?", (clock_json,))
 
         cursor.execute('SELECT agent_id, memory_data FROM staged_memories')
         staged_rows = cursor.fetchall()

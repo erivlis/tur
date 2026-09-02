@@ -374,3 +374,24 @@ class HarnessDelegationError(ValueError):
     def __init__(self, prompt: str):
         super().__init__(prompt)
         self.prompt = prompt
+
+
+class Signal(BaseModel):
+    """
+    An inter-agent message signal in IASP (EP-0118, EP-0123, EP-0141).
+    """
+
+    id: str = Field(..., description='Unique deterministic hash of the signal.')
+    sequence: int | None = Field(default=None, description='Monotonic sequence number.')
+    timestamp: datetime = Field(default_factory=datetime.now, description='When the signal was broadcast.')
+    sender: str = Field(..., description='Sender agent ID or namespace.')
+    recipient: str = Field(..., description="Recipient agent ID or wildcard '*'.")
+    type: str = Field(
+        'inform',
+        description='Signal type (inform, query, delegate, ack, warn, sleep_event, sleep_request).',
+    )
+    content: str = Field(..., description='Signal content payload.')
+    vector_clock: dict[str, int] = Field(
+        default_factory=dict,
+        description='Lamport Vector Clock mapping agent_id -> logical_counter (EP-0141).',
+    )

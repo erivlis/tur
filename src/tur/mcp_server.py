@@ -604,10 +604,16 @@ def read_notes(session_id: str | None = None, include_previous: bool = False, li
 
 
 @mcp.tool()
-def signal(to: str, content: str, type: str = 'inform', sender_id: str | None = None) -> str:
+def signal(
+    to: str,
+    content: str,
+    type: str = 'inform',
+    sender_id: str | None = None,
+    vector_clock: dict[str, int] | None = None,
+) -> str:
     """
     Sends a message signal to another manifestation or broadcast to all ('*').
-    Enforces a token-bucket rate limiter of 10 messages/minute.
+    Enforces a token-bucket rate limiter of 10 messages/minute and attaches Lamport Vector Clocks (EP-0141).
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
@@ -616,13 +622,17 @@ def signal(to: str, content: str, type: str = 'inform', sender_id: str | None = 
     if sender_id and env_agent_id and sender_id != env_agent_id and not sender_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: sender_id '{sender_id}' does not match calling agent '{env_agent_id}'.")
     sender = sender_id or env_agent_id or 'mcp_agent'
-    return signal_logic(sess_id, sender, to, content, type)
+    return signal_logic(sess_id, sender, to, content, type, vector_clock=vector_clock)
 
 
 @mcp.tool()
-def read_signals(agent_id: str | None = None, unread_only: bool = True) -> list[dict]:
+def read_signals(
+    agent_id: str | None = None,
+    unread_only: bool = True,
+    causal_delivery: bool = True,
+) -> list[dict]:
     """
-    Peeks incoming signals directed to the agent or its namespaces.
+    Peeks incoming signals directed to the agent or its namespaces with causal partial order delivery (EP-0141).
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
@@ -631,7 +641,7 @@ def read_signals(agent_id: str | None = None, unread_only: bool = True) -> list[
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
     active_agent = agent_id or env_agent_id or 'mcp_agent'
-    return read_signals_logic(sess_id, active_agent, unread_only)
+    return read_signals_logic(sess_id, active_agent, unread_only, causal_delivery=causal_delivery)
 
 
 @mcp.tool()

@@ -565,7 +565,8 @@ def read_signals(
                 return
             for sig in signals:
                 console.print(f'[bold cyan][{sig["sender"]} -> {sig["recipient"]}][/bold cyan] ({sig["type"]})')
-                console.print(f'  Sequence: {sig["sequence"]} | Timestamp: {sig["timestamp"]}')
+                clock_str = f' | VectorClock: {sig["vector_clock"]}' if sig.get('vector_clock') else ''
+                console.print(f'  Sequence: {sig["sequence"]}{clock_str} | Timestamp: {sig["timestamp"]}')
                 console.print(f'  Content: {sig["content"]}')
                 console.print('')
     except Exception as e:
