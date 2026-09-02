@@ -1,3 +1,9 @@
+## v0.12.1 (2026-09-02)
+
+### Refactor
+
+- enhance type annotations and encapsulate memory export logic
+
 ## v0.12.0 (2026-09-02)
 
 ### Feat
