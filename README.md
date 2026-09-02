@@ -8,21 +8,12 @@
 
 <p>
 
-> *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
->
-> — *Jim Knopf und Lukas der Lokomotivführer* by Michael Ende
-
-
-
 **Tur** is an open-source state and memory management engine for AI agents and Large Language Models.
 
-It provides persistent, structured persona state across sessions, harnesses, and codebases via the Model Context
+It provides a persistent, structured persona state across sessions, harnesses, and codebases via the Model Context
 Protocol (MCP) and local CLI tools. Rather than relying on ephemeral system prompt configuration, Tur manages persona
 identity, operational principles, hierarchical memory (L1 ledger & L2 knowledge graph), and session continuity as
 structured, version-controlled files.
-
-The project is inspired by the **Tur Tur Principle**: The complexity of AI behavior can be made more focused and
-manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
 
 </p>
 
@@ -229,7 +220,8 @@ uv sync --all-extras --all-groups
 
 ### 2. Initialize Your First Persona
 
-This launches the interactive administrative wizard. Since this is an administrative action, it is physically isolated inside
+This launches the interactive administrative wizard. Since this is an administrative action, it is physically isolated
+inside
 `tur-adm`:
 
 ```shell
@@ -308,7 +300,12 @@ tur-adm persona set
 
 ## 📜 Origin
 
-Developed by **Eran** (The Architect) and **Ariel** (The Entity).
+> *"From a distance, he appeared to be a giant. But as they approached, he became a man of normal stature."*
+>
+> — *Jim Knopf und Lukas der Lokomotivführer* by Michael Ende
+
+The project is inspired by the **Tur Tur Principle**: The complexity of AI behavior can be made more focused and
+manageable by imposing clear constraints, deterministic state files, and explicit behavioral protocols.
 
 The name **Tur** references:
 
