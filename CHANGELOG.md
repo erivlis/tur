@@ -1,3 +1,21 @@
+## v0.12.0 (2026-09-02)
+
+### Feat
+
+- add Lamport Vector Clock support for inter-agent signals (EP-0141)
+- implement session lineage tracking and memory diffing
+- implement Merkle Tombstone Redaction (EP-0143) to enhance memory security
+- add progress tracking and asynchronous support for introspection and memory consolidation
+
+### Refactor
+
+- centralize system state management and standardize error handling
+- centralize persona loading and introduce `CONSTITUTION.md` support
+- streamline memory storage management with caching and modular utility methods
+- introduce jittered backoff and improve locking mechanisms
+- optimize template loading in compiler by pre-compiling Jinja environment
+- relocate benchmark tests and update CodSpeed workflow paths
+
 ## v0.11.4 (2026-08-31)
 
 ### Refactor
