@@ -265,7 +265,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff (EP-0140) [Status: Draft]:** Optimizing
       runtime performance with $\mathcal{O}(1)$ Merkle root memory caching, pre-compiled template AST memoization, and
       decorrelated jitter lock backoff.
-    * **Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (EP-0141) [Status: Draft]:** Establishing
+    * **Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (EP-0141) [Status: Implemented]:** Establishing
       formal partial ordering ($\mathbb{N}^k, \le$) and concurrent conflict detection across distributed agent swarms.
     * **Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry (EP-0142) [Status: Draft]:**
       Eliminating silent execution bottlenecks across CLI and MCP interfaces via Rich live spinners, pipeline trackers,
