@@ -3,7 +3,7 @@ import contextlib
 import logging
 import os
 import sys
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Literal
 
@@ -344,8 +344,10 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
         def on_mcp_progress(current: int, total: int, description: str) -> None:
             if ctx is not None:
                 try:
-                    anyio.from_thread.run(ctx.report_progress, current, total)
-                    anyio.from_thread.run(ctx.info, f'[{current}/{total}] {description}')
+                    from_thread_run: Callable | None = getattr(anyio.from_thread, 'run', None)
+                    if callable(from_thread_run):
+                        from_thread_run(ctx.report_progress, current, total)
+                        from_thread_run(ctx.info, f'[{current}/{total}] {description}')
                 except Exception:
                     try:
                         loop = asyncio.get_running_loop()

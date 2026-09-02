@@ -5,6 +5,7 @@ import sys
 import tarfile
 import tempfile
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 import typer
@@ -153,7 +154,7 @@ def persona_view(
                 )
                 return
             with open(index_path, encoding='utf-8') as f:
-                index_data = yaml_safe_load(f) or {'personas': []}
+                index_data: dict[str, Any] = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
             if not index.personas:
                 console.print(
@@ -227,7 +228,7 @@ def persona_get() -> None:
         version = 'unknown'
         if index_path.exists():
             with open(index_path, encoding='utf-8') as f:
-                index_data = yaml_safe_load(f) or {'personas': []}
+                index_data: dict[str, Any] = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
             matched = next((p for p in index.personas if str(p.id) == active_uuid), None)
             if matched:
@@ -278,6 +279,27 @@ def persona_set(
         handle_cli_error(e, 'Error setting persona')
 
 
+def _collect_export_memory_dirs(memory_manager: MemoryManager) -> list[tuple[Path, str]]:
+    """Builds the list of candidate memory directories and archive prefixes for export."""
+    search_dirs: list[tuple[Path, str]] = []
+    if memory_manager.global_dir:
+        search_dirs.append((memory_manager.global_dir, 'memories/active'))
+        if memory_manager.global_archive_dir:
+            search_dirs.append((memory_manager.global_archive_dir, 'memories/archive'))
+        if memory_manager.global_subsumed_dir:
+            search_dirs.append((memory_manager.global_subsumed_dir, 'memories/subsumed'))
+        search_dirs.append((memory_manager.global_dir.parent, 'memories'))
+
+    if memory_manager.local_dir:
+        search_dirs.append((memory_manager.local_dir, 'memories/active'))
+        if memory_manager.local_archive_dir:
+            search_dirs.append((memory_manager.local_archive_dir, 'memories/archive'))
+        if memory_manager.local_subsumed_dir:
+            search_dirs.append((memory_manager.local_subsumed_dir, 'memories/subsumed'))
+        search_dirs.append((memory_manager.local_dir.parent, 'memories'))
+    return search_dirs
+
+
 @persona_app.command('export')
 @require_human
 def persona_export(
@@ -302,7 +324,7 @@ def persona_export(
                 )
                 return
             with open(index_path, encoding='utf-8') as f:
-                index_data = yaml_safe_load(f) or {'personas': []}
+                index_data: dict[str, Any] = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
             if not index.personas:
                 console.print(
@@ -352,17 +374,7 @@ def persona_export(
             from tur.models import MemoryScope
 
             memory_manager = MemoryManager(base_dir=persona_dir)
-
-            search_dirs = [
-                (memory_manager.global_dir, 'memories/active'),
-                (memory_manager.global_archive_dir, 'memories/archive'),
-                (memory_manager.global_subsumed_dir, 'memories/subsumed'),
-                (memory_manager.global_dir.parent, 'memories'),
-                (memory_manager.local_dir, 'memories/active'),
-                (memory_manager.local_archive_dir, 'memories/archive'),
-                (memory_manager.local_subsumed_dir, 'memories/subsumed'),
-                (memory_manager.local_dir.parent, 'memories'),
-            ]
+            search_dirs = _collect_export_memory_dirs(memory_manager)
 
             seen_memories = set()
             for directory, arc_prefix in search_dirs:

@@ -164,7 +164,7 @@ class Memory(BaseModel):
 
     @model_validator(mode='before')
     @classmethod
-    def sanitize_memory_content(cls, data: Any) -> Any:
+    def sanitize_memory_content(cls, data: Any) -> Any:  # type: ignore[operator]
         """Deterministic pre-ingest sanitization of memory content (EP-0143)."""
         if (
             isinstance(data, dict)
@@ -321,8 +321,8 @@ class SystemState(BaseModel):
     Tracks active workspace assignments.
     """
 
-    active_persona_id: UUID | None = Field(None, description='The UUID of the active persona.')
-    active_session_id: str | None = Field(None, description='The currently active session ID.')
+    active_persona_id: UUID | None = Field(default=None, description='The UUID of the active persona.')
+    active_session_id: str | None = Field(default=None, description='The currently active session ID.')
 
 
 class Note(BaseModel):
@@ -335,7 +335,7 @@ class Note(BaseModel):
 
     @model_validator(mode='before')
     @classmethod
-    def sanitize_note_content(cls, data: Any) -> Any:
+    def sanitize_note_content(cls, data: Any) -> Any:  # type: ignore[operator]
         """Deterministic pre-ingest sanitization of note content (EP-0143)."""
         if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
             from tur.sanitizer import sanitize_text

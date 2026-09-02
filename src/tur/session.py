@@ -1025,7 +1025,7 @@ def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> 
     if session_file.exists():
         try:
             with open(session_file, encoding='utf-8') as f:
-                data = yaml_safe_load(f) or {}
+                data: dict[str, Any] = yaml_safe_load(f) or {}
             s_notes = SessionNotes(**data)
             results = []
             for idx, n in enumerate(s_notes.notes[:fetch_limit]):

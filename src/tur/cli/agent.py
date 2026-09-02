@@ -156,6 +156,7 @@ def learn(
             console.print(f'[bold green]Committed {count} memories from JSON payload(s).[/bold green]')
             return
 
+        assert content is not None
         console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
 
         memory = Memory(
@@ -420,6 +421,7 @@ def sleep(
             console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
             return
 
+        assert log_path is not None
         console.print(f"Processing session log for '{active_id}' from {log_path}...")
         try:
             with console.status(

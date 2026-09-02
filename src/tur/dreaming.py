@@ -74,7 +74,7 @@ def perform_sleep_dreaming(
     session_id: str | None = None,
     model: str = 'gemini-3.1-pro-preview',
     ctx: Any = None,
-    commit_payload: str | dict | None = None,
+    commit_payload: str | dict | list[str] | None = None,
 ) -> int:
     """
     Dehydrate a session log by parsing it to extract memories.

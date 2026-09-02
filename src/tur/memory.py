@@ -74,7 +74,7 @@ class MemoryManager:
             if self.local_subsumed_dir is not None:
                 self.local_subsumed_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path | None, Path | None]:
+    def _get_target_dirs(self, scope: MemoryScope) -> tuple[Path, Path]:
         """
         Determines the correct filesystem path based on the MemoryScope (Federation).
         Creates local directories strictly on-demand when saving an incarnation memory.
@@ -85,12 +85,14 @@ class MemoryManager:
                 self.global_archive_dir.mkdir(parents=True, exist_ok=True)
                 return self.global_dir, self.global_archive_dir
             case MemoryScope.INCARNATION:
-                if self.local_dir is None:
+                if self.local_dir is None or self.local_archive_dir is None:
                     ws = resolve_workspace_dir() or Path.cwd()
                     local_memories = ws / '.tur' / 'personas' / self.persona_id / 'memories'
                     self.local_dir = local_memories / 'active'
                     self.local_archive_dir = local_memories / 'archive'
                     self.local_subsumed_dir = local_memories / 'subsumed'
+                assert self.local_dir is not None
+                assert self.local_archive_dir is not None
                 self.local_dir.mkdir(parents=True, exist_ok=True)
                 self.local_archive_dir.mkdir(parents=True, exist_ok=True)
                 return self.local_dir, self.local_archive_dir
@@ -261,7 +263,7 @@ class MemoryManager:
             raise ValueError(f"Invalid OKF structure in '{file_path.name}'.")
 
         yaml_part = parts[1]
-        data = yaml_safe_load(yaml_part) or {}
+        data: dict[str, Any] = yaml_safe_load(yaml_part) or {}
 
         now_iso = datetime.now().astimezone().isoformat()
         data['redacted'] = True

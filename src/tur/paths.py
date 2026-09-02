@@ -12,7 +12,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import unquote, urlparse
 
 from platformdirs import PlatformDirs
@@ -20,7 +20,7 @@ from platformdirs import PlatformDirs
 logger = logging.getLogger(__name__)
 
 APP_NAME = 'tur'
-APP_AUTHOR = False  # Suppress Windows publisher folder duplication (AppData/Local/tur vs tur/tur)
+APP_AUTHOR: Literal[False] = False  # Suppress Windows publisher folder duplication (AppData/Local/tur vs tur/tur)
 
 # Module-level PlatformDirs instance avoiding per-call object allocations
 _PLATFORM_DIRS = PlatformDirs(

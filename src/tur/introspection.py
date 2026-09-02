@@ -309,7 +309,7 @@ class OntologyExtractor(IntrospectionSubagent):
             if persona_yaml_path.exists():
                 with contextlib.suppress(Exception):
                     with open(persona_yaml_path, encoding='utf-8') as f:
-                        pdata = yaml_safe_load(f) or {}
+                        pdata: dict[str, Any] = yaml_safe_load(f) or {}
                     compaction_cfg = pdata.get('compaction')
 
         if isinstance(compaction_cfg, dict):
@@ -339,7 +339,7 @@ class OntologyExtractor(IntrospectionSubagent):
             'contradict': EdgeType.CONTRADICTS.value,
             'competes': EdgeType.COMPETES_WITH.value,
         }
-        node_type_lookup = {nt.value.lower(): nt.value for nt in NodeType}
+        node_type_lookup: dict[str, str] = {nt.value.lower(): nt.value for nt in NodeType}
 
         # Update NetworkX Graph based on extraction
         # Merge new nodes and consolidate synonyms
@@ -946,7 +946,7 @@ def run_introspection(
     model: str = 'gemini-3.1-pro-preview',
     test_mode: bool = False,
     mcp_context: Any = None,
-    commit_payload: str | ExtractedGraph | dict | None = None,
+    commit_payload: str | ExtractedGraph | dict | list[str] | None = None,
     progress_callback: ProgressCallback | None = None,
 ) -> nx.DiGraph:
     """

@@ -30,7 +30,7 @@ class VectorClock(dict[str, int]):
         data: dict[str, int] = {}
         if isinstance(raw, str):
             try:
-                parsed = json.loads(raw) if raw.strip() else {}
+                parsed: Any = json.loads(raw) if raw.strip() else {}
                 if isinstance(parsed, dict):
                     data = {str(k): int(v) for k, v in parsed.items() if int(v) > 0}
             except Exception:
@@ -67,7 +67,7 @@ class VectorClock(dict[str, int]):
         new_data[agent_id] = self[agent_id] + 1
         return VectorClock(new_data)
 
-    def __or__(self, other: Mapping[str, int]) -> VectorClock:
+    def __or__(self, other: Mapping[str, int]) -> VectorClock:  # type: ignore[override]
         """
         Pointwise lattice maximum merge (Rule 2): V_j[k] <- max(V_j[k], V_sig[k]).
         """
@@ -170,7 +170,11 @@ class VectorClock(dict[str, int]):
             if key is not None:
                 extracted = key(x)
                 return extracted if isinstance(extracted, cls) else cls(extracted)
-            return x if isinstance(x, cls) else cls(x)  # type: ignore[arg-type]
+            if isinstance(x, cls):
+                return x
+            if isinstance(x, (Mapping, str)):
+                return cls(x)
+            return cls(str(x))
 
         result: list[T] = []
         for item in items:
