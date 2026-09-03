@@ -54,6 +54,9 @@ def wake(
     ),
     agent_id: str | None = typer.Option(None, help='The unique agent ID representing this manifestation.'),
     harness_conversation_id: str | None = typer.Option(None, help='The harness conversation ID.'),
+    include_stale: bool = typer.Option(
+        False, '--include-stale', help='Include stale/decayed memories in the compiled wake prompt.'
+    ),
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
@@ -82,7 +85,11 @@ def wake(
 
         update_system_state(active_persona_id=active_id, active_session_id=resolved_session_id)
 
-        state = session.hydrate_session_state(active_id, session_id=resolved_session_id)
+        state = session.hydrate_session_state(
+            active_id,
+            session_id=resolved_session_id,
+            include_stale=include_stale,
+        )
 
         # Compile (The Awakening)
         system_prompt = compile_persona(state)
@@ -111,6 +118,14 @@ def learn(
     type: MemoryType = typer.Option(MemoryType.INSIGHT, help='The type of memory.'),
     scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help='The scope of the memory.'),
     session_id: str = typer.Option(None, help='The name/ID of the session this memory belongs to'),
+    confidence: float = typer.Option(
+        1.0, '--confidence', min=0.0, max=1.0, help='Epistemic confidence rating in [0.0, 1.0].'
+    ),
+    file: str | None = typer.Option(
+        None, '--file', '--ref', help='Source file or context URI reference (e.g., src/auth.py#L10-L20).'
+    ),
+    agent: str | None = typer.Option(None, '--agent', help='Author agent ID recording this observation.'),
+    harness: str | None = typer.Option(None, '--harness', help='Harness runtime identifier (e.g., antigravity).'),
     json_payload: list[str] | None = typer.Option(
         None, '--json', help='Structured JSON payload(s), file paths, or globs to commit.'
     ),
@@ -124,6 +139,7 @@ def learn(
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
         memory_manager = MemoryManager(base_dir=persona_dir)
+        from tur.provenance import create_provenance_and_decay
 
         if json_payload:
             from tur._helpers import parse_multi_json_payloads
@@ -143,12 +159,28 @@ def learn(
                 m_scope = MemoryScope(mem_dict.get('scope', scope.value))
                 m_content = mem_dict.get('content', '')
                 m_tags = mem_dict.get('tags', ['json', 'cli'])
+                m_conf = float(mem_dict.get('confidence', confidence))
+                m_file = mem_dict.get('context_ref') or mem_dict.get('file') or file
+                m_agent = mem_dict.get('source_agent') or agent
+                m_harness = mem_dict.get('source_harness') or harness or os.environ.get('TUR_HARNESS')
+
+                prov, dec = create_provenance_and_decay(
+                    memory_type=m_type,
+                    confidence=m_conf,
+                    context_ref=m_file,
+                    source_agent=m_agent,
+                    source_harness=m_harness,
+                )
+
                 memory = Memory(
                     type=m_type,
                     scope=m_scope,
                     tags=m_tags,
                     content=m_content,
                     source_session=session_id or mem_dict.get('source_session') or session.get_active_session_id(),
+                    confidence=m_conf,
+                    provenance=prov,
+                    decay=dec,
                 )
                 saved_path = memory_manager.save(memory)
                 count += 1
@@ -159,12 +191,23 @@ def learn(
         assert content is not None
         console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
 
+        prov, dec = create_provenance_and_decay(
+            memory_type=type,
+            confidence=confidence,
+            context_ref=file,
+            source_agent=agent,
+            source_harness=harness or os.environ.get('TUR_HARNESS'),
+        )
+
         memory = Memory(
             type=type,
             scope=scope,
             tags=['manual', 'cli'],
             content=content,
             source_session=session_id or session.get_active_session_id(),
+            confidence=confidence,
+            provenance=prov,
+            decay=dec,
         )
         saved_path = memory_manager.save(memory)
         console.print(f'[green]Memory saved to {saved_path}[/green]')
@@ -308,6 +351,12 @@ def status(
             'L1 Memories',
             f'{active_count} active [dim]({archived_count} archived, {subsumed_count} subsumed)[/dim]',
         )
+        if 'staleness' in stats and stats['total'] > 0:
+            st = stats['staleness']
+            fresh_str = f'[green]{st["fresh"]} fresh[/green]'
+            stale_str = f'[yellow]{st["stale"]} stale[/yellow]'
+            unanch_str = f'[dim]{st["unanchored"]} unanchored[/dim]'
+            table.add_row('  Freshness', f'{fresh_str}, {stale_str}, {unanch_str}')
         if stats['by_scope']:
             table.add_row('  Scopes', f'[dim]{scope_str}[/dim]')
         if stats['by_type']:
@@ -708,9 +757,13 @@ def verify(
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
+    strict: bool = typer.Option(
+        False, '--strict', help='Fail with non-zero exit code if any stale memories are detected.'
+    ),
 ):
-    """Verify the cryptographic integrity of all memory files."""
+    """Verify the cryptographic integrity and epistemic staleness of all memory files."""
     failures = None
+    stale_memories = []
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
@@ -725,11 +778,22 @@ def verify(
                 console.print(f'  [red]Reason:[/red] {error}')
         else:
             console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
+
+        # Epistemic staleness checks (EP-0131)
+        stale_memories = memory_manager.get_stale_memories()
+        if stale_memories:
+            console.print(
+                f'[yellow]Detected {len(stale_memories)} stale/unanchored/refuted memories (EP-0131):[/yellow]'
+            )
+            for mem, st, reason in stale_memories:
+                status_color = 'red' if st in ('stale', 'refuted') else 'dim'
+                console.print(f'  [{status_color}]• [{st.upper()}][/] {mem.id[:8]} ({mem.type.value}): {reason}')
+
     except Exception as e:
         console.print(f'[bold red]TAMPERED STATE: {e}[/bold red]')
         raise typer.Exit(code=1)
 
-    if failures:
+    if failures or (strict and any(st == 'stale' for _, st, _ in stale_memories)):
         raise typer.Exit(code=1)
 
 

@@ -265,7 +265,11 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
 
 
-def hydrate_session_state(active_id: str, session_id: str | None = None) -> SessionState:
+def hydrate_session_state(
+    active_id: str,
+    session_id: str | None = None,
+    include_stale: bool = False,
+) -> SessionState:
     """Hydrates the full SessionState (Persona, User, Memories, Epilogue) from the filesystem."""
     persona_dir = get_persona_path(active_id)
     persona = load_persona(persona_dir)
@@ -273,7 +277,19 @@ def hydrate_session_state(active_id: str, session_id: str | None = None) -> Sess
     memory_manager = MemoryManager(base_dir=persona_dir)
     all_memories = memory_manager.load_all()
     cores = [m for m in all_memories if m.type == MemoryType.CORE and m.status == 'active']
-    memories = [m for m in all_memories if m.type != MemoryType.CORE]
+
+    if include_stale:
+        memories = [m for m in all_memories if m.type != MemoryType.CORE]
+    else:
+        from tur.provenance import evaluate_staleness
+
+        memories = []
+        for m in all_memories:
+            if m.type == MemoryType.CORE:
+                continue
+            st, _ = evaluate_staleness(m)
+            if st != 'stale' and st != 'refuted':
+                memories.append(m)
 
     resolved_session_id = session_id or get_active_session_id()
 

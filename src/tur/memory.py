@@ -10,7 +10,7 @@ from typing import Any, ClassVar
 import yaml
 
 from tur._helpers import yaml_safe_load
-from tur.models import Memory, MemoryLink, MemoryScope, MemoryType
+from tur.models import Memory, MemoryDecay, MemoryLink, MemoryProvenance, MemoryScope, MemoryType
 from tur.paths import get_global_tur_dir, is_global_path, resolve_workspace_dir
 
 
@@ -138,6 +138,32 @@ class MemoryManager:
             frontmatter['ethical_covenant'] = memory.ethical_covenant
         if memory.status:
             frontmatter['status'] = memory.status
+
+        # Provenance & Epistemic Decay fields (EP-0131)
+        if memory.confidence != 1.0:
+            frontmatter['confidence'] = memory.confidence
+        if memory.provenance:
+            frontmatter['provenance'] = {
+                'observed_at': (
+                    memory.provenance.observed_at.isoformat()
+                    if isinstance(memory.provenance.observed_at, datetime)
+                    else str(memory.provenance.observed_at)
+                ),
+                'git_sha': memory.provenance.git_sha,
+                'source_agent': memory.provenance.source_agent,
+                'source_harness': memory.provenance.source_harness,
+                'context_ref': memory.provenance.context_ref,
+            }
+        if memory.decay:
+            frontmatter['decay'] = {
+                'half_life_days': memory.decay.half_life_days,
+                'last_verified_at': (
+                    memory.decay.last_verified_at.isoformat()
+                    if isinstance(memory.decay.last_verified_at, datetime)
+                    else str(memory.decay.last_verified_at)
+                ),
+                'staleness_status': memory.decay.staleness_status,
+            }
 
         # Merkle Tombstone & Redaction fields (EP-0143)
         if memory.redacted:
@@ -415,12 +441,20 @@ class MemoryManager:
 
         by_scope: dict[str, int] = {}
         by_type: dict[str, int] = {}
+        staleness_breakdown = {'fresh': 0, 'stale': 0, 'unanchored': 0, 'refuted': 0}
+
+        from tur.provenance import evaluate_staleness
 
         for mem in all_active:
             s_val = mem.scope.value if hasattr(mem.scope, 'value') else str(mem.scope).lower()
             t_val = mem.type.value if hasattr(mem.type, 'value') else str(mem.type).lower()
             by_scope[s_val] = by_scope.get(s_val, 0) + 1
             by_type[t_val] = by_type.get(t_val, 0) + 1
+            st, _ = evaluate_staleness(mem)
+            if st in staleness_breakdown:
+                staleness_breakdown[st] += 1
+            else:
+                staleness_breakdown['fresh'] += 1
 
         archived_count = max(0, len(all_with_archived) - len(all_active))
         subsumed_count = len(subsumed)
@@ -432,7 +466,26 @@ class MemoryManager:
             'subsumed': subsumed_count,
             'by_scope': by_scope,
             'by_type': by_type,
+            'staleness': staleness_breakdown,
         }
+
+    def get_stale_memories(
+        self,
+        repo_dir: Path | None = None,
+        threshold: float = 0.3,
+    ) -> list[tuple[Memory, str, str]]:
+        """
+        Returns all active memories that are stale, unanchored, or refuted.
+        Returns list of (memory, staleness_status, reason).
+        """
+        from tur.provenance import evaluate_staleness
+
+        results: list[tuple[Memory, str, str]] = []
+        for mem in self.load_all(include_archived=False):
+            st, reason = evaluate_staleness(mem, repo_dir=repo_dir, staleness_threshold=threshold)
+            if st != 'fresh':
+                results.append((mem, str(st), reason or ''))
+        return results
 
     def _verify_file_integrity(self, file_path: Path) -> str | None:
         try:
@@ -473,6 +526,32 @@ class MemoryManager:
                 links_data = data.get('links', [])
                 links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
 
+                confidence_val = float(data.get('confidence', 1.0))
+                prov_obj = None
+                if 'provenance' in data and isinstance(data['provenance'], dict):
+                    p_data = data['provenance']
+                    p_obs_raw = p_data.get('observed_at')
+                    p_obs = datetime.fromisoformat(str(p_obs_raw)) if p_obs_raw else datetime.now()
+                    prov_obj = MemoryProvenance(
+                        observed_at=p_obs,
+                        git_sha=p_data.get('git_sha'),
+                        source_agent=p_data.get('source_agent'),
+                        source_harness=p_data.get('source_harness'),
+                        context_ref=p_data.get('context_ref'),
+                    )
+
+                decay_obj = None
+                if 'decay' in data and isinstance(data['decay'], dict):
+                    d_data = data['decay']
+                    d_ver_raw = d_data.get('last_verified_at')
+                    d_ver = datetime.fromisoformat(str(d_ver_raw)) if d_ver_raw else datetime.now()
+                    hl = float(d_data['half_life_days']) if d_data.get('half_life_days') is not None else None
+                    decay_obj = MemoryDecay(
+                        half_life_days=hl,
+                        last_verified_at=d_ver,
+                        staleness_status=str(d_data.get('staleness_status', 'fresh')),
+                    )
+
                 recomputed_mem = Memory(
                     timestamp=datetime.fromisoformat(str(data.get('timestamp'))),
                     type=MemoryType(type_val),
@@ -485,6 +564,9 @@ class MemoryManager:
                     derived_principle=data.get('derived_principle'),
                     ethical_covenant=data.get('ethical_covenant'),
                     status=data.get('status', 'active'),
+                    confidence=confidence_val,
+                    provenance=prov_obj,
+                    decay=decay_obj,
                 )
             else:
                 test_data = data.copy()
@@ -506,7 +588,6 @@ class MemoryManager:
         recomputes the SHA-256 hashes of their contents, and asserts they match their filenames.
         Returns a list of tuples containing (file_path, error_reason) for any failures.
         """
-        failures = []
         directories: list[Path | None] = [
             self.global_dir,
             self.global_archive_dir,
@@ -552,6 +633,32 @@ class MemoryManager:
                 links_data = data.get('links', [])
                 links = [MemoryLink(**lnk) for lnk in links_data] if links_data else []
 
+                confidence_val = float(data.get('confidence', 1.0))
+                prov_obj = None
+                if 'provenance' in data and isinstance(data['provenance'], dict):
+                    p_data = data['provenance']
+                    p_obs_raw = p_data.get('observed_at')
+                    p_obs = datetime.fromisoformat(str(p_obs_raw)) if p_obs_raw else datetime.now()
+                    prov_obj = MemoryProvenance(
+                        observed_at=p_obs,
+                        git_sha=p_data.get('git_sha'),
+                        source_agent=p_data.get('source_agent'),
+                        source_harness=p_data.get('source_harness'),
+                        context_ref=p_data.get('context_ref'),
+                    )
+
+                decay_obj = None
+                if 'decay' in data and isinstance(data['decay'], dict):
+                    d_data = data['decay']
+                    d_ver_raw = d_data.get('last_verified_at')
+                    d_ver = datetime.fromisoformat(str(d_ver_raw)) if d_ver_raw else datetime.now()
+                    hl = float(d_data['half_life_days']) if d_data.get('half_life_days') is not None else None
+                    decay_obj = MemoryDecay(
+                        half_life_days=hl,
+                        last_verified_at=d_ver,
+                        staleness_status=str(d_data.get('staleness_status', 'fresh')),
+                    )
+
                 redacted_val = bool(data.get('redacted', False))
                 redacted_at_raw = data.get('redacted_at')
                 redacted_at_val = datetime.fromisoformat(str(redacted_at_raw)) if redacted_at_raw else None
@@ -570,6 +677,9 @@ class MemoryManager:
                     derived_principle=data.get('derived_principle'),
                     ethical_covenant=data.get('ethical_covenant'),
                     status=data.get('status', 'active'),
+                    confidence=confidence_val,
+                    provenance=prov_obj,
+                    decay=decay_obj,
                     redacted=redacted_val,
                     redacted_at=redacted_at_val,
                     redaction_reason=redaction_reason_val,

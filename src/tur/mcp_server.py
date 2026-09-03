@@ -140,7 +140,11 @@ def status() -> dict:
 
 
 @mcp.tool()
-def wake(session_id: str | None = None, previous_session_id: str | None = None) -> str:
+def wake(
+    session_id: str | None = None,
+    previous_session_id: str | None = None,
+    include_stale: bool = False,
+) -> str:
     """
     Read your core identity, directives, and system metrics to establish context.
 
@@ -157,6 +161,7 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
     Args:
         session_id(str): Optional session ID. If omitted, uses active or most recent session.
         previous_session_id(str): Optional session ID to seed the opening note of a new session.
+        include_stale(bool): Optional flag to include decayed/stale memories in the system prompt.
     """
     global _active_session_id
     try:
@@ -173,7 +178,7 @@ def wake(session_id: str | None = None, previous_session_id: str | None = None) 
             _active_session_id = sess_id
         else:
             _active_session_id = sess_id
-        state = hydrate_session_state(active_id, session_id=sess_id)
+        state = hydrate_session_state(active_id, session_id=sess_id, include_stale=include_stale)
         system_prompt = compile_persona(state)
 
         # Append System Metrics Metadata
@@ -202,6 +207,10 @@ def learn(
     content: str,
     type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
     scope: Literal['incarnation', 'universal', 'user', 'persona'] = 'incarnation',
+    confidence: float = 1.0,
+    context_ref: str | None = None,
+    source_agent: str | None = None,
+    source_harness: str | None = None,
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
@@ -233,6 +242,10 @@ def learn(
          'user' means it's true for the Architect across all systems (stored locally).
          'persona' means it's a value/axiom of the persona (stored globally).
          'universal' means it's a universal truth shared across all projects and personas (stored globally).
+        confidence(float): Confidence score in [0.0, 1.0] (default 1.0).
+        context_ref(str): Optional source file or URI reference (e.g. 'src/auth.py#L10-L20').
+        source_agent(str): Optional agent identifier recording this observation.
+        source_harness(str): Optional harness identifier (e.g. 'antigravity', 'pycharm').
     """
     try:
         mem_type = MemoryType(type)
@@ -250,12 +263,25 @@ def learn(
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
+    from tur.provenance import create_provenance_and_decay
+
+    prov, dec = create_provenance_and_decay(
+        memory_type=mem_type,
+        confidence=confidence,
+        context_ref=context_ref,
+        source_agent=source_agent,
+        source_harness=source_harness or os.environ.get('TUR_HARNESS'),
+    )
+
     memory = Memory(
         type=mem_type,
         scope=mem_scope,
         tags=['mcp', 'agent'],
         content=content,
         source_session=_active_session_id or get_active_session_id(),
+        confidence=confidence,
+        provenance=prov,
+        decay=dec,
     )
     try:
         saved_path = manager.save(memory)

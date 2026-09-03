@@ -131,6 +131,28 @@ class MemoryLink(BaseModel):
     )
 
 
+class MemoryProvenance(BaseModel):
+    """
+    Observation provenance and temporal anchor metadata (EP-0131).
+    """
+
+    observed_at: datetime = Field(default_factory=datetime.now, description='When this observation was recorded')
+    git_sha: str | None = Field(default=None, description='Git commit SHA at time of observation')
+    source_agent: str | None = Field(default=None, description='Agent ID or persona that recorded this')
+    source_harness: str | None = Field(default=None, description='Harness identifier (e.g., antigravity, pycharm)')
+    context_ref: str | None = Field(default=None, description='Source file/URI reference (e.g., src/auth.py#L10)')
+
+
+class MemoryDecay(BaseModel):
+    """
+    Epistemic half-life decay kinetics and staleness tracking (EP-0131).
+    """
+
+    half_life_days: float | None = Field(default=14.0, description='Half-life in days (None for non-decaying types)')
+    last_verified_at: datetime = Field(default_factory=datetime.now, description='Timestamp of last verification')
+    staleness_status: str = Field(default='fresh', description='fresh, stale, unanchored, or refuted')
+
+
 class Memory(BaseModel):
     """
     An atomic unit of long-term memory.
@@ -156,6 +178,11 @@ class Memory(BaseModel):
         default=None, description='The commitment or promise made to the Architect or Self'
     )
     status: str | None = Field(default='active', description='active, pending_approval, superseded, or falsified')
+
+    # Provenance & Staleness Decay fields (EP-0131)
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, description='Confidence score in [0.0, 1.0]')
+    provenance: MemoryProvenance | None = Field(default=None, description='Observation provenance and temporal anchor')
+    decay: MemoryDecay | None = Field(default=None, description='Epistemic decay kinetics and staleness tracking')
 
     # Merkle Tombstone & Redaction fields (EP-0143)
     redacted: bool = Field(default=False, description='Whether this memory has been redacted due to sensitive data')
@@ -193,6 +220,7 @@ class Memory(BaseModel):
                 {'uri': link.uri, 'relation': link.relation} for link in sorted(self.links, key=lambda x: x.uri)
             ]
 
+            prov_str = f'{self.provenance.git_sha or ""}|{self.provenance.context_ref or ""}' if self.provenance else ''
             payload = (
                 f'{self.timestamp.isoformat()}|'
                 f'{self.type.value}|'
@@ -204,7 +232,9 @@ class Memory(BaseModel):
                 f'{self.core_type or ""}|'
                 f'{self.derived_principle or ""}|'
                 f'{self.ethical_covenant or ""}|'
-                f'{self.status or ""}'
+                f'{self.status or ""}|'
+                f'{self.confidence}|'
+                f'{prov_str}'
             )
 
             # Compute SHA-256
