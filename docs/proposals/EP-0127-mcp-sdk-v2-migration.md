@@ -84,13 +84,13 @@ Migrate server instantiation from `FastMCP` to `MCPServer`:
 ```python
 # Before (SDK v1):
 # from mcp.server.fastmcp import Context, FastMCP
-# mcp = FastMCP('tur-server', json_response=True, lifespan=server_lifespan)
+# mcp = FastMCP('tur-mcp', json_response=True, lifespan=server_lifespan)
 
 # After (SDK v2):
 from mcp.server import MCPServer
 from mcp.server.lifespan import lifespan_context
 
-mcp = MCPServer("tur-server", lifespan=server_lifespan)
+mcp = MCPServer("tur-mcp", lifespan=server_lifespan)
 ```
 
 Tool registrations retain decorator semantics (`@mcp.tool()`), returning structured Python native types or Pydantic
