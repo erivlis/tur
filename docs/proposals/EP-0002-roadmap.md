@@ -221,7 +221,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Session Lineage and Cross-Session Continuity Protocol (EP-0130) [Status: Implemented]:** Establishing explicit
       `parent_session_id` lineage tracking, automatic continuity seeding at `wake()`, bounded cross-session note
       discovery, and dual-backend SQLite/YAML signal fallbacks.
-    * **Memory Provenance, Temporal Anchoring, and Staleness Decay (EP-0131) [Status: Draft]:** Introducing git-anchored
+    * **Memory Provenance, Temporal Anchoring, and Staleness Decay (EP-0131) [Status: Implemented]:** Introducing git-anchored
       observation provenance, confidence scoring, TTL-based staleness decay, and continuous half-life decay kinetics.
     * **Active TMS Contradiction Interruption Protocol (EP-0134) [Status: Draft]:** Defining real-time inference and
       ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System.

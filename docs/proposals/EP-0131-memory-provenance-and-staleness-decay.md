@@ -2,7 +2,7 @@
 title: "EP-0131: Memory Provenance, Temporal Anchoring, and Staleness Decay"
 description: "Introduces git-anchored observation provenance, confidence scoring, TTL-based staleness decay, and hypothesis cache semantics to L1 memory records."
 icon: lucide/clock
-status: draft
+status: implemented
 ---
 
 # EP-0131: Memory Provenance, Temporal Anchoring, and Staleness Decay
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0131                                                          |
 | **Title**   | Memory Provenance, Temporal Anchoring, and Staleness Decay    |
 | **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Draft                                                         |
+| **Status**  | Implemented                                                   |
 | **Type**    | Standards Track                                               |
 | **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-08-27                                                    |
+| **Updated** | 2026-09-02                                                    |
 
 ## Abstract
 
@@ -157,5 +157,8 @@ class MemoryRecord(BaseModel):
 
 ## Change Log
 
+* **2026-09-02:**
+    * Implemented and verified across `src/tur/models.py`, `src/tur/memory.py`, `src/tur/provenance.py`, `src/tur/cli/agent.py`, and `src/tur/mcp_server.py`.
+    * Added comprehensive test suite in `tests/test_provenance.py` covering Git commit anchoring, half-life decay kinetics, staleness evaluation, OKF roundtrip, and wake prompt filtering.
 * **2026-08-27:**
     * Initial Draft formulated following architectural critique.
