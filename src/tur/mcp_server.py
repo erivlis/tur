@@ -10,6 +10,7 @@ from typing import Literal
 import anyio
 from mcp.server.fastmcp import Context, FastMCP
 
+from tur import __version__
 from tur._helpers import yaml_safe_load
 from tur.compiler import compile_persona
 from tur.dreaming import perform_sleep_dreaming
@@ -49,7 +50,8 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[dict]:
         logger.debug('Shutting down Tur MCP Server...')
 
 
-mcp = FastMCP('tur-server', json_response=True, lifespan=server_lifespan)
+mcp = FastMCP('tur-mcp', json_response=True, lifespan=server_lifespan)
+mcp._mcp_server.version = __version__
 
 # Process-isolated active session tracker for this specific connection/harness
 _active_session_id: str | None = None
@@ -61,7 +63,7 @@ def status() -> dict:
     Return the current persona, session, and memory status as a structured dict.
     Use this for a quick context check without loading the full system prompt.
 
-    Returns a dict with keys: persona_name, persona_id, persona_version,
+    Returns a dict with keys: tur_version, persona_name, persona_id, persona_version,
     session_id, session_status, note_count, latest_note, memory_count.
     """
 
@@ -120,6 +122,7 @@ def status() -> dict:
             }
 
         res = {
+            'tur_version': __version__,
             'persona_name': persona_name,
             'persona_id': active_id,
             'persona_version': persona_version,

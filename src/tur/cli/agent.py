@@ -17,6 +17,7 @@ from tur.cli.common import (
     console,
     get_session_status_style,
     handle_cli_error,
+    make_version_callback,
     run_scaffold_cli,
 )
 from tur.compiler import compile_persona
@@ -42,6 +43,20 @@ app = typer.Typer(
     pretty_exceptions_enable=False,
     rich_markup_mode='rich',
 )
+
+
+@app.callback()
+def main_callback(
+    version: bool = typer.Option(
+        False,
+        '--version',
+        '-V',
+        help='Show the version and exit.',
+        callback=make_version_callback('tur'),
+        is_eager=True,
+    ),
+) -> None:
+    """Tur: Persona safe agent runtime."""
 
 
 @app.command()

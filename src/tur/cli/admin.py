@@ -22,6 +22,7 @@ from tur.cli.common import (
     get_memory_status_style,
     get_session_status_style,
     handle_cli_error,
+    make_version_callback,
     require_human,
     run_scaffold_cli,
 )
@@ -42,6 +43,21 @@ app = typer.Typer(
     pretty_exceptions_enable=False,
     rich_markup_mode='rich',
 )
+
+
+@app.callback()
+def main_callback(
+    version: bool = typer.Option(
+        False,
+        '--version',
+        '-V',
+        help='Show the version and exit.',
+        callback=make_version_callback('tur-adm'),
+        is_eager=True,
+    ),
+) -> None:
+    """Tur: Administrative persona management CLI."""
+
 
 persona_app = typer.Typer(help='Manage persona configurations and identities.')
 memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger.')

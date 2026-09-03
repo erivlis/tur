@@ -12,6 +12,19 @@ from tur.locking import LockTimeoutError
 console = Console()
 
 
+def make_version_callback(prog_name: str) -> Callable[[bool], None]:
+    """Generates a standard CLI version callback for a specific binary."""
+
+    def callback(value: bool) -> None:
+        if value:
+            from tur import __version__
+
+            console.print(f'{prog_name} {__version__}')
+            raise typer.Exit()
+
+    return callback
+
+
 F = TypeVar('F', bound=Callable[..., Any])
 
 

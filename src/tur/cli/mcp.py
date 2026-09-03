@@ -2,16 +2,33 @@ import sys
 
 import typer
 
-from tur.cli.common import console
+from tur.cli.common import console, make_version_callback
 
 app = typer.Typer(
     help='Tur: Harness Gateway and MCP Server.',
     context_settings={'help_option_names': ['-h', '--help']},
     add_completion=False,
-    no_args_is_help=True,
+    no_args_is_help=False,
     pretty_exceptions_enable=False,
     rich_markup_mode='rich',
 )
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        False,
+        '--version',
+        '-V',
+        help='Show the version and exit.',
+        callback=make_version_callback('tur-mcp'),
+        is_eager=True,
+    ),
+) -> None:
+    """Tur: Harness Gateway and MCP Server."""
+    if ctx.invoked_subcommand is None:
+        serve()
 
 
 @app.command()
