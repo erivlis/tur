@@ -680,7 +680,7 @@ def test_mcp_read_notes_include_previous(mock_mcp_env, monkeypatch):
 def test_mcp_server_version_and_status(mock_mcp_env):
     from tur import __version__
 
-    assert mcp_server.mcp.name == 'tur-mcp-server'
+    assert mcp_server.mcp.name == 'tur-mcp'
     assert mcp_server.mcp._mcp_server.version == __version__
     st = mcp_server.status()
     assert isinstance(st, dict)
