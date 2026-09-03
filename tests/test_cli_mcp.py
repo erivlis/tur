@@ -15,6 +15,18 @@ from tur.cli.mcp import app as mcp_app
 runner = CliRunner()
 
 
+def test_tur_mcp_version_flag():
+    from tur import __version__
+
+    res_long = runner.invoke(mcp_app, ['--version'])
+    assert res_long.exit_code == 0
+    assert f'tur-mcp {__version__}' in res_long.output
+
+    res_short = runner.invoke(mcp_app, ['-V'])
+    assert res_short.exit_code == 0
+    assert f'tur-mcp {__version__}' in res_short.output
+
+
 @pytest.fixture
 def mock_workspace(tmp_path, monkeypatch):
     dot_tur = tmp_path / '.tur'

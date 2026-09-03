@@ -13,6 +13,18 @@ from tur.cli.admin import app as admin_app
 runner = CliRunner()
 
 
+def test_tur_admin_version_flag():
+    from tur import __version__
+
+    res_long = runner.invoke(admin_app, ['--version'])
+    assert res_long.exit_code == 0
+    assert f'tur-adm {__version__}' in res_long.output
+
+    res_short = runner.invoke(admin_app, ['-V'])
+    assert res_short.exit_code == 0
+    assert f'tur-adm {__version__}' in res_short.output
+
+
 @pytest.fixture
 def mock_workspace(tmp_path, monkeypatch):
     # Setup directories

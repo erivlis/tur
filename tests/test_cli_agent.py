@@ -13,6 +13,18 @@ from tur.models import HarnessDelegationError
 runner = CliRunner()
 
 
+def test_tur_version_flag():
+    from tur import __version__
+
+    res_long = runner.invoke(agent_app, ['--version'])
+    assert res_long.exit_code == 0
+    assert f'tur {__version__}' in res_long.output
+
+    res_short = runner.invoke(agent_app, ['-V'])
+    assert res_short.exit_code == 0
+    assert f'tur {__version__}' in res_short.output
+
+
 @pytest.fixture
 def mock_workspace(tmp_path, monkeypatch):
     # Setup directories
