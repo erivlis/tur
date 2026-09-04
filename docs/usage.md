@@ -205,13 +205,15 @@ To include archived (forgotten) memories in the list:
 tur-adm memory list --include-archived
 ```
 
-### 8. Measure Cognitive Complexity (`metrics`)
+### 8. Measure Cognitive Complexity & Spectral Health (`metrics`)
 
-Calculates the "Constraint Dimensionality" ($C_p$) and static token weight of a persona based on its principles and
-rules. This helps you understand if your persona's ruleset is becoming too complex for an LLM to handle reliably.
+Calculates the "Constraint Dimensionality" ($C_p$), static token weight, and **Spectral Graph Metrics** (algebraic connectivity $\lambda_2$, Louvain modularity $Q$, community clusters) of a persona.
 
 ```shell
 tur metrics
+
+# Output as structured JSON
+tur metrics --json
 ```
 
 ### 9. Forget a Memory (`forget`)
@@ -292,13 +294,26 @@ tur read-notes --session-id previous
 tur read-notes --include-previous --limit 20
 ```
 
-### 14. Search Memories (`recall`)
+### 14. Graph-Theoretic Semantic Search (`recall`)
 
-Perform an exact or keyword search across all memories inside the persona's memory bank to quickly retrieve matching
-insights or facts.
+Perform graph-theoretic associative retrieval across the persona's L2 Cognitive Map and L1 memory bank (EP-0136).
+Supports cognitive effort modulation (`--effort 0..10`, `--deep`) and conditional Mermaid flowchart generation (`--mermaid`).
 
 ```shell
+# Fast keyword lookup (Effort 0 / <5ms)
 tur recall "Noether"
+
+# 1-Hop Ego Neighborhood (Effort 1-4 / ~20ms)
+tur recall "file locking" --effort 2
+
+# HippoRAG Personalized PageRank + Louvain communities (Effort 5-7 / ~50ms)
+tur recall "file locking architecture" --deep
+
+# Deep retrieval with rendered Mermaid diagram
+tur recall "file locking architecture" --deep --mermaid
+
+# Exhaustive TMS & Git commit verification (Effort 8-10 / ~120ms)
+tur recall "file locking architecture" --effort 8
 ```
 
 ### 15. Manage Sessions (`session` Subgroup)

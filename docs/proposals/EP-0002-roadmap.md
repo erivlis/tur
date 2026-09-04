@@ -127,9 +127,9 @@ graph TD
    `tur-mcp` to MCP SDK v2, decouple `AGENTS.md` from `CONSTITUTION.md`, stream live progress, and filter sensitive credentials.
 3. **Layer 3: Storage, Lineage & Causal Signals (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141`):** Implement the
    5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, and Lamport Vector Clocks in IASP.
-4. **Layer 4: Cognitive Consolidation, Dense Retrieval & Budgeted Wake (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0144` + `EP-0137`):**
+4. **Layer 4: Cognitive Consolidation, Dense Retrieval & Memory Architecture (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0146` + `EP-0144` + `EP-0137`):**
    Temporal staleness decay, token-bounded wake, active TMS contradiction interruptions, HippoRAG Personalized PageRank
-   associative retrieval seeded by ONNX vector embeddings, and contract-driven cognitive skills.
+   associative retrieval, domain-driven `tur.memory` package consolidation, ONNX dense vector embeddings, and contract-driven skills.
 5. **Layer 5: Sovereign Epistemology & Visual Observability (`EP-0138` + `EP-0139` + `EP-0145`):** Continuous Epistemological
    Ladder from facts to principles, dynamic $C_p$ recalculation, 3D `AlgebraicTrie` tensor provenance semirings, simplicial
    homology Betti numbers, and Graphinate interactive browser topology dashboard.
@@ -225,7 +225,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
       observation provenance, confidence scoring, TTL-based staleness decay, and continuous half-life decay kinetics.
     * **Active TMS Contradiction Interruption Protocol (EP-0134) [Status: Draft]:** Defining real-time inference and
       ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System.
-    * **Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics (EP-0136) [Status: Draft]:** Adopting
+    * **Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics (EP-0136) [Status: Implemented]:** Adopting
       NetworkX for HippoRAG Personalized PageRank associative retrieval, Louvain community clustering, `--effort <0-10>`
       modulation, and Fiedler eigenvalue ($\lambda_2$) diagnostics.
     * **Tensor-Algebraic Provenance and Simplicial Homology via AlgebraX (EP-0139) [Status: Draft]:** Modeling memory as a
