@@ -30,7 +30,8 @@ Active TMS Contradiction Interruption (EP-0134), the Modular Scaffolding Protoco
 (EP-0136), Contract-Driven Cognitive Skills (EP-0137), Dynamic Epistemic Elevation (EP-0138), Tensor-Algebraic Provenance &
 Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), Lamport Vector Clocks in IASP (EP-0141),
 Progressive Execution Observability & Streaming Telemetry (EP-0142), Sensitive Data Prevention & Sanitization (EP-0143),
-Zero-Dependency Dense Semantic Embeddings (EP-0144), and Declarative Knowledge Graph Modeling & Visual Dashboard (EP-0145).
+Zero-Dependency Dense Semantic Embeddings (EP-0144), Declarative Knowledge Graph Modeling & Visual Dashboard (EP-0145),
+and Domain-Driven Memory Subsystem Architecture (EP-0146).
 
 ## Motivation
 
@@ -86,6 +87,7 @@ graph TD
         EP0132[EP-0132: Budgeted Wake<br/>Token-Bounded Retrieval]
         EP0134[EP-0134: Active TMS<br/>Contradiction Interruption]
         EP0136[EP-0136: Topological Retrieval<br/>HippoRAG PPR & Louvain]
+        EP0146[EP-0146: Memory Subsystem<br/>tur.memory Domain Package]
         EP0144[EP-0144: Dense Embeddings<br/>ONNX & AlgebraX Fallback]
         EP0137[EP-0137: Pluggable Forge<br/>Contract-Driven Skills]
     end
@@ -113,7 +115,8 @@ graph TD
     EP0131 --> EP0132
     EP0132 --> EP0134
     EP0134 --> EP0136
-    EP0136 --> EP0144
+    EP0136 --> EP0146
+    EP0146 --> EP0144
     EP0135 --> EP0137
     EP0136 --> EP0138
     EP0122 --> EP0139
@@ -293,6 +296,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
       Zero wake payloads and pre-turn dynamic memory recall hooks.
     * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Implemented]:** Introducing the `tur diff` CLI
       command and MCP tool to inspect memory mutations across sessions.
+    * **Domain-Driven Memory Subsystem Architecture (EP-0146) [Status: Draft]:** Consolidating flat memory, recall,
+      introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven `tur.memory`
+      package with clean facade interfaces and zero breaking changes.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
