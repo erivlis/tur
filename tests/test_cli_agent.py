@@ -768,3 +768,97 @@ def test_agent_read_notes_include_previous(mock_workspace):
     res_prev = runner.invoke(agent_app, ['read-notes', '--session-id', 'previous'])
     assert res_prev.exit_code == 0
     assert 'Parent note content' in res_prev.stdout
+
+
+def test_agent_recall_effort_and_mermaid_cli(mock_workspace):
+    import json
+
+    import networkx as nx
+    import yaml
+
+    from tur import persona
+
+    active_id = persona.get_active_persona_id()
+    persona_dir = persona.get_persona_path(active_id)
+
+    g = nx.DiGraph()
+    g.add_node('c1', type='Concept', content='Graph retrieval architecture', status='active', confidence=1.0)
+    g.add_node('c2', type='Fact', content='Personalized PageRank engine', status='active', confidence=1.0)
+    g.add_edge('c1', 'c2', type='supported_by')
+
+    with open(persona_dir / 'knowledge_graph.yaml', 'w', encoding='utf-8') as f:
+        yaml.dump(nx.node_link_data(g), f)
+
+    # Standard recall (effort 0)
+    res0 = runner.invoke(agent_app, ['recall', 'retrieval'])
+    assert res0.exit_code == 0
+    data0 = json.loads(res0.stdout)
+    assert any(n['id'] == 'c1' for n in data0)
+
+    # Recall with effort 5 and mermaid
+    res5 = runner.invoke(agent_app, ['recall', 'retrieval', '--effort', '5', '--mermaid'])
+    assert res5.exit_code == 0
+    assert '```mermaid' in res5.stdout
+    assert 'graph TD' in res5.stdout
+
+    # Recall with --deep alias
+    res_deep = runner.invoke(agent_app, ['recall', 'retrieval', '--deep'])
+    assert res_deep.exit_code == 0
+    assert 'c1' in res_deep.stdout
+
+
+def test_agent_metrics_spectral_cli(mock_workspace):
+    import json
+
+    import networkx as nx
+    import yaml
+
+    from tur import persona
+
+    active_id = persona.get_active_persona_id()
+    persona_dir = persona.get_persona_path(active_id)
+
+    g = nx.DiGraph()
+    g.add_node('m1', type='Concept', content='M1', status='active', confidence=1.0)
+    g.add_node('m2', type='Fact', content='M2', status='active', confidence=1.0)
+    g.add_edge('m1', 'm2', type='supported_by')
+
+    with open(persona_dir / 'knowledge_graph.yaml', 'w', encoding='utf-8') as f:
+        yaml.dump(nx.node_link_data(g), f)
+
+    # Test rich table output
+    res = runner.invoke(agent_app, ['metrics'])
+    assert res.exit_code == 0
+    assert 'Graph Nodes / Edges' in res.stdout
+    assert 'Knowledge Communities' in res.stdout
+    assert 'Algebraic Connectivity' in res.stdout
+    assert 'Modularity Score (Q)' in res.stdout
+
+    # Test JSON output
+    res_json = runner.invoke(agent_app, ['metrics', '--json'])
+    assert res_json.exit_code == 0
+    data = json.loads(res_json.stdout)
+    assert data['graph_nodes'] == 2
+    assert data['graph_edges'] == 1
+    assert 'algebraic_connectivity' in data
+    assert 'modularity_score' in data
+
+
+def test_agent_status_cli(mock_workspace):
+    # Test tur status before wake
+    res_initial = runner.invoke(agent_app, ['status'])
+    assert res_initial.exit_code == 0
+    assert 'Persona' in res_initial.stdout
+    assert 'Tur Status' in res_initial.stdout
+
+    # Wake and take a note
+    runner.invoke(agent_app, ['wake'])
+    runner.invoke(agent_app, ['note', 'First status test note.'])
+
+    # Test tur status after wake and note
+    res_after = runner.invoke(agent_app, ['status'])
+    assert res_after.exit_code == 0
+    assert 'First status test note.' in res_after.stdout
+    assert 'Notes' in res_after.stdout
+    assert 'active' in res_after.stdout
+

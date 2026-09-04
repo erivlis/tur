@@ -685,3 +685,56 @@ def test_mcp_server_version_and_status(mock_mcp_env):
     st = mcp_server.status()
     assert isinstance(st, dict)
     assert st.get('tur_version') == __version__
+
+
+def test_mcp_recall_and_metrics_and_resource(mock_mcp_env, monkeypatch):
+    import json
+
+    import networkx as nx
+    import yaml
+
+    from tur.persona import get_active_persona_id, get_persona_path
+
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+
+    persona_data = {
+        'name': 'MockAriel',
+        'version': '1.0.0',
+        'aleph': 'To design test scenarios.',
+        'principles': [{'name': 'Symmetry', 'role': 'Guardian', 'weight': 1.0}],
+    }
+    with open(persona_dir / 'persona.yaml', 'w', encoding='utf-8') as f:
+        yaml.dump(persona_data, f)
+
+    g = nx.DiGraph()
+    g.add_node('proto-1', type='Concept', content='Protocol mechanism for MCP', status='active', confidence=1.0)
+    g.add_node('proto-2', type='Fact', content='Fact about protocol', status='active', confidence=1.0)
+    g.add_edge('proto-1', 'proto-2', type='supported_by')
+
+    with open(persona_dir / 'knowledge_graph.yaml', 'w', encoding='utf-8') as f:
+        yaml.dump(nx.node_link_data(g), f)
+
+    # 1. Test recall with effort and mermaid
+    recall_res = mcp_server.recall('protocol', effort=5, mermaid=True)
+    assert 'proto-1' in recall_res
+    assert '```mermaid' in recall_res
+
+    # 2. Test metrics tool
+    metrics_res = mcp_server.metrics()
+    assert isinstance(metrics_res, dict)
+    assert metrics_res.get('error') is None
+    assert metrics_res['graph_nodes'] == 2
+    assert metrics_res['graph_edges'] == 1
+    assert 'algebraic_connectivity' in metrics_res
+    assert 'modularity_score' in metrics_res
+
+    # 3. Test subgraph context resource
+    resource_res = mcp_server.get_subgraph_context('proto-1')
+    assert 'proto-1' in resource_res
+    assert '```mermaid' in resource_res
+
+    # Test missing node in resource
+    missing_res = mcp_server.get_subgraph_context('nonexistent-node')
+    assert 'not found in L2 Cognitive Map' in missing_res
+

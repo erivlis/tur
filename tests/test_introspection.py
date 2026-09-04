@@ -210,8 +210,8 @@ def test_topological_recall_spreading_activation(temp_workspace):
 
     from tur.recall import topological_recall
 
-    # Query for "first" should match node-a, and spreading activation should include node-b (1 hop) and node-c (2 hops)
-    res_json = topological_recall('first', persona_dir)
+    # Query for "first" with effort=5 should match node-a, and spreading activation should include node-b and node-c
+    res_json = topological_recall('first', persona_dir, effort=5)
     res_data = json.loads(res_json)
 
     # Should contain all three nodes due to spreading activation
