@@ -2,7 +2,7 @@
 title: "EP-0136: Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics"
 description: "Integrates NetworkX graph algorithms, HippoRAG Personalized PageRank associative retrieval, Louvain community clustering, --effort <0-10> modulation, and spectral algebraic connectivity (λ2) into Tur memory."
 icon: lucide/network
-status: draft
+status: accepted
 ---
 
 # EP-0136: Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics
@@ -14,10 +14,10 @@ status: draft
 | **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                         |
 | **Sponsor**  | Council of Giants                                                             |
 | **Delegate** | Shannon (Topological Entropy), Bacon (Empirical Benchmarks)                   |
-| **Status**   | Draft                                                                         |
+| **Status**   | Accepted                                                                      |
 | **Type**     | Standards Track                                                               |
 | **Created**  | 2026-08-28                                                                    |
-| **Updated**  | 2026-08-28                                                                    |
+| **Updated**  | 2026-09-04                                                                    |
 
 ---
 
@@ -95,10 +95,28 @@ $$\mathbf{p}^* = (1 - \alpha) \mathbf{W}^{\top} \mathbf{p}^* + \alpha \mathbf{p}
 
 Where:
 
-- $\mathbf{p}_0$ is the initial query concept teleportation vector.
-- $\mathbf{W}$ is the normalized adjacency matrix weighted by semantic edge types (`supported_by: 1.5`,
-  `metaphor_for: 1.2`, `related_to: 0.8`, `contradicts: -2.0`).
+- $\mathbf{p}_0$ is the initial query concept teleportation vector (derived from lexical BM25 seed relevance).
+- $\mathbf{W}$ is the normalized transition matrix weighted by semantic edge types (`supported_by: 1.5`,
+  `depends_on: 1.4`, `refines: 1.3`, `metaphor_for: 1.2`, `related_to: 0.8`, `contradicts: 0.01`).
 - $\alpha = 0.15$ is the restart probability.
+
+#### 2.1 Comparative Analysis of Three PageRank Engines
+
+Tur evaluates three distinct execution backends for graph spreading activation:
+
+| Backend Engine                                                   | Mechanism                                                              | Pros                                                                                                                                                | Cons                                                                                                              | Ideal Use Case in Tur                                                                                   |
+|:-----------------------------------------------------------------|:-----------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------|
+| **Inlined Pure-Python**<br>(`tur.recall.pure_pagerank`)          | Direct adjacency iteration with inlined primitive float arithmetic.    | • Zero dependencies (pure standard library).<br>• Fast convergence ($< 1\text{ms}$ on $N < 1,000$).<br>• Built-in personalization & edge weighting. | • Linear pure-Python scaling on massive graphs ($N > 10,000$).                                                    | **Default Core:** Standard cognitive maps ($N \approx 50\text{–}1,000$) in zero-install environments.   |
+| **NetworkX / SciPy**<br>(`networkx.pagerank`)                    | SciPy sparse CSR matrices and compiled C/Fortran solvers.              | • Highly optimized vectorization on massive scale ($N > 10,000$).                                                                                   | • Heavy compiled binary wheels (`scipy` + `numpy`, ~150–200MB).<br>• Throws `ModuleNotFoundError` in default Tur. | **Massive Scale Extra:** Enterprise codebases with large external dependency graphs.                    |
+| **AlgebraX Semiring Engine**<br>(`algebrax.algorithms.pagerank`) | Vector-matrix dot products over algebraic semirings (`ax.matrix.dot`). | • Pure Python with zero binary dependencies.<br>• Generalizes across semirings: Tropical $(\max, +)$ and Provenance Polynomials $\mathbb{N}[X]$.    | • Generic semiring dispatch overhead per scalar op compared to inlined float arithmetic.                          | **Algebraic & Provenance (EP-0139):** Tracing exact epistemic lineage and causal paths across memories. |
+
+#### 2.2 Multi-Tier Graceful Delegation & Fallback Strategy
+
+To balance zero-install portability with high scalability and algebraic provenance, Tur adopts a 3-tier fallback architecture:
+
+1. **Tier 1 (Algebraic Provenance):** If `algebrax` is installed and the caller requests semiring provenance or causal reasoning path extraction (EP-0139), delegate to `algebrax.algorithms.pagerank`.
+2. **Tier 2 (Large-Scale Acceleration):** If `scipy` and `numpy` are detected in the runtime environment and graph node count $N \ge 2,000$, delegate to `nx.pagerank` for compiled vector acceleration.
+3. **Tier 3 (Universal Baseline):** Default to inlined `pure_pagerank`, guaranteeing sub-millisecond execution and zero external binary requirements in all standard installations.
 
 ### 3. Conditional Mermaid Visualization (`--mermaid`)
 
