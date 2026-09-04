@@ -2,8 +2,8 @@
 
 **Document Reference:** `references/explorations/EXP-0008-tactical-roadmap-execution-plan/tactical_layer_by_layer_execution_plan.md`  
 **Authors:** Eran Rivlis & Ariel  
-**Date:** 2026-08-30  
-**Target:** Phased, high-velocity implementation of the Tur Enhancement Proposals (EP-0130 through EP-0142) across 5 sequential `/goal` runs.
+**Date:** 2026-08-30 (Updated 2026-09-04)  
+**Target:** Phased, high-velocity implementation of the Tur Enhancement Proposals (EP-0130 through EP-0146) across 5 sequential `/goal` runs.
 
 ---
 
@@ -18,7 +18,7 @@ graph TD
     W1["Wave 1: Substrate Hardening & Quick Wins<br/>(EP-0140)"]
     W2["Wave 2: Scaffolding & Live Observability<br/>(EP-0135 & EP-0142)"]
     W3["Wave 3: Storage, Lineage & Causal Signals<br/>(EP-0130, EP-0133 & EP-0141)"]
-    W4["Wave 4: High-Speed Graph Engine & Budgeted Wake<br/>(EP-0131, EP-0132, EP-0134 & EP-0136)"]
+    W4["Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake<br/>(EP-0131, EP-0132, EP-0134, EP-0136, EP-0146 & EP-0144)"]
     W5["Wave 5: Sovereign Epistemology & Higher Algebra<br/>(EP-0137, EP-0138 & EP-0139)"]
 
     W1 --> W2
@@ -96,26 +96,28 @@ graph TD
 
 ---
 
-### 🌊 Wave 4: High-Speed Graph Engine & Budgeted Wake
+### 🌊 Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake
 * **Primary Proposals:**
   - [`EP-0136`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0136-graph-theoretic-semantic-retrieval-and-topological-metrics.md): Graph-Theoretic Semantic Retrieval, Louvain & HippoRAG PPR
+  - [`EP-0146`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md): Domain-Driven Memory Subsystem Architecture (`tur.memory`)
   - [`EP-0132`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md): Budgeted Wake and Dynamic Memory Context Retrieval
   - [`EP-0131`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0131-memory-provenance-and-staleness-decay.md): Memory Provenance, Temporal Anchoring, and Staleness Decay
   - [`EP-0134`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0134-active-tms-contradiction-interruption.md): Active TMS Contradiction Interruption Protocol
   - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX
 * **Key Deliverables:**
   1. `src/tur/recall.py`: NetworkX HippoRAG Personalized PageRank associative retrieval, Louvain communities, `--effort <0-10>` parameter, and `--mermaid` visualization.
-  2. `src/tur/compiler.py`: Knapsack dynamic token budgeting packing top-ranked PPR subgraphs into the wake prompt.
-  3. `src/tur/models.py` & `src/tur/memory.py`: Half-life exponential decay kinetics and Git commit observation anchors.
-  4. `src/tur/tms.py`: Real-time JTMS contradiction checking and assertion deactivation.
-  5. `src/tur/embeddings.py`: ONNX Runtime dense vector inference (`all-MiniLM-L6-v2_onnx_int8`) with pure AlgebraX sparse cosine fallback.
+  2. `src/tur/memory/`: Consolidate flat memory modules into domain-driven package (`storage.py`, `recall.py`, `introspection.py`, `dreaming.py`, `provenance.py`, `diff.py`, `sanitizer.py`) with canonical facade in `__init__.py`.
+  3. `src/tur/compiler.py`: Knapsack dynamic token budgeting packing top-ranked PPR subgraphs into the wake prompt.
+  4. `src/tur/models.py` & `src/tur/memory/storage.py`: Half-life exponential decay kinetics and Git commit observation anchors.
+  5. `src/tur/tms.py`: Real-time JTMS contradiction checking and assertion deactivation.
+  6. `src/tur/memory/embeddings.py`: ONNX Runtime dense vector inference (`all-MiniLM-L6-v2_onnx_int8`) with pure AlgebraX sparse cosine fallback.
 * **Target Files:**
-  - `src/tur/recall.py`, `src/tur/introspection.py`, `src/tur/embeddings.py`
-  - `src/tur/compiler.py`, `src/tur/memory.py`, `src/tur/models.py`
+  - `src/tur/memory/` (`__init__.py`, `storage.py`, `recall.py`, `introspection.py`, `dreaming.py`, `provenance.py`, `diff.py`, `sanitizer.py`, `embeddings.py`)
+  - `src/tur/compiler.py`, `src/tur/models.py`
   - `tests/test_recall.py`, `tests/test_compiler.py`, `tests/test_tms.py`, `tests/test_embeddings.py`
 * **Suggested `/goal` Command:**
   ```text
-  /goal Implement EP-0131, EP-0132, EP-0134, EP-0136, and EP-0144: Upgrade recall with NetworkX HippoRAG PageRank, implement Knapsack budgeted wake in compiler.py, add git-anchored provenance decay, active TMS contradiction checks, and ONNX vector embeddings.
+  /goal Implement EP-0146, EP-0131, EP-0132, EP-0134, and EP-0144: Consolidate flat memory modules into the domain-driven tur.memory package, implement Knapsack budgeted wake in compiler.py, add git-anchored provenance decay, active TMS contradiction checks, and ONNX vector embeddings.
   ```
 
 ---
@@ -153,13 +155,14 @@ Each wave MUST satisfy the following quality gates before proceeding to the next
 
 ## 4. Strategic Synergies & Integration Matrix
 
-| Confluence Stream | Participating EPs | Architectural Synergy & Emergent Capability |
-| :--- | :--- | :--- |
-| **1. The Unified Reactive Wire** | `EP-0127` + `EP-0123` + `EP-0141` + `EP-0142` | `MCPServer` async notification dispatcher serves both live streaming sleep/introspection progress (`notifications/progress`) and causally ordered inter-agent vector clock signals (`notifications/resources/updated`). |
-| **2. High-Speed Cognitive Subgraph Engine** | `EP-0140` + `EP-0136` + `EP-0139` | Sub-millisecond $\mathcal{O}(1)$ Merkle invalidation memory caching enables rapid on-the-fly construction of NetworkX graphs and sparse 3D tensors for HippoRAG PPR and Simplicial Homology Betti hole detection without disk bottlenecks. |
-| **3. Contract-Driven Sovereign Evolution** | `EP-0137` + `EP-0138` | Typed Pydantic I/O contracts allow externalized cognitive skills to autonomously execute Popperian falsification scoring ($\Phi$) and propose principle crystallizations without polluting the minimal core execution kernel. |
-| **4. Active TMS & Epistemic Delta Tracking** | `EP-0134` + `EP-0133` | Active Truth Maintenance conflict detection pairs with `tur diff` to expose structured epistemic mutation graphs (added, subsumed, superseded, contradicted) across session boundaries. |
-| **5. Zero-Waste Context Engine** | `EP-0135` + `EP-0132` + `EP-0136` | Decoupling operational scaffolding (`AGENTS.md`) from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack budgeting with the highest-relevance associative memory subgraphs. |
-| **6. High-Recall Hybrid Semantic Diffusion** | `EP-0144` + `EP-0136` + `EP-0140` + `EP-0132` | Dense ONNX vector embeddings seed Personalized PageRank diffusion across the L2 graph, solving the vocabulary mismatch problem without PyTorch bloat and packing results into token budgets with sub-millisecond $\mathcal{O}(1)$ cached execution. |
-| **7. Cryptographic Boundary & Tombstone Defense** | `EP-0143` + `EP-0106` + `EP-0115` + `EP-0135` | Pre-ingest regex and Shannon entropy scanners sanitize credentials before persistence, while Merkle tombstoning allows purging compromised tokens without corrupting content-addressable history or persona export archives. |
-| **8. Interactive Epistemic Topology Observability** | `EP-0145` + `EP-0138` + `EP-0139` + `EP-0134` | Graphinate local web dashboard and schema-verified `networkx-mermaid` compilation render interactive 3D/2D visual inspections of Popperian elevation chains, simplicial homology voids, and JTMS contradiction boundaries. |
+| Confluence Stream                                   | Participating EPs                             | Architectural Synergy & Emergent Capability                                                                                                                                                                                                                   |
+|:----------------------------------------------------|:----------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **1. The Unified Reactive Wire**                    | `EP-0127` + `EP-0123` + `EP-0141` + `EP-0142` | `MCPServer` async notification dispatcher serves both live streaming sleep/introspection progress (`notifications/progress`) and causally ordered inter-agent vector clock signals (`notifications/resources/updated`).                                       |
+| **2. High-Speed Cognitive Subgraph Engine**         | `EP-0140` + `EP-0136` + `EP-0139`             | Sub-millisecond $\mathcal{O}(1)$ Merkle invalidation memory caching enables rapid on-the-fly construction of NetworkX graphs and sparse 3D tensors for HippoRAG PPR and Simplicial Homology Betti hole detection without disk bottlenecks.                    |
+| **3. Contract-Driven Sovereign Evolution**          | `EP-0137` + `EP-0138`                         | Typed Pydantic I/O contracts allow externalized cognitive skills to autonomously execute Popperian falsification scoring ($\Phi$) and propose principle crystallizations without polluting the minimal core execution kernel.                                 |
+| **4. Active TMS & Epistemic Delta Tracking**        | `EP-0134` + `EP-0133`                         | Active Truth Maintenance conflict detection pairs with `tur diff` to expose structured epistemic mutation graphs (added, subsumed, superseded, contradicted) across session boundaries.                                                                       |
+| **5. Zero-Waste Context Engine**                    | `EP-0135` + `EP-0132` + `EP-0136`             | Decoupling operational scaffolding (`AGENTS.md`) from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack budgeting with the highest-relevance associative memory subgraphs.                         |
+| **6. High-Recall Hybrid Semantic Diffusion**        | `EP-0144` + `EP-0136` + `EP-0140` + `EP-0132` | Dense ONNX vector embeddings seed Personalized PageRank diffusion across the L2 graph, solving the vocabulary mismatch problem without PyTorch bloat and packing results into token budgets with sub-millisecond $\mathcal{O}(1)$ cached execution.           |
+| **7. Cryptographic Boundary & Tombstone Defense**   | `EP-0143` + `EP-0106` + `EP-0115` + `EP-0135` | Pre-ingest regex and Shannon entropy scanners sanitize credentials before persistence, while Merkle tombstoning allows purging compromised tokens without corrupting content-addressable history or persona export archives.                                  |
+| **8. Interactive Epistemic Topology Observability** | `EP-0145` + `EP-0138` + `EP-0139` + `EP-0134` | Graphinate local web dashboard and schema-verified `networkx-mermaid` compilation render interactive 3D/2D visual inspections of Popperian elevation chains, simplicial homology voids, and JTMS contradiction boundaries.                                    |
+| **9. Domain-Driven Memory Subsystem**               | `EP-0146` + `EP-0136` + `EP-0131` + `EP-0139` | Consolidating flat memory, recall, introspection, dreaming, provenance, diff, and sanitizer into the authoritative `tur.memory` package prevents cyclic import deadlocks and provides a unified substrate for higher-algebra tensors and epistemic elevation. |
