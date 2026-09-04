@@ -86,7 +86,8 @@ nav = [
         "proposals/EP-0142-progressive-execution-observability-and-streaming-telemetry.md",
         "proposals/EP-0143-sensitive-data-prevention-and-sanitization.md",
         "proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md",
-        "proposals/EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md"
+        "proposals/EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md",
+        "proposals/EP-0146-domain-driven-memory-subsystem-architecture.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",

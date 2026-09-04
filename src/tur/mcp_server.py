@@ -8,22 +8,22 @@ from contextlib import asynccontextmanager
 from typing import Literal
 
 import anyio
+import anyio.from_thread
 from mcp.server.fastmcp import Context, FastMCP
 
 from tur import __version__
-from tur._helpers import yaml_safe_load
 from tur.compiler import compile_persona
 from tur.dreaming import perform_sleep_dreaming
 from tur.locking import LockTimeoutError
 from tur.memory import MemoryManager
 from tur.metrics import CognitiveMetrics, compute_persona_metrics
-from tur.models import Memory, MemoryScope, MemoryType, SessionNotes
+from tur.models import Memory, MemoryScope, MemoryType
 from tur.persona import get_active_persona_id, get_persona_path
 from tur.session import (
     ack_signals_logic,
     end_session_logic,
     get_active_session_id,
-    get_session_file,
+    get_persona_status_summary,
     hydrate_session_state,
     list_agents_logic,
     load_session_index,
@@ -70,76 +70,16 @@ def status() -> dict:
     try:
         active_id = get_active_persona_id()
         persona_dir = get_persona_path(active_id)
-
-        # Persona info
-        persona_name = active_id
-        persona_version = 'unknown'
-        persona_yaml_path = persona_dir / 'persona.yaml'
-        if persona_yaml_path.exists():
-            with open(persona_yaml_path, encoding='utf-8') as f:
-                pdata = yaml_safe_load(f)
-            persona_name = pdata.get('name', active_id)
-            persona_version = pdata.get('version', 'unknown')
-
-        # Session info
-        session_id = _active_session_id or get_active_session_id()
-        session_status = 'none'
-        note_count = 0
-        latest_note = None
-
-        index = load_session_index(persona_dir)
-        if session_id:
-            entry = next((s for s in index.sessions if s.id == session_id), None)
-            if entry:
-                session_status = entry.status
-            notes_yaml_path = get_session_file(persona_dir, session_id)
-            if notes_yaml_path.exists():
-                with open(notes_yaml_path, encoding='utf-8') as f:
-                    notes_data = yaml_safe_load(f)
-                session_notes = SessionNotes(**notes_data)
-                note_count = len(session_notes.notes)
-                if session_notes.notes:
-                    last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
-                    latest_note = last.content[:200]
-        elif index.sessions:
-            most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
-            session_id = most_recent.id
-            session_status = most_recent.status + ' (last)'
-
-        # Memory stats
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        memory_stats = memory_manager.get_stats()
-        memory_count = memory_stats['total']
-
-        from tur.introspection import load_l2_graph_from_okf
-
-        l2_graph = load_l2_graph_from_okf(persona_dir)
-        l2_stats = None
-        if l2_graph is not None:
-            l2_stats = {
-                'nodes': l2_graph.number_of_nodes(),
-                'edges': l2_graph.number_of_edges(),
-            }
-
-        res = {
-            'tur_version': __version__,
-            'persona_name': persona_name,
-            'persona_id': active_id,
-            'persona_version': persona_version,
-            'session_id': session_id,
-            'session_status': session_status,
-            'note_count': note_count,
-            'latest_note': latest_note,
-            'memory_count': memory_count,
-            'memory_stats': memory_stats,
-            'l2_stats': l2_stats,
-        }
+        load_session_index(persona_dir)
+        return get_persona_status_summary(
+            persona_dir=persona_dir,
+            session_id=_active_session_id,
+            persona_id=active_id,
+        )
     except LockTimeoutError as e:
         return {'status': 'contended', 'error': f'State lock is currently held by another process: {e}'}
     except Exception as e:
         return {'error': str(e)}
-    else:
-        return res
 
 
 @mcp.tool()
@@ -525,24 +465,45 @@ async def sleep(
 
 
 @mcp.tool()
-def recall(query: str) -> str:
+def recall(
+    query: str,
+    effort: int = 0,
+    deep: bool = False,
+    mermaid: bool = False,
+    top_k: int = 5,
+) -> str:
     """
-    Search your deep memory bank for past events, decisions, or knowledge not currently in your active context.
+    Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval (EP-0136).
 
     Args:
         query: The topic or concept to search for in past memories.
+        effort: Cognitive effort level in [0..10].
+                0: Fast BM25 keyword discrete lookup (<5ms).
+                1-4: Vector match + 1-Hop Ego Neighborhood context (~20ms).
+                5-7: HippoRAG Personalized PageRank + Louvain Community Subgraph (~50ms).
+                8-10: Full PPR + Louvain + TMS contradiction checks + Git anchor validation (~120ms).
+        deep: Convenience alias for effort=5.
+        mermaid: If True, include a rendered Mermaid flowchart diagram of the retrieved subgraph.
+        top_k: Maximum number of focal memory nodes to return (default 5).
     """
     from tur.recall import topological_recall
 
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
-    return topological_recall(query, persona_dir)
+    return topological_recall(
+        query=query,
+        persona_dir=persona_dir,
+        effort=effort,
+        deep=deep,
+        mermaid=mermaid,
+        top_k=top_k,
+    )
 
 
 @mcp.tool()
 def metrics(identifier: str | None = None) -> dict:
     """
-    Calculate Constraint Dimensionality (Cp) and cognitive load metrics for a persona.
+    Calculate Constraint Dimensionality (Cp), cognitive load, and spectral graph metrics for a persona (EP-0136).
 
     Args:
         identifier: The name or UUID of the persona. If omitted, uses the default.
@@ -552,14 +513,35 @@ def metrics(identifier: str | None = None) -> dict:
     except Exception as e:
         return {'error': str(e)}
     else:
-        return {
-            'persona_id': report.persona_id,
-            'persona_name': report.persona_name,
-            'constraint_dimensionality': report.constraint_dimensionality,
-            'class': report.rating_class,
-            'static_token_cost': report.static_token_cost,
-            'information_density': report.information_density,
-        }
+        return report.to_dict()
+
+
+@mcp.resource('tur://context/subgraph/{node_id}')
+def get_subgraph_context(node_id: str) -> str:
+    """
+    Exposes a bounded semantic ego-subgraph context resource for a given node (EP-0136).
+    """
+    import json
+
+    from tur.introspection import load_cognitive_map
+    from tur.recall import CognitiveGraphEngine
+
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
+    graph = load_cognitive_map(persona_dir)
+
+    if graph is None or node_id not in graph:
+        return f"Node '{node_id}' not found in L2 Cognitive Map."
+
+    engine = CognitiveGraphEngine(graph)
+    sub = engine.extract_bounded_ego_subgraph(center_nodes=[node_id], radius=1, max_nodes=10)
+    mermaid_code = engine.format_subgraph_as_mermaid(sub)
+
+    nodes_data = [
+        {'id': n, 'type': sub.nodes[n].get('type', 'Concept'), 'content': sub.nodes[n].get('content', '')}
+        for n in sub.nodes()
+    ]
+    return f'{json.dumps(nodes_data, indent=2)}\n\n```mermaid\n{mermaid_code}\n```'
 
 
 @mcp.tool()

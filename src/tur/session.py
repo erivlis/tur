@@ -1301,3 +1301,105 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
             return note_logic(content, session_id=sorted_sessions[0].id, identifier=identifier)
         else:
             raise ValueError(f"No active session found for persona '{active_id}'. Run 'wake' first.")
+
+
+def get_persona_status_summary(
+    persona_dir: Path,
+    session_id: str | None = None,
+    persona_id: str | None = None,
+) -> dict[str, Any]:
+    """
+    Computes a comprehensive status summary dictionary for a persona and active/recent session.
+
+    Unifies status inspection between the CLI (tur status) and MCP server (status() tool).
+    """
+    from tur import __version__
+    from tur.introspection import load_cognitive_map
+
+    active_id = persona_id or persona_dir.name
+
+    # Persona info
+    persona_name = active_id
+    persona_version = 'unknown'
+    persona_yaml_path = persona_dir / 'persona.yaml'
+    if persona_yaml_path.exists():
+        try:
+            with open(persona_yaml_path, encoding='utf-8') as f:
+                pdata = yaml_safe_load(f)
+            persona_name = pdata.get('name', active_id)
+            persona_version = pdata.get('version', 'unknown')
+        except Exception:
+            pass
+
+    # Session info
+    target_session_id = session_id or get_active_session_id()
+    session_status = 'none'
+    session_created = '-'
+    session_updated = '-'
+    note_count = 0
+    latest_note = None
+    latest_note_snippet = '-'
+
+    index = load_session_index(persona_dir)
+    if target_session_id:
+        entry = next((s for s in index.sessions if s.id == target_session_id), None)
+        if entry:
+            session_status = entry.status
+            if hasattr(entry, 'created_at') and entry.created_at:
+                session_created = entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            if hasattr(entry, 'updated_at') and entry.updated_at:
+                session_updated = entry.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+
+        notes_yaml_path = get_session_file(persona_dir, target_session_id)
+        if notes_yaml_path.exists():
+            try:
+                with open(notes_yaml_path, encoding='utf-8') as f:
+                    notes_data = yaml_safe_load(f)
+                session_notes = SessionNotes(**notes_data)
+                note_count = len(session_notes.notes)
+                if session_notes.notes:
+                    last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
+                    latest_note = last.content[:200]
+                    snippet = last.content[:80].replace('\n', ' ')
+                    if len(last.content) > 80:
+                        snippet += '…'
+                    latest_note_snippet = snippet
+            except Exception:
+                pass
+    elif index.sessions:
+        most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
+        target_session_id = most_recent.id
+        session_status = most_recent.status + ' (last)'
+        if hasattr(most_recent, 'updated_at') and most_recent.updated_at:
+            session_updated = most_recent.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Memory stats
+    memory_manager = MemoryManager(base_dir=persona_dir)
+    memory_stats = memory_manager.get_stats()
+    memory_count = memory_stats['total']
+
+    # L2 Knowledge Graph
+    l2_graph = load_cognitive_map(persona_dir)
+    l2_stats = None
+    if l2_graph is not None:
+        l2_stats = {
+            'nodes': l2_graph.number_of_nodes(),
+            'edges': l2_graph.number_of_edges(),
+        }
+
+    return {
+        'tur_version': __version__,
+        'persona_name': persona_name,
+        'persona_id': active_id,
+        'persona_version': persona_version,
+        'session_id': target_session_id,
+        'session_status': session_status,
+        'session_created': session_created,
+        'session_updated': session_updated,
+        'note_count': note_count,
+        'latest_note': latest_note,
+        'latest_note_snippet': latest_note_snippet,
+        'memory_count': memory_count,
+        'memory_stats': memory_stats,
+        'l2_stats': l2_stats,
+    }

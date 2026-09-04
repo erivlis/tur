@@ -12,7 +12,6 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 from rich.table import Table
 
 from tur import dreaming, persona, session
-from tur._helpers import yaml_safe_load
 from tur.cli.common import (
     console,
     get_session_status_style,
@@ -30,7 +29,6 @@ from tur.models import (
     MemoryLink,
     MemoryScope,
     MemoryType,
-    SessionNotes,
 )
 from tur.recall import topological_recall
 from tur.session import update_system_state
@@ -237,14 +235,29 @@ def recall(
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
+    effort: int = typer.Option(
+        0, '--effort', '-e', min=0, max=10, help='Cognitive effort level in [0..10] for graph retrieval.'
+    ),
+    deep: bool = typer.Option(
+        False, '--deep', help='Convenience alias for --effort 5 (HippoRAG Personalized PageRank + Louvain clusters).'
+    ),
+    mermaid: bool = typer.Option(False, '--mermaid', help='Render retrieved subgraph as Mermaid flowchart.'),
+    top_k: int = typer.Option(5, '--top-k', '-k', help='Maximum number of memory nodes to return.'),
 ):
-    """Search your deep memory bank for past events, decisions, or knowledge."""
+    """Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval."""
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
 
-        result_json = topological_recall(query, persona_dir)
-        console.print(result_json)
+        result = topological_recall(
+            query=query,
+            persona_dir=persona_dir,
+            effort=effort,
+            deep=deep,
+            mermaid=mermaid,
+            top_k=top_k,
+        )
+        console.print(result)
 
     except Exception as e:
         handle_cli_error(e)
@@ -277,59 +290,10 @@ def status(
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
-
-        # --- Persona info ---
-        persona_name = active_id
-        persona_version = 'unknown'
-        try:
-            persona_obj = persona.load_persona(persona_dir)
-            persona_name = persona_obj.name
-            persona_version = persona_obj.version
-        except Exception:
-            pass
-
-        # --- Session info ---
-        session_id = session.get_active_session_id()
-        session_status = 'none'
-        session_created = '-'
-        session_updated = '-'
-        note_count = 0
-        latest_note = '-'
-
-        index = session.load_session_index(persona_dir)
-
-        if session_id:
-            entry = next((s for s in index.sessions if s.id == session_id), None)
-            if entry:
-                session_status = entry.status
-                session_created = entry.created_at.strftime('%Y-%m-%d %H:%M:%S')
-                session_updated = entry.updated_at.strftime('%Y-%m-%d %H:%M:%S')
-
-            notes_yaml_path = session.get_session_file(persona_dir, session_id)
-            if notes_yaml_path.exists():
-                try:
-                    with open(notes_yaml_path, encoding='utf-8') as f:
-                        notes_data = yaml_safe_load(f)
-                    session_notes = SessionNotes(**notes_data)
-                    note_count = len(session_notes.notes)
-                    if session_notes.notes:
-                        last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
-                        snippet = last.content[:80].replace('\n', ' ')
-                        if len(last.content) > 80:
-                            snippet += '…'
-                        latest_note = snippet
-                except Exception:
-                    pass
-        elif index.sessions:
-            # No active session — show most recently touched one
-            most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
-            session_id = most_recent.id + ' (last)'
-            session_status = most_recent.status
-            session_updated = most_recent.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        summary = session.get_persona_status_summary(persona_dir=persona_dir, persona_id=active_id)
 
         # --- Memory stats ---
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        stats = memory_manager.get_stats()
+        stats = summary['memory_stats']
         active_count = stats['active']
         archived_count = stats['archived']
         subsumed_count = stats['subsumed']
@@ -340,27 +304,24 @@ def status(
         type_parts = [f'{k}: {v}' for k, v in sorted(stats['by_type'].items(), key=lambda x: -x[1])]
         type_str = ', '.join(type_parts) if type_parts else 'none'
 
-        from tur.introspection import load_l2_graph_from_okf
-
-        l2_graph = load_l2_graph_from_okf(persona_dir)
         l2_info = None
-        if l2_graph is not None and l2_graph.number_of_nodes() > 0:
-            l2_info = f'{l2_graph.number_of_nodes()} nodes, {l2_graph.number_of_edges()} edges'
+        if summary['l2_stats'] and summary['l2_stats']['nodes'] > 0:
+            l2_info = f"{summary['l2_stats']['nodes']} nodes, {summary['l2_stats']['edges']} edges"
 
         # --- Render ---
         table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
         table.add_column('Key', style='bold cyan', no_wrap=True)
         table.add_column('Value', style='white')
 
-        table.add_row('Persona', f'{persona_name} [dim](v{persona_version})[/dim]')
-        table.add_row('Persona ID', active_id)
+        table.add_row('Persona', f"{summary['persona_name']} [dim](v{summary['persona_version']})[/dim]")
+        table.add_row('Persona ID', summary['persona_id'])
         table.add_row('', '')
-        table.add_row('Session ID', session_id or '[dim]none[/dim]')
-        table.add_row('Status', get_session_status_style(session_status))
-        table.add_row('Started', session_created)
-        table.add_row('Updated', session_updated)
-        table.add_row('Notes', str(note_count))
-        table.add_row('Latest note', f'[dim]{latest_note}[/dim]')
+        table.add_row('Session ID', summary['session_id'] or '[dim]none[/dim]')
+        table.add_row('Status', get_session_status_style(summary['session_status']))
+        table.add_row('Started', summary['session_created'])
+        table.add_row('Updated', summary['session_updated'])
+        table.add_row('Notes', str(summary['note_count']))
+        table.add_row('Latest note', f"[dim]{summary['latest_note_snippet']}[/dim]")
         table.add_row('', '')
         table.add_row(
             'L1 Memories',
@@ -415,6 +376,13 @@ def metrics(
         table.add_row('', '')
         table.add_row('Static Token Cost', f'~{report.static_token_cost}')
         table.add_row('Information Density', f'{report.information_density}')
+        table.add_row('', '')
+        table.add_row('Graph Nodes / Edges', f'{report.graph_nodes} nodes / {report.graph_edges} edges')
+        table.add_row('Knowledge Communities', f'{report.community_count} Louvain Clusters')
+        table.add_row(
+            'Algebraic Connectivity', f'{report.algebraic_connectivity} [dim]({report.connectivity_status})[/dim]'
+        )
+        table.add_row('Modularity Score (Q)', f'{report.modularity_score}')
 
         console.print(Panel(table, title=f'[bold]System Metrics: {report.persona_name}[/bold]', border_style='cyan'))
 

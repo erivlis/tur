@@ -852,6 +852,24 @@ def load_l2_graph_from_okf(persona_dir: Path) -> nx.DiGraph | None:
     return graph
 
 
+def load_cognitive_map(persona_dir: Path) -> nx.DiGraph | None:
+    """
+    Loads L2 Cognitive Map from OKF markdown directory, falling back to legacy
+    knowledge_graph.yaml if absent. Returns None if no cognitive map exists.
+    """
+    graph = load_l2_graph_from_okf(persona_dir)
+    if graph is None:
+        kg_path = persona_dir / 'knowledge_graph.yaml'
+        if kg_path.exists():
+            try:
+                with open(kg_path, encoding='utf-8') as f:
+                    data = yaml_safe_load(f)
+                graph = nx.node_link_graph(data)
+            except Exception:
+                graph = None
+    return graph
+
+
 def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
     """Saves every L2 concept node to its own OKF file under active or archive concepts folders."""
     active_dir = persona_dir / 'concepts' / 'active'
@@ -957,16 +975,7 @@ def run_introspection(
     with state_lock(compaction_lock, timeout=HEAVY_LOCK_TIMEOUT_SECONDS):
         kg_path = persona_dir / 'knowledge_graph.yaml'
 
-        graph = None
-        if not bootstrap:
-            graph = load_l2_graph_from_okf(persona_dir)
-            if graph is None and kg_path.exists():
-                try:
-                    with open(kg_path, encoding='utf-8') as f:
-                        data = yaml_safe_load(f)
-                    graph = nx.node_link_graph(data)
-                except Exception:
-                    graph = None
+        graph = None if bootstrap else load_cognitive_map(persona_dir)
 
         if graph is None:
             graph = nx.DiGraph()
