@@ -17,6 +17,7 @@ from tur.locking import (
     get_async_file_lock,
     get_file_lock,
     jittered_backoff_delays,
+    lock_contention_guard,
     state_lock,
 )
 
@@ -245,3 +246,55 @@ def test_get_async_file_lock_creation(tmp_path: Path):
     async_lock = get_async_file_lock(lock_file, timeout=2.0)
     assert async_lock.is_singleton
     assert lock_file.parent.exists()
+
+
+def test_lock_contention_guard_sync_handling(tmp_path: Path):
+    """Verify lock_contention_guard intercepts LockTimeoutError in sync functions."""
+    lock_file = tmp_path / 'test.lock'
+
+    @lock_contention_guard(on_contention=lambda e: f'Handled contention on {e.lock_path.name}')
+    def sync_failing(x: int) -> str:
+        """My docstring."""
+        raise LockTimeoutError(lock_file, 1.5)
+
+    @lock_contention_guard(on_contention=lambda e: 'Handled')
+    def sync_success(x: int) -> int:
+        return x * 2
+
+    @lock_contention_guard(default='fallback_value')
+    def sync_default_fallback() -> str:
+        raise LockTimeoutError(lock_file, 0.5)
+
+    # Contention intercepted with custom handler
+    assert sync_failing(10) == 'Handled contention on test.lock'
+    # Success passes through
+    assert sync_success(21) == 42
+    # Fallback default when no handler provided
+    assert sync_default_fallback() == 'fallback_value'
+    # Function metadata preserved
+    assert sync_failing.__name__ == 'sync_failing'
+    assert sync_failing.__doc__ == 'My docstring.'
+
+
+@pytest.mark.asyncio
+async def test_lock_contention_guard_async_handling(tmp_path: Path):
+    """Verify lock_contention_guard intercepts LockTimeoutError in async functions."""
+    lock_file = tmp_path / 'async_test.lock'
+
+    @lock_contention_guard(on_contention=lambda e: {'status': 'contended', 'path': str(e.lock_path)})
+    async def async_failing():
+        await asyncio.sleep(0)
+        raise LockTimeoutError(lock_file, 2.0)
+
+    @lock_contention_guard(on_contention=lambda e: 'Never')
+    async def async_success():
+        await asyncio.sleep(0)
+        return 'ok'
+
+    res = await async_failing()
+    assert res['status'] == 'contended'
+    assert str(lock_file) in res['path']
+
+    res_ok = await async_success()
+    assert res_ok == 'ok'
+
