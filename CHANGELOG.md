@@ -1,3 +1,17 @@
+## v0.13.0 (2026-09-05)
+
+### Feat
+
+- add lock_contention_guard decorator to manage LockTimeoutError
+- implement CognitiveGraphEngine with semantic graph recall functions
+- add version callbacks to CLI tools and expose `__version__` globally
+- implement memory staleness evaluation and provenance tracking (EP-0131)
+
+### Refactor
+
+- introduce `cli_guard` decorator for standardized CLI error handling
+- apply `mcp_contention_guard` to MCP tools for standardized LockTimeoutError handling
+
 ## v0.12.1 (2026-09-02)
 
 ### Refactor
