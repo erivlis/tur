@@ -1,11 +1,13 @@
 import asyncio
 import contextlib
+import functools
+import inspect
 import logging
 import os
 import sys
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from typing import Literal
+from typing import Any, Literal, cast
 
 import anyio
 import anyio.from_thread
@@ -14,7 +16,7 @@ from mcp.server.fastmcp import Context, FastMCP
 from tur import __version__
 from tur.compiler import compile_persona
 from tur.dreaming import perform_sleep_dreaming
-from tur.locking import LockTimeoutError
+from tur.locking import LockTimeoutError, lock_contention_guard
 from tur.memory import MemoryManager
 from tur.metrics import CognitiveMetrics, compute_persona_metrics
 from tur.models import Memory, MemoryScope, MemoryType
@@ -57,7 +59,20 @@ mcp._mcp_server.version = __version__
 _active_session_id: str | None = None
 
 
+def format_contention_error(e: Exception | str, as_dict: bool = False) -> Any:
+    """Formats standardized non-fatal retry guidance on LockTimeoutError."""
+    if as_dict:
+        return {'status': 'contended', 'error': f'State lock is currently held by another process: {e}'}
+    return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
+
+
+def mcp_contention_guard(as_dict: bool = False) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """Decorator to catch LockTimeoutError across MCP tools and return standardized retry guidance."""
+    return lock_contention_guard(on_contention=lambda e: format_contention_error(e, as_dict=as_dict))
+
+
 @mcp.tool()
+@mcp_contention_guard(as_dict=True)
 def status() -> dict:
     """
     Return the current persona, session, and memory status as a structured dict.
@@ -76,13 +91,14 @@ def status() -> dict:
             session_id=_active_session_id,
             persona_id=active_id,
         )
-    except LockTimeoutError as e:
-        return {'status': 'contended', 'error': f'State lock is currently held by another process: {e}'}
+    except LockTimeoutError:
+        raise
     except Exception as e:
         return {'error': str(e)}
 
 
 @mcp.tool()
+@mcp_contention_guard()
 def wake(
     session_id: str | None = None,
     previous_session_id: str | None = None,
@@ -107,45 +123,40 @@ def wake(
         include_stale(bool): Optional flag to include decayed/stale memories in the system prompt.
     """
     global _active_session_id
-    try:
-        active_id = get_active_persona_id()
-        sess_id = session_id or _active_session_id or get_active_session_id()
-        if not sess_id:
-            import uuid
-            from datetime import datetime
+    active_id = get_active_persona_id()
+    sess_id = session_id or _active_session_id or get_active_session_id()
+    if not sess_id:
+        import uuid
+        from datetime import datetime
 
-            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-            short_hex = uuid.uuid4().hex[:8]
-            sess_id = f'{ts}_{short_hex}'
-            start_session_logic(sess_id, previous_session_id=previous_session_id)
-            _active_session_id = sess_id
-        else:
-            _active_session_id = sess_id
-        state = hydrate_session_state(active_id, session_id=sess_id, include_stale=include_stale)
-        system_prompt = compile_persona(state)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        short_hex = uuid.uuid4().hex[:8]
+        sess_id = f'{ts}_{short_hex}'
+        start_session_logic(sess_id, previous_session_id=previous_session_id)
+        _active_session_id = sess_id
+    else:
+        _active_session_id = sess_id
+    state = hydrate_session_state(active_id, session_id=sess_id, include_stale=include_stale)
+    system_prompt = compile_persona(state)
 
-        # Append System Metrics Metadata
-        metrics_engine = CognitiveMetrics()
-        static_metrics = metrics_engine.measure_static_load(system_prompt)
-        cp = metrics_engine.calculate_constraint_dimensionality(state.persona)
+    # Append System Metrics Metadata
+    metrics_engine = CognitiveMetrics()
+    static_metrics = metrics_engine.measure_static_load(system_prompt)
+    cp = metrics_engine.calculate_constraint_dimensionality(state.persona)
 
-        metrics_block = (
-            f'\n\n--- [SYSTEM METRICS] ---\n'
-            f'Active Persona ID: {active_id}\n'
-            f'Constraint Dimensionality (Cp): {cp}\n'
-            f'Static Token Cost: {static_metrics["est_tokens"]}\n'
-            f'Information Density: {static_metrics["density"]:.2f}\n'
-        )
+    metrics_block = (
+        f'\n\n--- [SYSTEM METRICS] ---\n'
+        f'Active Persona ID: {active_id}\n'
+        f'Constraint Dimensionality (Cp): {cp}\n'
+        f'Static Token Cost: {static_metrics["est_tokens"]}\n'
+        f'Information Density: {static_metrics["density"]:.2f}\n'
+    )
 
-        return system_prompt + metrics_block
-    except LockTimeoutError as e:
-        return (
-            f'Status: Contended. The state lock is currently held by another agent or process: {e}. '
-            'Please retry shortly.'
-        )
+    return system_prompt + metrics_block
 
 
 @mcp.tool()
+@mcp_contention_guard()
 def learn(
     content: str,
     type: Literal['fact', 'preference', 'insight', 'event', 'axiom', 'core'],
@@ -226,14 +237,12 @@ def learn(
         provenance=prov,
         decay=dec,
     )
-    try:
-        saved_path = manager.save(memory)
-    except LockTimeoutError as e:
-        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
+    saved_path = manager.save(memory)
     return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
 
 
 @mcp.tool()
+@mcp_contention_guard()
 def evolve(
     memory_id: str,
     core_type: Literal['existential_alignment', 'relational_discovery', 'identity_transition'],
@@ -280,10 +289,7 @@ def evolve(
         ethical_covenant=ethical_covenant,
         status='pending_approval',  # Steward: Pending approval workflow
     )
-    try:
-        saved_path = manager.save(core_mem)
-    except LockTimeoutError as e:
-        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
+    saved_path = manager.save(core_mem)
     return (
         f"Core Memory created and staged in 'pending_approval' status: {core_mem.id}. File: {saved_path.name}."
         f' Instruct the Architect to approve it with: tur-adm memory approve {core_mem.id[:8]}'
@@ -294,41 +300,36 @@ _background_tasks: set[asyncio.Task] = set()
 
 
 @mcp.tool()
+@mcp_contention_guard()
 async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str:
     """
     Compress L1 event logs into the L2 Cognitive Map using the Council Assembly pipeline.
     This runs the full introspection compaction loop, consolidating raw memories
-    into a topological knowledge graph.
+    into permanent concepts and relations.
 
     Args:
-        bootstrap: If True, force full recompilation from scratch (loads active and subsumed memories).
-                   If False (default), performs incremental update on the existing graph.
+        bootstrap(bool): If True, forces a complete re-bootstrap of the graph from all memories,
+                         clearing any existing graph.
     """
-    from tur.introspection import format_graph_as_mermaid, run_introspection
+    active_id = get_active_persona_id()
+    persona_dir = get_persona_path(active_id)
 
     try:
-        persona_id = get_active_persona_id()
-        persona_dir = get_persona_path(persona_id)
-
-        def on_mcp_progress(current: int, total: int, description: str) -> None:
+        def on_mcp_progress(curr: int, tot: int, msg: str):
             if ctx is not None:
-                try:
-                    from_thread_run: Callable | None = getattr(anyio.from_thread, 'run', None)
-                    if callable(from_thread_run):
-                        from_thread_run(ctx.report_progress, current, total)
-                        from_thread_run(ctx.info, f'[{current}/{total}] {description}')
-                except Exception:
+                with contextlib.suppress(Exception):
+                    t1 = asyncio.create_task(ctx.report_progress(progress=curr, total=tot))
+                    _background_tasks.add(t1)
+                    t1.add_done_callback(_background_tasks.discard)
                     try:
                         loop = asyncio.get_running_loop()
-                        t1 = loop.create_task(ctx.report_progress(progress=current, total=total))
-                        _background_tasks.add(t1)
-                        t1.add_done_callback(_background_tasks.discard)
-
-                        t2 = loop.create_task(ctx.info(f'[{current}/{total}] {description}'))
+                        t2 = loop.create_task(ctx.info(f'[{curr}/{tot}] {msg}'))
                         _background_tasks.add(t2)
                         t2.add_done_callback(_background_tasks.discard)
                     except Exception:
                         pass
+
+        from tur.introspection import format_graph_as_mermaid, run_introspection
 
         graph = run_introspection(
             persona_dir,
@@ -341,8 +342,8 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
         node_count = graph.number_of_nodes()
         edge_count = graph.number_of_edges()
         mermaid = format_graph_as_mermaid(graph)
-    except LockTimeoutError as e:
-        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
+    except LockTimeoutError:
+        raise
     except Exception as e:
         return f'Error during Council Introspection: {e}'
     else:
@@ -354,6 +355,7 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
 
 
 @mcp.tool()
+@mcp_contention_guard()
 def note(content: str) -> str:
     """
     Update the transient session notes for the active persona.
@@ -374,16 +376,11 @@ def note(content: str) -> str:
     """
     global _active_session_id
     try:
-        res = note_logic(content, session_id=_active_session_id)
-    except LockTimeoutError as e:
-        return (
-            f'Status: Contended. The state lock is currently held by another agent or process: {e}. '
-            'Please retry shortly.'
-        )
+        return note_logic(content, session_id=_active_session_id)
+    except LockTimeoutError:
+        raise
     except Exception as e:
         return f'Error updating note: {e}'
-    else:
-        return res
 
 
 @mcp.tool()
@@ -425,19 +422,13 @@ async def sleep(
         try:
             note_logic(note, session_id=resolved_session_id)
         except LockTimeoutError as e:
-            return (
-                f'Status: Contended. Could not append final note because state lock is held by another process: {e}. '
-                'Please retry shortly.'
-            )
+            return format_contention_error(e)
         except Exception as e:
             return f'Error appending final note: {e}'
         try:
             end_session_logic(resolved_session_id)
         except LockTimeoutError as e:
-            return (
-                f'Status: Contended. Could not end session because state lock is held by another process: {e}. '
-                'Please retry shortly.'
-            )
+            return format_contention_error(e)
         except Exception as e:
             return f'Error ending session: {e}'
 
@@ -456,7 +447,7 @@ async def sleep(
                 await ctx.report_progress(progress=3, total=3)
                 await ctx.info(f'Consolidated {count} memories. Persona is now sleeping.')
     except LockTimeoutError as e:
-        return f'Status: Contended. State lock currently held during dreaming consolidation: {e}. Please retry shortly.'
+        return format_contention_error(f'State lock currently held during dreaming consolidation: {e}')
     except Exception as e:
         return f'Error during dreaming: {e}'
     else:
@@ -709,6 +700,7 @@ def read_whiteboard(key: str) -> str | None:
 
 
 @mcp.tool()
+@mcp_contention_guard()
 def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
     """
     Marks the agent as idle, runs staged dreaming, and ends the session if all agents are idle.
@@ -722,10 +714,7 @@ def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
     active_agent = agent_id or env_agent_id or 'mcp_agent'
-    try:
-        res = tired_logic(sess_id, active_agent, transcript)
-    except LockTimeoutError as e:
-        return f'Status: Contended. The state lock is currently held by another process: {e}. Please retry shortly.'
+    res = tired_logic(sess_id, active_agent, transcript)
     if 'Consensus sleep reached' in res:
         _active_session_id = None
     return res
