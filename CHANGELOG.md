@@ -1,3 +1,9 @@
+## v0.13.1 (2026-09-05)
+
+### Refactor
+
+- replace try/except blocks with `contextlib.suppress` across modules
+
 ## v0.13.0 (2026-09-05)
 
 ### Feat
