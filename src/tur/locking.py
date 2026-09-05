@@ -8,14 +8,17 @@ and singleton thread re-entrancy.
 """
 
 import asyncio
+import functools
+import inspect
 import logging
 import os
 import random
 import socket
 import time
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
+from typing import Any
 
 from filelock import AsyncFileLock, FileLock, Timeout
 
@@ -65,6 +68,47 @@ class LockTimeoutError(TimeoutError):
         self.lock_path = lock_path
         self.timeout = timeout
         super().__init__(f'Could not acquire lock on {lock_path} after {timeout:.2f}s (held by another process)')
+
+
+def lock_contention_guard(
+    on_contention: Callable[[LockTimeoutError], Any] | None = None,
+    *,
+    default: Any = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """
+    Universal decorator to intercept LockTimeoutError across sync and async callables.
+
+    - If `on_contention` is provided, invokes `on_contention(e)` and returns its result.
+    - If `on_contention` is None, returns `default`.
+    - Preserves function signature and docstrings via `functools.wraps`.
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                try:
+                    return await func(*args, **kwargs)
+                except LockTimeoutError as e:
+                    if on_contention is not None:
+                        return on_contention(e)
+                    return default
+
+            return async_wrapper
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return func(*args, **kwargs)
+            except LockTimeoutError as e:
+                if on_contention is not None:
+                    return on_contention(e)
+                return default
+
+        return sync_wrapper
+
+    return decorator
 
 
 _CACHED_HOSTNAME = socket.gethostname()
