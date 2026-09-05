@@ -862,3 +862,18 @@ def test_agent_status_cli(mock_workspace):
     assert 'Notes' in res_after.stdout
     assert 'active' in res_after.stdout
 
+
+def test_cli_guard_lock_contention(mock_workspace, monkeypatch):
+    """Verify @cli_guard catches LockTimeoutError and formats contention warning."""
+    from tur.locking import LockTimeoutError
+
+    def mock_lock_timeout(*args, **kwargs):
+        raise LockTimeoutError(Path('.tur/test.lock'), timeout=2.0)
+
+    monkeypatch.setattr(persona, 'get_active_persona_id', mock_lock_timeout)
+
+    res = runner.invoke(agent_app, ['status'])
+    assert res.exit_code == 1
+    assert 'Contention Warning: State lock is held by another process' in res.stdout
+
+
