@@ -1,3 +1,4 @@
+import contextlib
 import os
 import re
 from pathlib import Path
@@ -124,11 +125,8 @@ def get_active_persona_id(identifier: str | None = None) -> str:
     index_path = base_dir / 'personas.yaml'
     index = None
     if index_path.exists():
-        try:
-            with open(index_path, encoding='utf-8') as f:
-                index = PersonaIndex(**yaml_safe_load(f))
-        except Exception:
-            pass
+        with contextlib.suppress(Exception), open(index_path, encoding='utf-8') as f:
+            index = PersonaIndex(**yaml_safe_load(f))
 
     if identifier:
         if index:

@@ -1,3 +1,4 @@
+import contextlib
 import json
 import math
 import re
@@ -598,12 +599,9 @@ def topological_recall(
         accessed_nodes, subgraph, results = _recall_exhaustive(graph, engine, seed_scores, sorted_seeds, top_k)
 
     log_path = persona_dir / 'recall_access_log.txt'
-    try:
-        with open(log_path, 'a', encoding='utf-8') as f:
-            for node in accessed_nodes:
-                f.write(f'{node}\n')
-    except Exception:
-        pass
+    with contextlib.suppress(Exception), open(log_path, 'a', encoding='utf-8') as f:
+        for node in accessed_nodes:
+            f.write(f'{node}\n')
 
     json_str = json.dumps(results, indent=2)
 

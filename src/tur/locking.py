@@ -16,7 +16,7 @@ import random
 import socket
 import time
 from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -116,13 +116,11 @@ _CACHED_HOSTNAME = socket.gethostname()
 
 def _stamp_lock_holder(fd: int) -> None:
     """Stamp holder PID and hostname into native lock descriptor for debugging."""
-    try:
+    with suppress(OSError):
         os.lseek(fd, 0, os.SEEK_SET)
         payload = f'pid={os.getpid()} host={_CACHED_HOSTNAME}\n'.encode()
         os.write(fd, payload)
         os.ftruncate(fd, len(payload))
-    except OSError:
-        pass
 
 
 def get_file_lock(

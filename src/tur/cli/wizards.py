@@ -4,6 +4,7 @@ Interactive terminal prompts and wizards for tur-adm.
 Uses standard Rich prompts (Prompt, IntPrompt) for pure, zero-dependency interactive workflows.
 """
 
+import contextlib
 import uuid
 from pathlib import Path
 
@@ -77,12 +78,8 @@ def init_wizard() -> str:
         yaml.dump(index.model_dump(mode='json'), f, sort_keys=False)
 
     # Automatically scaffold AGENTS.md in workspace if not already present
-    try:
+    with contextlib.suppress(Exception):
         scaffold_workspace(force=False)
-    except FileExistsError:
-        pass
-    except Exception:
-        pass
 
     msg = f"Persona '{name}' created successfully in .tur/personas/{persona_id}/CONSTITUTION.md"
     console.print(f'[bold green]{msg}[/bold green]')

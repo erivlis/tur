@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import shutil
@@ -359,11 +360,8 @@ def persona_export(
             persona_yaml_path = persona_dir / 'persona.yaml'
             target_name = persona_uuid
             if persona_yaml_path.exists():
-                try:
-                    with open(persona_yaml_path, encoding='utf-8') as f:
-                        target_name = (yaml_safe_load(f) or {}).get('name', persona_uuid).lower()
-                except Exception:
-                    pass
+                with contextlib.suppress(Exception), open(persona_yaml_path, encoding='utf-8') as f:
+                    target_name = (yaml_safe_load(f) or {}).get('name', persona_uuid).lower()
             output = Path(f'{target_name}.tur')
 
         output_path = output.resolve()
@@ -935,15 +933,12 @@ def _collect_hygiene_items(
         index_file = base_dir / 'personas.yaml'
         valid_ids: set[str] = set()
         if index_file.exists():
-            try:
-                with open(index_file, encoding='utf-8') as f:
-                    data = yaml_safe_load(f)
+            with contextlib.suppress(Exception), open(index_file, encoding='utf-8') as f:
+                data = yaml_safe_load(f)
                 idx = PersonaIndex(**data)
                 for p in idx.personas:
                     valid_ids.add(str(p.id))
                     valid_ids.add(p.name.lower())
-            except Exception:
-                pass
 
         personas_dir = base_dir / 'personas'
         if personas_dir.exists():

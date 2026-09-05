@@ -321,13 +321,11 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
                     t1 = asyncio.create_task(ctx.report_progress(progress=curr, total=tot))
                     _background_tasks.add(t1)
                     t1.add_done_callback(_background_tasks.discard)
-                    try:
+                    with contextlib.suppress(Exception):
                         loop = asyncio.get_running_loop()
                         t2 = loop.create_task(ctx.info(f'[{curr}/{tot}] {msg}'))
                         _background_tasks.add(t2)
                         t2.add_done_callback(_background_tasks.discard)
-                    except Exception:
-                        pass
 
         from tur.introspection import format_graph_as_mermaid, run_introspection
 

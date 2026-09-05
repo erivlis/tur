@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 from datetime import datetime
@@ -485,11 +486,9 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
     agent_id = agent_id_opt or env_agent_id
     if not agent_id:
         active_agents = []
-        try:
+        with contextlib.suppress(Exception):
             agents = session.list_agents_logic(sess_id)
             active_agents = [a['id'] for a in agents if a['status'] == 'active']
-        except Exception:
-            pass
 
         if len(active_agents) == 1:
             agent_id = active_agents[0]

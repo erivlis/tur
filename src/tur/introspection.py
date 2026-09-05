@@ -614,7 +614,7 @@ class HebbianGraphDecayer(IntrospectionSubagent):
         if persona_dir:
             log_path = Path(persona_dir) / 'recall_access_log.txt'
             if log_path.exists():
-                try:
+                with contextlib.suppress(Exception):
                     with open(log_path, encoding='utf-8') as f:
                         for line in f:
                             node_id = line.strip()
@@ -622,8 +622,6 @@ class HebbianGraphDecayer(IntrospectionSubagent):
                                 retrievals[node_id] = retrievals.get(node_id, 0) + 1
                     # Truncate or remove the log file
                     log_path.unlink(missing_ok=True)
-                except Exception:
-                    pass
 
         # Update retrieval counts in the graph
         for node_id, count in retrievals.items():
@@ -993,12 +991,9 @@ def run_introspection(
         persona_yaml_path = persona_dir / 'persona.yaml'
         compaction_config = None
         if persona_yaml_path.exists():
-            try:
-                with open(persona_yaml_path, encoding='utf-8') as f:
-                    persona_data: dict = yaml_safe_load(f) or {}
+            with contextlib.suppress(Exception), open(persona_yaml_path, encoding='utf-8') as f:
+                persona_data: dict = yaml_safe_load(f) or {}
                 compaction_config = persona_data.get('compaction')
-            except Exception:
-                pass
 
         context['compaction_config'] = compaction_config
 

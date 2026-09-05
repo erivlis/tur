@@ -1,3 +1,4 @@
+import contextlib
 import math
 import re
 import shutil
@@ -32,7 +33,7 @@ def get_git_head_sha(repo_dir: Path | None = None, short: bool = True) -> str | 
 
     target_dir = repo_dir or resolve_workspace_dir() or Path.cwd()
     cmd = ['git', 'rev-parse', '--short=12' if short else 'HEAD', 'HEAD']
-    try:
+    with contextlib.suppress(Exception):
         res = subprocess.run(
             cmd,
             cwd=target_dir,
@@ -44,8 +45,6 @@ def get_git_head_sha(repo_dir: Path | None = None, short: bool = True) -> str | 
         if res.returncode == 0:
             sha = res.stdout.strip()
             return sha if sha else None
-    except Exception:
-        pass
     return None
 
 
@@ -59,7 +58,7 @@ def get_git_commit_distance(from_sha: str, to_sha: str = 'HEAD', repo_dir: Path 
 
     target_dir = repo_dir or resolve_workspace_dir() or Path.cwd()
     cmd = ['git', 'rev-list', '--count', f'{from_sha}..{to_sha}']
-    try:
+    with contextlib.suppress(Exception):
         res = subprocess.run(
             cmd,
             cwd=target_dir,
@@ -72,8 +71,6 @@ def get_git_commit_distance(from_sha: str, to_sha: str = 'HEAD', repo_dir: Path 
             val = res.stdout.strip()
             if val.isdigit():
                 return int(val)
-    except Exception:
-        pass
     return 0
 
 
@@ -103,7 +100,7 @@ def is_git_file_modified_or_deleted(
     if not shutil.which('git'):
         return False
 
-    try:
+    with contextlib.suppress(Exception):
         # Check if modified in working directory
         res_worktree = subprocess.run(
             ['git', 'status', '--porcelain', '--', clean_path_str],
@@ -128,8 +125,6 @@ def is_git_file_modified_or_deleted(
             )
             if res_diff.returncode == 0 and res_diff.stdout.strip():
                 return True
-    except Exception:
-        pass
 
     return False
 

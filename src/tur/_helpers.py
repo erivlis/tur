@@ -1,3 +1,4 @@
+import contextlib
 import os
 from pathlib import Path
 from typing import Any
@@ -117,10 +118,8 @@ def _load_file_or_glob(item_str: str) -> list[dict]:
 
     p = Path(item_str)
     if p.exists() and p.is_file():
-        try:
+        with contextlib.suppress(Exception):
             return _parse_json_or_ndjson(p.read_text(encoding='utf-8'))
-        except Exception:
-            pass
 
     import glob
 
@@ -128,12 +127,10 @@ def _load_file_or_glob(item_str: str) -> list[dict]:
     matched_files = glob.glob(item_str)
     if matched_files:
         for file_p in matched_files:
-            try:
+            with contextlib.suppress(Exception):
                 p_obj = Path(file_p)
                 if p_obj.is_file():
                     results.extend(_parse_json_or_ndjson(p_obj.read_text(encoding='utf-8')))
-            except Exception:
-                pass
         return results
 
     return _parse_json_or_ndjson(item_str)

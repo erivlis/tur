@@ -367,11 +367,9 @@ class MemoryManager:
         """
         stat_digests: list[str] = []
         for file_path in self._iter_memory_files(self._get_load_directories(include_archived)):
-            try:
+            with contextlib.suppress(OSError):
                 st = file_path.stat()
                 stat_digests.append(f'{file_path.name}:{st.st_mtime_ns}:{st.st_size}')
-            except OSError:
-                pass
 
         raw = '|'.join(sorted(stat_digests))
         return hashlib.sha256(raw.encode()).hexdigest()

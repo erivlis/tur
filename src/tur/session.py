@@ -60,7 +60,7 @@ def ensure_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = Non
     local_dir.mkdir(parents=True, exist_ok=True)
 
     # Ensure .tur/.gitignore ignores lock files
-    try:
+    with contextlib.suppress(Exception):
         ws = workspace_dir or resolve_workspace_dir() or Path.cwd()
         tur_dir = ws / '.tur'
         if tur_dir.exists() and tur_dir.is_dir():
@@ -75,8 +75,6 @@ def ensure_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = Non
                     added = True
             if added:
                 gitignore.write_text('\n'.join(rules) + '\n', encoding='utf-8')
-    except Exception:
-        pass
 
     return local_dir
 
@@ -85,12 +83,9 @@ def load_session_index(persona_dir: Path) -> SessionIndex:
     """Loads the session index from sessions.yaml or returns an empty index."""
     index_path = get_local_persona_dir(persona_dir) / 'sessions.yaml'  # read-only path query
     if index_path.exists():
-        with open(index_path, encoding='utf-8') as f:
-            try:
-                data: dict = yaml_safe_load(f) or {}
-                return SessionIndex(**data)
-            except Exception:
-                pass
+        with contextlib.suppress(Exception), open(index_path, encoding='utf-8') as f:
+            data: dict = yaml_safe_load(f) or {}
+            return SessionIndex(**data)
     return SessionIndex(active_session_id=None, sessions=[])
 
 
@@ -138,15 +133,12 @@ def get_parent_session_id(session_id: str | None, persona_dir: Path | None = Non
     # Check session YAML first
     session_file = get_session_file(persona_dir, session_id)
     if session_file.exists():
-        try:
-            with open(session_file, encoding='utf-8') as f:
-                notes_data = yaml_safe_load(f)
+        with contextlib.suppress(Exception), open(session_file, encoding='utf-8') as f:
+            notes_data = yaml_safe_load(f)
             if notes_data and isinstance(notes_data, dict):
                 parent_id = notes_data.get('parent_session_id')
                 if parent_id:
                     return str(parent_id)
-        except Exception:
-            pass
 
     # Fallback to session index
     index = load_session_index(persona_dir)
@@ -194,13 +186,10 @@ def load_system_state(workspace_dir: Path | None = None) -> SystemState:
     ws = workspace_dir or resolve_workspace_dir()
     state_path = (ws / '.tur' / 'state.yaml') if ws is not None else Path('.tur/state.yaml')
     if state_path.exists():
-        try:
-            with open(state_path, encoding='utf-8') as f:
-                state_data = yaml_safe_load(f)
+        with contextlib.suppress(Exception), open(state_path, encoding='utf-8') as f:
+            state_data = yaml_safe_load(f)
             if state_data:
                 return SystemState(**state_data)
-        except Exception:
-            pass
     return SystemState()
 
 
@@ -252,15 +241,12 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     session_file = get_session_file(persona_dir, session_id)
 
     if session_file.exists():
-        try:
-            with open(session_file, encoding='utf-8') as f:
-                notes_data = yaml_safe_load(f)
+        with contextlib.suppress(Exception), open(session_file, encoding='utf-8') as f:
+            notes_data = yaml_safe_load(f)
             session_notes = SessionNotes(**notes_data)
             if session_notes.notes:
                 sorted_notes = sorted(session_notes.notes, key=lambda x: x.timestamp, reverse=True)
                 return sorted_notes[0].content.strip()
-        except Exception:
-            pass
 
     return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
 
@@ -307,11 +293,8 @@ def hydrate_session_state(
     kg_path = persona_dir / 'knowledge_graph.yaml'
     kg_data = None
     if kg_path.exists():
-        try:
-            with open(kg_path, encoding='utf-8') as f:
-                kg_data = yaml_safe_load(f)
-        except Exception:
-            pass
+        with contextlib.suppress(Exception), open(kg_path, encoding='utf-8') as f:
+            kg_data = yaml_safe_load(f)
 
     return SessionState(
         persona=persona,
@@ -450,7 +433,7 @@ def init_db(conn: sqlite3.Connection):
                  """)
 
     # Schema migration checks (EP-0141)
-    try:
+    with contextlib.suppress(Exception):
         cursor = conn.cursor()
         cursor.execute('PRAGMA table_info(agents);')
         agent_cols = [row[1] for row in cursor.fetchall()]
@@ -461,8 +444,6 @@ def init_db(conn: sqlite3.Connection):
         signal_cols = [row[1] for row in cursor.fetchall()]
         if signal_cols and 'vector_clock' not in signal_cols:
             conn.execute("ALTER TABLE signals ADD COLUMN vector_clock TEXT NOT NULL DEFAULT '{}';")
-    except Exception:
-        pass
     conn.execute("""
                  CREATE TABLE IF NOT EXISTS signal_reads
                  (
@@ -1011,7 +992,7 @@ def list_agents_logic(session_id: str) -> list[dict]:
 
 def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> list[dict]:
     # 1. Primary: SQLite
-    try:
+    with contextlib.suppress(Exception):
         conn = get_db_connection(sess_id)
         cursor = conn.cursor()
         cursor.execute(
@@ -1033,13 +1014,11 @@ def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> 
                 d['vector_clock'] = VectorClock(d.get('vector_clock'))
                 results.append(d)
             return results
-    except Exception:
-        pass
 
     # 2. Fallback: Flat YAML sessions/<session_id>.yaml
     session_file = get_session_file(p_dir, sess_id)
     if session_file.exists():
-        try:
+        with contextlib.suppress(Exception):
             with open(session_file, encoding='utf-8') as f:
                 data: dict[str, Any] = yaml_safe_load(f) or {}
             s_notes = SessionNotes(**data)
@@ -1058,9 +1037,6 @@ def _fetch_single_session_notes(sess_id: str, fetch_limit: int, p_dir: Path) -> 
                         'sequence': idx + 1,
                     }
                 )
-        except Exception:
-            pass
-        else:
             return results
 
     return []
@@ -1192,12 +1168,10 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
 
             all_memories = []
             for row in staged_rows:
-                try:
+                with contextlib.suppress(Exception):
                     data = json.loads(row['memory_data'])
                     mems = data.get('memories', []) if isinstance(data, dict) else data
                     all_memories.extend(mems)
-                except Exception:
-                    pass
 
             unique_contents = set()
             deduped_memories = []
@@ -1211,7 +1185,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
 
             saved_count = 0
             for mem_data in deduped_memories:
-                try:
+                with contextlib.suppress(Exception):
                     memory = Memory(
                         type=mem_data.get('type', 'fact') if isinstance(mem_data, dict) else mem_data.type,
                         scope=mem_data.get('scope', 'local') if isinstance(mem_data, dict) else mem_data.scope,
@@ -1225,8 +1199,6 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
                     )
                     memory_manager.save(memory)
                     saved_count += 1
-                except Exception:
-                    pass
 
             conn.execute('DELETE FROM staged_memories')
             end_session_logic(session_id, identifier=active_id)
@@ -1253,14 +1225,11 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
             notes_list = []
             parent_id = None
             if session_file.exists():
-                try:
-                    with open(session_file, encoding='utf-8') as f:
-                        notes_data = yaml_safe_load(f)
+                with contextlib.suppress(Exception), open(session_file, encoding='utf-8') as f:
+                    notes_data = yaml_safe_load(f)
                     session_notes = SessionNotes(**notes_data)
                     notes_list = session_notes.notes
                     parent_id = session_notes.parent_session_id
-                except Exception:
-                    pass
 
             note_item = Note(timestamp=datetime.now(), content=content.strip())
             notes_list.append(note_item)
@@ -1323,13 +1292,10 @@ def get_persona_status_summary(
     persona_version = 'unknown'
     persona_yaml_path = persona_dir / 'persona.yaml'
     if persona_yaml_path.exists():
-        try:
-            with open(persona_yaml_path, encoding='utf-8') as f:
-                pdata = yaml_safe_load(f)
+        with contextlib.suppress(Exception), open(persona_yaml_path, encoding='utf-8') as f:
+            pdata = yaml_safe_load(f)
             persona_name = pdata.get('name', active_id)
             persona_version = pdata.get('version', 'unknown')
-        except Exception:
-            pass
 
     # Session info
     target_session_id = session_id or get_active_session_id()
@@ -1352,9 +1318,8 @@ def get_persona_status_summary(
 
         notes_yaml_path = get_session_file(persona_dir, target_session_id)
         if notes_yaml_path.exists():
-            try:
-                with open(notes_yaml_path, encoding='utf-8') as f:
-                    notes_data = yaml_safe_load(f)
+            with contextlib.suppress(Exception), open(notes_yaml_path, encoding='utf-8') as f:
+                notes_data = yaml_safe_load(f)
                 session_notes = SessionNotes(**notes_data)
                 note_count = len(session_notes.notes)
                 if session_notes.notes:
@@ -1364,8 +1329,6 @@ def get_persona_status_summary(
                     if len(last.content) > 80:
                         snippet += '…'
                     latest_note_snippet = snippet
-            except Exception:
-                pass
     elif index.sessions:
         most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
         target_session_id = most_recent.id
