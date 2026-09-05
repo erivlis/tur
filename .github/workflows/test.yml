@@ -35,7 +35,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          uv run --no-build pytest tests README.md docs --cov=src --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          uv run pytest tests README.md docs --cov=src --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage reports to Codecov
         if: ${{ !cancelled() }}
