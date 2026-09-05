@@ -199,7 +199,7 @@ class Memory(BaseModel):
             and isinstance(data['content'], str)
             and not data.get('redacted')
         ):
-            from tur.sanitizer import sanitize_text
+            from tur.memory.sanitizer import sanitize_text
 
             sanitized, _ = sanitize_text(data['content'])
             data['content'] = sanitized
@@ -368,7 +368,7 @@ class Note(BaseModel):
     def sanitize_note_content(cls, data: Any) -> Any:  # type: ignore[operator]
         """Deterministic pre-ingest sanitization of note content (EP-0143)."""
         if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
-            from tur.sanitizer import sanitize_text
+            from tur.memory.sanitizer import sanitize_text
 
             sanitized, _ = sanitize_text(data['content'])
             data['content'] = sanitized

@@ -12,7 +12,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from tur import dreaming, persona, session
+from tur import persona, session
 from tur.cli.common import (
     cli_guard,
     console,
@@ -22,8 +22,17 @@ from tur.cli.common import (
     run_scaffold_cli,
 )
 from tur.compiler import compile_persona
-from tur.introspection import format_graph_as_mermaid, run_introspection
-from tur.memory import MemoryManager
+from tur.memory import (
+    MemoryManager,
+    compute_session_diff,
+    create_provenance_and_decay,
+    dreaming,
+    format_diff_json,
+    format_diff_terminal,
+    format_graph_as_mermaid,
+    run_introspection,
+    topological_recall,
+)
 from tur.metrics import compute_persona_metrics
 from tur.models import (
     HarnessDelegationError,
@@ -32,7 +41,6 @@ from tur.models import (
     MemoryScope,
     MemoryType,
 )
-from tur.recall import topological_recall
 from tur.session import update_system_state
 
 app = typer.Typer(
@@ -151,7 +159,6 @@ def learn(
     active_id = persona.get_active_persona_id(identifier)
     persona_dir = persona.get_persona_path(active_id)
     memory_manager = MemoryManager(base_dir=persona_dir)
-    from tur.provenance import create_provenance_and_decay
 
     if json_payload:
         from tur._helpers import parse_multi_json_payloads
@@ -296,14 +303,14 @@ def status(
 
     l2_info = None
     if summary['l2_stats'] and summary['l2_stats']['nodes'] > 0:
-        l2_info = f"{summary['l2_stats']['nodes']} nodes, {summary['l2_stats']['edges']} edges"
+        l2_info = f'{summary["l2_stats"]["nodes"]} nodes, {summary["l2_stats"]["edges"]} edges'
 
     # --- Render ---
     table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
     table.add_column('Key', style='bold cyan', no_wrap=True)
     table.add_column('Value', style='white')
 
-    table.add_row('Persona', f"{summary['persona_name']} [dim](v{summary['persona_version']})[/dim]")
+    table.add_row('Persona', f'{summary["persona_name"]} [dim](v{summary["persona_version"]})[/dim]')
     table.add_row('Persona ID', summary['persona_id'])
     table.add_row('', '')
     table.add_row('Session ID', summary['session_id'] or '[dim]none[/dim]')
@@ -311,7 +318,7 @@ def status(
     table.add_row('Started', summary['session_created'])
     table.add_row('Updated', summary['session_updated'])
     table.add_row('Notes', str(summary['note_count']))
-    table.add_row('Latest note', f"[dim]{summary['latest_note_snippet']}[/dim]")
+    table.add_row('Latest note', f'[dim]{summary["latest_note_snippet"]}[/dim]')
     table.add_row('', '')
     table.add_row(
         'L1 Memories',
@@ -617,8 +624,6 @@ def diff(
     identifier: str | None = typer.Option(None, '--persona', help='Persona identifier (default: active persona).'),
 ):
     """Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133)."""
-    from tur.diff import compute_session_diff, format_diff_json, format_diff_terminal
-
     deltas = compute_session_diff(
         base_session_id=base_session_id,
         target_session_id=target_session_id,

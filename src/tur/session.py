@@ -267,7 +267,7 @@ def hydrate_session_state(
     if include_stale:
         memories = [m for m in all_memories if m.type != MemoryType.CORE]
     else:
-        from tur.provenance import evaluate_staleness
+        from tur.memory import evaluate_staleness
 
         memories = []
         for m in all_memories:
@@ -1112,7 +1112,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
 
     if transcript:
         try:
-            from tur.dreaming import stage_sleep_dreaming
+            from tur.memory.dreaming import stage_sleep_dreaming
 
             memories_json = stage_sleep_dreaming(transcript, active_id, session_id)
             stage_memories_logic(session_id, agent_id, memories_json)
@@ -1283,7 +1283,7 @@ def get_persona_status_summary(
     Unifies status inspection between the CLI (tur status) and MCP server (status() tool).
     """
     from tur import __version__
-    from tur.introspection import load_cognitive_map
+    from tur.memory import load_cognitive_map
 
     active_id = persona_id or persona_dir.name
 

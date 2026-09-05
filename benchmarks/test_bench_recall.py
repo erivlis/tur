@@ -3,8 +3,13 @@
 import networkx as nx
 import pytest
 
-from tur.introspection import format_graph_as_mermaid, load_l2_graph_from_okf
-from tur.recall import CognitiveGraphEngine, pure_pagerank, topological_recall
+from tur.memory import (
+    CognitiveGraphEngine,
+    format_graph_as_mermaid,
+    load_l2_graph_from_okf,
+    pure_pagerank,
+    topological_recall,
+)
 
 
 @pytest.mark.benchmark

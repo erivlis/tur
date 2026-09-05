@@ -532,7 +532,7 @@ async def test_mcp_introspect(mock_mcp_env, monkeypatch):
     """Test the introspect MCP tool runs the introspection pipeline."""
     import networkx as nx
 
-    import tur.introspection
+    import tur.memory.introspection as introspection
 
     _persona_dir, _state = mock_mcp_env
 
@@ -540,7 +540,7 @@ async def test_mcp_introspect(mock_mcp_env, monkeypatch):
     stub_graph = nx.DiGraph()
     stub_graph.add_node('test-node', type='Fact', content='Test fact', status='active', confidence=1.0)
 
-    monkeypatch.setattr(tur.introspection, 'run_introspection', lambda *args, **kwargs: stub_graph)
+    monkeypatch.setattr(introspection, 'run_introspection', lambda *args, **kwargs: stub_graph)
 
     result = await mcp_server.introspect(bootstrap=True)
     assert 'Council Introspection complete' in result
@@ -548,7 +548,7 @@ async def test_mcp_introspect(mock_mcp_env, monkeypatch):
     assert 'mermaid' in result
 
     # Test error in introspection
-    monkeypatch.setattr(tur.introspection, 'run_introspection', MagicMock(side_effect=RuntimeError('Council failure')))
+    monkeypatch.setattr(introspection, 'run_introspection', MagicMock(side_effect=RuntimeError('Council failure')))
     res_err = await mcp_server.introspect()
     assert 'Error during Council Introspection: Council failure' in res_err
 
@@ -628,7 +628,7 @@ async def test_mcp_introspect_streaming_telemetry(mock_mcp_env, monkeypatch):
     """Verify introspect MCP tool pipes progress callback into FastMCP Context."""
     import networkx as nx
 
-    import tur.introspection
+    import tur.memory.introspection as introspection
 
     def mock_run_intro(*args, **kwargs):
         progress_cb = kwargs.get('progress_callback')
@@ -640,7 +640,7 @@ async def test_mcp_introspect_streaming_telemetry(mock_mcp_env, monkeypatch):
         g.add_node('c1', type='Fact', content='Fact 1')
         return g
 
-    monkeypatch.setattr(tur.introspection, 'run_introspection', mock_run_intro)
+    monkeypatch.setattr(introspection, 'run_introspection', mock_run_intro)
 
     mock_ctx = MockFastMCPContext()
     res = await mcp_server.introspect(bootstrap=False, ctx=mock_ctx)
@@ -653,13 +653,13 @@ async def test_mcp_introspect_streaming_telemetry(mock_mcp_env, monkeypatch):
 
 
 def test_mcp_diff_memories(mock_mcp_env, monkeypatch):
-    from tur.diff import DeltaStatus, MemoryDelta
+    from tur.memory.diff import DeltaStatus, MemoryDelta
     from tur.models import Memory, MemoryType
 
     m = Memory(id='mem-diff-1', type=MemoryType.FACT, content='Diff fact 1')
     mock_deltas = [MemoryDelta(status=DeltaStatus.ADDED, memory=m)]
 
-    monkeypatch.setattr('tur.diff.compute_session_diff', lambda **kwargs: mock_deltas)
+    monkeypatch.setattr('tur.memory.compute_session_diff', lambda **kwargs: mock_deltas)
 
     res = mcp_server.diff_memories()
     assert isinstance(res, list)
@@ -737,4 +737,3 @@ def test_mcp_recall_and_metrics_and_resource(mock_mcp_env, monkeypatch):
     # Test missing node in resource
     missing_res = mcp_server.get_subgraph_context('nonexistent-node')
     assert 'not found in L2 Cognitive Map' in missing_res
-

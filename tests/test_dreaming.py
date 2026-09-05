@@ -4,7 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 import yaml
 
-from tur import dreaming, persona, session
+from tur import persona, session
+from tur.memory import dreaming
 
 
 @pytest.fixture

@@ -354,7 +354,7 @@ def test_tired_logic_staged_dreaming_consensus(mock_session_workspace, monkeypat
     staged_payload = json.dumps(
         [{'type': 'fact', 'scope': 'incarnation', 'tags': ['test'], 'content': 'Staged fact 1'}]
     )
-    monkeypatch.setattr('tur.dreaming.stage_sleep_dreaming', lambda *args, **kwargs: staged_payload)
+    monkeypatch.setattr('tur.memory.dreaming.stage_sleep_dreaming', lambda *args, **kwargs: staged_payload)
 
     res1 = session.tired_logic('sess-tired', agent_id='agent_1', transcript='agent 1 log')
     assert 'Standby mode active' in res1
@@ -363,7 +363,7 @@ def test_tired_logic_staged_dreaming_consensus(mock_session_workspace, monkeypat
     def raise_dream_error(*args, **kwargs):
         raise RuntimeError('Dream stage error')
 
-    monkeypatch.setattr('tur.dreaming.stage_sleep_dreaming', raise_dream_error)
+    monkeypatch.setattr('tur.memory.dreaming.stage_sleep_dreaming', raise_dream_error)
 
     # Agent 2 calls tired -> now consensus reached and session ends
     res2 = session.tired_logic('sess-tired', agent_id='agent_2', transcript='agent 2 log')

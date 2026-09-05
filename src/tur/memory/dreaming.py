@@ -15,7 +15,7 @@ from tur._helpers import (
     require_inference,
     run_async,
 )
-from tur.memory import MemoryManager
+from tur.memory.storage import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
 from tur.persona import get_persona_path
 

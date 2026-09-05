@@ -116,8 +116,7 @@ def compute_persona_metrics(identifier: str | None = None) -> MetricsReport:
     and spectral graph metrics (algebraic connectivity, modularity, Louvain clusters)
     for the specified or active persona.
     """
-    from tur.introspection import load_cognitive_map
-    from tur.recall import CognitiveGraphEngine
+    from tur.memory import CognitiveGraphEngine, load_cognitive_map
 
     active_id = persona.get_active_persona_id(identifier)
     persona_dir = persona.get_persona_path(active_id)

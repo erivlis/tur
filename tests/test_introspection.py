@@ -8,7 +8,8 @@ import yaml
 from typer.testing import CliRunner
 
 from tur.cli.agent import app
-from tur.introspection import (
+from tur.memory import MemoryManager
+from tur.memory.introspection import (
     BoundaryEnforcer,
     ExtractedEdge,
     ExtractedGraph,
@@ -26,7 +27,6 @@ from tur.introspection import (
     run_introspection,
     save_l2_graph_to_okf,
 )
-from tur.memory import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
 
 
@@ -208,7 +208,7 @@ def test_topological_recall_spreading_activation(temp_workspace):
     with open(kg_path, 'w', encoding='utf-8') as f:
         yaml.dump(nx.node_link_data(graph), f)
 
-    from tur.recall import topological_recall
+    from tur.memory.recall import topological_recall
 
     # Query for "first" with effort=5 should match node-a, and spreading activation should include node-b and node-c
     res_json = topological_recall('first', persona_dir, effort=5)
@@ -316,7 +316,7 @@ def test_popper_belief_revision_conflict_resolution():
 
 def test_pluggable_compaction_pipeline_dynamic_loading():
     # 1. Test successful custom loading
-    config = {'subagents': [{'name': 'CustomTMS', 'class': 'tur.introspection.TruthMaintenanceEngine'}]}
+    config = {'subagents': [{'name': 'CustomTMS', 'class': 'tur.memory.introspection.TruthMaintenanceEngine'}]}
     assembly = IntrospectionAssembly(config)
     assert len(assembly.agents) == 1
     assert isinstance(assembly.agents[0], TruthMaintenanceEngine)
@@ -330,7 +330,7 @@ def test_pluggable_compaction_pipeline_dynamic_loading():
     # 3. Test empty configuration fallback to default assembly
     empty_assembly = IntrospectionAssembly(None)
     assert len(empty_assembly.agents) == 9
-    from tur.introspection import IntegrityVerifier
+    from tur.memory.introspection import IntegrityVerifier
 
     assert isinstance(empty_assembly.agents[0], IntegrityVerifier)
 
@@ -365,7 +365,7 @@ def test_harness_delegation_error_cli(temp_workspace, monkeypatch):
 
 def test_relationship_signature_constraints(temp_workspace):
     """Test that OntologyExtractor rejects invalid edges that violate signature constraints."""
-    from tur.introspection import ExtractedEdge, ExtractedGraph, OntologyExtractor
+    from tur.memory.introspection import ExtractedEdge, ExtractedGraph, OntologyExtractor
 
     graph = nx.DiGraph()
     graph.add_node('decision-a', type='Decision', content='First decision', status='active', confidence=1.0)
@@ -411,7 +411,7 @@ def test_tms_propagation_on_refines(temp_workspace):
 
 def test_policy_vs_mechanism_class_mappings():
     """Verify functional engine classes are correctly exported and subclass IntrospectionSubagent."""
-    from tur.introspection import (
+    from tur.memory.introspection import (
         BoundaryEnforcer,
         ClarityDistiller,
         GraphPruner,

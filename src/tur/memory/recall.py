@@ -331,7 +331,7 @@ class CognitiveGraphEngine:
 
     def validate_git_anchors(self, nodes: list[str], repo_dir: Path | None = None) -> dict[str, Any]:
         """Validates Git commit anchors and source provenance for retrieved nodes (EP-0131)."""
-        from tur.provenance import get_git_commit_distance
+        from tur.memory.provenance import get_git_commit_distance
 
         validations: dict[str, Any] = {}
         for node in nodes:
@@ -360,7 +360,7 @@ class CognitiveGraphEngine:
 
 def _l1_fallback_search(query: str, persona_dir: Path) -> str:
     """Fallback search over raw L1 memories."""
-    from tur.memory import MemoryManager
+    from tur.memory.storage import MemoryManager
 
     manager = MemoryManager(base_dir=persona_dir)
     mems = manager.load_all(include_archived=False)
@@ -570,7 +570,7 @@ def topological_recall(
       - 5-7 (--deep): HippoRAG Personalized PageRank + Louvain Community Subgraph (~50ms).
       - 8-10: Full PPR + Louvain + TMS contradiction checks + Git commit anchor verification (~120ms).
     """
-    from tur.introspection import load_cognitive_map
+    from tur.memory.introspection import load_cognitive_map
 
     resolved_effort = max(effort, 5) if deep else effort
 

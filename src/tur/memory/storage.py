@@ -10,6 +10,7 @@ from typing import Any, ClassVar
 import yaml
 
 from tur._helpers import yaml_safe_load
+from tur.memory.provenance import evaluate_staleness
 from tur.models import Memory, MemoryDecay, MemoryLink, MemoryProvenance, MemoryScope, MemoryType
 from tur.paths import get_global_tur_dir, is_global_path, resolve_workspace_dir
 
@@ -441,8 +442,6 @@ class MemoryManager:
         by_type: dict[str, int] = {}
         staleness_breakdown = {'fresh': 0, 'stale': 0, 'unanchored': 0, 'refuted': 0}
 
-        from tur.provenance import evaluate_staleness
-
         for mem in all_active:
             s_val = mem.scope.value if hasattr(mem.scope, 'value') else str(mem.scope).lower()
             t_val = mem.type.value if hasattr(mem.type, 'value') else str(mem.type).lower()
@@ -476,8 +475,6 @@ class MemoryManager:
         Returns all active memories that are stale, unanchored, or refuted.
         Returns list of (memory, staleness_status, reason).
         """
-        from tur.provenance import evaluate_staleness
-
         results: list[tuple[Memory, str, str]] = []
         for mem in self.load_all(include_archived=False):
             st, reason = evaluate_staleness(mem, repo_dir=repo_dir, staleness_threshold=threshold)

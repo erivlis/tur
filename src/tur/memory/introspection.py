@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from tur._helpers import yaml_safe_load
 from tur.locking import HEAVY_LOCK_TIMEOUT_SECONDS, state_lock
-from tur.memory import MemoryManager
+from tur.memory.storage import MemoryManager
 from tur.models import EdgeType, HarnessDelegationError, MemoryType, NodeType
 
 ProgressCallback = Callable[[int, int, str], Any]
@@ -573,7 +573,7 @@ class NoveltyExplorer(IntrospectionSubagent):
         sub_g = cast(
             nx.DiGraph, nx.subgraph_view(graph, filter_node=lambda n: graph.nodes[n].get('type') != 'Dependency')
         )
-        if not nx.is_weakly_connected(sub_g) and sub_g.number_of_nodes() > 1:
+        if sub_g.number_of_nodes() > 1 and not nx.is_weakly_connected(sub_g):
             components = list(nx.weakly_connected_components(sub_g))
             gap_id = 'exploration-horizon-gap'
             if not graph.has_node(gap_id):
@@ -708,6 +708,8 @@ class IntrospectionAssembly:
                 if class_path:
                     try:
                         module_path, class_name = class_path.rsplit('.', 1)
+                        if module_path == 'tur.introspection':
+                            module_path = 'tur.memory.introspection'
                         module = importlib.import_module(module_path)
                         agent_cls = getattr(module, class_name)
                         self.agents.append(agent_cls())

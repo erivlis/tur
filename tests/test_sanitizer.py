@@ -7,8 +7,7 @@ from typer.testing import CliRunner
 
 from tur.cli.admin import app as admin_app
 from tur.memory import MemoryManager
-from tur.models import Memory, MemoryScope, MemoryType, Note, SessionNotes
-from tur.sanitizer import (
+from tur.memory.sanitizer import (
     COMMON_SECRET_PATTERNS,
     REDACTED_ENTROPY_REPLACEMENT,
     REDACTED_SECRET_REPLACEMENT,
@@ -17,6 +16,7 @@ from tur.sanitizer import (
     is_sensitive,
     sanitize_text,
 )
+from tur.models import Memory, MemoryScope, MemoryType, Note, SessionNotes
 from tur.session import get_session_file, note_logic, start_session_logic
 
 runner = CliRunner()

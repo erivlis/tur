@@ -6,8 +6,9 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from tur import dreaming, persona, session
+from tur import persona, session
 from tur.cli.agent import app as agent_app
+from tur.memory import dreaming
 from tur.models import HarnessDelegationError
 
 runner = CliRunner()
@@ -875,5 +876,3 @@ def test_cli_guard_lock_contention(mock_workspace, monkeypatch):
     res = runner.invoke(agent_app, ['status'])
     assert res.exit_code == 1
     assert 'Contention Warning: State lock is held by another process' in res.stdout
-
-

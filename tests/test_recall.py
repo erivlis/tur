@@ -4,7 +4,7 @@ import networkx as nx
 import pytest
 import yaml
 
-from tur.recall import (
+from tur.memory import (
     CognitiveGraphEngine,
     pure_algebraic_connectivity,
     pure_pagerank,

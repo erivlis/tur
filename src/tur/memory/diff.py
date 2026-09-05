@@ -4,9 +4,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from tur.memory.storage import MemoryManager
 from tur.models import Memory, MemoryScope, MemoryType
 from tur.persona import get_active_persona_id, get_persona_path
-from tur.session import get_active_session_id, get_parent_session_id, load_session_index
 
 
 class DeltaStatus(StrEnum):
@@ -154,14 +154,14 @@ def compute_session_diff(
     Computes memory delta for a specific session against its predecessor (EP-0130 lineage)
     or between two explicitly provided session IDs (EP-0133).
     """
-    from tur.memory import MemoryManager
-
     active_id = persona_id or get_active_persona_id()
     persona_dir = get_persona_path(active_id)
     mem_mgr = MemoryManager(base_dir=persona_dir)
 
     all_memories = mem_mgr.load_all(include_archived=True) + mem_mgr.load_subsumed()
     all_map = {m.id: m for m in all_memories}
+
+    from tur.session import get_active_session_id, get_parent_session_id, load_session_index
 
     resolved_target = target_session_id or get_active_session_id()
     resolved_base = base_session_id

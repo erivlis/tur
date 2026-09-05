@@ -43,7 +43,7 @@ def test_dreaming_missing_google_genai(monkeypatch):
     monkeypatch.setitem(sys.modules, 'google.genai', None)
     monkeypatch.setenv('GEMINI_API_KEY', 'test-key')
 
-    from tur import dreaming
+    from tur.memory import dreaming
 
     with pytest.raises(ImportError) as exc_info:
         dreaming.stage_sleep_dreaming('Test log content', active_id='fake-id')

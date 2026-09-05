@@ -7,14 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from tur.memory import MemoryManager
-from tur.models import (
-    Memory,
-    MemoryDecay,
-    MemoryProvenance,
-    MemoryScope,
-    MemoryType,
-)
-from tur.provenance import (
+from tur.memory.provenance import (
     DEFAULT_DECAY_POLICIES,
     compute_epistemic_weight,
     create_provenance_and_decay,
@@ -22,6 +15,13 @@ from tur.provenance import (
     get_git_commit_distance,
     get_git_head_sha,
     is_git_file_modified_or_deleted,
+)
+from tur.models import (
+    Memory,
+    MemoryDecay,
+    MemoryProvenance,
+    MemoryScope,
+    MemoryType,
 )
 from tur.session import hydrate_session_state, note_logic, start_session_logic
 
@@ -52,7 +52,7 @@ def test_memory_provenance_and_decay_models():
 
 
 def test_create_provenance_and_decay_factory(monkeypatch):
-    monkeypatch.setattr('tur.provenance.get_git_head_sha', lambda repo_dir=None: 'abcdef123456')
+    monkeypatch.setattr('tur.memory.provenance.get_git_head_sha', lambda repo_dir=None: 'abcdef123456')
 
     prov, decay = create_provenance_and_decay(
         memory_type=MemoryType.FACT,
@@ -90,7 +90,7 @@ def test_compute_epistemic_weight_axiom_and_core():
         provenance=MemoryProvenance(git_sha='oldsha', observed_at=past),
     )
 
-    with patch('tur.provenance.get_git_commit_distance', return_value=1000):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=1000):
         weight = compute_epistemic_weight(mem_axiom, now=now)
         assert weight == 0.95
 
@@ -111,12 +111,12 @@ def test_compute_epistemic_weight_fact_decay():
         provenance=MemoryProvenance(git_sha='sha123', observed_at=start),
     )
 
-    with patch('tur.provenance.get_git_commit_distance', return_value=0):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=0):
         w = compute_epistemic_weight(mem, now=now_14_days)
         assert pytest.approx(w, 0.001) == 0.5
 
     # After 14 days and 10 commits drift: w = 0.5 * exp(-0.05 * 10) = 0.5 * exp(-0.5)
-    with patch('tur.provenance.get_git_commit_distance', return_value=10):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=10):
         w_drift = compute_epistemic_weight(mem, now=now_14_days)
         expected = 0.5 * math.exp(-0.5)
         assert pytest.approx(w_drift, 0.001) == expected
@@ -151,13 +151,13 @@ def test_evaluate_staleness_states(tmp_path):
         provenance=MemoryProvenance(git_sha='headsha'),
         decay=MemoryDecay(half_life_days=14.0, staleness_status='fresh'),
     )
-    with patch('tur.provenance.get_git_commit_distance', return_value=0):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=0):
         status, reason = evaluate_staleness(fresh_mem)
         assert status == 'fresh'
         assert reason is None
 
     # 2. Stale due to commit drift > 20
-    with patch('tur.provenance.get_git_commit_distance', return_value=25):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=25):
         status, reason = evaluate_staleness(fresh_mem)
         assert status == 'stale'
         assert reason is not None
@@ -171,7 +171,7 @@ def test_evaluate_staleness_states(tmp_path):
         confidence=1.0,
         provenance=MemoryProvenance(git_sha='headsha', context_ref=f'{nonexistent_file}#L1-L10'),
     )
-    with patch('tur.provenance.get_git_commit_distance', return_value=0):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=0):
         status, reason = evaluate_staleness(stale_file_mem)
         assert status == 'stale'
         assert reason is not None
@@ -198,7 +198,7 @@ def test_evaluate_staleness_states(tmp_path):
         decay=MemoryDecay(half_life_days=14.0, last_verified_at=old_time),
         provenance=MemoryProvenance(git_sha='oldsha'),
     )
-    with patch('tur.provenance.get_git_commit_distance', return_value=0):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=0):
         status, reason = evaluate_staleness(decayed_mem, now=now)
         assert status == 'stale'
         assert reason is not None
@@ -336,7 +336,7 @@ def test_wake_filter_omits_stale_memories(tmp_path, monkeypatch):
     manager.save(axiom_mem)
 
     # Wake without include_stale (default)
-    with patch('tur.provenance.get_git_commit_distance', return_value=0):
+    with patch('tur.memory.provenance.get_git_commit_distance', return_value=0):
         state_default = hydrate_session_state(persona_id, include_stale=False)
         loaded_contents = [m.content for m in state_default.memories]
         assert 'Fresh active fact' in loaded_contents

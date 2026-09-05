@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tur.diff import (
+from tur.memory.diff import (
     DeltaStatus,
     MemoryDelta,
     compute_memory_diff,

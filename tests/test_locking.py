@@ -297,4 +297,3 @@ async def test_lock_contention_guard_async_handling(tmp_path: Path):
 
     res_ok = await async_success()
     assert res_ok == 'ok'
-

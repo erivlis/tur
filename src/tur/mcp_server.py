@@ -15,9 +15,8 @@ from mcp.server.fastmcp import Context, FastMCP
 
 from tur import __version__
 from tur.compiler import compile_persona
-from tur.dreaming import perform_sleep_dreaming
 from tur.locking import LockTimeoutError, lock_contention_guard
-from tur.memory import MemoryManager
+from tur.memory import MemoryManager, perform_sleep_dreaming
 from tur.metrics import CognitiveMetrics, compute_persona_metrics
 from tur.models import Memory, MemoryScope, MemoryType
 from tur.persona import get_active_persona_id, get_persona_path
@@ -217,7 +216,7 @@ def learn(
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
-    from tur.provenance import create_provenance_and_decay
+    from tur.memory import create_provenance_and_decay
 
     prov, dec = create_provenance_and_decay(
         memory_type=mem_type,
@@ -315,6 +314,7 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
     persona_dir = get_persona_path(active_id)
 
     try:
+
         def on_mcp_progress(curr: int, tot: int, msg: str):
             if ctx is not None:
                 with contextlib.suppress(Exception):
@@ -327,7 +327,7 @@ async def introspect(bootstrap: bool = False, ctx: Context | None = None) -> str
                         _background_tasks.add(t2)
                         t2.add_done_callback(_background_tasks.discard)
 
-        from tur.introspection import format_graph_as_mermaid, run_introspection
+        from tur.memory.introspection import format_graph_as_mermaid, run_introspection
 
         graph = run_introspection(
             persona_dir,
@@ -475,7 +475,7 @@ def recall(
         mermaid: If True, include a rendered Mermaid flowchart diagram of the retrieved subgraph.
         top_k: Maximum number of focal memory nodes to return (default 5).
     """
-    from tur.recall import topological_recall
+    from tur.memory import topological_recall
 
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
@@ -512,8 +512,7 @@ def get_subgraph_context(node_id: str) -> str:
     """
     import json
 
-    from tur.introspection import load_cognitive_map
-    from tur.recall import CognitiveGraphEngine
+    from tur.memory import CognitiveGraphEngine, load_cognitive_map
 
     active_id = get_active_persona_id()
     persona_dir = get_persona_path(active_id)
@@ -559,7 +558,7 @@ def diff_memories(
         type_filter: Optional filter by memory type (e.g. 'fact', 'insight', 'preference', 'axiom').
         scope_filter: Optional filter by memory scope (e.g. 'incarnation', 'universal').
     """
-    from tur.diff import compute_session_diff, format_diff_json
+    from tur.memory import compute_session_diff, format_diff_json
 
     resolved_target = target_session_id or _active_session_id or get_active_session_id()
     deltas = compute_session_diff(

@@ -145,16 +145,16 @@ To customize the introspection assembly, configure `compaction` in `persona.yaml
 
 ```yaml
 compaction:
-  engine: "tur.introspection.pluggable"
+  engine: "tur.memory.introspection.pluggable"
   subagents:
     - name: "IntegrityVerifier"
-      class: "tur.introspection.IntegrityVerifier"
+      class: "tur.memory.introspection.IntegrityVerifier"
     - name: "OntologyExtractor"
-      class: "tur.introspection.OntologyExtractor"
+      class: "tur.memory.introspection.OntologyExtractor"
     - name: "TruthMaintenanceEngine"
-      class: "tur.introspection.TruthMaintenanceEngine"
+      class: "tur.memory.introspection.TruthMaintenanceEngine"
     - name: "HebbianGraphDecayer"
-      class: "tur.introspection.HebbianGraphDecayer"
+      class: "tur.memory.introspection.HebbianGraphDecayer"
 ```
 
 ---
