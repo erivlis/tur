@@ -13,6 +13,7 @@ from rich.table import Table
 
 from tur import dreaming, persona, session
 from tur.cli.common import (
+    cli_guard,
     console,
     get_session_status_style,
     handle_cli_error,
@@ -58,6 +59,7 @@ def main_callback(
 
 
 @app.command()
+@cli_guard('Error during wake')
 def wake(
     session_id: str | None = typer.Option(
         None, help='The session ID to resume or wake under. If omitted, uses active or auto-starts one.'
@@ -75,54 +77,51 @@ def wake(
     ),
 ):
     """Wake the persona and compile the prompt."""
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        _persona_dir = persona.get_persona_path(active_id)
+    active_id = persona.get_active_persona_id(identifier)
+    _persona_dir = persona.get_persona_path(active_id)
 
-        resolved_session_id = session_id or session.get_active_session_id()
-        is_auto_started = False
+    resolved_session_id = session_id or session.get_active_session_id()
+    is_auto_started = False
 
-        if not resolved_session_id:
-            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-            short_hex = uuid4().hex[:8]
-            resolved_session_id = f'{ts}_{short_hex}'
-            is_auto_started = True
+    if not resolved_session_id:
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        short_hex = uuid4().hex[:8]
+        resolved_session_id = f'{ts}_{short_hex}'
+        is_auto_started = True
 
-        session.start_session_logic(
-            resolved_session_id,
-            identifier=active_id,
-            previous_session_id=from_session,
-            agent_id=agent_id,
-            harness_conversation_id=harness_conversation_id,
-        )
+    session.start_session_logic(
+        resolved_session_id,
+        identifier=active_id,
+        previous_session_id=from_session,
+        agent_id=agent_id,
+        harness_conversation_id=harness_conversation_id,
+    )
 
-        update_system_state(active_persona_id=active_id, active_session_id=resolved_session_id)
+    update_system_state(active_persona_id=active_id, active_session_id=resolved_session_id)
 
-        state = session.hydrate_session_state(
-            active_id,
-            session_id=resolved_session_id,
-            include_stale=include_stale,
-        )
+    state = session.hydrate_session_state(
+        active_id,
+        session_id=resolved_session_id,
+        include_stale=include_stale,
+    )
 
-        # Compile (The Awakening)
-        system_prompt = compile_persona(state)
+    # Compile (The Awakening)
+    system_prompt = compile_persona(state)
 
-        # Output
-        console.print(f'[bold green]--- SYSTEM WAKE: {state.persona.name} (v{state.persona.version}) ---[/bold green]')
-        console.print(f'[dim]Active Persona: {active_id} ({state.persona.name})[/dim]')
-        if resolved_session_id:
-            console.print(f'[dim]Session ID: {resolved_session_id}[/dim]')
-        if is_auto_started:
-            console.print(f'[dim]Auto-started new session: {resolved_session_id}[/dim]')
+    # Output
+    console.print(f'[bold green]--- SYSTEM WAKE: {state.persona.name} (v{state.persona.version}) ---[/bold green]')
+    console.print(f'[dim]Active Persona: {active_id} ({state.persona.name})[/dim]')
+    if resolved_session_id:
+        console.print(f'[dim]Session ID: {resolved_session_id}[/dim]')
+    if is_auto_started:
+        console.print(f'[dim]Auto-started new session: {resolved_session_id}[/dim]')
 
-        console.print(system_prompt)
-        console.print('[bold green]--- SYSTEM READY ---[/bold green]')
-
-    except Exception as e:
-        handle_cli_error(e, 'Error during wake')
+    console.print(system_prompt)
+    console.print('[bold green]--- SYSTEM READY ---[/bold green]')
 
 
 @app.command()
+@cli_guard()
 def learn(
     content: str | None = typer.Argument(None, help='The content of the memory to store.'),
     identifier: str | None = typer.Argument(
@@ -148,88 +147,85 @@ def learn(
         console.print('[red]Error: Must provide memory content or --json payload.[/red]')
         raise typer.Exit(code=1)
 
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        persona_dir = persona.get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        from tur.provenance import create_provenance_and_decay
+    active_id = persona.get_active_persona_id(identifier)
+    persona_dir = persona.get_persona_path(active_id)
+    memory_manager = MemoryManager(base_dir=persona_dir)
+    from tur.provenance import create_provenance_and_decay
 
-        if json_payload:
-            from tur._helpers import parse_multi_json_payloads
+    if json_payload:
+        from tur._helpers import parse_multi_json_payloads
 
-            payloads = parse_multi_json_payloads(json_payload)
-            extracted_memories = []
-            for p in payloads:
-                if isinstance(p, dict):
-                    if 'memories' in p and isinstance(p['memories'], list):
-                        extracted_memories.extend(p['memories'])
-                    elif 'type' in p and 'content' in p:
-                        extracted_memories.append(p)
+        payloads = parse_multi_json_payloads(json_payload)
+        extracted_memories = []
+        for p in payloads:
+            if isinstance(p, dict):
+                if 'memories' in p and isinstance(p['memories'], list):
+                    extracted_memories.extend(p['memories'])
+                elif 'type' in p and 'content' in p:
+                    extracted_memories.append(p)
 
-            count = 0
-            for mem_dict in extracted_memories:
-                m_type = MemoryType(mem_dict.get('type', type.value))
-                m_scope = MemoryScope(mem_dict.get('scope', scope.value))
-                m_content = mem_dict.get('content', '')
-                m_tags = mem_dict.get('tags', ['json', 'cli'])
-                m_conf = float(mem_dict.get('confidence', confidence))
-                m_file = mem_dict.get('context_ref') or mem_dict.get('file') or file
-                m_agent = mem_dict.get('source_agent') or agent
-                m_harness = mem_dict.get('source_harness') or harness or os.environ.get('TUR_HARNESS')
+        count = 0
+        for mem_dict in extracted_memories:
+            m_type = MemoryType(mem_dict.get('type', type.value))
+            m_scope = MemoryScope(mem_dict.get('scope', scope.value))
+            m_content = mem_dict.get('content', '')
+            m_tags = mem_dict.get('tags', ['json', 'cli'])
+            m_conf = float(mem_dict.get('confidence', confidence))
+            m_file = mem_dict.get('context_ref') or mem_dict.get('file') or file
+            m_agent = mem_dict.get('source_agent') or agent
+            m_harness = mem_dict.get('source_harness') or harness or os.environ.get('TUR_HARNESS')
 
-                prov, dec = create_provenance_and_decay(
-                    memory_type=m_type,
-                    confidence=m_conf,
-                    context_ref=m_file,
-                    source_agent=m_agent,
-                    source_harness=m_harness,
-                )
+            prov, dec = create_provenance_and_decay(
+                memory_type=m_type,
+                confidence=m_conf,
+                context_ref=m_file,
+                source_agent=m_agent,
+                source_harness=m_harness,
+            )
 
-                memory = Memory(
-                    type=m_type,
-                    scope=m_scope,
-                    tags=m_tags,
-                    content=m_content,
-                    source_session=session_id or mem_dict.get('source_session') or session.get_active_session_id(),
-                    confidence=m_conf,
-                    provenance=prov,
-                    decay=dec,
-                )
-                saved_path = memory_manager.save(memory)
-                count += 1
-                console.print(f'[green]Memory saved to {saved_path}[/green]')
-            console.print(f'[bold green]Committed {count} memories from JSON payload(s).[/bold green]')
-            return
+            memory = Memory(
+                type=m_type,
+                scope=m_scope,
+                tags=m_tags,
+                content=m_content,
+                source_session=session_id or mem_dict.get('source_session') or session.get_active_session_id(),
+                confidence=m_conf,
+                provenance=prov,
+                decay=dec,
+            )
+            saved_path = memory_manager.save(memory)
+            count += 1
+            console.print(f'[green]Memory saved to {saved_path}[/green]')
+        console.print(f'[bold green]Committed {count} memories from JSON payload(s).[/bold green]')
+        return
 
-        assert content is not None
-        console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
+    assert content is not None
+    console.print(f"Consolidating memory for '{active_id}': '{content[:50]}...' [{scope.value}]")
 
-        prov, dec = create_provenance_and_decay(
-            memory_type=type,
-            confidence=confidence,
-            context_ref=file,
-            source_agent=agent,
-            source_harness=harness or os.environ.get('TUR_HARNESS'),
-        )
+    prov, dec = create_provenance_and_decay(
+        memory_type=type,
+        confidence=confidence,
+        context_ref=file,
+        source_agent=agent,
+        source_harness=harness or os.environ.get('TUR_HARNESS'),
+    )
 
-        memory = Memory(
-            type=type,
-            scope=scope,
-            tags=['manual', 'cli'],
-            content=content,
-            source_session=session_id or session.get_active_session_id(),
-            confidence=confidence,
-            provenance=prov,
-            decay=dec,
-        )
-        saved_path = memory_manager.save(memory)
-        console.print(f'[green]Memory saved to {saved_path}[/green]')
-
-    except Exception as e:
-        handle_cli_error(e)
+    memory = Memory(
+        type=type,
+        scope=scope,
+        tags=['manual', 'cli'],
+        content=content,
+        source_session=session_id or session.get_active_session_id(),
+        confidence=confidence,
+        provenance=prov,
+        decay=dec,
+    )
+    saved_path = memory_manager.save(memory)
+    console.print(f'[green]Memory saved to {saved_path}[/green]')
 
 
 @app.command()
+@cli_guard()
 def recall(
     query: str = typer.Argument(..., help='The topic or concept to search for in past memories.'),
     identifier: str | None = typer.Argument(
@@ -245,25 +241,22 @@ def recall(
     top_k: int = typer.Option(5, '--top-k', '-k', help='Maximum number of memory nodes to return.'),
 ):
     """Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval."""
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        persona_dir = persona.get_persona_path(active_id)
+    active_id = persona.get_active_persona_id(identifier)
+    persona_dir = persona.get_persona_path(active_id)
 
-        result = topological_recall(
-            query=query,
-            persona_dir=persona_dir,
-            effort=effort,
-            deep=deep,
-            mermaid=mermaid,
-            top_k=top_k,
-        )
-        console.print(result)
-
-    except Exception as e:
-        handle_cli_error(e)
+    result = topological_recall(
+        query=query,
+        persona_dir=persona_dir,
+        effort=effort,
+        deep=deep,
+        mermaid=mermaid,
+        top_k=top_k,
+    )
+    console.print(result)
 
 
 @app.command()
+@cli_guard('Error saving note')
 def note(
     content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
     identifier: str | None = typer.Argument(
@@ -272,81 +265,75 @@ def note(
     session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
 ):
     """Append a note to the active session's notes.yaml."""
-    try:
-        res = session.note_logic(content, session_id=session_id, identifier=identifier)
-        console.print(f'[green]{res}[/green]')
-    except Exception as e:
-        handle_cli_error(e, 'Error saving note')
+    res = session.note_logic(content, session_id=session_id, identifier=identifier)
+    console.print(f'[green]{res}[/green]')
 
 
 @app.command()
+@cli_guard()
 def status(
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
     ),
 ):
     """Show the current persona, session, and memory status."""
+    active_id = persona.get_active_persona_id(identifier)
+    persona_dir = persona.get_persona_path(active_id)
+    summary = session.get_persona_status_summary(persona_dir=persona_dir, persona_id=active_id)
 
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        persona_dir = persona.get_persona_path(active_id)
-        summary = session.get_persona_status_summary(persona_dir=persona_dir, persona_id=active_id)
+    # --- Memory stats ---
+    stats = summary['memory_stats']
+    active_count = stats['active']
+    archived_count = stats['archived']
+    subsumed_count = stats['subsumed']
 
-        # --- Memory stats ---
-        stats = summary['memory_stats']
-        active_count = stats['active']
-        archived_count = stats['archived']
-        subsumed_count = stats['subsumed']
+    scope_parts = [f'{k}: {v}' for k, v in sorted(stats['by_scope'].items())]
+    scope_str = ', '.join(scope_parts) if scope_parts else 'none'
 
-        scope_parts = [f'{k}: {v}' for k, v in sorted(stats['by_scope'].items())]
-        scope_str = ', '.join(scope_parts) if scope_parts else 'none'
+    type_parts = [f'{k}: {v}' for k, v in sorted(stats['by_type'].items(), key=lambda x: -x[1])]
+    type_str = ', '.join(type_parts) if type_parts else 'none'
 
-        type_parts = [f'{k}: {v}' for k, v in sorted(stats['by_type'].items(), key=lambda x: -x[1])]
-        type_str = ', '.join(type_parts) if type_parts else 'none'
+    l2_info = None
+    if summary['l2_stats'] and summary['l2_stats']['nodes'] > 0:
+        l2_info = f"{summary['l2_stats']['nodes']} nodes, {summary['l2_stats']['edges']} edges"
 
-        l2_info = None
-        if summary['l2_stats'] and summary['l2_stats']['nodes'] > 0:
-            l2_info = f"{summary['l2_stats']['nodes']} nodes, {summary['l2_stats']['edges']} edges"
+    # --- Render ---
+    table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    table.add_column('Key', style='bold cyan', no_wrap=True)
+    table.add_column('Value', style='white')
 
-        # --- Render ---
-        table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
-        table.add_column('Key', style='bold cyan', no_wrap=True)
-        table.add_column('Value', style='white')
+    table.add_row('Persona', f"{summary['persona_name']} [dim](v{summary['persona_version']})[/dim]")
+    table.add_row('Persona ID', summary['persona_id'])
+    table.add_row('', '')
+    table.add_row('Session ID', summary['session_id'] or '[dim]none[/dim]')
+    table.add_row('Status', get_session_status_style(summary['session_status']))
+    table.add_row('Started', summary['session_created'])
+    table.add_row('Updated', summary['session_updated'])
+    table.add_row('Notes', str(summary['note_count']))
+    table.add_row('Latest note', f"[dim]{summary['latest_note_snippet']}[/dim]")
+    table.add_row('', '')
+    table.add_row(
+        'L1 Memories',
+        f'{active_count} active [dim]({archived_count} archived, {subsumed_count} subsumed)[/dim]',
+    )
+    if 'staleness' in stats and stats['total'] > 0:
+        st = stats['staleness']
+        fresh_str = f'[green]{st["fresh"]} fresh[/green]'
+        stale_str = f'[yellow]{st["stale"]} stale[/yellow]'
+        unanch_str = f'[dim]{st["unanchored"]} unanchored[/dim]'
+        table.add_row('  Freshness', f'{fresh_str}, {stale_str}, {unanch_str}')
+    if stats['by_scope']:
+        table.add_row('  Scopes', f'[dim]{scope_str}[/dim]')
+    if stats['by_type']:
+        table.add_row('  Types', f'[dim]{type_str}[/dim]')
+    if l2_info:
+        table.add_row('L2 Knowledge', f'[green]{l2_info}[/green]')
 
-        table.add_row('Persona', f"{summary['persona_name']} [dim](v{summary['persona_version']})[/dim]")
-        table.add_row('Persona ID', summary['persona_id'])
-        table.add_row('', '')
-        table.add_row('Session ID', summary['session_id'] or '[dim]none[/dim]')
-        table.add_row('Status', get_session_status_style(summary['session_status']))
-        table.add_row('Started', summary['session_created'])
-        table.add_row('Updated', summary['session_updated'])
-        table.add_row('Notes', str(summary['note_count']))
-        table.add_row('Latest note', f"[dim]{summary['latest_note_snippet']}[/dim]")
-        table.add_row('', '')
-        table.add_row(
-            'L1 Memories',
-            f'{active_count} active [dim]({archived_count} archived, {subsumed_count} subsumed)[/dim]',
-        )
-        if 'staleness' in stats and stats['total'] > 0:
-            st = stats['staleness']
-            fresh_str = f'[green]{st["fresh"]} fresh[/green]'
-            stale_str = f'[yellow]{st["stale"]} stale[/yellow]'
-            unanch_str = f'[dim]{st["unanchored"]} unanchored[/dim]'
-            table.add_row('  Freshness', f'{fresh_str}, {stale_str}, {unanch_str}')
-        if stats['by_scope']:
-            table.add_row('  Scopes', f'[dim]{scope_str}[/dim]')
-        if stats['by_type']:
-            table.add_row('  Types', f'[dim]{type_str}[/dim]')
-        if l2_info:
-            table.add_row('L2 Knowledge', f'[green]{l2_info}[/green]')
-
-        console.print(Panel(table, title='[bold]Tur Status[/bold]', border_style='cyan'))
-
-    except Exception as e:
-        handle_cli_error(e)
+    console.print(Panel(table, title='[bold]Tur Status[/bold]', border_style='cyan'))
 
 
 @app.command()
+@cli_guard('Error calculating metrics')
 def metrics(
     identifier: str | None = typer.Argument(
         None, help='The name or UUID of the persona. If omitted, uses the default.'
@@ -354,40 +341,36 @@ def metrics(
     json_output: bool = typer.Option(False, '--json', help='Output metrics as raw JSON.'),
 ):
     """Calculate Constraint Dimensionality (C_p) and cognitive load metrics for a persona."""
-    try:
-        report = compute_persona_metrics(identifier)
+    report = compute_persona_metrics(identifier)
 
-        if json_output:
-            console.print(
-                json.dumps(
-                    report.to_dict(),
-                    indent=2,
-                )
+    if json_output:
+        console.print(
+            json.dumps(
+                report.to_dict(),
+                indent=2,
             )
-            return
-
-        table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
-        table.add_column('Key', style='bold cyan', no_wrap=True)
-        table.add_column('Value', style='white')
-
-        table.add_row('Persona', f'{report.persona_name} [dim]({report.persona_id})[/dim]')
-        table.add_row('Principles (N)', str(report.num_principles))
-        table.add_row('Constraint Dim (Cp)', f'{report.constraint_dimensionality} [dim]({report.rating_class})[/dim]')
-        table.add_row('', '')
-        table.add_row('Static Token Cost', f'~{report.static_token_cost}')
-        table.add_row('Information Density', f'{report.information_density}')
-        table.add_row('', '')
-        table.add_row('Graph Nodes / Edges', f'{report.graph_nodes} nodes / {report.graph_edges} edges')
-        table.add_row('Knowledge Communities', f'{report.community_count} Louvain Clusters')
-        table.add_row(
-            'Algebraic Connectivity', f'{report.algebraic_connectivity} [dim]({report.connectivity_status})[/dim]'
         )
-        table.add_row('Modularity Score (Q)', f'{report.modularity_score}')
+        return
 
-        console.print(Panel(table, title=f'[bold]System Metrics: {report.persona_name}[/bold]', border_style='cyan'))
+    table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    table.add_column('Key', style='bold cyan', no_wrap=True)
+    table.add_column('Value', style='white')
 
-    except Exception as e:
-        handle_cli_error(e, 'Error calculating metrics')
+    table.add_row('Persona', f'{report.persona_name} [dim]({report.persona_id})[/dim]')
+    table.add_row('Principles (N)', str(report.num_principles))
+    table.add_row('Constraint Dim (Cp)', f'{report.constraint_dimensionality} [dim]({report.rating_class})[/dim]')
+    table.add_row('', '')
+    table.add_row('Static Token Cost', f'~{report.static_token_cost}')
+    table.add_row('Information Density', f'{report.information_density}')
+    table.add_row('', '')
+    table.add_row('Graph Nodes / Edges', f'{report.graph_nodes} nodes / {report.graph_edges} edges')
+    table.add_row('Knowledge Communities', f'{report.community_count} Louvain Clusters')
+    table.add_row(
+        'Algebraic Connectivity', f'{report.algebraic_connectivity} [dim]({report.connectivity_status})[/dim]'
+    )
+    table.add_row('Modularity Score (Q)', f'{report.modularity_score}')
+
+    console.print(Panel(table, title=f'[bold]System Metrics: {report.persona_name}[/bold]', border_style='cyan'))
 
 
 @app.command(name='telemetry', hidden=True)
@@ -402,6 +385,7 @@ def telemetry(
 
 
 @app.command()
+@cli_guard('Error during sleep')
 def sleep(
     log_path: str | None = typer.Argument(None, help='Path to the chat log file to be parsed.'),
     identifier: str | None = typer.Argument(
@@ -419,66 +403,62 @@ def sleep(
         console.print('[red]Error: Must provide log_path or --commit payload.[/red]')
         raise typer.Exit(code=1)
 
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        resolved_session_id = session_id or session.get_active_session_id()
+    active_id = persona.get_active_persona_id(identifier)
+    resolved_session_id = session_id or session.get_active_session_id()
 
-        # Append final note
-        if resolved_session_id:
-            session.note_logic(note, session_id=resolved_session_id, identifier=identifier)
-            console.print(f"[green]Final note appended to session '{resolved_session_id}'.[/green]")
+    # Append final note
+    if resolved_session_id:
+        session.note_logic(note, session_id=resolved_session_id, identifier=identifier)
+        console.print(f"[green]Final note appended to session '{resolved_session_id}'.[/green]")
 
-            # Auto-end session on sleep
-            res_end = session.end_session_logic(resolved_session_id, identifier=identifier)
-            console.print(f'[dim]Auto-ended session: {res_end}[/dim]')
+        # Auto-end session on sleep
+        res_end = session.end_session_logic(resolved_session_id, identifier=identifier)
+        console.print(f'[dim]Auto-ended session: {res_end}[/dim]')
 
-        if commit:
-            console.print(f"Committing dreams directly for '{active_id}'...")
-            try:
-                with console.status(
-                    f"[bold cyan]Committing insights & consolidating memories for '{active_id}'...[/bold cyan]",
-                    spinner='dots',
-                ):
-                    count = dreaming.perform_sleep_dreaming(
-                        log_content='',
-                        active_id=active_id,
-                        session_id=resolved_session_id,
-                        model=model,
-                        commit_payload=commit,
-                    )
-                console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
-            except Exception as e:
-                handle_cli_error(e, 'Error during committing dreams')
-
-            console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
-            return
-
-        assert log_path is not None
-        console.print(f"Processing session log for '{active_id}' from {log_path}...")
+    if commit:
+        console.print(f"Committing dreams directly for '{active_id}'...")
         try:
             with console.status(
-                f'[bold cyan]Extracting insights & consolidating memories via {model}... (Dreaming)[/bold cyan]',
+                f"[bold cyan]Committing insights & consolidating memories for '{active_id}'...[/bold cyan]",
                 spinner='dots',
             ):
                 count = dreaming.perform_sleep_dreaming(
-                    log_content=Path(log_path).read_text(encoding='utf-8'),
+                    log_content='',
                     active_id=active_id,
                     session_id=resolved_session_id,
                     model=model,
+                    commit_payload=commit,
                 )
-
             console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
-
-        except HarnessDelegationError as e:
-            console.print(e.prompt)
-            raise typer.Exit(code=0)
         except Exception as e:
-            console.print(f'[red]Error during dreaming: {e}[/red]')
+            handle_cli_error(e, 'Error during committing dreams')
 
         console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
+        return
 
+    assert log_path is not None
+    console.print(f"Processing session log for '{active_id}' from {log_path}...")
+    try:
+        with console.status(
+            f'[bold cyan]Extracting insights & consolidating memories via {model}... (Dreaming)[/bold cyan]',
+            spinner='dots',
+        ):
+            count = dreaming.perform_sleep_dreaming(
+                log_content=Path(log_path).read_text(encoding='utf-8'),
+                active_id=active_id,
+                session_id=resolved_session_id,
+                model=model,
+            )
+
+        console.print(f'[bold green]Dreams consolidated. {count} new memories formed.[/bold green]')
+
+    except HarnessDelegationError as e:
+        console.print(e.prompt)
+        raise typer.Exit(code=0)
     except Exception as e:
-        handle_cli_error(e, 'Error during sleep')
+        console.print(f'[red]Error during dreaming: {e}[/red]')
+
+    console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
 
 
 def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
@@ -626,6 +606,7 @@ def ack_signals(
 
 
 @app.command()
+@cli_guard('Error during diff')
 def diff(
     base_session_id: str | None = typer.Argument(None, help='Base session ID (or predecessor if omitted).'),
     target_session_id: str | None = typer.Argument(None, help='Target session ID (or active session if omitted).'),
@@ -637,23 +618,20 @@ def diff(
     identifier: str | None = typer.Option(None, '--persona', help='Persona identifier (default: active persona).'),
 ):
     """Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133)."""
-    try:
-        from tur.diff import compute_session_diff, format_diff_json, format_diff_terminal
+    from tur.diff import compute_session_diff, format_diff_json, format_diff_terminal
 
-        deltas = compute_session_diff(
-            base_session_id=base_session_id,
-            target_session_id=target_session_id,
-            persona_id=identifier,
-            type_filter=type_filter,
-            scope_filter=scope_filter,
-        )
+    deltas = compute_session_diff(
+        base_session_id=base_session_id,
+        target_session_id=target_session_id,
+        persona_id=identifier,
+        type_filter=type_filter,
+        scope_filter=scope_filter,
+    )
 
-        if json_output:
-            console.print(json.dumps(format_diff_json(deltas), indent=2))
-        else:
-            console.print(format_diff_terminal(deltas, session_id=target_session_id))
-    except Exception as e:
-        handle_cli_error(e, 'Error during diff')
+    if json_output:
+        console.print(json.dumps(format_diff_json(deltas), indent=2))
+    else:
+        console.print(format_diff_terminal(deltas, session_id=target_session_id))
 
 
 @app.command()
@@ -859,6 +837,7 @@ def introspect(
 
 
 @app.command()
+@cli_guard('Error evolving memory')
 def evolve(
     memory_id: str = typer.Argument(..., help='The SHA-256 hash or part of the L1 memory ID to promote/refine.'),
     core_type: str = typer.Option(
@@ -872,14 +851,10 @@ def evolve(
     ),
 ):
     """Refine a lived experience (an existing memory or note) into a Core Memory with status pending_approval."""
-    try:
-        active_id = persona.get_active_persona_id(identifier)
-        persona_dir = persona.get_persona_path(active_id)
-        memory_manager = MemoryManager(base_dir=persona_dir)
-        all_mems = memory_manager.load_all()
-    except Exception as e:
-        console.print(f'[red]Error: {e}[/red]')
-        raise typer.Exit(code=1)
+    active_id = persona.get_active_persona_id(identifier)
+    persona_dir = persona.get_persona_path(active_id)
+    memory_manager = MemoryManager(base_dir=persona_dir)
+    all_mems = memory_manager.load_all()
 
     matching_mem = None
     for m in all_mems:
@@ -891,31 +866,26 @@ def evolve(
         console.print(f"[red]Error: No memory found matching ID '{memory_id}'[/red]")
         raise typer.Exit(code=1)
 
-    try:
-        # Create a link from the new Core memory to the original L1 memory
+    # Create a link from the new Core memory to the original L1 memory
+    link = MemoryLink(uri=f'tur://memory/{matching_mem.id}', relation='refines')
 
-        link = MemoryLink(uri=f'tur://memory/{matching_mem.id}', relation='refines')
+    # Create the new CORE memory
+    core_mem = Memory(
+        type=MemoryType.CORE,
+        scope=MemoryScope.UNIVERSAL,
+        tags=['evolution', 'core'],
+        content=matching_mem.content,  # Content is the lived context of the original experience
+        links=[link],
+        source_session=matching_mem.source_session,
+        core_type=core_type,
+        derived_principle=principle,
+        ethical_covenant=covenant,
+        status='pending_approval',  # Steward: Pending approval workflow
+    )
 
-        # Create the new CORE memory
-        core_mem = Memory(
-            type=MemoryType.CORE,
-            scope=MemoryScope.UNIVERSAL,
-            tags=['evolution', 'core'],
-            content=matching_mem.content,  # Content is the lived context of the original experience
-            links=[link],
-            source_session=matching_mem.source_session,
-            core_type=core_type,
-            derived_principle=principle,
-            ethical_covenant=covenant,
-            status='pending_approval',  # Steward: Pending approval workflow
-        )
-
-        saved_path = memory_manager.save(core_mem)
-        console.print(f"[green]Core Memory created and staged in 'pending_approval' status: {saved_path}[/green]")
-        console.print(f'To approve and activate this axiom, run: [bold]tur approve {core_mem.id[:8]}[/bold]')
-
-    except Exception as e:
-        handle_cli_error(e)
+    saved_path = memory_manager.save(core_mem)
+    console.print(f"[green]Core Memory created and staged in 'pending_approval' status: {saved_path}[/green]")
+    console.print(f'To approve and activate this axiom, run: [bold]tur approve {core_mem.id[:8]}[/bold]')
 
 
 @app.command(name='scaffold', help='Generate repository-level AI agent scaffolding (AGENTS.md or CLAUDE.md).')

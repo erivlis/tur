@@ -39,6 +39,26 @@ def handle_cli_error(e: Exception, context_msg: str = 'Error') -> None:
     raise typer.Exit(code=1) from e
 
 
+def cli_guard(context_msg: str = 'Error') -> Callable[[F], F]:
+    """
+    Decorator for Typer CLI commands to eliminate try/except boilerplate.
+    Catches LockTimeoutError (displaying contention warning) and general exceptions,
+    formatting errors via handle_cli_error and exiting with code 1.
+    """
+
+    def decorator(func: F) -> F:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                handle_cli_error(e, context_msg)
+
+        return cast(F, wrapper)
+
+    return decorator
+
+
 def run_scaffold_cli(format: str, output: Path | None, force: bool) -> None:
     """Execute workspace scaffolding with standard feedback and error reporting."""
     from tur import scaffold
