@@ -1,3 +1,9 @@
+## v0.13.2 (2026-09-06)
+
+### Refactor
+
+- consolidate `tur` memory subsystem into `tur.memory` package
+
 ## v0.13.1 (2026-09-05)
 
 ### Refactor
