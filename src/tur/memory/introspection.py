@@ -442,21 +442,11 @@ class TruthMaintenanceEngine(IntrospectionSubagent):
 
     def _resolve_conflicts(self, graph: nx.DiGraph):
         """Resolves direct contradicts, superseded_by, and refuted_by conflict relations."""
-        for u, v in list(graph.edges):
+        for u, v in graph.edges:
             d = graph.edges[u, v]
             edge_type = d.get('type')
-            if edge_type == 'superseded_by':
-                # u is superseded by v
-                if (
-                    graph.nodes.get(v, {}).get('status') == 'active'
-                    and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
-                    and graph.nodes[u].get('status') != 'superseded'
-                ):
-                    graph.nodes[u]['status'] = 'superseded'
-                    graph.nodes[u]['confidence'] = 0.0
-                    graph.nodes[u]['updated_at'] = datetime.now(UTC).isoformat()
-            elif edge_type == 'refuted_by':
-                # u is refuted by v
+            if edge_type in ('superseded_by', 'refuted_by'):
+                # u is superseded or refuted by v
                 if (
                     graph.nodes.get(v, {}).get('status') == 'active'
                     and graph.nodes.get(v, {}).get('confidence', 1.0) > 0.0
@@ -522,7 +512,7 @@ class TruthMaintenanceEngine(IntrospectionSubagent):
                         )
                     propagate_decay(dep)
 
-        for node in list(graph.nodes):
+        for node in graph.nodes:
             propagate_decay(node)
 
     def run(self, graph: nx.DiGraph, context: dict) -> tuple[nx.DiGraph, dict]:
