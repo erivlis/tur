@@ -9,15 +9,18 @@ import re
 COMMON_SECRET_PATTERNS: list[re.Pattern] = [
     # Generic key/secret assignments (e.g. api_key = "...", secret_key: "...")
     re.compile(
-        r'(?i)(?:api[_-]?key|access[_-]?token|secret[_-]?key|private[_-]?key|password|auth[_-]?token|client[_-]?secret)\s*[:=]\s*["\']?([a-zA-Z0-9_\-.]{16,})["\']?'
+        r'(?i)(?:api_key|access_token|secret_key|private_key|password|auth_token|client_secret)\s*[:=]\s*["\']?([\w.-]{16,})["\']?'
+    ),
+    re.compile(
+        r'(?i)(?:apikey|accesstoken|secretkey|privatekey|authtoken|clientsecret)\s*[:=]\s*["\']?([\w.-]{16,})["\']?'
     ),
     # GitHub Tokens (PAT, OAuth, Fine-Grained)
     re.compile(r'\bghp_[0-9a-zA-Z]{36}\b'),
     re.compile(r'\bgho_[0-9a-zA-Z]{36}\b'),
-    re.compile(r'\bgithub_pat_[0-9a-zA-Z_]{82}\b'),
+    re.compile(r'\bgithub_pat_\w{82}\b'),
     # OpenAI API Keys
     re.compile(r'\bsk-[a-zA-Z0-9]{48}\b'),
-    re.compile(r'\bsk-proj-[a-zA-Z0-9_-]{48,}\b'),
+    re.compile(r'\bsk-proj-[\w-]{48,}\b'),
     # Google API Keys
     re.compile(r'\bAIza[0-9A-Za-z_-]{30,40}\b'),
     # AWS Access Key ID
@@ -25,7 +28,7 @@ COMMON_SECRET_PATTERNS: list[re.Pattern] = [
     # Slack Tokens
     re.compile(r'\bxox[baprs]-[0-9a-zA-Z]{10,48}\b'),
     # Bearer Tokens
-    re.compile(r'(?i)\bbearer\s+([a-zA-Z0-9_\-.]{20,})\b'),
+    re.compile(r'(?i)\bbearer\s+([\w.-]{20,})\b'),
     # PEM Private Keys
     re.compile(r'-----BEGIN [A-Z ]+ PRIVATE KEY-----[\s\S]*?-----END [A-Z ]+ PRIVATE KEY-----'),
     re.compile(r'-----BEGIN [A-Z ]+ PRIVATE KEY-----'),
@@ -72,6 +75,34 @@ def detect_high_entropy_tokens(
     return flagged
 
 
+def _redact_patterns(text: str, redact: bool) -> tuple[str, list[str]]:
+    detected: list[str] = []
+    sanitized = text
+    for pattern in COMMON_SECRET_PATTERNS:
+        matches = pattern.findall(sanitized)
+        if not matches:
+            continue
+        for match in matches:
+            val = match if isinstance(match, str) else match[0]
+            if val and val not in detected:
+                detected.append(val)
+        if redact:
+            sanitized = pattern.sub(REDACTED_SECRET_REPLACEMENT, sanitized)
+    return sanitized, detected
+
+
+def _redact_entropy(text: str, redact: bool, threshold: float) -> tuple[str, list[str]]:
+    detected: list[str] = []
+    sanitized = text
+    high_entropy_tokens = detect_high_entropy_tokens(sanitized, threshold=threshold)
+    for token in high_entropy_tokens:
+        if token not in (REDACTED_SECRET_REPLACEMENT, REDACTED_ENTROPY_REPLACEMENT) and token not in detected:
+            detected.append(token)
+            if redact:
+                sanitized = sanitized.replace(token, REDACTED_ENTROPY_REPLACEMENT)
+    return sanitized, detected
+
+
 def sanitize_text(
     text: str,
     redact: bool = True,
@@ -93,28 +124,13 @@ def sanitize_text(
     if not text:
         return text, []
 
-    detected: list[str] = []
-    sanitized = text
+    sanitized, detected = _redact_patterns(text, redact)
 
-    # 1. Pattern-based detection and replacement
-    for pattern in COMMON_SECRET_PATTERNS:
-        matches = pattern.findall(sanitized)
-        if matches:
-            for match in matches:
-                val = match if isinstance(match, str) else match[0]
-                if val and val not in detected:
-                    detected.append(val)
-            if redact:
-                sanitized = pattern.sub(REDACTED_SECRET_REPLACEMENT, sanitized)
-
-    # 2. High-entropy token detection and replacement
     if scan_entropy:
-        high_entropy_tokens = detect_high_entropy_tokens(sanitized, threshold=entropy_threshold)
-        for token in high_entropy_tokens:
-            if token not in (REDACTED_SECRET_REPLACEMENT, REDACTED_ENTROPY_REPLACEMENT) and token not in detected:
-                detected.append(token)
-                if redact:
-                    sanitized = sanitized.replace(token, REDACTED_ENTROPY_REPLACEMENT)
+        sanitized, entropy_detected = _redact_entropy(sanitized, redact, entropy_threshold)
+        for tok in entropy_detected:
+            if tok not in detected:
+                detected.append(tok)
 
     return sanitized, detected
 
