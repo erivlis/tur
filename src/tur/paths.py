@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 APP_NAME = 'tur'
 APP_AUTHOR: Literal[False] = False  # Suppress Windows publisher folder duplication (AppData/Local/tur vs tur/tur)
+PERSONAS_FILENAME = 'personas.yaml'
+PERSONA_FILENAME = 'persona.yaml'
 
 # Module-level PlatformDirs instance avoiding per-call object allocations
 _PLATFORM_DIRS = PlatformDirs(
@@ -173,18 +175,18 @@ def resolve_personas_base_dir(ctx: Any | None = None) -> Path:
 
     Resolution order (global-first):
       1. resolve_data_dir() — if personas.yaml exists there (the global registry)
-      2. .tur/    — project-local fallback (pre-migration or test environments)
+      2. .tur/ — project-local fallback (pre-migration or test environments)
     """
     global_base = resolve_data_dir()
-    if (global_base / 'personas.yaml').exists():
+    if (global_base / PERSONAS_FILENAME).exists():
         return global_base
 
     ws = resolve_workspace_dir(ctx)
-    if ws is not None and (ws / '.tur' / 'personas.yaml').exists():
+    if ws is not None and (ws / '.tur' / PERSONAS_FILENAME).exists():
         return ws / '.tur'
 
     local_base = Path('.tur').resolve()
-    if (local_base / 'personas.yaml').exists():
+    if (local_base / PERSONAS_FILENAME).exists():
         return local_base
 
     return global_base

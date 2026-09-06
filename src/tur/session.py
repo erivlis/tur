@@ -33,6 +33,12 @@ from tur.persona import get_active_persona_id, get_persona_path, load_persona
 from tur.user import get_user_profile
 from tur.vector_clock import VectorClock
 
+STATE_FILENAME = 'state.yaml'
+SESSION_LOCK_FILENAME = 'session.lock'
+LOCKS_DIRNAME = '.locks'
+ALEPH_CONSERVED_MSG = 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
+SAFE_IDENTIFIER_REGEX = re.compile(r'^[a-zA-Z0-9_.-]+$')
+
 
 def get_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = None) -> Path:
     """
@@ -184,19 +190,21 @@ def get_session_file(persona_dir: Path, session_id: str) -> Path:
 def load_system_state(workspace_dir: Path | None = None) -> SystemState:
     """Load SystemState from .tur/state.yaml or return a default empty SystemState."""
     ws = workspace_dir or resolve_workspace_dir()
-    state_path = (ws / '.tur' / 'state.yaml') if ws is not None else Path('.tur/state.yaml')
+    state_path = (ws / '.tur' / STATE_FILENAME) if ws is not None else Path(f'.tur/{STATE_FILENAME}')
     if state_path.exists():
         with contextlib.suppress(Exception), open(state_path, encoding='utf-8') as f:
-            state_data = yaml_safe_load(f)
-            if state_data:
-                return SystemState(**state_data)
+            data = yaml_safe_load(f)
+            if data:
+                return SystemState(**data)
     return SystemState()
 
 
-def save_system_state(state: SystemState, workspace_dir: Path | None = None) -> None:
+def save_system_state(state: SystemState, workspace_dir: Path | None = None):
     """Save SystemState atomically to .tur/state.yaml."""
-    ws = workspace_dir or resolve_workspace_dir() or Path.cwd()
-    state_path = ws / '.tur' / 'state.yaml'
+    ws = workspace_dir or resolve_workspace_dir()
+    if ws is None:
+        return
+    state_path = ws / '.tur' / STATE_FILENAME
     atomic_yaml_write(state_path, state.model_dump(mode='json'))
 
 
@@ -236,7 +244,7 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
     or the default axiom if no notes are found.
     """
     if not session_id:
-        return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
+        return ALEPH_CONSERVED_MSG
 
     session_file = get_session_file(persona_dir, session_id)
 
@@ -248,7 +256,7 @@ def compile_session_notes(persona_dir: Path, session_id: str | None) -> str:
                 sorted_notes = sorted(session_notes.notes, key=lambda x: x.timestamp, reverse=True)
                 return sorted_notes[0].content.strip()
 
-    return 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
+    return ALEPH_CONSERVED_MSG
 
 
 def hydrate_session_state(
@@ -582,7 +590,7 @@ def start_session_logic(
     persona_dir = get_persona_path(active_id)
 
     # Backwards compatibility flat file setup
-    session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+    session_lock = ensure_local_persona_dir(persona_dir) / LOCKS_DIRNAME / SESSION_LOCK_FILENAME
     with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
         sessions_dir = ensure_local_persona_dir(persona_dir) / 'sessions'
         sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -613,7 +621,7 @@ def start_session_logic(
 
                 if is_fresh:
                     prev_content = compile_session_notes(persona_dir, parent_id)
-                    if prev_content and prev_content != 'Status: Conserved. Aleph: Restored. Carry on, Lion.':
+                    if prev_content and prev_content != ALEPH_CONSERVED_MSG:
                         # Clamp auto-seeded spark to 256 characters (EP-0130)
                         seed_content = prev_content[:256].strip()
 
@@ -652,8 +660,8 @@ def start_session_logic(
         agent_id = f'{model_slug}_{conv_hash}_{random_hex}'
 
     # Sanitization validation
-    if not re.match(r'^[a-zA-Z0-9_\.-]+$', agent_id):
-        raise ValueError(f"Invalid agent_id format: '{agent_id}'. Must match ^[a-zA-Z0-9_\\.-]+$")
+    if not SAFE_IDENTIFIER_REGEX.match(agent_id):
+        raise ValueError(f"Invalid agent_id format: '{agent_id}'. Must match ^[a-zA-Z0-9_.-]+$")
 
     run_token = os.environ.get('TUR_RUN_TOKEN') or str(uuid.uuid4())
     os.environ['TUR_AGENT_ID'] = agent_id
@@ -742,7 +750,7 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
     if not session_file.exists():
         raise FileNotFoundError(f"Session '{session_id}' not found.")
 
-    session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+    session_lock = ensure_local_persona_dir(persona_dir) / LOCKS_DIRNAME / SESSION_LOCK_FILENAME
     with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
         index = load_session_index(persona_dir)
         if index.active_session_id == session_id:
@@ -779,9 +787,9 @@ def signal_logic(
     vector_clock: dict[str, int] | None = None,
 ) -> str:
     """Sends a message signal transactionally with Lamport Vector Clock ticking (EP-0141)."""
-    if not re.match(r'^[a-zA-Z0-9_\.-]+$', sender):
+    if not SAFE_IDENTIFIER_REGEX.match(sender):
         raise ValueError(f"Invalid sender ID: '{sender}'")
-    if recipient != '*' and not re.match(r'^[a-zA-Z0-9_\.-]+$', recipient):
+    if recipient != '*' and not SAFE_IDENTIFIER_REGEX.match(recipient):
         raise ValueError(f"Invalid recipient ID: '{recipient}'")
 
     conn = get_db_connection(session_id)
@@ -1162,7 +1170,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         from tur.models import Memory
 
         persona_dir = get_persona_path(active_id)
-        session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+        session_lock = ensure_local_persona_dir(persona_dir) / LOCKS_DIRNAME / SESSION_LOCK_FILENAME
         with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
             memory_manager = MemoryManager(base_dir=persona_dir)
 
@@ -1217,7 +1225,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
     resolved_session_id = session_id or get_active_session_id()
 
     if resolved_session_id:
-        session_lock = ensure_local_persona_dir(persona_dir) / '.locks' / 'session.lock'
+        session_lock = ensure_local_persona_dir(persona_dir) / LOCKS_DIRNAME / SESSION_LOCK_FILENAME
         with state_lock(session_lock, timeout=FAST_LOCK_TIMEOUT_SECONDS):
             session_file = get_session_file(persona_dir, resolved_session_id)
             session_file.parent.mkdir(parents=True, exist_ok=True)

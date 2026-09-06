@@ -38,6 +38,8 @@ from tur.session import (
     write_whiteboard_logic,
 )
 
+ERROR_NO_ACTIVE_SESSION = 'No active session ID found.'
+
 logger = logging.getLogger('tur.mcp')
 
 
@@ -599,7 +601,7 @@ def read_notes(session_id: str | None = None, include_previous: bool = False, li
     """
     sess_id = session_id or _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     return read_notes_logic(sess_id, limit=limit, include_previous=include_previous)
 
 
@@ -617,7 +619,7 @@ def signal(
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     env_agent_id = os.environ.get('TUR_AGENT_ID')
     if sender_id and env_agent_id and sender_id != env_agent_id and not sender_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: sender_id '{sender_id}' does not match calling agent '{env_agent_id}'.")
@@ -636,7 +638,7 @@ def read_signals(
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     env_agent_id = os.environ.get('TUR_AGENT_ID')
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
@@ -651,7 +653,7 @@ def ack_signals(agent_id: str | None = None, signal_ids: list[str] | None = None
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     env_agent_id = os.environ.get('TUR_AGENT_ID')
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
@@ -668,7 +670,7 @@ def list_agents() -> list[dict]:
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     return list_agents_logic(sess_id)
 
 
@@ -679,7 +681,7 @@ def write_whiteboard(key: str, value: str) -> str:
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     sender = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
     return write_whiteboard_logic(sess_id, key, value, sender)
 
@@ -691,7 +693,7 @@ def read_whiteboard(key: str) -> str | None:
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     return read_whiteboard_logic(sess_id, key)
 
 
@@ -705,7 +707,7 @@ def tired(agent_id: str | None = None, transcript: str | None = None) -> str:
     global _active_session_id
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
-        raise ValueError('No active session ID found.')
+        raise ValueError(ERROR_NO_ACTIVE_SESSION)
     env_agent_id = os.environ.get('TUR_AGENT_ID')
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")

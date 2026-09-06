@@ -33,8 +33,18 @@ from tur.models import (
     PersonaIndex,
     SessionNotes,
 )
-from tur.paths import get_global_tur_dir, resolve_personas_base_dir, resolve_workspace_dir
+from tur.paths import (
+    PERSONA_FILENAME,
+    PERSONAS_FILENAME,
+    get_global_tur_dir,
+    resolve_personas_base_dir,
+    resolve_workspace_dir,
+)
 from tur.session import load_system_state, update_system_state
+
+STYLE_BOLD_CYAN = 'bold cyan'
+NO_PERSONAS_FOUND_MSG = '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
+HELP_ADMIN_PERSONA_ARG = 'The name or UUID of the persona. If omitted, uses default.'
 
 app = typer.Typer(
     help='Tur: Administrative persona management CLI.',
@@ -132,9 +142,9 @@ def persona_list() -> None:
     """List all globally and locally registered personas in the registry."""
     try:
         base_dir = resolve_personas_base_dir()
-        index_path = base_dir / 'personas.yaml'
+        index_path = base_dir / PERSONAS_FILENAME
         if not index_path.exists():
-            console.print('[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]')
+            console.print(NO_PERSONAS_FOUND_MSG)
             return
         with open(index_path, encoding='utf-8') as f:
             index_data: dict = yaml_safe_load(f) or {'personas': []}
@@ -164,19 +174,15 @@ def persona_view(
     try:
         if not identifier:
             base_dir = resolve_personas_base_dir()
-            index_path = base_dir / 'personas.yaml'
+            index_path = base_dir / PERSONAS_FILENAME
             if not index_path.exists():
-                console.print(
-                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
-                )
+                console.print(NO_PERSONAS_FOUND_MSG)
                 return
             with open(index_path, encoding='utf-8') as f:
                 index_data: dict[str, Any] = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
             if not index.personas:
-                console.print(
-                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
-                )
+                console.print(NO_PERSONAS_FOUND_MSG)
                 return
             identifier = wizards.select_persona_wizard(index)
             if not identifier:
@@ -185,7 +191,7 @@ def persona_view(
 
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
-        persona_yaml = persona_dir / 'persona.yaml'
+        persona_yaml = persona_dir / PERSONA_FILENAME
         if not persona_yaml.exists():
             console.print(f"[red]Error: persona.yaml not found for '{active_id}'[/red]")
             return
@@ -193,7 +199,7 @@ def persona_view(
             pdata: dict = yaml_safe_load(f) or {}
 
         table = Table(box=box.SIMPLE, show_header=False)
-        table.add_column('Key', style='bold cyan')
+        table.add_column('Key', style=STYLE_BOLD_CYAN)
         table.add_column('Value')
 
         table.add_row('Name', pdata.get('name', active_id))
@@ -240,7 +246,7 @@ def persona_get() -> None:
             return
 
         base_dir = resolve_personas_base_dir()
-        index_path = base_dir / 'personas.yaml'
+        index_path = base_dir / PERSONAS_FILENAME
         persona_name = active_uuid
         version = 'unknown'
         if index_path.exists():
@@ -270,7 +276,7 @@ def persona_set(
     """Set the active persona for this workspace in .tur/state.yaml."""
     try:
         base_dir = resolve_personas_base_dir()
-        index_path = base_dir / 'personas.yaml'
+        index_path = base_dir / PERSONAS_FILENAME
         if not index_path.exists():
             console.print('[red]No personas found. Please run `tur-adm persona init` to create one.[/red]')
             raise ValueError('No personas found. Please run `tur-adm persona init` to create one.')  # noqa: TRY301
@@ -334,19 +340,15 @@ def persona_export(
     try:
         if not identifier:
             base_dir = resolve_personas_base_dir()
-            index_path = base_dir / 'personas.yaml'
+            index_path = base_dir / PERSONAS_FILENAME
             if not index_path.exists():
-                console.print(
-                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
-                )
+                console.print(NO_PERSONAS_FOUND_MSG)
                 return
             with open(index_path, encoding='utf-8') as f:
                 index_data: dict[str, Any] = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
             if not index.personas:
-                console.print(
-                    '[yellow]No registered personas found. Run `tur-adm persona init` to bootstrap one.[/yellow]'
-                )
+                console.print(NO_PERSONAS_FOUND_MSG)
                 return
             identifier = wizards.select_persona_wizard(index)
             if not identifier:
@@ -357,7 +359,7 @@ def persona_export(
         persona_uuid = persona_dir.name
 
         if output is None:
-            persona_yaml_path = persona_dir / 'persona.yaml'
+            persona_yaml_path = persona_dir / PERSONA_FILENAME
             target_name = persona_uuid
             if persona_yaml_path.exists():
                 with contextlib.suppress(Exception), open(persona_yaml_path, encoding='utf-8') as f:
@@ -368,7 +370,7 @@ def persona_export(
 
         with tarfile.open(output_path, 'w:gz') as tar:
             # Add persona.yaml, injecting the index entry UUID
-            persona_yaml_path = persona_dir / 'persona.yaml'
+            persona_yaml_path = persona_dir / PERSONA_FILENAME
             if not persona_yaml_path.exists():
                 raise FileNotFoundError(f"persona.yaml not found in '{persona_dir}'")  # noqa: TRY301
 
@@ -380,7 +382,7 @@ def persona_export(
             if not isinstance(yaml_str, str):
                 raise TypeError('Persona data cannot be deserilized')  # noqa: TRY301
             yaml_bytes = yaml_str.encode('utf-8')
-            info = tarfile.TarInfo(name='persona.yaml')
+            info = tarfile.TarInfo(name=PERSONA_FILENAME)
             info.size = len(yaml_bytes)
             tar.addfile(info, io.BytesIO(yaml_bytes))
 
@@ -450,7 +452,7 @@ def persona_import(
             with tarfile.open(archive_path, 'r:gz') as tar:
                 safe_extract(tar, tmp_path)
 
-            persona_yaml = tmp_path / 'persona.yaml'
+            persona_yaml = tmp_path / PERSONA_FILENAME
             if not persona_yaml.exists():
                 raise ValueError('Invalid archive: persona.yaml is missing.')  # noqa: TRY301
 
@@ -477,9 +479,9 @@ def persona_import(
 
             # 2. Reconstruct the global home
             global_home = Path.home() / '.tur'
-            if not (global_home / 'personas.yaml').exists():
+            if not (global_home / PERSONAS_FILENAME).exists():
                 global_home.mkdir(parents=True, exist_ok=True)
-                with open(global_home / 'personas.yaml', 'w', encoding='utf-8') as f:
+                with open(global_home / PERSONAS_FILENAME, 'w', encoding='utf-8') as f:
                     yaml.dump({'personas': []}, f)
                 console.print(
                     '[yellow]Warning: ~/.tur/personas.yaml not found — initialized a new global registry.[/yellow]'
@@ -488,7 +490,7 @@ def persona_import(
             dest_dir = global_home / 'personas' / str(persona_id)
 
             # Check index
-            index_path = global_home / 'personas.yaml'
+            index_path = global_home / PERSONAS_FILENAME
             with open(index_path, encoding='utf-8') as f:
                 index_data: dict = yaml_safe_load(f) or {'personas': []}
             index = PersonaIndex(**index_data)
@@ -550,7 +552,7 @@ def persona_import(
 @memory_app.command('list')
 @require_human
 def memory_list(
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
     include_archived: bool = typer.Option(False, '--include-archived', help='Include forgotten/archived memories.'),
     pending: bool = typer.Option(False, '--pending', help='Filter to only show memories pending approval.'),
 ) -> None:
@@ -620,7 +622,7 @@ def memory_approve(
 @require_human
 def memory_view(
     memory_id: str = typer.Argument(..., help='The SHA-256 hash/ID of the memory to view.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
 ) -> None:
     """View the detailed contents of a specific memory."""
     try:
@@ -634,7 +636,7 @@ def memory_view(
             return
 
         table = Table(box=box.SIMPLE, show_header=False)
-        table.add_column('Key', style='bold cyan')
+        table.add_column('Key', style=STYLE_BOLD_CYAN)
         table.add_column('Value')
 
         table.add_row('ID (SHA-256)', str(matched.id))
@@ -668,7 +670,7 @@ def memory_view(
 @require_human
 def memory_forget(
     memory_id: str = typer.Argument(..., help='The ID (hash) of the memory to forget.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
 ) -> None:
     """Archive a memory by its ID for a specific persona."""
     try:
@@ -687,7 +689,7 @@ def memory_forget(
 def memory_redact(
     memory_id: str = typer.Argument(..., help='The ID (hash) or prefix of the memory to redact.'),
     reason: str = typer.Option(..., '--reason', '-r', help='The justification/reason for the redaction.'),
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
 ) -> None:
     """Tombstone and purge sensitive data from a memory while preserving graph integrity."""
     try:
@@ -713,7 +715,7 @@ def memory_redact(
 @session_app.command('list')
 @require_human
 def session_list(
-    identifier: str | None = typer.Argument(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
 ) -> None:
     """List all sessions in the index for a specific persona."""
     try:
@@ -781,7 +783,7 @@ def session_note(
         help="The 1-indexed position of the note in the session's ledger to view.",
     ),
     session_id: str | None = typer.Option(None, help='The session ID. If omitted, uses active session.'),
-    identifier: str | None = typer.Option(None, help='The name or UUID of the persona. If omitted, uses default.'),
+    identifier: str | None = typer.Option(None, help=HELP_ADMIN_PERSONA_ARG),
 ) -> None:
     """View a specific note by its 1-indexed position in a session."""
     try:
@@ -809,7 +811,7 @@ def session_note(
         note_item = sorted(session_notes.notes, key=lambda n: n.timestamp)[note_index - 1]
 
         table = Table(box=box.SIMPLE, show_header=False)
-        table.add_column('Key', style='bold cyan')
+        table.add_column('Key', style=STYLE_BOLD_CYAN)
         table.add_column('Value')
 
         table.add_row('Index', str(note_index))
@@ -930,7 +932,7 @@ def _collect_hygiene_items(
         if not base_dir.exists():
             continue
 
-        index_file = base_dir / 'personas.yaml'
+        index_file = base_dir / PERSONAS_FILENAME
         valid_ids: set[str] = set()
         if index_file.exists():
             with contextlib.suppress(Exception), open(index_file, encoding='utf-8') as f:

@@ -43,6 +43,10 @@ from tur.models import (
 )
 from tur.session import update_system_state
 
+HELP_PERSONA_ARG = 'The name or UUID of the persona. If omitted, uses the default.'
+HELP_SESSION_ID_OPT = 'The session ID.'
+ERROR_NO_ACTIVE_SESSION_CLI = '[red]Error: No active session ID found.[/red]'
+
 app = typer.Typer(
     help='Tur: Persona safe agent runtime.',
     context_settings={'help_option_names': ['-h', '--help']},
@@ -81,9 +85,7 @@ def wake(
     include_stale: bool = typer.Option(
         False, '--include-stale', help='Include stale/decayed memories in the compiled wake prompt.'
     ),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
 ):
     """Wake the persona and compile the prompt."""
     active_id = persona.get_active_persona_id(identifier)
@@ -133,9 +135,7 @@ def wake(
 @cli_guard()
 def learn(
     content: str | None = typer.Argument(None, help='The content of the memory to store.'),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     type: MemoryType = typer.Option(MemoryType.INSIGHT, help='The type of memory.'),
     scope: MemoryScope = typer.Option(MemoryScope.INCARNATION, help='The scope of the memory.'),
     session_id: str = typer.Option(None, help='The name/ID of the session this memory belongs to'),
@@ -234,9 +234,7 @@ def learn(
 @cli_guard()
 def recall(
     query: str = typer.Argument(..., help='The topic or concept to search for in past memories.'),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     effort: int = typer.Option(
         0, '--effort', '-e', min=0, max=10, help='Cognitive effort level in [0..10] for graph retrieval.'
     ),
@@ -265,9 +263,7 @@ def recall(
 @cli_guard('Error saving note')
 def note(
     content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
 ):
     """Append a note to the active session's notes.yaml."""
@@ -278,9 +274,7 @@ def note(
 @app.command()
 @cli_guard()
 def status(
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
 ):
     """Show the current persona, session, and memory status."""
     active_id = persona.get_active_persona_id(identifier)
@@ -341,9 +335,7 @@ def status(
 @app.command()
 @cli_guard('Error calculating metrics')
 def metrics(
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     json_output: bool = typer.Option(False, '--json', help='Output metrics as raw JSON.'),
 ):
     """Calculate Constraint Dimensionality (C_p) and cognitive load metrics for a persona."""
@@ -381,9 +373,7 @@ def metrics(
 
 @app.command(name='telemetry', hidden=True)
 def telemetry(
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     json_output: bool = typer.Option(False, '--json', help='Output metrics as raw JSON.'),
 ):
     """Backwards-compatible alias for metrics."""
@@ -394,9 +384,7 @@ def telemetry(
 @cli_guard('Error during sleep')
 def sleep(
     log_path: str | None = typer.Argument(None, help='Path to the chat log file to be parsed.'),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     session_id: str = typer.Option(None, help='The name/ID of the session these memories belong to'),
     model: str = typer.Option('gemini-3.1-pro-preview', help='The model to use for dreaming (insight extraction)'),
     note: str = typer.Option(..., '-n', '--note', help='Final note/utterance to append before sleeping.'),
@@ -520,7 +508,7 @@ def list_agents(
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
-        console.print('[red]Error: No active session ID found.[/red]')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
         raise typer.Exit(code=1)
 
     try:
@@ -551,7 +539,7 @@ def signal(
     content: str = typer.Argument(..., help='The content string of the signal.'),
     type: str = typer.Option('inform', help='The signal type (inform, query, delegate, ack, warn, etc.).'),
     agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
     """Send a coordination message signal to another manifestation."""
     try:
@@ -568,7 +556,7 @@ def read_signals(
     unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread signals or all.'),
     json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
     agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
     """Retrieve incoming coordination signals."""
     try:
@@ -596,7 +584,7 @@ def read_signals(
 def ack_signals(
     signal_ids: str = typer.Argument(..., help='Comma-separated list of signal IDs to acknowledge.'),
     agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
     """Acknowledge read signals to mark them as read."""
     try:
@@ -644,7 +632,7 @@ def read_notes(
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
-        console.print('[red]Error: No active session ID found.[/red]')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
         raise typer.Exit(code=1)
 
     try:
@@ -666,7 +654,7 @@ def whiteboard_write(
     key: str = typer.Argument(..., help='The coordinate key.'),
     value: str = typer.Argument(..., help='The value string.'),
     agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
     """Write or update parameters on the shared session whiteboard."""
     try:
@@ -681,11 +669,11 @@ def whiteboard_write(
 @app.command()
 def whiteboard_read(
     key: str = typer.Argument(..., help='The coordinate key.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
-        console.print('[red]Error: No active session ID found.[/red]')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
         raise typer.Exit(code=1)
 
     try:
@@ -702,7 +690,7 @@ def whiteboard_read(
 @app.command()
 def tired(
     agent_id: str | None = typer.Option(None, help='The agent ID.'),
-    session_id: str | None = typer.Option(None, help='The session ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
     transcript: str | None = typer.Option(None, help='Optional chat log transcript content.'),
 ):
     """Transition agent to idle, runs staged dreaming, and evaluates sleep consensus."""
@@ -717,9 +705,7 @@ def tired(
 
 @app.command()
 def verify(
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     strict: bool = typer.Option(
         False, '--strict', help='Fail with non-zero exit code if any stale memories are detected.'
     ),
@@ -762,9 +748,7 @@ def verify(
 
 @app.command()
 def introspect(
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
     all: bool = typer.Option(
         False, '--all', help='Force bootstrap compilation from scratch (loads active and subsumed).'
     ),
@@ -848,9 +832,7 @@ def evolve(
     ),
     principle: str = typer.Option(..., help='The concrete behavioral constraint/instruction (derived principle).'),
     covenant: str = typer.Option(..., help='The ethical commitment/promise to the user or self.'),
-    identifier: str | None = typer.Argument(
-        None, help='The name or UUID of the persona. If omitted, uses the default.'
-    ),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
 ):
     """Refine a lived experience (an existing memory or note) into a Core Memory with status pending_approval."""
     active_id = persona.get_active_persona_id(identifier)
