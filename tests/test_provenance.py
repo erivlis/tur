@@ -56,7 +56,6 @@ def test_create_provenance_and_decay_factory(monkeypatch):
 
     prov, decay = create_provenance_and_decay(
         memory_type=MemoryType.FACT,
-        confidence=0.9,
         context_ref='src/api.py#L1-L10',
         source_agent='ariel',
         source_harness='antigravity',

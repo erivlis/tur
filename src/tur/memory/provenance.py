@@ -131,7 +131,6 @@ def is_git_file_modified_or_deleted(
 
 def create_provenance_and_decay(
     memory_type: MemoryType,
-    confidence: float = 1.0,
     context_ref: str | None = None,
     source_agent: str | None = None,
     source_harness: str | None = None,

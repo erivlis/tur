@@ -220,7 +220,6 @@ def learn(
 
     prov, dec = create_provenance_and_decay(
         memory_type=mem_type,
-        confidence=confidence,
         context_ref=context_ref,
         source_agent=source_agent,
         source_harness=source_harness or os.environ.get('TUR_HARNESS'),
