@@ -46,7 +46,7 @@ def test_dreaming_missing_google_genai(monkeypatch):
     from tur.memory import dreaming
 
     with pytest.raises(ImportError) as exc_info:
-        dreaming.stage_sleep_dreaming('Test log content', active_id='fake-id')
+        dreaming.stage_sleep_dreaming('Test log content')
 
     assert "The 'google-genai' package is required for direct Gemini API calls." in str(exc_info.value)
     assert 'tur[gemini]' in str(exc_info.value)

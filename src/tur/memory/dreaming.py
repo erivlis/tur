@@ -144,8 +144,6 @@ def perform_sleep_dreaming(
 
 def stage_sleep_dreaming(
     log_content: str,
-    active_id: str,
-    session_id: str | None = None,
     model: str = 'gemini-3.1-pro-preview',
     ctx: Any = None,
 ) -> str:
