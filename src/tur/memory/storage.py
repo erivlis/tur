@@ -1,5 +1,6 @@
 import contextlib
 import hashlib
+import math
 import os
 import tempfile
 from collections.abc import Iterator
@@ -141,7 +142,7 @@ class MemoryManager:
             frontmatter['status'] = memory.status
 
         # Provenance & Epistemic Decay fields (EP-0131)
-        if memory.confidence != 1.0:
+        if not math.isclose(memory.confidence, 1.0, abs_tol=1e-5):
             frontmatter['confidence'] = memory.confidence
         if memory.provenance:
             frontmatter['provenance'] = {
