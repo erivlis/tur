@@ -58,7 +58,7 @@ def resolve_runtime_dir() -> Path:
             with contextlib.suppress(OSError):
                 os.chmod(runtime_dir, 0o700)
         return runtime_dir.resolve()
-    except (OSError, PermissionError) as exc:
+    except OSError as exc:
         uid = os.getuid() if hasattr(os, 'getuid') else 'win'
         fallback = Path(tempfile.gettempdir()) / f'tur-runtime-{uid}'
         fallback.mkdir(parents=True, exist_ok=True)
@@ -114,13 +114,13 @@ def is_global_path(p: Path) -> bool:
     for root_getter in (resolve_data_dir, resolve_cache_dir, resolve_runtime_dir, resolve_log_dir):
         try:
             resolved_p.relative_to(root_getter())
-        except (ValueError, Exception):
+        except Exception:
             pass
         else:
             return True
     try:
         resolved_p.relative_to((Path.home() / '.tur').resolve())
-    except (ValueError, Exception):
+    except Exception:
         return False
     else:
         return True
