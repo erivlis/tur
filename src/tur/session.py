@@ -1114,7 +1114,7 @@ def tired_logic(session_id: str, agent_id: str, transcript: str | None = None) -
         try:
             from tur.memory.dreaming import stage_sleep_dreaming
 
-            memories_json = stage_sleep_dreaming(transcript, active_id, session_id)
+            memories_json = stage_sleep_dreaming(transcript)
             stage_memories_logic(session_id, agent_id, memories_json)
         except Exception as e:
             print(f'Error during stage dreaming: {e}')
@@ -1323,14 +1323,14 @@ def get_persona_status_summary(
                 session_notes = SessionNotes(**notes_data)
                 note_count = len(session_notes.notes)
                 if session_notes.notes:
-                    last = sorted(session_notes.notes, key=lambda n: n.timestamp, reverse=True)[0]
+                    last = max(session_notes.notes, key=lambda n: n.timestamp)
                     latest_note = last.content[:200]
                     snippet = last.content[:80].replace('\n', ' ')
                     if len(last.content) > 80:
                         snippet += '…'
                     latest_note_snippet = snippet
     elif index.sessions:
-        most_recent = sorted(index.sessions, key=lambda s: s.updated_at, reverse=True)[0]
+        most_recent = max(index.sessions, key=lambda s: s.updated_at)
         target_session_id = most_recent.id
         session_status = most_recent.status + ' (last)'
         if hasattr(most_recent, 'updated_at') and most_recent.updated_at:
