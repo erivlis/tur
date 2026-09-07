@@ -2,7 +2,7 @@
 title: "EP-0132: Budgeted Wake and Dynamic Memory Context Retrieval"
 description: "Establishes token-bounded Turn Zero wake payloads and defines the pre-turn dynamic memory recall hook protocol."
 icon: lucide/cpu
-status: draft
+status: implemented
 ---
 
 # EP-0132: Budgeted Wake and Dynamic Memory Context Retrieval
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0132                                                          |
 | **Title**   | Budgeted Wake and Dynamic Memory Context Retrieval            |
 | **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Draft                                                         |
+| **Status**  | Implemented                                                   |
 | **Type**    | Standards Track                                               |
 | **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-08-27                                                    |
+| **Updated** | 2026-09-08                                                    |
 
 ## Abstract
 

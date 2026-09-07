@@ -292,7 +292,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Canonical Ontology and Relational Extensibility (EP-0126) [Status: Implemented]:** Formalizing canonical
       `NodeType` and `EdgeType` Enums, adding `metaphor_for` mapping, and supporting controlled schema extensibility
       for domain personas.
-    * **Budgeted Wake and Dynamic Memory Context Retrieval (EP-0132) [Status: Draft]:** Establishing token-bounded Turn
+    * **Budgeted Wake and Dynamic Memory Context Retrieval (EP-0132) [Status: Implemented]:** Establishing token-bounded Turn
       Zero wake payloads and pre-turn dynamic memory recall hooks.
     * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Implemented]:** Introducing the `tur diff` CLI
       command and MCP tool to inspect memory mutations across sessions.
