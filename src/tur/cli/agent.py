@@ -85,6 +85,12 @@ def wake(
     include_stale: bool = typer.Option(
         False, '--include-stale', help='Include stale/decayed memories in the compiled wake prompt.'
     ),
+    token_budget: int | None = typer.Option(
+        None,
+        '--token-budget',
+        '-b',
+        help='Token budget for wake prompt compilation (EP-0132). Pass 0 or omit for unbounded.',
+    ),
     identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
 ):
     """Wake the persona and compile the prompt."""
@@ -117,7 +123,8 @@ def wake(
     )
 
     # Compile (The Awakening)
-    system_prompt = compile_persona(state)
+    eff_budget = None if (token_budget is None or token_budget <= 0) else token_budget
+    system_prompt = compile_persona(state, token_budget=eff_budget)
 
     # Output
     console.print(f'[bold green]--- SYSTEM WAKE: {state.persona.name} (v{state.persona.version}) ---[/bold green]')

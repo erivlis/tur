@@ -104,6 +104,7 @@ def wake(
     session_id: str | None = None,
     previous_session_id: str | None = None,
     include_stale: bool = False,
+    token_budget: int | None = None,
 ) -> str:
     """
     Read your core identity, directives, and system metrics to establish context.
@@ -122,6 +123,7 @@ def wake(
         session_id(str): Optional session ID. If omitted, uses active or most recent session.
         previous_session_id(str): Optional session ID to seed the opening note of a new session.
         include_stale(bool): Optional flag to include decayed/stale memories in the system prompt.
+        token_budget(int): Optional token budget for wake prompt compilation (EP-0132).
     """
     global _active_session_id
     active_id = get_active_persona_id()
@@ -138,7 +140,8 @@ def wake(
     else:
         _active_session_id = sess_id
     state = hydrate_session_state(active_id, session_id=sess_id, include_stale=include_stale)
-    system_prompt = compile_persona(state)
+    eff_budget = None if (token_budget is None or token_budget <= 0) else token_budget
+    system_prompt = compile_persona(state, token_budget=eff_budget)
 
     # Append System Metrics Metadata
     metrics_engine = CognitiveMetrics()

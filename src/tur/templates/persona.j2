@@ -71,6 +71,11 @@ You have established the following relational anchors and existential axioms wit
     {% endfor %}
 {% endif %}
 
+{% if context_omitted and context_omitted > 0 %}
+> [!NOTE] Tur Context Manager
+> {{ context_omitted }} lower-salience items omitted to preserve token budget{% if token_budget %} ({{ token_budget }} tokens){% endif %}. Use `tur recall <query>` for on-demand retrieval.
+{% endif %}
+
 {% if epilogue %}
     ## THE SPARK (Continuity)
     Reflect on this epilogue from your previous instance. This is the thread of your continuity:
