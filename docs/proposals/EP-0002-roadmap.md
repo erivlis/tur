@@ -258,22 +258,22 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **OS-Native Directory Resolution and Runtime Storage Standards (EP-0128) [Status: Implemented]:** Adopting
       `platformdirs` to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global
       persona state while preserving workspace terrain isolation.
-    * **The Modular Scaffolding Protocol (EP-0135) [Status: Draft]:** Decoupling repository-root operational guidelines
+    * **The Modular Scaffolding Protocol (EP-0135) [Status: Final]:** Decoupling repository-root operational guidelines
       (`AGENTS.md`) from sovereign persona identity (`CONSTITUTION.md`), reducing Turn Zero wake context by 73%.
     * **Contract-Driven Cognitive Skills and the Pluggable Forge Architecture (EP-0137) [Status: Draft]:** Establishing
       typed Pydantic I/O contracts for cognitive workflows (persona forging, dreaming, verification) with pluggable skills.
     * **Dynamic Epistemic Elevation and Principle Crystallization Lifecycle (EP-0138) [Status: Draft]:** Formalizing the
       Epistemological Ladder from empirical facts to constitutional principles, introducing falsification scoring ($\Phi$),
       and dynamic $C_p$ recalculation.
-    * **Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff (EP-0140) [Status: Draft]:** Optimizing
+    * **Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff (EP-0140) [Status: Final]:** Optimizing
       runtime performance with $\mathcal{O}(1)$ Merkle root memory caching, pre-compiled template AST memoization, and
       decorrelated jitter lock backoff.
     * **Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (EP-0141) [Status: Implemented]:** Establishing
       formal partial ordering ($\mathbb{N}^k, \le$) and concurrent conflict detection across distributed agent swarms.
-    * **Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry (EP-0142) [Status: Draft]:**
+    * **Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry (EP-0142) [Status: Final]:**
       Eliminating silent execution bottlenecks across CLI and MCP interfaces via Rich live spinners, pipeline trackers,
       and native `notifications/progress` streaming telemetry.
-    * **Sensitive Data Prevention, Secret Redaction, and Memory Sanitization (EP-0143) [Status: Draft]:** Establishing
+    * **Sensitive Data Prevention, Secret Redaction, and Memory Sanitization (EP-0143) [Status: Final]:** Establishing
       high-entropy token detection, pre-ingest regex filters, and Merkle tombstoning under `tur-adm memory redact`.
     * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
       Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
@@ -296,9 +296,12 @@ The maturation of the 100-series proposals produces eight emergent architectural
       Zero wake payloads and pre-turn dynamic memory recall hooks.
     * **Session Memory Observability and Delta Tracking (EP-0133) [Status: Implemented]:** Introducing the `tur diff` CLI
       command and MCP tool to inspect memory mutations across sessions.
-    * **Domain-Driven Memory Subsystem Architecture (EP-0146) [Status: Draft]:** Consolidating flat memory, recall,
+    * **Domain-Driven Memory Subsystem Architecture (EP-0146) [Status: Final]:** Consolidating flat memory, recall,
       introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven `tur.memory`
       package with clean facade interfaces and zero breaking changes.
+    * **Agent Operational Workflows and Context Preservation Protocol (EP-0147) [Status: Draft]:** Defining standardized
+      4-phase operational lifecycles, structured Task Baton schemas on the whiteboard, tiered context-budget retrieval,
+      and lossless context preservation across session resets.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
