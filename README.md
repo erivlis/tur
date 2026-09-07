@@ -79,13 +79,13 @@ structured, version-controlled files.
       <!-- a href="https://scorecard.dev/viewer/?uri=github.com/erivlis/tur"><img src="https://api.scorecard.dev/projects/github.com/erivlis/tur/badge" alt="OpenSSF Scorecard"/></a -->
     </td>
   </tr>
-  <!-- tr>
+  <tr>
     <td>Mentions</td>
     <td>
-      <!-- a href="https://pythonhub.dev/digest/2026-08-09/"><img alt="Python Hub" src="https://custom-icon-badges.demolab.com/badge/Python%20Hub-2026.08.09-gold?logo=pythonhub&labelColor=grey"></a -->
+      <a href="https://pythonhub.dev/digest/2026-08-30/"><img alt="Python Hub" src="https://custom-icon-badges.demolab.com/badge/Python%20Hub-2026.08.30-gold?logo=pythonhub&labelColor=grey"></a>
       <!-- a href="https://x.com/PythonHub/status/2085323880172749251"><img alt="X" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Fx.com%2FPythonHub%2Fstatus%2F2085323880172749251"></a -->
     </td>
-  </tr -->
+  </tr>
 </table>
 
 ## 🏛️ The Tri-Partite Architecture
