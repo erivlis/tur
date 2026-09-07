@@ -69,6 +69,11 @@ def test_mcp_wake(mock_mcp_env):
     assert 'SYSTEM METRICS' in prompt_result
 
 
+def test_mcp_wake_with_token_budget(mock_mcp_env):
+    prompt_result = mcp_server.wake(token_budget=150)
+    assert 'MockAriel' in prompt_result
+
+
 def test_mcp_learn(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
 

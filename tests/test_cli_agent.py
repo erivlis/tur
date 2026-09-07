@@ -324,6 +324,12 @@ def test_agent_wake_with_args(mock_workspace):
     conn.close()
 
 
+def test_agent_wake_with_token_budget(mock_workspace):
+    result = runner.invoke(agent_app, ['wake', '--token-budget', '150'])
+    assert result.exit_code == 0
+    assert 'SYSTEM WAKE: Ariel' in result.stdout
+
+
 def test_agent_learn_error(mock_workspace, monkeypatch):
     def mock_raise(*args):
         raise RuntimeError('Learn failed')
