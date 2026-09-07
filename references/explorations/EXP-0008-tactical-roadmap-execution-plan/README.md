@@ -56,12 +56,12 @@ The exploration identified and codified **9 Strategic Confluences and Multi-EP S
 
 The 5-Wave Tactical Execution Plan:
 
-- **Wave 1:** Substrate Acceleration & Caching (`EP-0140`)
-- **Wave 2:** Scaffolding, Observability & Sanitization (`EP-0135`, `EP-0142`, `EP-0143`)
-- **Wave 3:** Storage, Lineage & Causal Signals (`EP-0130`, `EP-0133`, `EP-0141`)
+- **Wave 1:** Substrate Acceleration & Caching (`EP-0140`) — **[Complete / Final]**
+- **Wave 2:** Scaffolding, Observability & Sanitization (`EP-0135`, `EP-0142`, `EP-0143`) — **[Complete / Final]**
+- **Wave 3:** Storage, Lineage & Causal Signals (`EP-0130`, `EP-0133`, `EP-0141`) — **[Complete / Final]**
 - **Wave 4:** High-Speed Graph Engine, Domain Architecture & Budgeted Wake (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`,
-  `EP-0146`, `EP-0144`)
-- **Wave 5:** Sovereign Epistemology, Dashboard & Higher Algebra (`EP-0137`, `EP-0138`, `EP-0139`, `EP-0145`)
+  `EP-0146`, `EP-0144`) — **[In Progress]** (`EP-0146`, `EP-0136`, `EP-0131` Complete; `EP-0132`, `EP-0134`, `EP-0144` Pending)
+- **Wave 5:** Sovereign Epistemology, Dashboard & Higher Algebra (`EP-0137`, `EP-0138`, `EP-0139`, `EP-0145`) — **[Planned]**
 
 ---
 

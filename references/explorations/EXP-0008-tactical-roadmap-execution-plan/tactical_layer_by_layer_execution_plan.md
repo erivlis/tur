@@ -33,7 +33,7 @@ graph TD
 
 ---
 
-### 🌊 Wave 1: Substrate Hardening & Quick Wins
+### 🌊 Wave 1: Substrate Hardening & Quick Wins [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0140`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0140-substrate-acceleration-and-merkle-invalidation-caching.md): Substrate Acceleration, Merkle Invalidation Caching, and Jittered Lock Backoff
 * **Key Deliverables:**
@@ -53,7 +53,7 @@ graph TD
 
 ---
 
-### 🌊 Wave 2: Scaffolding, Observability & Sanitization
+### 🌊 Wave 2: Scaffolding, Observability & Sanitization [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0135`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0135-modular-scaffolding-protocol.md): The Modular Scaffolding Protocol (`AGENTS.md` vs `CONSTITUTION.md`)
   - [`EP-0142`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0142-progressive-execution-observability-and-streaming-telemetry.md): Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry
@@ -75,7 +75,7 @@ graph TD
 
 ---
 
-### 🌊 Wave 3: Storage, Lineage & Causal Signals
+### 🌊 Wave 3: Storage, Lineage & Causal Signals [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0130`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0130-session-lineage-and-continuity-protocol.md): Session Lineage and Cross-Session Continuity Protocol
   - [`EP-0133`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0133-session-memory-observability-and-diff.md): Session Memory Observability and Delta Tracking (`tur diff`)
@@ -96,14 +96,14 @@ graph TD
 
 ---
 
-### 🌊 Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake
+### 🌊 Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake [Status: In Progress]
 * **Primary Proposals:**
-  - [`EP-0136`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0136-graph-theoretic-semantic-retrieval-and-topological-metrics.md): Graph-Theoretic Semantic Retrieval, Louvain & HippoRAG PPR
-  - [`EP-0146`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md): Domain-Driven Memory Subsystem Architecture (`tur.memory`)
-  - [`EP-0132`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md): Budgeted Wake and Dynamic Memory Context Retrieval
-  - [`EP-0131`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0131-memory-provenance-and-staleness-decay.md): Memory Provenance, Temporal Anchoring, and Staleness Decay
-  - [`EP-0134`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0134-active-tms-contradiction-interruption.md): Active TMS Contradiction Interruption Protocol
-  - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX
+  - [`EP-0136`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0136-graph-theoretic-semantic-retrieval-and-topological-metrics.md): Graph-Theoretic Semantic Retrieval, Louvain & HippoRAG PPR [Status: Final]
+  - [`EP-0146`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md): Domain-Driven Memory Subsystem Architecture (`tur.memory`) [Status: Final]
+  - [`EP-0132`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md): Budgeted Wake and Dynamic Memory Context Retrieval [Status: Draft]
+  - [`EP-0131`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0131-memory-provenance-and-staleness-decay.md): Memory Provenance, Temporal Anchoring, and Staleness Decay [Status: Final]
+  - [`EP-0134`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0134-active-tms-contradiction-interruption.md): Active TMS Contradiction Interruption Protocol [Status: Draft]
+  - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX [Status: Draft]
 * **Key Deliverables:**
   1. `src/tur/recall.py`: NetworkX HippoRAG Personalized PageRank associative retrieval, Louvain communities, `--effort <0-10>` parameter, and `--mermaid` visualization.
   2. `src/tur/memory/`: Consolidate flat memory modules into domain-driven package (`storage.py`, `recall.py`, `introspection.py`, `dreaming.py`, `provenance.py`, `diff.py`, `sanitizer.py`) with canonical facade in `__init__.py`.
@@ -122,7 +122,7 @@ graph TD
 
 ---
 
-### 🌊 Wave 5: Sovereign Epistemology, Dashboard & Higher Algebra
+### 🌊 Wave 5: Sovereign Epistemology, Dashboard & Higher Algebra [Status: Planned]
 * **Primary Proposals:**
   - [`EP-0137`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0137-contract-driven-cognitive-skills-and-forge-architecture.md): Contract-Driven Cognitive Skills and the Pluggable Forge Architecture
   - [`EP-0138`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0138-dynamic-epistemic-elevation-and-principle-crystallization.md): Dynamic Epistemic Elevation and Principle Crystallization Lifecycle
