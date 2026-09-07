@@ -2,7 +2,7 @@
 title: "EP-0128: OS-Native Directory Resolution and Runtime Storage Standards"
 description: "Adopts platformdirs to standardize cross-platform OS directory resolution for runtime IPC sockets, caches, and global persona state while preserving workspace terrain isolation."
 icon: lucide/folder-tree
-status: implemented
+status: final
 ---
 
 # EP-0128: OS-Native Directory Resolution and Runtime Storage Standards
@@ -12,7 +12,7 @@ status: implemented
 | **EP**      | 0128                                                         |
 | **Title**   | OS-Native Directory Resolution and Runtime Storage Standards |
 | **Author**  | Eran Rivlis & Ariel                                          |
-| **Status**  | Implemented                                                  |
+| **Status**  | Final                                                        |
 | **Type**    | Standards Track                                              |
 | **Created** | 2026-08-25                                                   |
 | **Updated** | 2026-08-25                                                   |

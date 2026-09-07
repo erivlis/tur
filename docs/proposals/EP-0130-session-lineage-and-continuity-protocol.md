@@ -2,7 +2,7 @@
 title: "EP-0130: Session Lineage and Cross-Session Continuity Protocol"
 description: "Establishes explicit parent-session lineage tracking, automatic continuity seeding at wake, bounded cross-session note discovery, and dual-backend fallback for signal reading."
 icon: lucide/git-merge
-status: implemented
+status: final
 ---
 
 # EP-0130: Session Lineage and Cross-Session Continuity Protocol
@@ -12,7 +12,7 @@ status: implemented
 | **EP**      | 0130                                                  |
 | **Title**   | Session Lineage and Cross-Session Continuity Protocol |
 | **Author**  | Eran Rivlis & Ariel                                   |
-| **Status**  | Implemented                                           |
+| **Status**  | Final                                           |
 | **Type**    | Standards Track                                       |
 | **Created** | 2026-08-25                                            |
 | **Updated** | 2026-09-02                                            |

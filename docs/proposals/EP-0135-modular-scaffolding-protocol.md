@@ -11,7 +11,7 @@ status: Final
 |:-------------|:-------------------------------------------------------------------------------------------------------------------------|
 | **EP**       | 0135                                                                                                                     |
 | **Title**    | The Modular Scaffolding Protocol — Decoupling Operational Harnessing (AGENTS.md) from Persona Identity (CONSTITUTION.md) |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                                                                    |
+| **Author**   | Eran Rivlis, Ariel                                                                                                       |
 | **Sponsor**  | Council of Giants                                                                                                        |
 | **Delegate** | Shannon (Information Restraint), Golem (Boundary Containment)                                                            |
 | **Status**   | Final                                                                                                                    |

@@ -2,7 +2,7 @@
 title: "EP-0146: Domain-Driven Memory Subsystem Architecture"
 description: "Consolidates flat memory, recall, introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven tur.memory package."
 icon: lucide/database
-status: draft
+status: final
 ---
 
 # EP-0146: Domain-Driven Memory Subsystem Architecture
@@ -11,10 +11,10 @@ status: draft
 |:-------------|:--------------------------------------------------------------|
 | **EP**       | 0146                                                          |
 | **Title**    | Domain-Driven Memory Subsystem Architecture                   |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                         |
+| **Author**   | Eran Rivlis, Ariel                                            |
 | **Sponsor**  | Council of Giants                                             |
 | **Delegate** | Turing (Machine Architecture), Maharal (Boundary Containment) |
-| **Status**   | Draft                                                         |
+| **Status**   | Final                                                         |
 | **Type**     | Standards Track                                               |
 | **Created**  | 2026-09-04                                                    |
 | **Updated**  | 2026-09-04                                                    |

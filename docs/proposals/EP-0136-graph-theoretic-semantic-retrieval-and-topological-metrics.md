@@ -2,7 +2,7 @@
 title: "EP-0136: Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics"
 description: "Integrates NetworkX graph algorithms, HippoRAG Personalized PageRank associative retrieval, Louvain community clustering, --effort <0-10> modulation, and spectral algebraic connectivity (λ2) into Tur memory."
 icon: lucide/network
-status: accepted
+status: final
 ---
 
 # EP-0136: Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics
@@ -11,10 +11,10 @@ status: accepted
 |:-------------|:------------------------------------------------------------------------------|
 | **EP**       | 0136                                                                          |
 | **Title**    | Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                         |
+| **Author**   | Eran Rivlis, Ariel                                                            |
 | **Sponsor**  | Council of Giants                                                             |
 | **Delegate** | Shannon (Topological Entropy), Bacon (Empirical Benchmarks)                   |
-| **Status**   | Accepted                                                                      |
+| **Status**   | Final                                                                         |
 | **Type**     | Standards Track                                                               |
 | **Created**  | 2026-08-28                                                                    |
 | **Updated**  | 2026-09-04                                                                    |

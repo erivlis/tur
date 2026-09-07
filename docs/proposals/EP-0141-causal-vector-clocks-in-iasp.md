@@ -2,7 +2,7 @@
 title: "EP-0141: Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (IASP)"
 description: "Replaces scalar integer autoincrements in IASP with Lamport Vector Clocks, establishing formal partial ordering (N^k, <=), causal delivery, and concurrent conflict detection across multi-agent swarms."
 icon: lucide/clock
-status: implemented
+status: final
 ---
 
 # EP-0141: Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (IASP)
@@ -11,10 +11,10 @@ status: implemented
 |:-------------|:-----------------------------------------------------------------------------------|
 | **EP**       | 0141                                                                               |
 | **Title**    | Lamport Vector Clocks and Causal Consistency in Inter-Agent Signal Protocol (IASP) |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                              |
+| **Author**   | Eran Rivlis, Ariel                                                                 |
 | **Sponsor**  | Council of Giants                                                                  |
 | **Delegate** | Noether (Causal Invariants), Popper (Falsifiable Race Detection)                   |
-| **Status**   | Implemented                                                                        |
+| **Status**   | Final                                                                              |
 | **Type**     | Standards Track                                                                    |
 | **Created**  | 2026-08-28                                                                         |
 | **Updated**  | 2026-09-02                                                                         |

@@ -2,20 +2,20 @@
 title: "EP-0131: Memory Provenance, Temporal Anchoring, and Staleness Decay"
 description: "Introduces git-anchored observation provenance, confidence scoring, TTL-based staleness decay, and hypothesis cache semantics to L1 memory records."
 icon: lucide/clock
-status: implemented
+status: final
 ---
 
 # EP-0131: Memory Provenance, Temporal Anchoring, and Staleness Decay
 
-| Field       | Value                                                         |
-|:------------|:--------------------------------------------------------------|
-| **EP**      | 0131                                                          |
-| **Title**   | Memory Provenance, Temporal Anchoring, and Staleness Decay    |
-| **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Implemented                                                   |
-| **Type**    | Standards Track                                               |
-| **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-09-02                                                    |
+| Field       | Value                                                      |
+|:------------|:-----------------------------------------------------------|
+| **EP**      | 0131                                                       |
+| **Title**   | Memory Provenance, Temporal Anchoring, and Staleness Decay |
+| **Author**  | Eran Rivlis & Ariel                                        |
+| **Status**  | Final                                                      |
+| **Type**    | Standards Track                                            |
+| **Created** | 2026-08-27                                                 |
+| **Updated** | 2026-09-02                                                 |
 
 ## Abstract
 

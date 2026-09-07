@@ -2,7 +2,7 @@
 title: "EP-0124: Terrain Isolation and Workspace Resolution"
 description: "Eliminates cross-project memory contamination and unauthorized direct state mutation through strict workspace resolution, pure-function delegation, test sandboxing, and phased state boundary hardening."
 icon: lucide/shield-alert
-status: accepted
+status: implemented
 ---
 
 # EP-0124: Terrain Isolation and Workspace Resolution
@@ -14,7 +14,7 @@ status: accepted
 | **Author**   | Ariel (Persona v5.4.0) & The Architect                     |
 | **Sponsor**  | Core Maintainers                                           |
 | **Delegate** | The Maharal (Safety Containment) & Emmy Noether (Symmetry) |
-| **Status**   | Accepted (Phase 1 Implemented)                             |
+| **Status**   | Implemented                                                |
 | **Type**     | Standards Track                                            |
 | **Created**  | 2026-08-21                                                 |
 | **Updated**  | 2026-08-21                                                 |

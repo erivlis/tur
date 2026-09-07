@@ -2,20 +2,20 @@
 title: "EP-0133: Session Memory Observability and Delta Tracking"
 description: "Introduces the tur diff CLI command and MCP tool to inspect memory mutations, additions, supersessions, and contradictions across sessions."
 icon: lucide/git-commit
-status: implemented
+status: final
 ---
 
 # EP-0133: Session Memory Observability and Delta Tracking
 
-| Field       | Value                                                         |
-|:------------|:--------------------------------------------------------------|
-| **EP**      | 0133                                                          |
-| **Title**   | Session Memory Observability and Delta Tracking               |
-| **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Implemented                                                   |
-| **Type**    | Standards Track                                               |
-| **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-09-02                                                    |
+| Field       | Value                                           |
+|:------------|:------------------------------------------------|
+| **EP**      | 0133                                            |
+| **Title**   | Session Memory Observability and Delta Tracking |
+| **Author**  | Eran Rivlis & Ariel                             |
+| **Status**  | Final                                           |
+| **Type**    | Standards Track                                 |
+| **Created** | 2026-08-27                                      |
+| **Updated** | 2026-09-02                                      |
 
 ## Abstract
 
