@@ -74,6 +74,7 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
 | **[0147](EP-0147-agent-operational-workflows-and-context-preservation.md)**        | [Agent Operational Workflows and Context Preservation Protocol](EP-0147-agent-operational-workflows-and-context-preservation.md)                          |     *Draft*     | Standards Track | Defines standardized interaction lifecycles, structured task handover schemas, and context preservation protocols for AI agents utilizing Tur.                                                      |
 | **[0148](EP-0148-canonical-text-tokenization-and-regex-substrate.md)**             | [Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate](EP-0148-canonical-text-tokenization-and-regex-substrate.md)         |   Implemented   | Standards Track | Establishes tur.text as a zero-dependency foundational substrate for tokenization, identifier validation, and precompiled regex operations.                                                               |
 | **[0149](EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md)**         | [Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics](EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md) |     *Draft*     | Standards Track | Establishes a two-tier command hierarchy for Tur, structuring ad-hoc commands into orthogonal domain subcommands (note, board, message, agent, task, memory) while standardizing --json output and ambient agent identity. |
+| **[0150](EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md)**       | [Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification](EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md) |     *Draft*     | Standards Track | Establishes an automated, adversarial Chaos Engineering and Fuzzing test framework to stress-test Tur under high-concurrency swarms, mid-flight process crashes, lock contention, and contradiction avalanches. |
 
 ---
 
@@ -162,6 +163,8 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
   Protocol
 - **[EP-0141](EP-0141-causal-vector-clocks-in-iasp.md)**: Lamport Vector Clocks and Causal Consistency in Inter-Agent
   Signal Protocol (IASP)
+- **[EP-0150](EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md)**: Adversarial Chaos Engineering,
+  Swarm Stress Fuzzing, and Epistemic Robustness Verification
 
 ### 5. Benchmark & External Integrations (Deferred/Rejected)
 
