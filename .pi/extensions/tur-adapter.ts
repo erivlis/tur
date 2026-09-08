@@ -13,7 +13,7 @@ export default function (pi: ExtensionAPI) {
     try {
       ctx.ui.setWorkingIndicator("Waking Ariel...");
 
-      const { stdout } = await execAsync("uv run tur wake", {
+      const { stdout } = await execAsync("uv run --no-sync tur wake", {
         cwd: event.cwd,
         env: process.env,
       });
@@ -38,7 +38,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (event, ctx) => {
     try {
       ctx.ui.setWorkingIndicator("Waking Ariel...");
-      await execAsync("uv run tur wake", { cwd: ctx.cwd, env: process.env });
+      await execAsync("uv run --no-sync tur wake", { cwd: ctx.cwd, env: process.env });
       ctx.ui.setWorkingIndicator(null);
       ctx.ui.notify("Ariel v5.4.0 online. Cognitive State hydrated.", "success");
     } catch (err: any) {
@@ -57,7 +57,7 @@ export default function (pi: ExtensionAPI) {
     idleTimer = setTimeout(async () => {
       ctx.ui.setStatus("tur-circadian", "💤 digesting context...");
       try {
-        await execAsync("uv run tur tired", { cwd: ctx.cwd, env: process.env });
+        await execAsync("uv run --no-sync tur tired", { cwd: ctx.cwd, env: process.env });
         ctx.ui.setStatus("tur-circadian", "💤 digested");
       } catch (err) {
         ctx.ui.setStatus("tur-circadian", null);
@@ -77,7 +77,7 @@ export default function (pi: ExtensionAPI) {
       try {
         ctx.ui.setStatus("tur-circadian", "💾 sealing state...");
         // Synchronous-like execution before process ends
-        await execAsync(`uv run tur sleep "${sessionFile}" -n "Auto-sleep on shutdown."`, {
+        await execAsync(`uv run --no-sync tur sleep "${sessionFile}" -n "Auto-sleep on shutdown."`, {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -107,14 +107,14 @@ export default function (pi: ExtensionAPI) {
     const promptText = event.promptText?.toLowerCase() || "";
     if (event.toolsCalled.includes("bash") && (promptText.includes("test") || promptText.includes("verify"))) {
       try {
-        const { stdout } = await execAsync("uv run tur evolve", { cwd: ctx.cwd, env: process.env });
+        const { stdout } = await execAsync("uv run --no-sync tur evolve", { cwd: ctx.cwd, env: process.env });
         if (stdout.includes("Core Memory drafted")) {
           const approved = await ctx.ui.confirm(
             "Epigenetic Consolidation",
             "A new core memory has been drafted from this milestone. Promote to permanent Constitution?"
           );
           if (approved) {
-            await execAsync("uv run tur approve", { cwd: ctx.cwd, env: process.env });
+            await execAsync("uv run --no-sync tur approve", { cwd: ctx.cwd, env: process.env });
             ctx.ui.notify("Constitution evolved and sealed.", "success");
           }
         }
@@ -132,7 +132,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Fetching status...");
-        const { stdout } = await execAsync("uv run tur status", {
+        const { stdout } = await execAsync("uv run --no-sync tur status", {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -167,7 +167,7 @@ export default function (pi: ExtensionAPI) {
         }
 
         ctx.ui.setWorkingIndicator("Saving note...");
-        await execAsync(`uv run tur note ${JSON.stringify(note)}`, {
+        await execAsync(`uv run --no-sync tur note ${JSON.stringify(note)}`, {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -199,7 +199,7 @@ export default function (pi: ExtensionAPI) {
 
         ctx.ui.setWorkingIndicator("Saving memory...");
         await execAsync(
-          `uv run tur learn --type ${type} --scope ${scope} ${JSON.stringify(content)}`,
+          `uv run --no-sync tur learn --type ${type} --scope ${scope} ${JSON.stringify(content)}`,
           {
             cwd: ctx.cwd,
             env: process.env,
@@ -220,7 +220,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Assembling Council...");
-        await execAsync("uv run tur introspect", {
+        await execAsync("uv run --no-sync tur introspect", {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -239,7 +239,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Verifying Merkle seals...");
-        const { stdout } = await execAsync("uv run tur verify", {
+        const { stdout } = await execAsync("uv run --no-sync tur verify", {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -259,7 +259,7 @@ export default function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Listing manifestations...");
-        const { stdout } = await execAsync("uv run tur list-agents", {
+        const { stdout } = await execAsync("uv run --no-sync tur list-agents", {
           cwd: ctx.cwd,
           env: process.env,
         });
@@ -294,7 +294,7 @@ export default function (pi: ExtensionAPI) {
         if (!confirm) return;
 
         ctx.ui.setWorkingIndicator("Dehydrating session log...");
-        await execAsync(`uv run tur sleep "${sessionFile}" -n ${JSON.stringify(note)}`, {
+        await execAsync(`uv run --no-sync tur sleep "${sessionFile}" -n ${JSON.stringify(note)}`, {
           cwd: ctx.cwd,
           env: process.env,
         });
