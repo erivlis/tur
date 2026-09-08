@@ -6,6 +6,8 @@ Implements pattern-based detection and Shannon entropy scanning.
 import math
 import re
 
+from tur.text import get_entropy_pattern
+
 COMMON_SECRET_PATTERNS: list[re.Pattern] = [
     # Generic key/secret assignments (e.g. api_key = "...", secret_key: "...")
     re.compile(
@@ -62,7 +64,8 @@ def detect_high_entropy_tokens(
         return []
 
     # Tokenize on strings of alphanumeric/symbol chars of at least min_length
-    raw_tokens = re.findall(r'[A-Za-z0-9_\-\+/=]{' + str(min_length) + r',}', text)
+    pattern = get_entropy_pattern(min_length)
+    raw_tokens = pattern.findall(text)
     flagged: list[str] = []
     for token in raw_tokens:
         # Ignore obvious repetitive strings

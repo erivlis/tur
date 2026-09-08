@@ -1,6 +1,5 @@
 import contextlib
 import math
-import re
 import shutil
 import subprocess
 from datetime import datetime

@@ -72,6 +72,7 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
 | **[0145](EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md)**        | [Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization](EP-0145-graphinate-topology-visualizer-and-mermaid-dashboard.md) |     *Draft*     | Standards Track | Integrates networkx-mermaid for robust L2 subgraph rendering and graphinate under tur-adm for interactive browser-based persona topology inspection.                                                      |
 | **[0146](EP-0146-domain-driven-memory-subsystem-architecture.md)**                 | [Domain-Driven Memory Subsystem Architecture](EP-0146-domain-driven-memory-subsystem-architecture.md)                                                     |      Final      | Standards Track | Consolidates flat memory, recall, introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven tur.memory package.                                                     |
 | **[0147](EP-0147-agent-operational-workflows-and-context-preservation.md)**        | [Agent Operational Workflows and Context Preservation Protocol](EP-0147-agent-operational-workflows-and-context-preservation.md)                          |     *Draft*     | Standards Track | Defines standardized interaction lifecycles, structured task-baton handover schemas, and context preservation protocols for AI agents utilizing Tur.                                                      |
+| **[0148](EP-0148-canonical-text-tokenization-and-regex-substrate.md)**              | [Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate](EP-0148-canonical-text-tokenization-and-regex-substrate.md)          |  Implemented   | Standards Track | Establishes tur.text as a zero-dependency foundational substrate for tokenization, identifier validation, and precompiled regex operations.                                                                 |
 
 ---
 
@@ -144,6 +145,8 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
   Interactive Dashboard, and Mermaid Visualization
 - **[EP-0147](EP-0147-agent-operational-workflows-and-context-preservation.md)**: Agent Operational Workflows and
   Context Preservation Protocol
+- **[EP-0148](EP-0148-canonical-text-tokenization-and-regex-substrate.md)**: Canonical Text Tokenization, Identifier
+  Validation, and Precompiled Regex Substrate
 
 ### 4. Multi-Agent Swarms & Synchronization
 

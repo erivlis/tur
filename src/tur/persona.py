@@ -10,6 +10,9 @@ from tur._helpers import yaml_safe_load
 from tur.models import Persona, PersonaIndex, SystemState
 from tur.paths import resolve_personas_base_dir, resolve_workspace_dir
 
+_ALEPH_SECTION_RE = re.compile(r'##\s*(?:\d+\.\s*)?The Aleph[^\n]*\n+([^\n#]+)', re.IGNORECASE)
+_CONSTITUTION_TITLE_RE = re.compile(r'#\s*Persona Constitution:\s*([^\n]+)', re.IGNORECASE)
+
 
 def parse_constitution_markdown(content: str) -> dict[str, Any]:
     """Parses a CONSTITUTION.md string into a dictionary suitable for Persona model instantiation."""
@@ -26,12 +29,12 @@ def parse_constitution_markdown(content: str) -> dict[str, Any]:
                 frontmatter_dict = loaded
 
     if not frontmatter_dict.get('aleph'):
-        aleph_match = re.search(r'##\s*(?:\d+\.\s*)?The Aleph[^\n]*\n+([^\n#]+)', body_markdown, re.IGNORECASE)
+        aleph_match = _ALEPH_SECTION_RE.search(body_markdown)
         if aleph_match:
             frontmatter_dict['aleph'] = aleph_match.group(1).strip()
 
     if not frontmatter_dict.get('name'):
-        title_match = re.search(r'#\s*Persona Constitution:\s*([^\n]+)', body_markdown, re.IGNORECASE)
+        title_match = _CONSTITUTION_TITLE_RE.search(body_markdown)
         if title_match:
             frontmatter_dict['name'] = title_match.group(1).strip()
 

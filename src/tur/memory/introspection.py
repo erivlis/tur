@@ -1,7 +1,6 @@
 import contextlib
 import json
 import os
-import re
 import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -17,6 +16,7 @@ from tur._helpers import yaml_safe_load
 from tur.locking import HEAVY_LOCK_TIMEOUT_SECONDS, state_lock
 from tur.memory.storage import MemoryManager
 from tur.models import EdgeType, HarnessDelegationError, MemoryType, NodeType
+from tur.text import is_snake_identifier
 
 ProgressCallback = Callable[[int, int, str], Any]
 
@@ -381,7 +381,7 @@ class OntologyExtractor(IntrospectionSubagent):
             normalized_edge_type = synonym_map.get(raw_edge_type, raw_edge_type)
 
             # Validate edge type against canonical, declared custom, or sanitized snake_case identifier
-            if normalized_edge_type not in allowed_edge_types and not re.match(r'^[a-z0-9_]+$', normalized_edge_type):
+            if normalized_edge_type not in allowed_edge_types and not is_snake_identifier(normalized_edge_type):
                 continue
 
             # Enforce relationship signatures

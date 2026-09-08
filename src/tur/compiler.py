@@ -3,14 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-import re
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import networkx as nx
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from tur.memory.recall import SEMANTIC_EDGE_WEIGHTS, pure_pagerank
 from tur.models import SessionState
+from tur.text import tokenize_approx, tokenize_words
 
 _TEMPLATE_DIR = Path(__file__).parent / 'templates'
 _JINJA_ENV = Environment(
@@ -28,7 +28,7 @@ def estimate_tokens(text: str) -> int:
     """
     if not text:
         return 0
-    tokens = re.findall(r'\w+|[^\w\s]', text, re.UNICODE)
+    tokens = tokenize_approx(text)
     return max(1, len(tokens))
 
 
@@ -110,7 +110,7 @@ def _extract_seed_scores(
     context_tokens: set[str] = set()
 
     if epilogue:
-        context_tokens.update(t.lower() for t in re.findall(r'\w+', epilogue))
+        context_tokens.update(t.lower() for t in tokenize_words(epilogue))
 
     if cores:
         for c in cores:
@@ -118,7 +118,7 @@ def _extract_seed_scores(
                 c.get('derived_principle') if isinstance(c, dict) else ''
             )
             if derived:
-                context_tokens.update(t.lower() for t in re.findall(r'\w+', derived))
+                context_tokens.update(t.lower() for t in tokenize_words(derived))
 
     for node in nodes:
         node_id = str(node.get('id', ''))
@@ -130,13 +130,13 @@ def _extract_seed_scores(
             score += 2.0
 
         # Check if node id or label tokens appear in context
-        id_tokens = set(t.lower() for t in re.findall(r'\w+', node_id))
+        id_tokens = {t.lower() for t in tokenize_words(node_id)}
         overlap = id_tokens.intersection(context_tokens)
         if overlap:
             score += len(overlap) * 1.5
 
         # Check content keyword overlap
-        content_tokens = set(t.lower() for t in re.findall(r'\w+', content[:100]))
+        content_tokens = {t.lower() for t in tokenize_words(content[:100])}
         content_overlap = content_tokens.intersection(context_tokens)
         if content_overlap:
             score += len(content_overlap) * 0.5
@@ -267,7 +267,9 @@ def apply_budgeted_wake(
         mem_values: list[float] = []
 
         for m in raw_memories:
-            rendered_mem = f"* {m.timestamp.strftime('%Y-%m-%d')} [{m.type.value.upper()} / {m.scope.value.upper()}]: {m.content} (Tags: {', '.join(m.tags)})"
+            rendered_mem = (f"* {m.timestamp.strftime('%Y-%m-%d')}"
+                            f" [{m.type.value.upper()} / {m.scope.value.upper()}]:"
+                            f" {m.content} (Tags: {', '.join(m.tags)})")
             w = tokenizer(rendered_mem)
             mem_weights.append(w)
 

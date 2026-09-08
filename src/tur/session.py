@@ -30,6 +30,12 @@ from tur.models import (
 )
 from tur.paths import is_global_path, resolve_workspace_dir
 from tur.persona import get_active_persona_id, get_persona_path, load_persona
+from tur.text import (
+    SAFE_IDENTIFIER_RE,
+    SESSION_ID_RE,
+    is_safe_identifier,
+    is_session_identifier,
+)
 from tur.user import get_user_profile
 from tur.vector_clock import VectorClock
 
@@ -37,7 +43,7 @@ STATE_FILENAME = 'state.yaml'
 SESSION_LOCK_FILENAME = 'session.lock'
 LOCKS_DIRNAME = '.locks'
 ALEPH_CONSERVED_MSG = 'Status: Conserved. Aleph: Restored. Carry on, Lion.'
-SAFE_IDENTIFIER_REGEX = re.compile(r'^[a-zA-Z0-9_.-]+$')
+SAFE_IDENTIFIER_REGEX = SAFE_IDENTIFIER_RE
 
 
 def get_local_persona_dir(persona_dir: Path, workspace_dir: Path | None = None) -> Path:
@@ -115,12 +121,12 @@ def save_session_index(persona_dir: Path, index: SessionIndex):
     atomic_yaml_write(index_path, index.model_dump(mode='json'))
 
 
-SESSION_ID_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')
+SESSION_ID_REGEX = SESSION_ID_RE
 
 
 def validate_session_id(session_id: str) -> None:
     """Validates that a session_id conforms to safe alphanumeric format and prevents path traversal (EP-0130)."""
-    if not session_id or not SESSION_ID_REGEX.match(session_id):
+    if not is_session_identifier(session_id):
         raise ValueError(f"Invalid session_id format: '{session_id}'. Must match ^[a-zA-Z0-9_-]+$")
 
 
@@ -660,7 +666,7 @@ def start_session_logic(
         agent_id = f'{model_slug}_{conv_hash}_{random_hex}'
 
     # Sanitization validation
-    if not SAFE_IDENTIFIER_REGEX.match(agent_id):
+    if not is_safe_identifier(agent_id):
         raise ValueError(f"Invalid agent_id format: '{agent_id}'. Must match ^[a-zA-Z0-9_.-]+$")
 
     run_token = os.environ.get('TUR_RUN_TOKEN') or str(uuid.uuid4())
@@ -787,9 +793,9 @@ def signal_logic(
     vector_clock: dict[str, int] | None = None,
 ) -> str:
     """Sends a message signal transactionally with Lamport Vector Clock ticking (EP-0141)."""
-    if not SAFE_IDENTIFIER_REGEX.match(sender):
+    if not is_safe_identifier(sender):
         raise ValueError(f"Invalid sender ID: '{sender}'")
-    if recipient != '*' and not SAFE_IDENTIFIER_REGEX.match(recipient):
+    if recipient != '*' and not is_safe_identifier(recipient):
         raise ValueError(f"Invalid recipient ID: '{recipient}'")
 
     conn = get_db_connection(session_id)

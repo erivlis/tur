@@ -1,13 +1,13 @@
 import contextlib
 import json
 import math
-import re
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
 
 from tur.models import EdgeType, NodeType
+from tur.text import tokenize_query
 
 SEMANTIC_EDGE_WEIGHTS: dict[str, float] = {
     'supported_by': 1.5,
@@ -375,7 +375,7 @@ def _l1_fallback_search(query: str, persona_dir: Path) -> str:
 def _calculate_seed_scores(graph: nx.DiGraph, query: str) -> dict[str, float]:
     """Computes lexical seed relevance scores across active L2 graph nodes."""
     query_lower = query.lower().strip()
-    query_tokens = [t for t in re.split(r'[^a-zA-Z0-9_\-]+', query_lower) if len(t) > 1]
+    query_tokens = tokenize_query(query)
     scores: dict[str, float] = {}
 
     for node, ndata in graph.nodes(data=True):

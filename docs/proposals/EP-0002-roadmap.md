@@ -302,6 +302,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Agent Operational Workflows and Context Preservation Protocol (EP-0147) [Status: Draft]:** Defining standardized
       4-phase operational lifecycles, structured Task Baton schemas on the whiteboard, tiered context-budget retrieval,
       and lossless context preservation across session resets.
+    * **Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate (EP-0148) [Status: Implemented]:**
+      Establishing `tur.text` as a zero-dependency foundational substrate for tokenization, identifier validation, and
+      precompiled regex operations, eliminating HippoRAG retrieval seed drift and inner-loop lock contention.
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).
