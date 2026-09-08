@@ -157,6 +157,12 @@ def learn(
     json_payload: list[str] | None = typer.Option(
         None, '--json', help='Structured JSON payload(s), file paths, or globs to commit.'
     ),
+    supersedes: str | None = typer.Option(
+        None, '--supersedes', '-s', help='Existing memory ID to supersede upon contradiction or update.'
+    ),
+    allow_conflict: bool = typer.Option(
+        False, '--allow-conflict', '--force', help='Bypass active TMS contradiction checks and force ingestion.'
+    ),
 ):
     """Create a new memory for a persona, or commit structured JSON memories."""
     if not json_payload and not content:
@@ -233,6 +239,71 @@ def learn(
         provenance=prov,
         decay=dec,
     )
+
+    from tur.memory.tms import ContradictionInterceptor, InvariantMemoryError
+
+    interceptor = ContradictionInterceptor(memory_manager)
+
+    if not allow_conflict:
+        conflicts = interceptor.check_conflicts(content=content, type=type, scope=scope)
+        if conflicts:
+            core_conflicts = [c for c in conflicts if c.is_core_or_axiom]
+            if core_conflicts:
+                c = core_conflicts[0]
+                console.print(
+                    f"\n[bold red][Invariant Memory Error]:"
+                    f" Assertion contradicts Invariant Memory '{c.existing_memory_id}'.[/bold red]\n"
+                    f"[red]Existing: '{c.existing_content}'[/red]\n"
+                    "[red]Agent cannot supersede human-governed Invariant memories.\n"
+                    "To propose a change, submit via `tur-adm proposal`.[/red]"
+                )
+                raise typer.Exit(code=1)
+
+            if supersedes:
+                try:
+                    interceptor.resolve_supersession(supersedes, memory)
+                    console.print(f"[yellow]Superseded prior memory '{supersedes}'.[/yellow]")
+                except (FileNotFoundError, InvariantMemoryError) as e:
+                    console.print(f"[bold red]Error resolving supersession: {e}[/bold red]")
+                    raise typer.Exit(code=1)
+            else:
+                c = conflicts[0]
+                console.print(
+                    f"\n[bold yellow]⚠️  TMS Contradiction Detected (EP-0134):[/bold yellow]\n"
+                    f"New assertion conflicts with active memory [bold]{c.existing_memory_id}[/bold]:\n"
+                    f"  [cyan]Existing:[/cyan] \"{c.existing_content}\"\n"
+                    f"  [cyan]New:[/cyan]      \"{content}\"\n"
+                    f"  [cyan]Reason:[/cyan]   {c.conflict_reason}\n"
+                )
+
+                import sys
+                if sys.stdin.isatty():
+                    choice = typer.prompt(
+                        'Action required: [s] Supersede older memory, [f] Force dual existence, [a] Abort',
+                        default='s',
+                    ).strip().lower()
+                    if choice in ('s', 'supersede'):
+                        interceptor.resolve_supersession(c.existing_memory_id, memory)
+                        console.print(f"[yellow]Superseded memory '{c.existing_memory_id}'.[/yellow]")
+                    elif choice in ('f', 'force'):
+                        console.print('[yellow]Forced dual existence (--allow-conflict).[/yellow]')
+                    else:
+                        console.print('[red]Memory ingestion aborted.[/red]')
+                        raise typer.Exit(code=1)
+                else:
+                    console.print(
+                        '[red]Non-interactive environment. To resolve, provide `--supersedes <id>` '
+                        'or `--allow-conflict`.[/red]'
+                    )
+                    raise typer.Exit(code=1)
+    elif supersedes:
+        try:
+            interceptor.resolve_supersession(supersedes, memory)
+            console.print(f"[yellow]Superseded prior memory '{supersedes}'.[/yellow]")
+        except (FileNotFoundError, InvariantMemoryError) as e:
+            console.print(f"[bold red]Error resolving supersession: {e}[/bold red]")
+            raise typer.Exit(code=1)
+
     saved_path = memory_manager.save(memory)
     console.print(f'[green]Memory saved to {saved_path}[/green]')
 

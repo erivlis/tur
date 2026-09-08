@@ -2,7 +2,7 @@
 title: "EP-0134: Active TMS Contradiction Interruption Protocol"
 description: "Defines real-time inference and ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System."
 icon: lucide/shield-alert
-status: draft
+status: implemented
 ---
 
 # EP-0134: Active TMS Contradiction Interruption Protocol
@@ -12,10 +12,10 @@ status: draft
 | **EP**      | 0134                                                          |
 | **Title**   | Active TMS Contradiction Interruption Protocol                |
 | **Author**  | Eran Rivlis & Ariel                                           |
-| **Status**  | Draft                                                         |
+| **Status**  | Implemented                                                   |
 | **Type**    | Standards Track                                               |
 | **Created** | 2026-08-27                                                    |
-| **Updated** | 2026-08-27                                                    |
+| **Updated** | 2026-09-08                                                    |
 
 ## Abstract
 
@@ -93,12 +93,12 @@ tur learn "Domain modules handle CLI directly" --type fact --supersedes "concept
 tur learn "Experimental parallel mode" --type fact --allow-conflict
 ```
 
-### 3. Core Memory Protection Invariant
+### 3. Invariant Memory Protection Invariant
 
-If an incoming memory assertion contradicts a `core` tier memory (approved by a human via `tur-adm`), the conflict **cannot** be superseded automatically by an agent. The engine structurally rejects the assertion:
+If an incoming memory assertion contradicts an invariant tier memory (`core` or `axiom`, approved by a human via `tur-adm`), the conflict **cannot** be superseded automatically by an agent. The engine structurally rejects the assertion:
 ```text
-[Golem Invariant Error]: Assertion contradicts Core Memory 'core-0012'.
-Agent cannot supersede human-governed Core memories.
+[Invariant Memory Error]: Assertion contradicts Invariant Memory 'core-0012'.
+Agent cannot supersede human-governed Invariant memories.
 To propose a change, submit via `tur-adm proposal`.
 ```
 

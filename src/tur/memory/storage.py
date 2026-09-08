@@ -252,6 +252,37 @@ class MemoryManager:
         """
         self._move_memory(memory_id, self.local_subsumed_dir, self.global_subsumed_dir)
 
+    def supersede(self, target_memory_id: str, superseding_memory_id: str) -> Memory:
+        """Marks a target memory as superseded by another memory (EP-0134).
+
+        Enforces the Golem Core Memory Protection Invariant: Core and Axiom memories
+        cannot be superseded by an agent.
+        """
+        from tur.memory.tms import InvariantMemoryError
+
+        all_mems = self.load_all()
+        target_mem = next(
+            (m for m in all_mems if m.id == target_memory_id or m.id.startswith(target_memory_id)),
+            None,
+        )
+        if not target_mem:
+            raise FileNotFoundError(f"No memory found matching ID '{target_memory_id}'")
+
+        if target_mem.type in (MemoryType.CORE, MemoryType.AXIOM):
+            raise InvariantMemoryError(
+                f"[Invariant Memory Error]: Assertion contradicts Invariant Memory '{target_mem.id}'. "
+                "Agent cannot supersede human-governed Invariant memories. "
+                "To propose a change, submit via `tur-adm proposal`."
+            )
+
+        target_mem.status = 'superseded'
+        link_uri = f'tur://memory/{superseding_memory_id}'
+        if not any(link.uri == link_uri and link.relation == 'superseded_by' for link in target_mem.links):
+            target_mem.links.append(MemoryLink(uri=link_uri, relation='superseded_by'))
+
+        self.save(target_mem)
+        return target_mem
+
     def approve_core_memory(self, memory_id: str) -> tuple[Memory, bool]:
         """Approve and activate a pending Core memory matching ID prefix.
 

@@ -40,13 +40,21 @@ from tur.memory.sanitizer import (
     sanitize_text,
 )
 from tur.memory.storage import MemoryManager
+from tur.memory.tms import (
+    ContradictionInterceptor,
+    InvariantMemoryError,
+    TMSConflict,
+    TMSConflictError,
+)
 
 __all__ = [
     'DEFAULT_DECAY_POLICIES',
     'SEMANTIC_EDGE_WEIGHTS',
-    'CognitiveGraphEngine',
-    'IntrospectionAssembly',
+    'ContradictionInterceptor',
+    'InvariantMemoryError',
     'MemoryManager',
+    'TMSConflict',
+    'TMSConflictError',
     'calculate_shannon_entropy',
     'compute_session_diff',
     'create_provenance_and_decay',

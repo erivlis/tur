@@ -226,7 +226,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
       discovery, and dual-backend SQLite/YAML signal fallbacks.
     * **Memory Provenance, Temporal Anchoring, and Staleness Decay (EP-0131) [Status: Implemented]:** Introducing git-anchored
       observation provenance, confidence scoring, TTL-based staleness decay, and continuous half-life decay kinetics.
-    * **Active TMS Contradiction Interruption Protocol (EP-0134) [Status: Draft]:** Defining real-time inference and
+    * **Active TMS Contradiction Interruption Protocol (EP-0134) [Status: Implemented]:** Defining real-time inference and
       ingestion conflict checks that proactively surface contradictory assertions against the L2 Truth Maintenance System.
     * **Graph-Theoretic Semantic Subgraph Retrieval and Topological Cognitive Metrics (EP-0136) [Status: Implemented]:** Adopting
       NetworkX for HippoRAG Personalized PageRank associative retrieval, Louvain community clustering, `--effort <0-10>`

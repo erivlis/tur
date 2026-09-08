@@ -169,6 +169,8 @@ def learn(
     context_ref: str | None = None,
     source_agent: str | None = None,
     source_harness: str | None = None,
+    supersedes: str | None = None,
+    allow_conflict: bool = False,
 ) -> str:
     """
     Assimilate a new invariant, fact, or insight into your permanent, cross-session memory.
@@ -204,6 +206,8 @@ def learn(
         context_ref(str): Optional source file or URI reference (e.g. 'src/auth.py#L10-L20').
         source_agent(str): Optional agent identifier recording this observation.
         source_harness(str): Optional harness identifier (e.g. 'antigravity', 'pycharm').
+        supersedes(str): Optional memory ID to explicitly supersede upon contradiction or update (EP-0134).
+        allow_conflict(bool): If True, bypasses active TMS contradiction checks and forces ingestion (default False).
     """
     try:
         mem_type = MemoryType(type)
@@ -221,7 +225,7 @@ def learn(
     persona_dir = get_persona_path(active_id)
     manager = MemoryManager(base_dir=persona_dir)
 
-    from tur.memory import create_provenance_and_decay
+    from tur.memory import ContradictionInterceptor, InvariantMemoryError, create_provenance_and_decay
 
     prov, dec = create_provenance_and_decay(
         memory_type=mem_type,
@@ -240,6 +244,35 @@ def learn(
         provenance=prov,
         decay=dec,
     )
+
+    interceptor = ContradictionInterceptor(manager)
+
+    if not allow_conflict:
+        conflicts = interceptor.check_conflicts(content=content, type=mem_type, scope=mem_scope)
+        if conflicts:
+            core_conflicts = [c for c in conflicts if c.is_core_or_axiom]
+            if core_conflicts:
+                c = core_conflicts[0]
+                return (
+                    f"[Invariant Memory Error]: Assertion contradicts Invariant Memory '{c.existing_memory_id}'. "
+                    f"Existing: '{c.existing_content}'. "
+                    "Agent cannot supersede human-governed Invariant memories. "
+                    "To propose a change, submit via `tur-adm proposal`."
+                )
+
+            if supersedes:
+                try:
+                    interceptor.resolve_supersession(supersedes, memory)
+                except (FileNotFoundError, InvariantMemoryError) as e:
+                    return f"Error: Failed to supersede memory '{supersedes}': {e}"
+            else:
+                return conflicts[0].to_json()
+    elif supersedes:
+        try:
+            interceptor.resolve_supersession(supersedes, memory)
+        except (FileNotFoundError, InvariantMemoryError) as e:
+            return f"Error: Failed to supersede memory '{supersedes}': {e}"
+
     saved_path = manager.save(memory)
     return f'Learned successfully (Scope: {mem_scope.value}). ID: {memory.id} File: {saved_path.name}'
 
