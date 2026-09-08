@@ -2,6 +2,7 @@ import contextlib
 import hashlib
 import math
 import os
+import stat
 import tempfile
 from collections.abc import Iterator
 from datetime import datetime
@@ -196,7 +197,7 @@ class MemoryManager:
             # Atomic replace (POSIX)
             if file_path.exists():
                 with contextlib.suppress(Exception):
-                    os.chmod(file_path, 0o666)
+                    os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR)
             os.replace(tmp_path_str, file_path)
         except Exception:
             # Clean up the temp file if the atomic rename fails
@@ -206,7 +207,7 @@ class MemoryManager:
 
         # Lock the file (The Golem's Seal)
         with contextlib.suppress(Exception):
-            os.chmod(file_path, 0o444)  # Read-only
+            os.chmod(file_path, stat.S_IRUSR)  # Read-only
 
         self._invalidate_cache()
         return file_path
@@ -336,7 +337,7 @@ class MemoryManager:
         new_content = f'---\n{yaml_out}---\n\n{tombstone_body}\n'
 
         with contextlib.suppress(Exception):
-            os.chmod(file_path, 0o666)
+            os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR)
 
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
@@ -344,7 +345,7 @@ class MemoryManager:
             os.fsync(f.fileno())
 
         with contextlib.suppress(Exception):
-            os.chmod(file_path, 0o444)
+            os.chmod(file_path, stat.S_IRUSR)
 
         self._invalidate_cache()
         return file_path

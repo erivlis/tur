@@ -1,4 +1,5 @@
 import os
+import stat
 from datetime import datetime
 from pathlib import Path
 
@@ -56,7 +57,7 @@ def test_memory_manager_save_and_load_local(temp_home_and_base):
     assert str(local_base) in str(saved_path)
 
     # Verify file is read-only (Golem's Seal)
-    # On Windows, chmod 0o444 sets the read-only attribute.
+    # On Windows, chmod stat.S_IRUSR (0o400) sets the read-only attribute.
     # We can check if it loaded successfully.
     loaded_memories = manager.load_all()
     assert len(loaded_memories) == 1
@@ -357,7 +358,7 @@ def test_verify_integrity_tampered_id(temp_home_and_base):
     saved_path = manager.save(mem)
 
     # Break Golem's seal to write
-    os.chmod(saved_path, 0o666)
+    os.chmod(saved_path, stat.S_IRUSR | stat.S_IWUSR)
 
     # Read and modify ID in OKF frontmatter
     with open(saved_path, encoding='utf-8') as f:
@@ -392,7 +393,7 @@ def test_verify_integrity_tampered_content(temp_home_and_base):
     saved_path = manager.save(mem)
 
     # Break Golem's seal to write
-    os.chmod(saved_path, 0o666)
+    os.chmod(saved_path, stat.S_IRUSR | stat.S_IWUSR)
 
     # Read and modify content
     with open(saved_path, encoding='utf-8') as f:

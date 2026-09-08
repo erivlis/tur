@@ -1,4 +1,5 @@
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -471,7 +472,7 @@ def test_agent_verify_failure(mock_workspace):
     assert len(md_files) == 1
 
     # Break Golem's seal to write
-    os.chmod(md_files[0], 0o666)
+    os.chmod(md_files[0], stat.S_IRUSR | stat.S_IWUSR)
 
     # Read and tamper
     with open(md_files[0], encoding='utf-8') as f:

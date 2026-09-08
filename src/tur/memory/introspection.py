@@ -1,6 +1,7 @@
 import contextlib
 import json
 import os
+import stat
 import tempfile
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -871,11 +872,11 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
     # Clean up existing files in OKF folders
     for f in active_dir.glob('*.md'):
         with contextlib.suppress(Exception):
-            os.chmod(f, 0o666)
+            os.chmod(f, stat.S_IRUSR | stat.S_IWUSR)
             f.unlink()
     for f in archive_dir.glob('*.md'):
         with contextlib.suppress(Exception):
-            os.chmod(f, 0o666)
+            os.chmod(f, stat.S_IRUSR | stat.S_IWUSR)
             f.unlink()
 
     for node in graph.nodes:
@@ -941,7 +942,7 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
                 os.fsync(f.fileno())
             os.replace(tmp_path, file_path)
             with contextlib.suppress(Exception):
-                os.chmod(file_path, 0o444)
+                os.chmod(file_path, stat.S_IRUSR)
         except Exception:
             with contextlib.suppress(OSError):
                 os.remove(tmp_path)
@@ -1004,7 +1005,7 @@ def run_introspection(
                 os.fsync(f.fileno())
             if kg_path.exists():
                 with contextlib.suppress(Exception):
-                    os.chmod(kg_path, 0o666)
+                    os.chmod(kg_path, stat.S_IRUSR | stat.S_IWUSR)
             os.replace(kg_temp_path, kg_path)
         except Exception:
             with contextlib.suppress(OSError):
@@ -1013,7 +1014,7 @@ def run_introspection(
 
         # Golem's Seal: lock L2 file permissions to read-only
         with contextlib.suppress(Exception):
-            os.chmod(kg_path, 0o444)
+            os.chmod(kg_path, stat.S_IRUSR)
 
         # Save L2 Graph as OKF files
         save_l2_graph_to_okf(graph, persona_dir)

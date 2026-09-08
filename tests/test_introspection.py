@@ -1,4 +1,5 @@
 import os
+import stat
 from datetime import datetime
 from pathlib import Path
 
@@ -83,7 +84,7 @@ def test_bacon_integrity_verification(temp_workspace):
     saved_path = memory_manager.save(mem)
 
     # Tamper the file manually
-    os.chmod(saved_path, 0o666)
+    os.chmod(saved_path, stat.S_IRUSR | stat.S_IWUSR)
     with open(saved_path, 'w', encoding='utf-8') as f:
         f.write('tampered-content')
 
