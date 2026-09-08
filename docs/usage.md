@@ -86,11 +86,11 @@ You can always query the current workspace persona via `tur-adm persona get` or 
 Tur enforces strict physical security boundaries by separating agent runtime operations from human administrative
 actions across three distinct executables (EP-0004 / EP-0116):
 
-| Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                      |
-|:--------------|:------------------------------|:------------------------|:------------------------------------------------------------------------------------------------------------------|
-| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `note`, `read-notes`, `learn`, `diff`, `recall`, `status`, `metrics`, `sleep`                             |
-| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean` |
-| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                    |
+| Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                                            |
+|:--------------|:------------------------------|:------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `task (list/show/claim/check/handover/complete)`, `note`, `read-notes`, `learn`, `diff`, `recall`, `status`, `metrics`, `sleep` |
+| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean`                       |
+| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                                          |
 
 ---
 
@@ -207,7 +207,8 @@ tur-adm memory list --include-archived
 
 ### 8. Measure Cognitive Complexity & Spectral Health (`metrics`)
 
-Calculates the "Constraint Dimensionality" ($C_p$), static token weight, and **Spectral Graph Metrics** (algebraic connectivity $\lambda_2$, Louvain modularity $Q$, community clusters) of a persona.
+Calculates the "Constraint Dimensionality" ($C_p$), static token weight, and **Spectral Graph Metrics** (algebraic
+connectivity $\lambda_2$, Louvain modularity $Q$, community clusters) of a persona.
 
 ```shell
 tur metrics
@@ -297,7 +298,8 @@ tur read-notes --include-previous --limit 20
 ### 14. Graph-Theoretic Semantic Search (`recall`)
 
 Perform graph-theoretic associative retrieval across the persona's L2 Cognitive Map and L1 memory bank (EP-0136).
-Supports cognitive effort modulation (`--effort 0..10`, `--deep`) and conditional Mermaid flowchart generation (`--mermaid`).
+Supports cognitive effort modulation (`--effort 0..10`, `--deep`) and conditional Mermaid flowchart generation
+(`--mermaid`).
 
 ```shell
 # Fast keyword lookup (Effort 0 / <5ms)
@@ -410,6 +412,43 @@ tur ack-signals <signal-id-1>,<signal-id-2>
 # Human inspection of session signals and vector clocks (requires tur-adm)
 tur-adm signal inspect
 tur-adm signal inspect <session-id> --json
+```
+
+### 21. Task Coordination & Context Preservation (`task`)
+
+**Operational Lifecycles (EP-0147, EP-0149):** Lossless tactical task management across agent manifestations, preventing
+the "amnesia of specifics". Manages structured task coordinates (`task:<task_id>`), progress checklists, and handovers
+directly on the session whiteboard.
+
+```shell
+# List active tasks in the session whiteboard
+tur task list
+
+# List all tasks including completed
+tur task list --all
+
+# Inspect details and checklist of a specific task
+tur task show my-feature-task
+
+# Claim or register a task with title, objective, and checklist items
+tur task claim my-feature-task \
+  --title "Implement Task Protocol" \
+  --objective "Add tur task CLI and MCP tools" \
+  --item "Design schema" \
+  --item "Implement CLI commands" \
+  --item "Write tests"
+
+# Check off a completed milestone item
+tur task check "Design schema"
+
+# Check off an item by 1-based index
+tur task check 2
+
+# Hand over active task coordinates before session conclusion or interruption
+tur task handover --note "Completed items 1 and 2, pausing for review"
+
+# Mark task as completed once all checklist items are verified
+tur task complete
 ```
 
 ## Customization
