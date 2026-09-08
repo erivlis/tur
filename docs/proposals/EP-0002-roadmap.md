@@ -79,6 +79,7 @@ graph TD
         EP0133[EP-0133: Memory Observability<br/>tur diff & Session Delta]
         EP0141[EP-0141: Vector Clocks<br/>Causal Ordering in IASP]
         EP0147[EP-0147: Operational Workflows<br/>Task & Preservation Protocol]
+        EP0149[EP-0149: Two-Tier Grammar<br/>Subsystem Taxonomy & JSON]
     end
 
     subgraph L4 ["Layer 4: Cognitive & Deductive Capabilities"]
@@ -112,6 +113,7 @@ graph TD
     EP0130 --> EP0133
     EP0130 --> EP0147
     EP0141 --> EP0147
+    EP0147 --> EP0149
     EP0125 --> EP0119
     EP0123 --> EP0122
     EP0119 --> EP0131
@@ -131,9 +133,9 @@ graph TD
    `filelock`, $\mathcal{O}(1)$ Merkle invalidation caching, AST template memoization, and decorrelated jitter lock backoff.
 2. **Layer 2: Protocol Modernization, Scaffolding & Sanitization (`EP-0127` + `EP-0135` + `EP-0142` + `EP-0143`):** Migrate
    `tur-mcp` to MCP SDK v2, decouple `AGENTS.md` from `CONSTITUTION.md`, stream live progress, and filter sensitive credentials.
-3. **Layer 3: Storage, Lineage, Signal Infrastructure & Workflows (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141` + `EP-0147`):** Implement the
-   5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, Lamport Vector Clocks in IASP, and
-   the 4-phase operational agent lifecycle with the Task Protocol.
+3. **Layer 3: Storage, Lineage, Signal Infrastructure & Workflows (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141` + `EP-0147` + `EP-0149`):** Implement the
+   5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, Lamport Vector Clocks in IASP,
+   the 4-phase operational agent lifecycle with the Task Protocol, and two-tier hierarchical command grammar.
 4. **Layer 4: Cognitive Consolidation, Dense Retrieval & Memory Architecture (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0146` + `EP-0144` + `EP-0137`):**
    Temporal staleness decay, token-bounded wake, active TMS contradiction interruptions, HippoRAG Personalized PageRank
    associative retrieval, domain-driven `tur.memory` package consolidation, ONNX dense vector embeddings, and contract-driven skills.
@@ -241,6 +243,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval (EP-0144) [Status: Draft]:** Introducing
       zero-dependency semantic embedding retrieval via ONNX Runtime (`all-MiniLM-L6-v2_onnx_int8`) and AlgebraX sparse
       cosine similarity.
+    * **Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification (EP-0150) [Status: Draft]:**
+      Establishing multi-agent race-condition fuzzing, concurrent lock contention testing, and epistemic decay verification
+      under chaos harness conditions.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
@@ -282,6 +287,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
       Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
       under `tur-adm graph serve`.
+    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Draft]:**
+      Establishes an orthogonal two-tier command hierarchy for Tur (`tur task`, `tur board`, `tur note`, `tur message`, `tur agent`),
+      standardizing machine-parsable `--json` output and ambient agent identity.
 * **Track: Persona Memory & Compaction**
     * **The Spark Protocol (EP-0108) [Status: Implemented]:** Injecting rolling episodic memory into system prompts for
       zero-overhead continuous context.
@@ -346,9 +354,11 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 ## Change Log
 
 * **2026-09-08:**
-    * Registered **EP-0147 (Agent Operational Workflows and Context Preservation Protocol)** under Layer 3 (Storage,
-      Lineage, Signal Infrastructure & Workflows) to formalize the 4-phase operational agent lifecycle, Task protocol,
-      and context-preservation guarantees across session boundaries.
+    * Registered **EP-0147 (Agent Operational Workflows and Context Preservation Protocol)** and **EP-0149 (Two-Tier Hierarchical Command Grammar)**
+      under Layer 3 (Storage, Lineage, Signal Infrastructure & Workflows) to formalize the 4-phase operational agent lifecycle, Task protocol,
+      and orthogonal subcommand taxonomy.
+    * Registered **EP-0150 (Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification)**
+      under Phase 2 (LLM Agnosticism & Swarms).
 * **2026-08-30:**
     * Codified the **Strategic Confluences and Multi-EP Synergies** across 5 architectural intersections.
     * Registered **EP-0142 (Progressive Execution Observability)**, **EP-0143 (Sensitive Data Prevention & Sanitization)**,
