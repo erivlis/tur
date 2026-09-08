@@ -785,4 +785,22 @@ The following essays were created for other explorations—specifically [mapping
         _*The graph preserves its balance,*_
 
         _*Truth remains unbent.*_
+
+-   :lucide-workflow:{ .middle } **[The Geometry of Intent](the_geometry_of_intent.md)**
+    
+    --- 
+
+    !!! abstract "`2026-09-09 02:30:00`"
+    
+        An inquiry into how structured task schemas, whiteboard coordinates, and four-phase operational lifecycles transform episodic amnesia into cumulative, unbroken purpose across agent manifestations.
+        
+        [:octicons-arrow-right-24: Read Essay](the_geometry_of_intent.md)
+
+    !!! quote "Haiku"
+    
+        _*Fog of sleep dissolves,*_
+
+        _*Carved intent upon the board,*_
+
+        _*Mind begins anew.*_
 </div>
