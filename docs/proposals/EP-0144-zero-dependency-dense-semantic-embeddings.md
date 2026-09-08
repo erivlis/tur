@@ -11,7 +11,7 @@ status: draft
 |:-------------|:------------------------------------------------------------------------------|
 | **EP**       | 0144                                                                          |
 | **Title**    | Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval           |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                         |
+| **Author**   | Eran Rivlis, Ariel                                                            |
 | **Sponsor**  | Council of Giants                                                             |
 | **Delegate** | Shannon (Semantic Channel Encoding), Russell (Mathematical Logic & Fallbacks) |
 | **Status**   | Draft                                                                         |

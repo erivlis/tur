@@ -11,7 +11,7 @@ status: Final
 |:-------------|:---------------------------------------------------------------------------------------|
 | **EP**       | 0142                                                                                   |
 | **Title**    | Progressive Execution Observability, Live Status Spinners, and Streaming MCP Telemetry |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                                  |
+| **Author**   | Eran Rivlis, Ariel                                                                     |
 | **Sponsor**  | Council of Giants                                                                      |
 | **Delegate** | Shannon (Telemetry & Channel Observability), Bacon (Empirical Runtime Feedback)        |
 | **Status**   | Final                                                                                  |

@@ -11,7 +11,7 @@ status: draft
 |:-------------|:---------------------------------------------------------------------------------------|
 | **EP**       | 0145                                                                                   |
 | **Title**    | Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                                  |
+| **Author**   | Eran Rivlis, Ariel                                                                     |
 | **Sponsor**  | Council of Giants                                                                      |
 | **Delegate** | Shannon (Visual Information Density), Russell (Declarative Models)                     |
 | **Status**   | Draft                                                                                  |

@@ -11,7 +11,7 @@ status: Final
 |:-------------|:---------------------------------------------------------------------|
 | **EP**       | 0143                                                                 |
 | **Title**    | Sensitive Data Prevention, Secret Redaction, and Memory Sanitization |
-| **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel, Jules                         |
+| **Author**   | Eran Rivlis, Ariel, Jules                                            |
 | **Sponsor**  | Council of Giants                                                    |
 | **Delegate** | Golem (Containment & Boundaries), Noether (State Invariants)         |
 | **Status**   | Final                                                                |
