@@ -12,7 +12,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from tur import persona, session
+from tur import persona, session, task
 from tur.cli.common import (
     cli_guard,
     console,
@@ -251,11 +251,11 @@ def learn(
             if core_conflicts:
                 c = core_conflicts[0]
                 console.print(
-                    f"\n[bold red][Invariant Memory Error]:"
+                    f'\n[bold red][Invariant Memory Error]:'
                     f" Assertion contradicts Invariant Memory '{c.existing_memory_id}'.[/bold red]\n"
                     f"[red]Existing: '{c.existing_content}'[/red]\n"
-                    "[red]Agent cannot supersede human-governed Invariant memories.\n"
-                    "To propose a change, submit via `tur-adm proposal`.[/red]"
+                    '[red]Agent cannot supersede human-governed Invariant memories.\n'
+                    'To propose a change, submit via `tur-adm proposal`.[/red]'
                 )
                 raise typer.Exit(code=1)
 
@@ -264,24 +264,29 @@ def learn(
                     interceptor.resolve_supersession(supersedes, memory)
                     console.print(f"[yellow]Superseded prior memory '{supersedes}'.[/yellow]")
                 except (FileNotFoundError, InvariantMemoryError) as e:
-                    console.print(f"[bold red]Error resolving supersession: {e}[/bold red]")
+                    console.print(f'[bold red]Error resolving supersession: {e}[/bold red]')
                     raise typer.Exit(code=1)
             else:
                 c = conflicts[0]
                 console.print(
-                    f"\n[bold yellow]⚠️  TMS Contradiction Detected (EP-0134):[/bold yellow]\n"
-                    f"New assertion conflicts with active memory [bold]{c.existing_memory_id}[/bold]:\n"
-                    f"  [cyan]Existing:[/cyan] \"{c.existing_content}\"\n"
-                    f"  [cyan]New:[/cyan]      \"{content}\"\n"
-                    f"  [cyan]Reason:[/cyan]   {c.conflict_reason}\n"
+                    f'\n[bold yellow]⚠️  TMS Contradiction Detected (EP-0134):[/bold yellow]\n'
+                    f'New assertion conflicts with active memory [bold]{c.existing_memory_id}[/bold]:\n'
+                    f'  [cyan]Existing:[/cyan] "{c.existing_content}"\n'
+                    f'  [cyan]New:[/cyan]      "{content}"\n'
+                    f'  [cyan]Reason:[/cyan]   {c.conflict_reason}\n'
                 )
 
                 import sys
+
                 if sys.stdin.isatty():
-                    choice = typer.prompt(
-                        'Action required: [s] Supersede older memory, [f] Force dual existence, [a] Abort',
-                        default='s',
-                    ).strip().lower()
+                    choice = (
+                        typer.prompt(
+                            'Action required: [s] Supersede older memory, [f] Force dual existence, [a] Abort',
+                            default='s',
+                        )
+                        .strip()
+                        .lower()
+                    )
                     if choice in ('s', 'supersede'):
                         interceptor.resolve_supersession(c.existing_memory_id, memory)
                         console.print(f"[yellow]Superseded memory '{c.existing_memory_id}'.[/yellow]")
@@ -301,7 +306,7 @@ def learn(
             interceptor.resolve_supersession(supersedes, memory)
             console.print(f"[yellow]Superseded prior memory '{supersedes}'.[/yellow]")
         except (FileNotFoundError, InvariantMemoryError) as e:
-            console.print(f"[bold red]Error resolving supersession: {e}[/bold red]")
+            console.print(f'[bold red]Error resolving supersession: {e}[/bold red]')
             raise typer.Exit(code=1)
 
     saved_path = memory_manager.save(memory)
@@ -763,6 +768,190 @@ def whiteboard_read(
     except Exception as e:
         console.print(f'[red]Error reading from whiteboard: {e}[/red]')
         raise typer.Exit(code=1)
+
+
+task_app = typer.Typer(
+    help='Task coordination and context preservation commands (EP-0147, EP-0149).',
+    no_args_is_help=True,
+)
+
+
+@task_app.command('list')
+def task_list_cmd(
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+    json_output: bool = typer.Option(False, '--json', help='Output as raw JSON.'),
+):
+    """List all tasks registered on the session whiteboard."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
+    tasks = task.list_tasks(sess_id)
+    if json_output:
+        import json
+
+        console.print(json.dumps([t.model_dump(by_alias=True) for t in tasks], indent=2))
+        return
+
+    if not tasks:
+        console.print('[dim]No tasks found on session whiteboard.[/dim]')
+        return
+
+    table = Table(title='Tasks (EP-0147, EP-0149)', box=box.ROUNDED)
+    table.add_column('Task ID', style='bold cyan')
+    table.add_column('Title', style='white')
+    table.add_column('Status', style='bold')
+    table.add_column('Agent', style='yellow')
+    table.add_column('Progress', style='green')
+
+    for t in tasks:
+        done_count = sum(1 for item in t.work_items if item.done)
+        total_count = len(t.work_items)
+        progress = f'{done_count}/{total_count}' if total_count > 0 else '-'
+        status_style = 'green' if t.status == 'completed' else ('yellow' if t.status == 'in_progress' else 'red')
+        agent = t.manifestation.agent_id if t.manifestation else '-'
+        table.add_row(t.task_id, t.title, f'[{status_style}]{t.status}[/{status_style}]', agent, progress)
+
+    console.print(table)
+
+
+@task_app.command('show')
+def task_show_cmd(
+    task_id: str | None = typer.Argument(None, help='Optional task ID. If omitted, shows active task.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+    json_output: bool = typer.Option(False, '--json', help='Output as raw JSON.'),
+):
+    """Display details and checklist for a task."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
+    t = task.get_task(sess_id, task_id)
+    if not t:
+        target = task_id or 'active'
+        console.print(f"[dim]No task found for '{target}'.[/dim]")
+        raise typer.Exit(code=1)
+
+    if json_output:
+        console.print(t.to_json())
+        return
+
+    status_style = 'green' if t.status == 'completed' else ('yellow' if t.status == 'in_progress' else 'red')
+    console.print(f'\n[bold cyan]Task:[/bold cyan] {t.task_id} - [bold]{t.title}[/bold]')
+    console.print(f'Status: [{status_style}]{t.status}[/{status_style}]')
+    if t.depends_on:
+        console.print(f'Depends on: [magenta]{", ".join(t.depends_on)}[/magenta]')
+    if t.manifestation:
+        console.print(f'Agent: [yellow]{t.manifestation.agent_id}[/yellow] (Harness: {t.manifestation.harness or "-"})')
+    if t.objective:
+        console.print(f'Objective: {t.objective}')
+
+    if t.work_items:
+        console.print('\n[bold]Work Items:[/bold]')
+        for idx, item in enumerate(t.work_items, 1):
+            mark = '[green]✓[/green]' if item.done else '[red]✗[/red]'
+            console.print(f'  {idx}. {mark} {item.title}')
+
+    if t.target_files:
+        console.print(f'\nTarget Files: [dim]{", ".join(t.target_files)}[/dim]')
+    if t.recommendations:
+        console.print('\n[bold]Recommendations:[/bold]')
+        for r in t.recommendations:
+            console.print(f'  * {r}')
+
+
+@task_app.command('claim')
+def task_claim_cmd(
+    task_id: str = typer.Argument(..., help='The task ID (e.g. EP-0147).'),
+    title: str = typer.Option(..., '--title', '-t', help='Human-readable title of the task.'),
+    objective: str = typer.Option('', '--objective', '-o', help='Objective of the task.'),
+    work_items: list[str] | None = typer.Option(None, '--item', '-i', help='Work item checklist items.'),
+    depends_on: list[str] | None = typer.Option(None, '--depends-on', '-d', help='Task IDs this task depends on.'),
+    target_files: list[str] | None = typer.Option(None, '--target', help='Target files.'),
+    ttl: int = typer.Option(60, '--ttl', help='Lease TTL in minutes.'),
+    force: bool = typer.Option(False, '--force', help='Force claim even if lease is still active.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Claim a task on the session whiteboard."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        t = task.claim_task(
+            session_id=sess_id,
+            task_id=task_id,
+            title=title,
+            agent_id=modifier_id,
+            objective=objective,
+            work_items=work_items,
+            target_files=target_files,
+            depends_on=depends_on,
+            lease_ttl_minutes=ttl,
+            force=force,
+        )
+        console.print(f"[green]Claimed task '{t.task_id}' (Status: {t.status}).[/green]")
+    except Exception as e:
+        console.print(f'[red]Error claiming task: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@task_app.command('check')
+def task_check_cmd(
+    item: str = typer.Argument(..., help='Item index (1-based) or substring title to mark done.'),
+    task_id: str | None = typer.Option(None, '--task', help='Optional task ID.'),
+    done: bool = typer.Option(True, '--done/--undone', help='Whether the item is marked completed or pending.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Mark a checklist item in a task as completed or undone."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        t = task.check_item(sess_id, item, task_id=task_id, done=done, updated_by=modifier_id)
+        console.print(f"[green]Updated task '{t.task_id}'.[/green]")
+    except Exception as e:
+        console.print(f'[red]Error checking item: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@task_app.command('yield', hidden=True)
+@task_app.command('handover')
+def task_handover_cmd(
+    task_id: str | None = typer.Argument(
+        None, help='Optional task ID to handover/yield. If omitted, hands over active task.'
+    ),
+    note: str | None = typer.Option(None, '--note', '-n', help='Optional handover note.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Hand over an active task (sets status to 'handover')."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        t = task.yield_task(sess_id, task_id=task_id, note=note, updated_by=modifier_id)
+        console.print(f"[yellow]Handed over task '{t.task_id}' (Status: handover).[/yellow]")
+    except Exception as e:
+        console.print(f'[red]Error handing over task: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@task_app.command('seal', hidden=True)
+@task_app.command('complete')
+def task_complete_cmd(
+    task_id: str | None = typer.Argument(None, help='Optional task ID to complete. If omitted, completes active task.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Complete a task (sets status to 'completed' and unblocks dependents)."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        t = task.seal_task(sess_id, task_id=task_id, updated_by=modifier_id)
+        console.print(f"[green]Completed task '{t.task_id}' (Status: completed).[/green]")
+    except Exception as e:
+        console.print(f'[red]Error completing task: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+app.add_typer(task_app, name='task')
 
 
 @app.command()

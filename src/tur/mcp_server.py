@@ -256,8 +256,8 @@ def learn(
                 return (
                     f"[Invariant Memory Error]: Assertion contradicts Invariant Memory '{c.existing_memory_id}'. "
                     f"Existing: '{c.existing_content}'. "
-                    "Agent cannot supersede human-governed Invariant memories. "
-                    "To propose a change, submit via `tur-adm proposal`."
+                    'Agent cannot supersede human-governed Invariant memories. '
+                    'To propose a change, submit via `tur-adm proposal`.'
                 )
 
             if supersedes:
@@ -731,6 +731,119 @@ def read_whiteboard(key: str) -> str | None:
     if not sess_id:
         raise ValueError(ERROR_NO_ACTIVE_SESSION)
     return read_whiteboard_logic(sess_id, key)
+
+
+@mcp.tool()
+def show_task(task_id: str | None = None) -> str:
+    """
+    Displays the active task or specified task from the session whiteboard (EP-0147, EP-0149).
+    """
+    from tur import task
+
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        return 'Error: No active session.'
+    t = task.get_task(sess_id, task_id)
+    if not t:
+        return f"No task found matching '{task_id or 'active'}'."
+    return t.to_json()
+
+
+@mcp.tool()
+def claim_task(
+    task_id: str,
+    title: str,
+    objective: str = '',
+    work_items: list[str] | None = None,
+    depends_on: list[str] | None = None,
+    target_files: list[str] | None = None,
+    ttl_minutes: int = 60,
+    force: bool = False,
+) -> str:
+    """
+    Claims a task on the session whiteboard for the calling agent (EP-0147, EP-0149).
+    """
+    from tur import task
+
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        return 'Error: No active session.'
+    agent_id = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
+    try:
+        t = task.claim_task(
+            session_id=sess_id,
+            task_id=task_id,
+            title=title,
+            agent_id=agent_id,
+            harness=os.environ.get('TUR_HARNESS', 'mcp'),
+            objective=objective,
+            work_items=work_items,
+            target_files=target_files,
+            depends_on=depends_on,
+            lease_ttl_minutes=ttl_minutes,
+            force=force,
+        )
+    except Exception as e:
+        return f'Error claiming task: {e}'
+    else:
+        return f"Claimed task '{t.task_id}' (Status: {t.status})."
+
+
+@mcp.tool()
+def check_task_item(item: str, task_id: str | None = None, done: bool = True) -> str:
+    """
+    Marks a checklist item in a task as completed (or undone) (EP-0147, EP-0149).
+    """
+    from tur import task
+
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        return 'Error: No active session.'
+    agent_id = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
+    try:
+        t = task.check_item(sess_id, item, task_id=task_id, done=done, updated_by=agent_id)
+    except Exception as e:
+        return f'Error updating item: {e}'
+    else:
+        return f"Updated task '{t.task_id}'."
+
+
+@mcp.tool()
+def handover_task(task_id: str | None = None, note: str | None = None) -> str:
+    """
+    Hands over an active task without marking it completed (EP-0147, EP-0149).
+    """
+    from tur import task
+
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        return 'Error: No active session.'
+    agent_id = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
+    try:
+        t = task.yield_task(sess_id, task_id=task_id, note=note, updated_by=agent_id)
+    except Exception as e:
+        return f'Error handing over task: {e}'
+    else:
+        return f"Handed over task '{t.task_id}' (Status: handover)."
+
+
+@mcp.tool()
+def complete_task(task_id: str | None = None) -> str:
+    """
+    Marks a task as completed and unblocks dependent tasks (EP-0147, EP-0149).
+    """
+    from tur import task
+
+    sess_id = _active_session_id or get_active_session_id()
+    if not sess_id:
+        return 'Error: No active session.'
+    agent_id = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
+    try:
+        t = task.seal_task(sess_id, task_id=task_id, updated_by=agent_id)
+    except Exception as e:
+        return f'Error completing task: {e}'
+    else:
+        return f"Completed task '{t.task_id}' (Status: completed)."
 
 
 @mcp.tool()

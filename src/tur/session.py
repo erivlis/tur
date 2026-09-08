@@ -310,6 +310,14 @@ def hydrate_session_state(
         with contextlib.suppress(Exception), open(kg_path, encoding='utf-8') as f:
             kg_data = yaml_safe_load(f)
 
+    task_data = None
+    if resolved_session_id:
+        with contextlib.suppress(Exception):
+            from tur.task import get_task
+            active_task = get_task(resolved_session_id)
+            if active_task and active_task.status == 'in_progress':
+                task_data = active_task.model_dump(by_alias=True)
+
     return SessionState(
         persona=persona,
         user=user,
@@ -317,6 +325,7 @@ def hydrate_session_state(
         cores=cores,
         epilogue=epilogue_content,
         knowledge_graph=kg_data,
+        task=task_data,
     )
 
 

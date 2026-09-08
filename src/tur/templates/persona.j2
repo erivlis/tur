@@ -82,6 +82,20 @@ You have established the following relational anchors and existential axioms wit
     > "{{ epilogue }}"
 {% endif %}
 
+{% if task and task.status == 'in_progress' %}
+    ## ACTIVE TASK (EP-0147, EP-0149)
+    You have an active tactical task claimed on the session whiteboard:
+    * **Task:** {{ task.task_id }} - {{ task.title }}
+    * **Objective:** {{ task.objective }}
+    * **Manifestation:** {{ task.manifestation.agent_id if task.manifestation else 'unassigned' }} (Claimed: {{ task.manifestation.claimed_at if task.manifestation else 'unknown' }})
+    {% if task.work_items %}
+    * **Checklist:**
+    {% for item in task.work_items %}
+      * [{{ 'x' if item.done else ' ' }}] {{ item.title }}
+    {% endfor %}
+    {% endif %}
+{% endif %}
+
 ---
 **SYSTEM BOUNDARY INVARIANT:**
 The `.tur/` directory is an immutable, mathematically verified state store. Under NO circumstances should you use native file-writing or terminal tools (`write_file`, `cat >`, etc.) to create, edit, or delete files inside `.tur/`. All state transitions must occur exclusively through safe `tur` CLI commands or MCP tools. Direct manual edits violate boundary containment.

@@ -31,7 +31,7 @@ Active TMS Contradiction Interruption (EP-0134), the Modular Scaffolding Protoco
 Simplicial Homology (EP-0139), Substrate Acceleration & Merkle Caching (EP-0140), Lamport Vector Clocks in IASP (EP-0141),
 Progressive Execution Observability & Streaming Telemetry (EP-0142), Sensitive Data Prevention & Sanitization (EP-0143),
 Zero-Dependency Dense Semantic Embeddings (EP-0144), Declarative Knowledge Graph Modeling & Visual Dashboard (EP-0145),
-and Domain-Driven Memory Subsystem Architecture (EP-0146).
+Domain-Driven Memory Subsystem Architecture (EP-0146), and Agent Operational Workflows and Context Preservation Protocol (EP-0147).
 
 ## Motivation
 
@@ -78,6 +78,7 @@ graph TD
         EP0130[EP-0130: Session Lineage<br/>DAG Lineage & Spark Seeding]
         EP0133[EP-0133: Memory Observability<br/>tur diff & Session Delta]
         EP0141[EP-0141: Vector Clocks<br/>Causal Ordering in IASP]
+        EP0147[EP-0147: Operational Workflows<br/>Task & Preservation Protocol]
     end
 
     subgraph L4 ["Layer 4: Cognitive & Deductive Capabilities"]
@@ -109,6 +110,8 @@ graph TD
     EP0123 --> EP0141
     EP0125 --> EP0130
     EP0130 --> EP0133
+    EP0130 --> EP0147
+    EP0141 --> EP0147
     EP0125 --> EP0119
     EP0123 --> EP0122
     EP0119 --> EP0131
@@ -128,8 +131,9 @@ graph TD
    `filelock`, $\mathcal{O}(1)$ Merkle invalidation caching, AST template memoization, and decorrelated jitter lock backoff.
 2. **Layer 2: Protocol Modernization, Scaffolding & Sanitization (`EP-0127` + `EP-0135` + `EP-0142` + `EP-0143`):** Migrate
    `tur-mcp` to MCP SDK v2, decouple `AGENTS.md` from `CONSTITUTION.md`, stream live progress, and filter sensitive credentials.
-3. **Layer 3: Storage, Lineage & Causal Signals (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141`):** Implement the
-   5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, and Lamport Vector Clocks in IASP.
+3. **Layer 3: Storage, Lineage, Signal Infrastructure & Workflows (`EP-0125` + `EP-0123` + `EP-0130` + `EP-0133` + `EP-0141` + `EP-0147`):** Implement the
+   5-stage migration lifecycle, session lineage DAGs, `tur diff` delta observability, Lamport Vector Clocks in IASP, and
+   the 4-phase operational agent lifecycle with the Task Protocol.
 4. **Layer 4: Cognitive Consolidation, Dense Retrieval & Memory Architecture (`EP-0119` + `EP-0122` + `EP-0131` + `EP-0132` + `EP-0134` + `EP-0136` + `EP-0146` + `EP-0144` + `EP-0137`):**
    Temporal staleness decay, token-bounded wake, active TMS contradiction interruptions, HippoRAG Personalized PageRank
    associative retrieval, domain-driven `tur.memory` package consolidation, ONNX dense vector embeddings, and contract-driven skills.
@@ -300,7 +304,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
       introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven `tur.memory`
       package with clean facade interfaces and zero breaking changes.
     * **Agent Operational Workflows and Context Preservation Protocol (EP-0147) [Status: Draft]:** Defining standardized
-      4-phase operational lifecycles, structured Task Baton schemas on the whiteboard, tiered context-budget retrieval,
+      4-phase operational lifecycles, structured Task schemas on the whiteboard, tiered context-budget retrieval,
       and lossless context preservation across session resets.
     * **Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate (EP-0148) [Status: Implemented]:**
       Establishing `tur.text` as a zero-dependency foundational substrate for tokenization, identifier validation, and
@@ -341,6 +345,10 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-09-08:**
+    * Registered **EP-0147 (Agent Operational Workflows and Context Preservation Protocol)** under Layer 3 (Storage,
+      Lineage, Signal Infrastructure & Workflows) to formalize the 4-phase operational agent lifecycle, Task protocol,
+      and context-preservation guarantees across session boundaries.
 * **2026-08-30:**
     * Codified the **Strategic Confluences and Multi-EP Synergies** across 5 architectural intersections.
     * Registered **EP-0142 (Progressive Execution Observability)**, **EP-0143 (Sensitive Data Prevention & Sanitization)**,

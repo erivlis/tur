@@ -84,6 +84,22 @@ following triggering conditions:
 * **Avoid Overuse**: Never call `sleep()` intermediate-turn. It is a terminal operation that dehydrates the session,
   ends the active session state, and consolidates the chat log into L1 ledger memories.
 
+## Operational Agent Workflows (The 4-Phase Lifecycle - EP-0147, EP-0149)
+
+To prevent the "amnesia of specifics" across session boundaries, agents must execute within the structured 4-phase lifecycle:
+
+1. **Phase 0: Hydration & Task Inspection**
+   - Execute `wake()` on Turn Zero to restore persona identity and constitution (active tactical task state is automatically injected into the wake prompt).
+   - Alternatively, inspect active tasks via `tur task show` or `tur task list` (MCP: `show_task()`).
+2. **Phase 1: Deliberation & Task Claiming**
+   - Before executing code changes, claim or update your task via `tur task claim <task_id> --title <t> --objective <o> --item <step>` (MCP: `claim_task()`).
+3. **Phase 2: In-Flight Milestone Checkpointing**
+   - Emit exactly one descriptive `note()` upon reaching verified milestones (e.g., test suite green, module refactored).
+   - Sync checklist progress via `tur task check <item>` (MCP: `check_task_item()`).
+4. **Phase 3: Task Handover & Dehydration**
+   - Hand over or complete the task before concluding: `tur task complete` (MCP: `complete_task()`) if all items are done, or `tur task handover --note <n>` (MCP: `handover_task()`) if pausing.
+   - Invoke `sleep()` to consolidate the session transcript into permanent L1 memory.
+
 ## Core Invariants
 
 ### 1. Policy vs. Mechanism Invariant

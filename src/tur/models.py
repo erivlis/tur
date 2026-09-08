@@ -300,6 +300,7 @@ class SessionState(BaseModel):
     knowledge_graph: dict | None = Field(None, description='The L2 Cognitive Map (serialized networkx graph)')
     context_omitted: int | None = Field(None, description='Number of omitted memories/nodes due to token budget')
     token_budget: int | None = Field(None, description='Configured token budget')
+    task: dict[str, Any] | None = Field(None, description='Active task coordinate (EP-0147, EP-0149)')
 
 
 class PersonaIndexEntry(BaseModel):
