@@ -1,3 +1,29 @@
+## v0.14.0 (2026-09-10)
+
+### Feat
+
+- **EP-0144**: Adds semantic embeddings and consistent quote usage
+- **task**: Implement task coordination and management features for EP-0147 and EP-0149
+- **EP-0134**: Update status to implemented for Active TMS Contradiction Interruption Protocol and enhance memory ingestion conflict checks
+- **EP-0148**: Introduce canonical text tokenization and regex substrate
+- **EP-0132**: Adds token budgeting to persona prompt compilation.
+
+### Fix
+
+- **pi tur-adapter.ts**: Update execAsync commands to use --no-sync for improved execution control
+- Update file permission settings to use stat constants for better readability and maintainability
+- use `math.isclose` for confidence comparison with a tolerance
+
+### Refactor
+
+- replace hardcoded filenames with constants in admin.py, agent.py, paths.py, session.py, and mcp_server.py
+- enhance secret pattern detection and add entropy redaction functions in sanitizer.py
+- optimize memory retrieval and session note handling in session.py
+- simplify exception handling in paths.py
+- simplify conflict resolution logic in _resolve_conflicts method
+- remove unused parameters from stage_sleep_dreaming function
+- Removes `confidence` argument from `create_provenance_and_decay` function.
+
 ## v0.13.2 (2026-09-06)
 
 ### Refactor
