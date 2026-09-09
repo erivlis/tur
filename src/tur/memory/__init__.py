@@ -11,6 +11,12 @@ from tur.memory.diff import (
     format_diff_terminal,
 )
 from tur.memory.dreaming import perform_sleep_dreaming, stage_sleep_dreaming
+from tur.memory.embeddings import (
+    DEFAULT_EMBEDDING_MODEL,
+    VectorEngine,
+    batch_cosine_similarity,
+    pure_cosine_similarity,
+)
 from tur.memory.introspection import (
     IntrospectionAssembly,
     format_graph_as_mermaid,
@@ -49,12 +55,15 @@ from tur.memory.tms import (
 
 __all__ = [
     'DEFAULT_DECAY_POLICIES',
+    'DEFAULT_EMBEDDING_MODEL',
     'SEMANTIC_EDGE_WEIGHTS',
     'ContradictionInterceptor',
     'InvariantMemoryError',
     'MemoryManager',
     'TMSConflict',
     'TMSConflictError',
+    'VectorEngine',
+    'batch_cosine_similarity',
     'calculate_shannon_entropy',
     'compute_session_diff',
     'create_provenance_and_decay',
@@ -71,6 +80,7 @@ __all__ = [
     'load_l2_graph_from_okf',
     'perform_sleep_dreaming',
     'pure_algebraic_connectivity',
+    'pure_cosine_similarity',
     'pure_pagerank',
     'run_introspection',
     'sanitize_text',

@@ -180,6 +180,12 @@ class MemoryManager:
             if memory.redaction_reason:
                 frontmatter['redaction_reason'] = memory.redaction_reason
 
+        # Semantic Embedding fields (EP-0144)
+        if memory.embedding_model:
+            frontmatter['embedding_model'] = memory.embedding_model
+        if memory.embedding_vector:
+            frontmatter['embedding_vector'] = memory.embedding_vector
+
         yaml_part = yaml.dump(frontmatter, sort_keys=False, default_flow_style=False)
         okf_content = f'---\n{yaml_part}---\n\n{memory.content}\n'
 
@@ -272,8 +278,8 @@ class MemoryManager:
         if target_mem.type in (MemoryType.CORE, MemoryType.AXIOM):
             raise InvariantMemoryError(
                 f"[Invariant Memory Error]: Assertion contradicts Invariant Memory '{target_mem.id}'. "
-                "Agent cannot supersede human-governed Invariant memories. "
-                "To propose a change, submit via `tur-adm proposal`."
+                'Agent cannot supersede human-governed Invariant memories. '
+                'To propose a change, submit via `tur-adm proposal`.'
             )
 
         target_mem.status = 'superseded'
@@ -595,6 +601,8 @@ class MemoryManager:
                     confidence=confidence_val,
                     provenance=prov_obj,
                     decay=decay_obj,
+                    embedding_model=data.get('embedding_model'),
+                    embedding_vector=data.get('embedding_vector'),
                 )
             else:
                 test_data = data.copy()
@@ -692,6 +700,9 @@ class MemoryManager:
                 redacted_at_val = datetime.fromisoformat(str(redacted_at_raw)) if redacted_at_raw else None
                 redaction_reason_val = data.get('redaction_reason')
 
+                embedding_model_val = data.get('embedding_model')
+                embedding_vector_val = data.get('embedding_vector')
+
                 return Memory(
                     id=data.get('hash', ''),
                     timestamp=datetime.fromisoformat(str(data.get('timestamp'))),
@@ -711,6 +722,8 @@ class MemoryManager:
                     redacted=redacted_val,
                     redacted_at=redacted_at_val,
                     redaction_reason=redaction_reason_val,
+                    embedding_model=embedding_model_val,
+                    embedding_vector=embedding_vector_val,
                 )
 
             # Legacy YAML file load fallback

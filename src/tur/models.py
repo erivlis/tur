@@ -189,6 +189,10 @@ class Memory(BaseModel):
     redacted_at: datetime | None = Field(default=None, description='Timestamp of redaction')
     redaction_reason: str | None = Field(default=None, description='Reason/policy justification for redaction')
 
+    # Semantic Embedding fields (EP-0144)
+    embedding_model: str | None = Field(default=None, description='Name/version of model that generated embedding')
+    embedding_vector: list[float] | None = Field(default=None, description='Dense semantic embedding vector')
+
     @model_validator(mode='before')
     @classmethod
     def sanitize_memory_content(cls, data: Any) -> Any:  # type: ignore[operator]

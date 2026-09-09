@@ -1,11 +1,13 @@
 import contextlib
 import json
 import math
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
 
+from tur.memory.embeddings import VectorEngine
 from tur.models import EdgeType, NodeType
 from tur.text import tokenize_query
 
@@ -142,12 +144,21 @@ class CognitiveGraphEngine:
     Louvain community clustering, and spectral graph metrics.
     """
 
-    def __init__(self, graph: nx.DiGraph):
+    def __init__(self, graph: nx.DiGraph, vector_engine: VectorEngine | None = None):
         self.graph = graph.copy()
+        self.vector_engine = vector_engine or VectorEngine()
         for _, _, data in self.graph.edges(data=True):
             if 'weight' not in data:
                 edge_type = str(data.get('type', 'links')).lower()
                 data['weight'] = SEMANTIC_EDGE_WEIGHTS.get(edge_type, 1.0)
+
+    def calculate_seed_scores(
+        self,
+        query: str,
+        query_vector: Sequence[float] | None = None,
+    ) -> dict[str, float]:
+        """Computes seed scores combining lexical tokens and dense vector similarity (EP-0144)."""
+        return _calculate_seed_scores(self.graph, query, query_vector=query_vector, vector_engine=self.vector_engine)
 
     def compute_spectral_health(self) -> dict[str, Any]:
         """Calculates Fiedler eigenvalue lambda_2, Louvain modularity Q, and community statistics."""
@@ -358,22 +369,63 @@ class CognitiveGraphEngine:
         return validations
 
 
-def _l1_fallback_search(query: str, persona_dir: Path) -> str:
+def _l1_fallback_search(
+    query: str,
+    persona_dir: Path,
+    query_vector: Sequence[float] | None = None,
+    vector_engine: VectorEngine | None = None,
+) -> str:
     """Fallback search over raw L1 memories."""
     from tur.memory.storage import MemoryManager
 
     manager = MemoryManager(base_dir=persona_dir)
     mems = manager.load_all(include_archived=False)
     query_lower = query.lower()
-    results = [m for m in mems if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags)]
+    matched_ids: set[str] = set()
+    results = []
+
+    for m in mems:
+        if query_lower in m.content.lower() or any(query_lower in tag.lower() for tag in m.tags):
+            matched_ids.add(str(m.id))
+            results.append(m)
+
+    # Vector similarity search over L1 memories (EP-0144)
+    engine = vector_engine or VectorEngine()
+    if query_vector is None and engine.is_onnx_available:
+        with contextlib.suppress(Exception):
+            query_vector = engine.embed_text(query)
+
+    if query_vector and mems:
+        cand_pairs = [
+            (m, m.embedding_vector)
+            for m in mems
+            if m.embedding_vector is not None and len(m.embedding_vector) == len(query_vector)
+        ]
+        if cand_pairs:
+            candidate_vecs: list[Sequence[float]] = [vec for _, vec in cand_pairs]
+            sims = engine.compute_similarity(query_vector, candidate_vecs)
+            scored_mems = [
+                (m, sim)
+                for (m, _), sim in zip(cand_pairs, sims, strict=False)
+                if sim >= 0.1 and str(m.id) not in matched_ids
+            ]
+            scored_mems.sort(key=lambda x: x[1], reverse=True)
+            for m, _ in scored_mems:
+                results.append(m)
+
     if not results:
         return f"No memories found matching query: '{query}'"
     mem_list = [{'id': str(m.id), 'type': m.type.value, 'content': m.content} for m in results]
     return json.dumps(mem_list, indent=2)
 
 
-def _calculate_seed_scores(graph: nx.DiGraph, query: str) -> dict[str, float]:
-    """Computes lexical seed relevance scores across active L2 graph nodes."""
+def _calculate_seed_scores(
+    graph: nx.DiGraph,
+    query: str,
+    query_vector: Sequence[float] | None = None,
+    vector_engine: VectorEngine | None = None,
+) -> dict[str, float]:
+    """Computes lexical seed relevance scores and semantic vector similarity across active L2 graph nodes (EP-0144)."""
     query_lower = query.lower().strip()
     query_tokens = tokenize_query(query)
     scores: dict[str, float] = {}
@@ -414,7 +466,57 @@ def _calculate_seed_scores(graph: nx.DiGraph, query: str) -> dict[str, float]:
         if score > 0.0:
             scores[node] = score * confidence
 
+    # Dense semantic vector similarity calculation (EP-0144)
+    _augment_scores_with_vector_similarity(
+        graph=graph,
+        query=query,
+        scores=scores,
+        query_vector=query_vector,
+        vector_engine=vector_engine,
+    )
+
     return scores
+
+
+def _augment_scores_with_vector_similarity(
+    graph: nx.DiGraph,
+    query: str,
+    scores: dict[str, float],
+    query_vector: Sequence[float] | None = None,
+    vector_engine: VectorEngine | None = None,
+) -> None:
+    """Augments seed scores with dense vector similarities across active nodes (EP-0144)."""
+    engine = vector_engine or VectorEngine()
+    if query_vector is None and engine.is_onnx_available:
+        with contextlib.suppress(Exception):
+            query_vector = engine.embed_text(query)
+
+    if not query_vector:
+        return
+
+    nodes_with_vecs: list[str] = []
+    matrix_vecs: list[Sequence[float]] = []
+    for node, ndata in graph.nodes(data=True):
+        if ndata.get('status') in ['archived', 'superseded']:
+            continue
+        confidence = float(ndata.get('confidence', 1.0))
+        if confidence <= 0.0:
+            continue
+        vec = ndata.get('embedding_vector')
+        if vec and len(vec) == len(query_vector):
+            nodes_with_vecs.append(node)
+            matrix_vecs.append(vec)
+
+    if not matrix_vecs:
+        return
+
+    sims = engine.compute_similarity(query_vector, matrix_vecs)
+    for node, sim in zip(nodes_with_vecs, sims, strict=False):
+        if sim > 0.0:
+            confidence = float(graph.nodes[node].get('confidence', 1.0))
+            # Vector similarity scores fed directly into PPR personalization vector
+            v_score = float(sim) * 10.0 * confidence
+            scores[node] = scores.get(node, 0.0) + v_score
 
 
 def _recall_discrete(
@@ -560,6 +662,8 @@ def topological_recall(
     deep: bool = False,
     mermaid: bool = False,
     top_k: int = 5,
+    query_vector: Sequence[float] | None = None,
+    vector_engine: VectorEngine | None = None,
 ) -> str:
     """
     Graph-enhanced semantic recall logic supporting the Cognitive Effort Spectrum (EP-0136).
@@ -577,16 +681,16 @@ def topological_recall(
     graph = load_cognitive_map(persona_dir)
 
     if graph is None or graph.number_of_nodes() == 0:
-        return _l1_fallback_search(query, persona_dir)
+        return _l1_fallback_search(query, persona_dir, query_vector=query_vector, vector_engine=vector_engine)
 
-    seed_scores = _calculate_seed_scores(graph, query)
+    seed_scores = _calculate_seed_scores(graph, query, query_vector=query_vector, vector_engine=vector_engine)
     if not seed_scores:
-        l1_res = _l1_fallback_search(query, persona_dir)
+        l1_res = _l1_fallback_search(query, persona_dir, query_vector=query_vector, vector_engine=vector_engine)
         if not l1_res.startswith('No memories found'):
             return l1_res
         return f"No memories found matching query: '{query}'"
 
-    engine = CognitiveGraphEngine(graph)
+    engine = CognitiveGraphEngine(graph, vector_engine=vector_engine)
     sorted_seeds = sorted(seed_scores.keys(), key=lambda n: seed_scores[n], reverse=True)
 
     if resolved_effort == 0:

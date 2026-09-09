@@ -213,6 +213,8 @@ class OntologyExtractor(IntrospectionSubagent):
                     confidence=1.0,
                     retrieval_count=0,
                     status='active',
+                    embedding_model=mem.embedding_model,
+                    embedding_vector=mem.embedding_vector,
                 )
             return graph, context
 
@@ -815,6 +817,10 @@ def load_l2_graph_from_okf(persona_dir: Path) -> nx.DiGraph | None:
                 'retrieval_count': int(data.get('retrieval_count', 0)),
                 'status': data.get('status', 'active'),
             }
+            if data.get('embedding_model'):
+                attrs['embedding_model'] = data.get('embedding_model')
+            if data.get('embedding_vector'):
+                attrs['embedding_vector'] = data.get('embedding_vector')
 
             graph.add_node(node_id, **attrs)
 
@@ -925,6 +931,11 @@ def save_l2_graph_to_okf(graph: nx.DiGraph, persona_dir: Path):
             'pinned': bool(node_data.get('pinned', False)),
             'status': final_status,
         }
+        if node_data.get('embedding_model'):
+            frontmatter['embedding_model'] = node_data.get('embedding_model')
+        if node_data.get('embedding_vector'):
+            frontmatter['embedding_vector'] = node_data.get('embedding_vector')
+
         if relations:
             frontmatter['relations'] = relations
 
