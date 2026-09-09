@@ -2,7 +2,7 @@
 title: "EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics"
 description: "Establishes a two-tier command hierarchy for Tur, structuring ad-hoc commands into orthogonal domain subcommands (note, board, message, agent, task, memory) while standardizing --json output and ambient agent identity."
 icon: lucide/layers
-status: draft
+status: implemented
 ---
 
 # EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics
@@ -14,10 +14,10 @@ status: draft
 | **Author**   | Eran Rivlis, Ariel                                                                                        |
 | **Sponsor**  | Council of Giants                                                                                         |
 | **Delegate** | Russell (Consistency & Logic), Shannon (Information Density & Parsimony), Noether (Symmetry & Invariance) |
-| **Status**   | Draft                                                                                                     |
+| **Status**   | Implemented                                                                                               |
 | **Type**     | Standards Track                                                                                           |
 | **Created**  | 2026-09-08                                                                                                |
-| **Updated**  | 2026-09-08                                                                                                |
+| **Updated**  | 2026-09-09                                                                                                |
 | **Replaces** | EP-0004 (Partially supersedes command grammar sections)                                                   |
 
 ---

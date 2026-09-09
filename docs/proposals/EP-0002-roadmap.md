@@ -287,7 +287,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
       Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
       under `tur-adm graph serve`.
-    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Draft]:**
+    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Implemented]:**
       Establishes an orthogonal two-tier command hierarchy for Tur (`tur task`, `tur board`, `tur note`, `tur message`, `tur agent`),
       standardizing machine-parsable `--json` output and ambient agent identity.
 * **Track: Persona Memory & Compaction**
@@ -311,7 +311,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Domain-Driven Memory Subsystem Architecture (EP-0146) [Status: Final]:** Consolidating flat memory, recall,
       introspection, dreaming, provenance, diff, and sanitizer modules into a cohesive, domain-driven `tur.memory`
       package with clean facade interfaces and zero breaking changes.
-    * **Agent Operational Workflows and Context Preservation Protocol (EP-0147) [Status: Draft]:** Defining standardized
+    * **Agent Operational Workflows and Context Preservation Protocol (EP-0147) [Status: Implemented]:** Defining standardized
       4-phase operational lifecycles, structured Task schemas on the whiteboard, tiered context-budget retrieval,
       and lossless context preservation across session resets.
     * **Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate (EP-0148) [Status: Implemented]:**

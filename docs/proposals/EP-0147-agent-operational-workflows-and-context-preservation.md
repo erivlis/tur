@@ -2,7 +2,7 @@
 title: "EP-0147: Agent Operational Workflows and Context Preservation Protocol"
 description: "Defines standardized interaction lifecycles, structured task handover schemas, and context preservation protocols for AI agents utilizing Tur."
 icon: lucide/workflow
-status: draft
+status: implemented
 ---
 
 # EP-0147: Agent Operational Workflows and Context Preservation Protocol
@@ -14,10 +14,10 @@ status: draft
 | **Author**   | Eran Rivlis, Ariel                                             |
 | **Sponsor**  | Council of Giants                                              |
 | **Delegate** | Shannon (Information Density), Wiener (Cybernetics & Feedback) |
-| **Status**   | Draft                                                          |
+| **Status**   | Implemented                                                    |
 | **Type**     | Standards Track                                                |
 | **Created**  | 2026-09-07                                                     |
-| **Updated**  | 2026-09-08                                                     |
+| **Updated**  | 2026-09-09                                                     |
 
 ---
 
