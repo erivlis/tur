@@ -2,24 +2,24 @@
 
 **Document Reference:** `references/explorations/EXP-0008-tactical-roadmap-execution-plan/tactical_layer_by_layer_execution_plan.md`  
 **Authors:** Eran Rivlis & Ariel  
-**Date:** 2026-08-30 (Updated 2026-09-04)  
-**Target:** Phased, high-velocity implementation of the Tur Enhancement Proposals (EP-0130 through EP-0146) across 5 sequential `/goal` runs.
+**Date:** 2026-08-30 (Updated 2026-09-09)  
+**Target:** Phased, high-velocity implementation of the Tur Enhancement Proposals (EP-0130 through EP-0150) across sequential `/goal` runs.
 
 ---
 
 ## 1. Executive Strategy
 
-Rather than attempting an unconstrained, monolithic "YOLO" run across all 48 proposals (which introduces context window degradation, layer inversion, and untested stubbing), development is partitioned into **5 discrete, verifiable `/goal` waves**. 
+Rather than attempting an unconstrained, monolithic "YOLO" run across all proposals (which introduces context window degradation, layer inversion, and untested stubbing), development is partitioned into **5 discrete, verifiable `/goal` waves**. 
 
 Each wave corresponds to a structural layer in the **Strategic Implementation Trajectory** (`EP-0002`), ensuring that each layer forms a rock-solid, high-performance substrate for the next.
 
 ```mermaid
 graph TD
     W1["Wave 1: Substrate Hardening & Quick Wins<br/>(EP-0140)"]
-    W2["Wave 2: Scaffolding & Live Observability<br/>(EP-0135 & EP-0142)"]
-    W3["Wave 3: Storage, Lineage & Causal Signals<br/>(EP-0130, EP-0133 & EP-0141)"]
-    W4["Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake<br/>(EP-0131, EP-0132, EP-0134, EP-0136, EP-0146 & EP-0144)"]
-    W5["Wave 5: Sovereign Epistemology & Higher Algebra<br/>(EP-0137, EP-0138 & EP-0139)"]
+    W2["Wave 2: Scaffolding & Live Observability<br/>(EP-0135, EP-0142 & EP-0143)"]
+    W3["Wave 3: Storage, Lineage, Causal Signals & Task Workflows<br/>(EP-0130, EP-0133, EP-0141, EP-0147 & EP-0149)"]
+    W4["Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake<br/>(EP-0131, EP-0132, EP-0134, EP-0136, EP-0146, EP-0148 & EP-0144)"]
+    W5["Wave 5: Sovereign Epistemology & Higher Algebra<br/>(EP-0137, EP-0138, EP-0139 & EP-0145)"]
 
     W1 --> W2
     W2 --> W3
@@ -75,23 +75,26 @@ graph TD
 
 ---
 
-### 🌊 Wave 3: Storage, Lineage & Causal Signals [Status: Complete / Final]
+### 🌊 Wave 3: Storage, Lineage, Causal Signals & Task Workflows [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0130`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0130-session-lineage-and-continuity-protocol.md): Session Lineage and Cross-Session Continuity Protocol
   - [`EP-0133`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0133-session-memory-observability-and-diff.md): Session Memory Observability and Delta Tracking (`tur diff`)
   - [`EP-0141`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0141-causal-vector-clocks-in-iasp.md): Lamport Vector Clocks and Causal Consistency in IASP
+  - [`EP-0147`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0147-agent-operational-workflows-and-context-preservation.md): Agent Operational Workflows and Context Preservation Protocol
+  - [`EP-0149`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md): Two-Tier Hierarchical Command Grammar and Subsystem Taxonomy
 * **Key Deliverables:**
   1. `src/tur/session.py`: Explicit `parent_session_id` tracking, DAG ancestry traversal, and rolling spark seeding.
   2. `src/tur/diff.py`: Implement `tur diff` CLI and MCP tool to compute session deltas (added, subsumed, superseded, contradicted).
   3. `src/tur/session.py` (IASP SQLite): Vector clock JSON column in `signals` table with causal partial order verification (`is_causally_ready`).
+  4. `src/tur/task.py`: Canonical Task model, session whiteboard coordinates (`task:<task_id>`), progress checklists, and lease heartbeat recovery.
+  5. `src/tur/cli/agent.py` & `src/tur/mcp_server.py`: Complete `tur task` commands (`list`, `show`, `claim`, `check`, `handover`, `complete`) and two-tier command grammar.
 * **Target Files:**
-  - `src/tur/session.py`
-  - `src/tur/diff.py`
+  - `src/tur/session.py`, `src/tur/diff.py`, `src/tur/task.py`
   - `src/tur/cli/agent.py`, `src/tur/mcp_server.py`
-  - `tests/test_session.py`, `tests/test_diff.py`
+  - `tests/test_session.py`, `tests/test_diff.py`, `tests/test_task.py`
 * **Suggested `/goal` Command:**
   ```text
-  /goal Implement EP-0130, EP-0133, and EP-0141: Add session lineage DAG tracking, implement the 'tur diff' CLI/MCP delta command, and add Lamport Vector Clocks to IASP signals in SQLite.
+  /goal Implement EP-0130, EP-0133, EP-0141, EP-0147, and EP-0149: Add session lineage DAG tracking, implement the 'tur diff' CLI/MCP delta command, add Lamport Vector Clocks to IASP signals, implement the Task Protocol (tur task), and establish the two-tier CLI grammar.
   ```
 
 ---
@@ -103,6 +106,7 @@ graph TD
   - [`EP-0132`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0132-budgeted-wake-and-dynamic-retrieval.md): Budgeted Wake and Dynamic Memory Context Retrieval [Status: Implemented]
   - [`EP-0131`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0131-memory-provenance-and-staleness-decay.md): Memory Provenance, Temporal Anchoring, and Staleness Decay [Status: Final]
   - [`EP-0134`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0134-active-tms-contradiction-interruption.md): Active TMS Contradiction Interruption Protocol [Status: Implemented]
+  - [`EP-0148`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0148-canonical-text-tokenization-and-regex-substrate.md): Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate [Status: Implemented]
   - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX [Status: Draft]
 * **Key Deliverables:**
   1. `src/tur/recall.py`: NetworkX HippoRAG Personalized PageRank associative retrieval, Louvain communities, `--effort <0-10>` parameter, and `--mermaid` visualization.
@@ -110,7 +114,8 @@ graph TD
   3. `src/tur/compiler.py`: Knapsack dynamic token budgeting packing top-ranked PPR subgraphs into the wake prompt.
   4. `src/tur/models.py` & `src/tur/memory/storage.py`: Half-life exponential decay kinetics and Git commit observation anchors.
   5. `src/tur/tms.py`: Real-time JTMS contradiction checking and assertion deactivation.
-  6. `src/tur/memory/embeddings.py`: ONNX Runtime dense vector inference (`all-MiniLM-L6-v2_onnx_int8`) with pure AlgebraX sparse cosine fallback.
+  6. `src/tur/text.py`: Canonical tokenization, regex compilation cache, and slug validation substrate.
+  7. `src/tur/memory/embeddings.py`: ONNX Runtime dense vector inference (`all-MiniLM-L6-v2_onnx_int8`) with pure AlgebraX sparse cosine fallback.
 * **Target Files:**
   - `src/tur/memory/` (`__init__.py`, `storage.py`, `recall.py`, `introspection.py`, `dreaming.py`, `provenance.py`, `diff.py`, `sanitizer.py`, `embeddings.py`)
   - `src/tur/compiler.py`, `src/tur/models.py`

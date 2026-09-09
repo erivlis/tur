@@ -1,15 +1,15 @@
 # EXP-0008: Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies
 
-| Field           | Value                                                                                                                                      |
-|:----------------|:-------------------------------------------------------------------------------------------------------------------------------------------|
-| **EXP**         | 0008                                                                                                                                       |
-| **Title**       | Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies                                                                                |
-| **Author**      | Eran Rivlis, Ariel                                                                                                                         |
-| **Status**      | Active / Implementation Ready                                                                                                              |
-| **Type**        | Execution & Phasing Strategy                                                                                                               |
-| **Created**     | 2026-08-30                                                                                                                                 |
-| **Updated**     | 2026-09-04                                                                                                                                 |
-| **Related EPs** | [EP-0002](../../docs/proposals/EP-0002-roadmap.md), [EP-0146](../../docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md) |
+| Field           | Value                                                                                                                                                                                                                                                                                                                                       |
+|:----------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **EXP**         | 0008                                                                                                                                                                                                                                                                                                                                        |
+| **Title**       | Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies                                                                                                                                                                                                                                                                                 |
+| **Author**      | Eran Rivlis, Ariel                                                                                                                                                                                                                                                                                                                          |
+| **Status**      | Active / Implementation Ready                                                                                                                                                                                                                                                                                                               |
+| **Type**        | Execution & Phasing Strategy                                                                                                                                                                                                                                                                                                                |
+| **Created**     | 2026-08-30                                                                                                                                                                                                                                                                                                                                  |
+| **Updated**     | 2026-09-09                                                                                                                                                                                                                                                                                                                                  |
+| **Related EPs** | [EP-0002](../../docs/proposals/EP-0002-roadmap.md), [EP-0146](../../docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md), [EP-0147](../../docs/proposals/EP-0147-agent-operational-workflows-and-context-preservation.md), [EP-0149](../../docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md) |
 
 ---
 
@@ -58,7 +58,7 @@ The 5-Wave Tactical Execution Plan:
 
 - **Wave 1:** Substrate Acceleration & Caching (`EP-0140`) — **[Complete / Final]**
 - **Wave 2:** Scaffolding, Observability & Sanitization (`EP-0135`, `EP-0142`, `EP-0143`) — **[Complete / Final]**
-- **Wave 3:** Storage, Lineage & Causal Signals (`EP-0130`, `EP-0133`, `EP-0141`) — **[Complete / Final]**
+- **Wave 3:** Storage, Lineage, Causal Signals & Task Workflows (`EP-0130`, `EP-0133`, `EP-0141`, `EP-0147`, `EP-0149`) — **[Complete / Final]**
 - **Wave 4:** High-Speed Graph Engine, Domain Architecture & Budgeted Wake (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`,
   `EP-0146`, `EP-0144`, `EP-0148`) — **[In Progress]** (`EP-0146`, `EP-0136`, `EP-0131`, `EP-0132`, `EP-0134`, `EP-0148` Complete; `EP-0144` Pending)
 - **Wave 5:** Sovereign Epistemology, Dashboard & Higher Algebra (`EP-0137`, `EP-0138`, `EP-0139`, `EP-0145`) — **[Planned]**
