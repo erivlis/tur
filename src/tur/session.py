@@ -314,6 +314,7 @@ def hydrate_session_state(
     if resolved_session_id:
         with contextlib.suppress(Exception):
             from tur.task import get_task
+
             active_task = get_task(resolved_session_id)
             if active_task and active_task.status == 'in_progress':
                 task_data = active_task.model_dump(by_alias=True)

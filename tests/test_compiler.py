@@ -234,9 +234,7 @@ def test_compile_persona_budgeted_wake_flat_memories():
 
     from tur.compiler import estimate_tokens
 
-    base_cost = estimate_tokens(
-        compile_persona(SessionState(persona=persona, user=user, memories=[], epilogue=None))
-    )
+    base_cost = estimate_tokens(compile_persona(SessionState(persona=persona, user=user, memories=[], epilogue=None)))
     # Budget that fits base + 1 memory
     budget = base_cost + 35
 

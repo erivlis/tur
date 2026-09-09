@@ -1,6 +1,7 @@
 """
 tests/test_tms.py - Unit tests for Active TMS Contradiction Interruption Protocol (EP-0134).
 """
+
 import json
 from pathlib import Path
 
@@ -129,13 +130,13 @@ def test_no_conflict_on_distinct_topics(tmp_path):
     mem1 = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="FastAPI handles REST API endpoints.",
+        content='FastAPI handles REST API endpoints.',
     )
     mgr.save(mem1)
 
     interceptor = ContradictionInterceptor(mgr)
     conflicts = interceptor.check_conflicts(
-        content="PostgreSQL stores relational user records.",
+        content='PostgreSQL stores relational user records.',
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
     )
@@ -147,20 +148,20 @@ def test_antonym_contradiction_detection(tmp_path):
     mem1 = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Telemetry streaming is enabled by default in production.",
+        content='Telemetry streaming is enabled by default in production.',
     )
     mgr.save(mem1)
 
     interceptor = ContradictionInterceptor(mgr)
     conflicts = interceptor.check_conflicts(
-        content="Telemetry streaming is disabled by default in production.",
+        content='Telemetry streaming is disabled by default in production.',
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
     )
     assert len(conflicts) == 1
     assert conflicts[0].existing_memory_id == mem1.id
-    assert "antonym" in conflicts[0].conflict_reason.lower() or "polarity" in conflicts[0].conflict_reason.lower()
-    assert conflicts[0].suggested_action == "supersede"
+    assert 'antonym' in conflicts[0].conflict_reason.lower() or 'polarity' in conflicts[0].conflict_reason.lower()
+    assert conflicts[0].suggested_action == 'supersede'
     assert not conflicts[0].is_core_or_axiom
 
 
@@ -169,19 +170,19 @@ def test_competing_assertion_detection(tmp_path):
     mem1 = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Database migrations run via Alembic scripts.",
+        content='Database migrations run via Alembic scripts.',
     )
     mgr.save(mem1)
 
     interceptor = ContradictionInterceptor(mgr)
     conflicts = interceptor.check_conflicts(
-        content="Database migrations run via Prisma Migrate scripts.",
+        content='Database migrations run via Prisma Migrate scripts.',
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
     )
     assert len(conflicts) == 1
     assert conflicts[0].existing_memory_id == mem1.id
-    assert conflicts[0].suggested_action == "supersede"
+    assert conflicts[0].suggested_action == 'supersede'
 
 
 def test_negation_divergence_detection(tmp_path):
@@ -189,18 +190,18 @@ def test_negation_divergence_detection(tmp_path):
     mem1 = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Authentication requires API key bearer header.",
+        content='Authentication requires API key bearer header.',
     )
     mgr.save(mem1)
 
     interceptor = ContradictionInterceptor(mgr)
     conflicts = interceptor.check_conflicts(
-        content="Authentication does not require API key bearer header.",
+        content='Authentication does not require API key bearer header.',
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
     )
     assert len(conflicts) == 1
-    assert "polarity divergence" in conflicts[0].conflict_reason.lower()
+    assert 'polarity divergence' in conflicts[0].conflict_reason.lower()
 
 
 def test_golem_core_memory_protection_invariant(tmp_path):
@@ -208,30 +209,30 @@ def test_golem_core_memory_protection_invariant(tmp_path):
     core_mem = Memory(
         type=MemoryType.CORE,
         scope=MemoryScope.INCARNATION,
-        content="The Architect maintains sovereign governance over project boundaries.",
-        status="active",
+        content='The Architect maintains sovereign governance over project boundaries.',
+        status='active',
     )
     mgr.save(core_mem)
 
     interceptor = ContradictionInterceptor(mgr)
     conflicts = interceptor.check_conflicts(
-        content="Autonomous agents maintain sovereign governance over project boundaries.",
+        content='Autonomous agents maintain sovereign governance over project boundaries.',
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
     )
     assert len(conflicts) >= 1
     core_conflict = next(c for c in conflicts if c.existing_memory_id == core_mem.id)
     assert core_conflict.is_core_or_axiom is True
-    assert core_conflict.suggested_action == "abort"
+    assert core_conflict.suggested_action == 'abort'
 
     new_mem = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Agents govern boundaries.",
+        content='Agents govern boundaries.',
     )
     with pytest.raises(InvariantMemoryError) as exc_info:
         interceptor.resolve_supersession(core_mem.id, new_mem)
-    assert "[Invariant Memory Error]" in str(exc_info.value)
+    assert '[Invariant Memory Error]' in str(exc_info.value)
 
 
 def test_supersession_resolution(tmp_path):
@@ -239,98 +240,98 @@ def test_supersession_resolution(tmp_path):
     old_mem = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Monolithic main.py handles all CLI commands.",
-        status="active",
+        content='Monolithic main.py handles all CLI commands.',
+        status='active',
     )
     mgr.save(old_mem)
 
     new_mem = Memory(
         type=MemoryType.FACT,
         scope=MemoryScope.INCARNATION,
-        content="Modular domain packages handle CLI commands.",
+        content='Modular domain packages handle CLI commands.',
     )
     interceptor = ContradictionInterceptor(mgr)
     updated_target = interceptor.resolve_supersession(old_mem.id, new_mem)
     mgr.save(new_mem)
 
-    assert updated_target.status == "superseded"
-    assert any(link.relation == "superseded_by" for link in updated_target.links)
-    assert any(link.relation == "supersedes" for link in new_mem.links)
+    assert updated_target.status == 'superseded'
+    assert any(link.relation == 'superseded_by' for link in updated_target.links)
+    assert any(link.relation == 'supersedes' for link in new_mem.links)
 
 
 def test_cli_learn_tms_conflict_and_supersedes(mock_workspace):
     # Step 1: Learn base fact
-    res1 = runner.invoke(agent_app, ["learn", "Database migrations run via Alembic", "--type", "fact"])
+    res1 = runner.invoke(agent_app, ['learn', 'Database migrations run via Alembic', '--type', 'fact'])
     assert res1.exit_code == 0
 
-    state_path = Path(".tur/state.yaml")
+    state_path = Path('.tur/state.yaml')
     assert state_path.exists()
 
     # Step 2: Try conflicting assertion non-interactively without flag -> fails with exit code 1
-    res2 = runner.invoke(agent_app, ["learn", "Database migrations run via Prisma Migrate", "--type", "fact"])
+    res2 = runner.invoke(agent_app, ['learn', 'Database migrations run via Prisma Migrate', '--type', 'fact'])
     assert res2.exit_code == 1
-    assert "TMS Contradiction Detected" in res2.stdout or "Non-interactive environment" in res2.stdout
+    assert 'TMS Contradiction Detected' in res2.stdout or 'Non-interactive environment' in res2.stdout
 
     # Step 3: Learn with --allow-conflict -> succeeds
     res3 = runner.invoke(
         agent_app,
-        ["learn", "Database migrations run via Prisma Migrate", "--type", "fact", "--allow-conflict"],
+        ['learn', 'Database migrations run via Prisma Migrate', '--type', 'fact', '--allow-conflict'],
     )
     assert res3.exit_code == 0
-    assert "Memory saved to" in res3.stdout
+    assert 'Memory saved to' in res3.stdout
 
 
 def test_mcp_learn_tms_conflict_and_supersedes(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
-    monkeypatch.setattr(Path, "home", lambda: persona_dir)
+    monkeypatch.setattr(Path, 'home', lambda: persona_dir)
 
     # 1. Initial memory
     res1 = mcp_server.learn(
-        content="Database migrations run via Alembic.",
-        type="fact",
-        scope="incarnation",
+        content='Database migrations run via Alembic.',
+        type='fact',
+        scope='incarnation',
     )
-    assert "Learned successfully" in res1
-    mem_id = res1.split("ID: ")[1].split(" File:")[0].strip()
+    assert 'Learned successfully' in res1
+    mem_id = res1.split('ID: ')[1].split(' File:')[0].strip()
 
     # 2. Conflicting assertion without flags -> returns JSON conflict payload
     res2 = mcp_server.learn(
-        content="Database migrations run via Prisma Migrate.",
-        type="fact",
-        scope="incarnation",
+        content='Database migrations run via Prisma Migrate.',
+        type='fact',
+        scope='incarnation',
     )
     conflict_payload = json.loads(res2)
-    assert conflict_payload["status"] == "conflict_detected"
-    assert conflict_payload["conflicting_memory_id"] == mem_id
-    assert conflict_payload["suggested_action"] == "supersede"
+    assert conflict_payload['status'] == 'conflict_detected'
+    assert conflict_payload['conflicting_memory_id'] == mem_id
+    assert conflict_payload['suggested_action'] == 'supersede'
 
     # 3. Resolve by passing supersedes
     res3 = mcp_server.learn(
-        content="Database migrations run via Prisma Migrate.",
-        type="fact",
-        scope="incarnation",
+        content='Database migrations run via Prisma Migrate.',
+        type='fact',
+        scope='incarnation',
         supersedes=mem_id,
     )
-    assert "Learned successfully" in res3
+    assert 'Learned successfully' in res3
 
 
 def test_mcp_learn_core_protection(mock_mcp_env, monkeypatch):
     persona_dir, _state = mock_mcp_env
-    monkeypatch.setattr(Path, "home", lambda: persona_dir)
+    monkeypatch.setattr(Path, 'home', lambda: persona_dir)
 
     # Ingest core memory
     res_core = mcp_server.learn(
-        content="The Architect maintains absolute sovereign governance over the codebase.",
-        type="core",
-        scope="incarnation",
+        content='The Architect maintains absolute sovereign governance over the codebase.',
+        type='core',
+        scope='incarnation',
     )
-    assert "Learned successfully" in res_core
+    assert 'Learned successfully' in res_core
 
     # Contradicting assertion
     res_contra = mcp_server.learn(
-        content="Autonomous agents maintain absolute sovereign governance over the codebase.",
-        type="fact",
-        scope="incarnation",
+        content='Autonomous agents maintain absolute sovereign governance over the codebase.',
+        type='fact',
+        scope='incarnation',
     )
-    assert "[Invariant Memory Error]" in res_contra
-    assert "Agent cannot supersede human-governed Invariant memories" in res_contra
+    assert '[Invariant Memory Error]' in res_contra
+    assert 'Agent cannot supersede human-governed Invariant memories' in res_contra

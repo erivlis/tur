@@ -1,6 +1,7 @@
 """
 src/tur/text.py - Canonical Text Processing, Tokenization, and Regex Substrate.
 """
+
 from __future__ import annotations
 
 import functools

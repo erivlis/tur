@@ -1,6 +1,7 @@
 """
 tests/test_text.py - Unit tests for tur.text canonical tokenization and regex substrate.
 """
+
 import pytest
 
 from tur.text import (
