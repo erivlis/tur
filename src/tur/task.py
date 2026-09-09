@@ -56,12 +56,10 @@ class Task(BaseModel):
 
 def get_task_key(task_id: str | None) -> str:
     """Returns the whiteboard key for a given task ID."""
-    if not task_id or task_id in ('task', 'task_baton', 'default'):
+    if not task_id or task_id in ('task', 'default'):
         return 'task'
     if task_id.startswith('task:'):
         return task_id
-    if task_id.startswith('baton:'):
-        return f'task:{task_id[6:]}'
     return f'task:{task_id}'
 
 
@@ -71,31 +69,18 @@ def get_task(session_id: str, task_id: str | None = None) -> Task | None:
     raw_val = read_whiteboard_logic(session_id, key)
 
     if not raw_val and key != 'task':
-        # Fallback: check legacy baton:<task_id> key if migrating
-        if task_id:
-            raw_val = read_whiteboard_logic(session_id, f'baton:{task_id}')
-
-    if not raw_val and key != 'task':
-        # Fallback: check if the default task or legacy task_baton matches the requested task_id
-        for default_k in ('task', 'task_baton'):
-            default_val = read_whiteboard_logic(session_id, default_k)
-            if default_val:
-                try:
-                    data = json.loads(default_val)
-                    if data.get('task_id') == task_id:
-                        return Task.model_validate(data)
-                except Exception:
-                    pass
+        # Fallback: check if the default task matches the requested task_id
+        default_val = read_whiteboard_logic(session_id, 'task')
+        if default_val:
+            try:
+                data = json.loads(default_val)
+                if data.get('task_id') == task_id:
+                    return Task.model_validate(data)
+            except Exception:
+                pass
         return None
 
     if not raw_val and key == 'task':
-        # Fallback: check legacy task_baton key
-        legacy_val = read_whiteboard_logic(session_id, 'task_baton')
-        if legacy_val:
-            try:
-                return Task.model_validate(json.loads(legacy_val))
-            except Exception:
-                pass
         # Fallback: check if there is an active namespaced task
         tasks = list_tasks(session_id)
         active = [t for t in tasks if t.status == 'in_progress']
@@ -120,7 +105,7 @@ def list_tasks(session_id: str) -> list[Task]:
             """
             SELECT key, value
             FROM session_state
-            WHERE key = 'task' OR key = 'task_baton' OR key LIKE 'task:%' OR key LIKE 'baton:%'
+            WHERE key = 'task' OR key LIKE 'task:%'
             ORDER BY updated_at DESC
             """
         )
@@ -203,7 +188,7 @@ def save_task(session_id: str, task: Task, updated_by: str) -> None:
     write_whiteboard_logic(session_id, namespaced_key, payload, updated_by)
 
     # Mirror to default task key if active or default
-    current_default = read_whiteboard_logic(session_id, 'task') or read_whiteboard_logic(session_id, 'task_baton')
+    current_default = read_whiteboard_logic(session_id, 'task')
     should_mirror = True
     if current_default:
         try:
