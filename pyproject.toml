@@ -44,6 +44,10 @@ dependencies = [
 
 
 [project.optional-dependencies]
+embeddings = [
+    "onnxruntime>=1.17.0",
+    "numpy>=1.26.0",
+]
 gemini = [
     "google-genai",
 ]
