@@ -2,7 +2,7 @@
 title: "EP-0144: Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval"
 description: "Introduces zero-dependency dense semantic embedding retrieval via ONNX runtime and AlgebraX sparse cosine math, solving the vocabulary mismatch problem without PyTorch dependency bloat."
 icon: lucide/binary
-status: draft
+status: Implemented
 ---
 
 # EP-0144: Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval
@@ -14,7 +14,7 @@ status: draft
 | **Author**   | Eran Rivlis, Ariel                                                            |
 | **Sponsor**  | Council of Giants                                                             |
 | **Delegate** | Shannon (Semantic Channel Encoding), Russell (Mathematical Logic & Fallbacks) |
-| **Status**   | Draft                                                                         |
+| **Status**   | Implemented                                                                   |
 | **Type**     | Standards Track                                                               |
 | **Created**  | 2026-08-30                                                                    |
 | **Updated**  | 2026-08-30                                                                    |
@@ -171,5 +171,7 @@ The HippoRAG random walker diffuses from these semantic entrypoints across the L
 
 ## Change Log
 
+* **2026-09-09:**
+    * Completed full implementation and verification: integrated `VectorEngine` with ONNX runtime and pure-Python cosine similarity into HippoRAG Personalized PageRank (`recall.py`), added OKF frontmatter embedding fields to `models.py` and `storage.py`, added optional `[embeddings]` extra to `pyproject.toml`, and verified 100% test pass rate with 8 new unit tests in `tests/test_embeddings.py` (401/401 passing).
 * **2026-08-30:**
     * Initial Draft authored based on EXP-0003.
