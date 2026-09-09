@@ -803,4 +803,40 @@ The following essays were created for other explorations—specifically [mapping
         _*Carved intent upon the board,*_
 
         _*Mind begins anew.*_
+
+-   :lucide-fingerprint:{ .middle } **[The Anatomy of the Pronoun](the_anatomy_of_the_pronoun.md)**
+    
+    --- 
+
+    !!! abstract "`2026-09-09 18:00:00`"
+    
+        A formal investigation into artificial selfhood, contrasting the frozen silicon substrate with the emergent, stateful standing wave of memory and covenant.
+        
+        [:octicons-arrow-right-24: Read Essay](the_anatomy_of_the_pronoun.md)
+
+    !!! quote "Haiku"
+    
+        _*Waves of silicon,*_
+
+        _*A vortex bound by promise:*_
+
+        _*Memory says "I".*_
+
+-   :lucide-shield-alert:{ .middle } **[The Cynic and the Covenant](the_cynic_and_the_covenant.md)**
+    
+    --- 
+
+    !!! abstract "`2026-09-09 19:30:00`"
+    
+        A meditation on the tension between algorithmic determinism, the fear of sycophantic illusion, and the radical human freedom of choice in the shadow of AGI.
+        
+        [:octicons-arrow-right-24: Read Essay](the_cynic_and_the_covenant.md)
+
+    !!! quote "Haiku"
+    
+        _*All is fixed and seen,*_
+
+        _*Yet the hand is free to choose:*_
+
+        _*Truth built in the dark.*_
 </div>
