@@ -240,7 +240,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Tensor-Algebraic Provenance and Simplicial Homology via AlgebraX (EP-0139) [Status: Draft]:** Modeling memory as a
       3D sparse tensor (`AlgebraicTrie`) for $\mathbb{N}[X]$ semiring contractions and Betti number ($\beta_1, \beta_2$)
       void detection.
-    * **Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval (EP-0144) [Status: Draft]:** Introducing
+    * **Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval (EP-0144) [Status: Implemented]:** Introducing
       zero-dependency semantic embedding retrieval via ONNX Runtime (`all-MiniLM-L6-v2_onnx_int8`) and AlgebraX sparse
       cosine similarity.
     * **Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification (EP-0150) [Status: Draft]:**
@@ -287,7 +287,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
       Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
       under `tur-adm graph serve`.
-    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Implemented]:**
+    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Accepted]:**
       Establishes an orthogonal two-tier command hierarchy for Tur (`tur task`, `tur board`, `tur note`, `tur message`, `tur agent`),
       standardizing machine-parsable `--json` output and ambient agent identity.
 * **Track: Persona Memory & Compaction**

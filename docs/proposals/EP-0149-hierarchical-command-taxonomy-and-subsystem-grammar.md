@@ -2,7 +2,7 @@
 title: "EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics"
 description: "Establishes a two-tier command hierarchy for Tur, structuring ad-hoc commands into orthogonal domain subcommands (note, board, message, agent, task, memory) while standardizing --json output and ambient agent identity."
 icon: lucide/layers
-status: implemented
+status: accepted
 ---
 
 # EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics
@@ -14,10 +14,10 @@ status: implemented
 | **Author**   | Eran Rivlis, Ariel                                                                                        |
 | **Sponsor**  | Council of Giants                                                                                         |
 | **Delegate** | Russell (Consistency & Logic), Shannon (Information Density & Parsimony), Noether (Symmetry & Invariance) |
-| **Status**   | Implemented                                                                                               |
+| **Status**   | Accepted                                                                                                  |
 | **Type**     | Standards Track                                                                                           |
 | **Created**  | 2026-09-08                                                                                                |
-| **Updated**  | 2026-09-09                                                                                                |
+| **Updated**  | 2026-09-10                                                                                                |
 | **Replaces** | EP-0004 (Partially supersedes command grammar sections)                                                   |
 
 ---
@@ -319,6 +319,8 @@ app.command("ack-signals", hidden=True)(message_ack_cmd)
 
 ## Change Log
 
+* **2026-09-10:**
+    * Accepted for target release `v0.15.0`. Partial implementation (`tur task`) landed with EP-0147 in `v0.14.0`; full domain subcommand restructuring deferred to `v0.15.0`.
 * **2026-09-08:**
     * Initial draft authored by Eran Rivlis and Ariel proposing two-tier command grammar, domain subcommands (`note`,
       `board`, `message`, `agent`, `task`, `memory`), ambient agent resolution, and `--json` standardization.

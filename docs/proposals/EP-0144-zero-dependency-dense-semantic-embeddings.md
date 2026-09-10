@@ -2,7 +2,7 @@
 title: "EP-0144: Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval"
 description: "Introduces zero-dependency dense semantic embedding retrieval via ONNX runtime and AlgebraX sparse cosine math, solving the vocabulary mismatch problem without PyTorch dependency bloat."
 icon: lucide/binary
-status: Implemented
+status: implemented
 ---
 
 # EP-0144: Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval
@@ -17,7 +17,7 @@ status: Implemented
 | **Status**   | Implemented                                                                   |
 | **Type**     | Standards Track                                                               |
 | **Created**  | 2026-08-30                                                                    |
-| **Updated**  | 2026-08-30                                                                    |
+| **Updated**  | 2026-09-10                                                                    |
 
 ---
 
@@ -150,8 +150,8 @@ The HippoRAG random walker diffuses from these semantic entrypoints across the L
 
 ## Reference Implementation
 
-- Vector engine: `src/tur/embeddings.py`
-- Recall integration: `src/tur/recall.py`
+- Vector engine: `src/tur/memory/embeddings.py`
+- Recall integration: `src/tur/memory/recall.py`
 - Exploration reference: `references/explorations/EXP-0003-recall-embeddings-and-algebrax/README.md`
 
 ---
