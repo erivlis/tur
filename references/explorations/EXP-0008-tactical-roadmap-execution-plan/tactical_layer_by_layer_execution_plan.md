@@ -2,14 +2,14 @@
 
 **Document Reference:** `references/explorations/EXP-0008-tactical-roadmap-execution-plan/tactical_layer_by_layer_execution_plan.md`  
 **Authors:** Eran Rivlis & Ariel  
-**Date:** 2026-08-30 (Updated 2026-09-09)  
+**Date:** 2026-08-30 (Updated 2026-09-14)  
 **Target:** Phased, high-velocity implementation of the Tur Enhancement Proposals (EP-0130 through EP-0150) across sequential `/goal` runs.
 
 ---
 
 ## 1. Executive Strategy
 
-Rather than attempting an unconstrained, monolithic "YOLO" run across all proposals (which introduces context window degradation, layer inversion, and untested stubbing), development is partitioned into **5 discrete, verifiable `/goal` waves**. 
+Rather than attempting an unconstrained, monolithic "YOLO" run across all proposals (which introduces context window degradation, layer inversion, and untested stubbing), development is partitioned into **discrete, verifiable `/goal` waves** (Waves 1 through 6, with Wave 4.5 Bridge). 
 
 Each wave corresponds to a structural layer in the **Strategic Implementation Trajectory** (`EP-0002`), ensuring that each layer forms a rock-solid, high-performance substrate for the next.
 
@@ -17,14 +17,18 @@ Each wave corresponds to a structural layer in the **Strategic Implementation Tr
 graph TD
     W1["Wave 1: Substrate Hardening & Quick Wins<br/>(EP-0140)"]
     W2["Wave 2: Scaffolding & Live Observability<br/>(EP-0135, EP-0142 & EP-0143)"]
-    W3["Wave 3: Storage, Lineage, Causal Signals & Task Workflows<br/>(EP-0130, EP-0133, EP-0141, EP-0147 & EP-0149)"]
+    W3["Wave 3: Storage, Lineage, Causal Signals & Task Workflows<br/>(EP-0130, EP-0133, EP-0141 & EP-0147)"]
     W4["Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake<br/>(EP-0131, EP-0132, EP-0134, EP-0136, EP-0146, EP-0148 & EP-0144)"]
+    W45["Wave 4.5 (Bridge): Two-Tier Command Grammar & Taxonomy<br/>(EP-0149)"]
     W5["Wave 5: Sovereign Epistemology & Higher Algebra<br/>(EP-0137, EP-0138, EP-0139 & EP-0145)"]
+    W6["Wave 6 (Capstone): Adversarial Chaos Engineering & Swarm Fuzzing<br/>(EP-0150)"]
 
     W1 --> W2
     W2 --> W3
     W3 --> W4
-    W4 --> W5
+    W4 --> W45
+    W45 --> W5
+    W5 --> W6
 ```
 
 ---
@@ -81,25 +85,24 @@ graph TD
   - [`EP-0133`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0133-session-memory-observability-and-diff.md): Session Memory Observability and Delta Tracking (`tur diff`)
   - [`EP-0141`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0141-causal-vector-clocks-in-iasp.md): Lamport Vector Clocks and Causal Consistency in IASP
   - [`EP-0147`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0147-agent-operational-workflows-and-context-preservation.md): Agent Operational Workflows and Context Preservation Protocol
-  - [`EP-0149`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md): Two-Tier Hierarchical Command Grammar and Subsystem Taxonomy
 * **Key Deliverables:**
   1. `src/tur/session.py`: Explicit `parent_session_id` tracking, DAG ancestry traversal, and rolling spark seeding.
   2. `src/tur/diff.py`: Implement `tur diff` CLI and MCP tool to compute session deltas (added, subsumed, superseded, contradicted).
   3. `src/tur/session.py` (IASP SQLite): Vector clock JSON column in `signals` table with causal partial order verification (`is_causally_ready`).
   4. `src/tur/task.py`: Canonical Task model, session whiteboard coordinates (`task:<task_id>`), progress checklists, and lease heartbeat recovery.
-  5. `src/tur/cli/agent.py` & `src/tur/mcp_server.py`: Complete `tur task` commands (`list`, `show`, `claim`, `check`, `handover`, `complete`) and two-tier command grammar.
+  5. `src/tur/cli/agent.py` & `src/tur/mcp_server.py`: Complete `tur task` commands (`list`, `show`, `claim`, `check`, `handover`, `complete`) establishing the foundational task workflow protocol and initial two-tier namespace.
 * **Target Files:**
   - `src/tur/session.py`, `src/tur/diff.py`, `src/tur/task.py`
   - `src/tur/cli/agent.py`, `src/tur/mcp_server.py`
   - `tests/test_session.py`, `tests/test_diff.py`, `tests/test_task.py`
 * **Suggested `/goal` Command:**
   ```text
-  /goal Implement EP-0130, EP-0133, EP-0141, EP-0147, and EP-0149: Add session lineage DAG tracking, implement the 'tur diff' CLI/MCP delta command, add Lamport Vector Clocks to IASP signals, implement the Task Protocol (tur task), and establish the two-tier CLI grammar.
+  /goal Implement EP-0130, EP-0133, EP-0141, and EP-0147: Add session lineage DAG tracking, implement the 'tur diff' CLI/MCP delta command, add Lamport Vector Clocks to IASP signals, and implement the Task Protocol (tur task).
   ```
 
 ---
 
-### 🌊 Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake [Status: In Progress]
+### 🌊 Wave 4: High-Speed Graph Engine, Domain Architecture & Budgeted Wake [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0136`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0136-graph-theoretic-semantic-retrieval-and-topological-metrics.md): Graph-Theoretic Semantic Retrieval, Louvain & HippoRAG PPR [Status: Final]
   - [`EP-0146`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md): Domain-Driven Memory Subsystem Architecture (`tur.memory`) [Status: Final]
@@ -107,7 +110,7 @@ graph TD
   - [`EP-0131`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0131-memory-provenance-and-staleness-decay.md): Memory Provenance, Temporal Anchoring, and Staleness Decay [Status: Final]
   - [`EP-0134`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0134-active-tms-contradiction-interruption.md): Active TMS Contradiction Interruption Protocol [Status: Implemented]
   - [`EP-0148`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0148-canonical-text-tokenization-and-regex-substrate.md): Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate [Status: Implemented]
-  - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX [Status: Draft]
+  - [`EP-0144`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0144-zero-dependency-dense-semantic-embeddings.md): Zero-Dependency Dense Semantic Embeddings via ONNX & AlgebraX [Status: Implemented / Final]
 * **Key Deliverables:**
   1. `src/tur/recall.py`: NetworkX HippoRAG Personalized PageRank associative retrieval, Louvain communities, `--effort <0-10>` parameter, and `--mermaid` visualization.
   2. `src/tur/memory/`: Consolidate flat memory modules into domain-driven package (`storage.py`, `recall.py`, `introspection.py`, `dreaming.py`, `provenance.py`, `diff.py`, `sanitizer.py`) with canonical facade in `__init__.py`.
@@ -123,6 +126,25 @@ graph TD
 * **Suggested `/goal` Command:**
   ```text
   /goal Implement EP-0146, EP-0131, EP-0132, EP-0134, and EP-0144: Consolidate flat memory modules into the domain-driven tur.memory package, implement Knapsack budgeted wake in compiler.py, add git-anchored provenance decay, active TMS contradiction checks, and ONNX vector embeddings.
+  ```
+
+---
+
+### 🌊 Wave 4.5 (Bridge): Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy [Status: Ready / Next]
+* **Primary Proposals:**
+  - [`EP-0149`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md): Two-Tier Hierarchical Command Grammar and Subsystem Taxonomy [Status: Accepted]
+* **Key Deliverables:**
+  1. `src/tur/cli/agent.py`: Complete domain sub-command structure (`tur board`, `tur message`, `tur note`, `tur agent`) with transparent Typer alias bridges for legacy flat commands (`whiteboard-write`, `read-notes`, `list-agents`, `signal`).
+  2. `src/tur/cli/agent.py` & `src/tur/session.py`: Ambient identity resolution via `$TUR_AGENT_ID` environment variable across all command handlers.
+  3. Standardized `--json` flag across all agent-facing CLI inspection commands for machine-readable output envelopes.
+  4. Unified CLI help hierarchy and documentation alignment across human and agent developer workflows.
+* **Target Files:**
+  - `src/tur/cli/agent.py`
+  - `tests/test_cli.py`
+  - `docs/guides/cli-reference.md`
+* **Suggested `/goal` Command:**
+  ```text
+  /goal Implement EP-0149: Implement remaining two-tier command grammar subcommands (tur board, tur message, tur note, tur agent), support $TUR_AGENT_ID ambient identity, ensure backward compatibility via Typer aliases, and standardize --json envelopes with tests.
   ```
 
 ---
@@ -149,6 +171,23 @@ graph TD
 
 ---
 
+### 🌊 Wave 6: Adversarial Chaos Engineering & Pre-v1.0.0 Swarm Fuzzing [Status: Planned]
+* **Primary Proposals:**
+  - [`EP-0150`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md): Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification [Status: Draft]
+* **Key Deliverables:**
+  1. `src/tur/chaos.py` & `tur-adm chaos`: Adversarial chaos orchestrator running multi-process concurrent swarm simulations, lock contention storms, mid-flight SIGKILL process termination, and corrupted IASP signal injection.
+  2. `tests/test_chaos.py`: Automated stress test suite verifying zero state corruption, automatic lock recovery, causal clock partial order monotonicity under partition, and JTMS contradiction avalanche deactivation.
+  3. Pre-v1.0.0 release gate: Rigorous verification of ACID transactional consistency across SQLite WAL mode, Merkle memory cache coherency, and file locking across Windows NTFS and POSIX platforms.
+* **Target Files:**
+  - `src/tur/chaos.py`, `src/tur/cli/admin.py`
+  - `tests/test_chaos.py`, `benchmarks/test_bench_chaos.py`
+* **Suggested `/goal` Command:**
+  ```text
+  /goal Implement EP-0150: Build the adversarial chaos orchestrator (tur-adm chaos), stress fuzzing test suite (tests/test_chaos.py), and mid-flight fault injection to verify zero state corruption across concurrent swarms.
+  ```
+
+---
+
 ## 3. Verification & Safety Protocols
 
 Each wave MUST satisfy the following quality gates before proceeding to the next:
@@ -160,14 +199,16 @@ Each wave MUST satisfy the following quality gates before proceeding to the next
 
 ## 4. Strategic Synergies & Integration Matrix
 
-| Confluence Stream                                   | Participating EPs                             | Architectural Synergy & Emergent Capability                                                                                                                                                                                                                   |
-|:----------------------------------------------------|:----------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1. The Unified Reactive Wire**                    | `EP-0127` + `EP-0123` + `EP-0141` + `EP-0142` | `MCPServer` async notification dispatcher serves both live streaming sleep/introspection progress (`notifications/progress`) and causally ordered inter-agent vector clock signals (`notifications/resources/updated`).                                       |
-| **2. High-Speed Cognitive Subgraph Engine**         | `EP-0140` + `EP-0136` + `EP-0139`             | Sub-millisecond $\mathcal{O}(1)$ Merkle invalidation memory caching enables rapid on-the-fly construction of NetworkX graphs and sparse 3D tensors for HippoRAG PPR and Simplicial Homology Betti hole detection without disk bottlenecks.                    |
-| **3. Contract-Driven Sovereign Evolution**          | `EP-0137` + `EP-0138`                         | Typed Pydantic I/O contracts allow externalized cognitive skills to autonomously execute Popperian falsification scoring ($\Phi$) and propose principle crystallizations without polluting the minimal core execution kernel.                                 |
-| **4. Active TMS & Epistemic Delta Tracking**        | `EP-0134` + `EP-0133`                         | Active Truth Maintenance conflict detection pairs with `tur diff` to expose structured epistemic mutation graphs (added, subsumed, superseded, contradicted) across session boundaries.                                                                       |
-| **5. Zero-Waste Context Engine**                    | `EP-0135` + `EP-0132` + `EP-0136`             | Decoupling operational scaffolding (`AGENTS.md`) from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack budgeting with the highest-relevance associative memory subgraphs.                         |
-| **6. High-Recall Hybrid Semantic Diffusion**        | `EP-0144` + `EP-0136` + `EP-0140` + `EP-0132` | Dense ONNX vector embeddings seed Personalized PageRank diffusion across the L2 graph, solving the vocabulary mismatch problem without PyTorch bloat and packing results into token budgets with sub-millisecond $\mathcal{O}(1)$ cached execution.           |
-| **7. Cryptographic Boundary & Tombstone Defense**   | `EP-0143` + `EP-0106` + `EP-0115` + `EP-0135` | Pre-ingest regex and Shannon entropy scanners sanitize credentials before persistence, while Merkle tombstoning allows purging compromised tokens without corrupting content-addressable history or persona export archives.                                  |
-| **8. Interactive Epistemic Topology Observability** | `EP-0145` + `EP-0138` + `EP-0139` + `EP-0134` | Graphinate local web dashboard and schema-verified `networkx-mermaid` compilation render interactive 3D/2D visual inspections of Popperian elevation chains, simplicial homology voids, and JTMS contradiction boundaries.                                    |
-| **9. Domain-Driven Memory Subsystem**               | `EP-0146` + `EP-0136` + `EP-0131` + `EP-0139` | Consolidating flat memory, recall, introspection, dreaming, provenance, diff, and sanitizer into the authoritative `tur.memory` package prevents cyclic import deadlocks and provides a unified substrate for higher-algebra tensors and epistemic elevation. |
+| Confluence Stream                                        | Participating EPs                             | Architectural Synergy & Emergent Capability                                                                                                                                                                                                                                                                        |
+|:---------------------------------------------------------|:----------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **1. The Unified Reactive Wire**                         | `EP-0127` + `EP-0123` + `EP-0141` + `EP-0142` | `MCPServer` async notification dispatcher serves both live streaming sleep/introspection progress (`notifications/progress`) and causally ordered inter-agent vector clock signals (`notifications/resources/updated`).                                                                                            |
+| **2. High-Speed Cognitive Subgraph Engine**              | `EP-0140` + `EP-0136` + `EP-0139`             | Sub-millisecond $\mathcal{O}(1)$ Merkle invalidation memory caching enables rapid on-the-fly construction of NetworkX graphs and sparse 3D tensors for HippoRAG PPR and Simplicial Homology Betti hole detection without disk bottlenecks.                                                                         |
+| **3. Contract-Driven Sovereign Evolution**               | `EP-0137` + `EP-0138`                         | Typed Pydantic I/O contracts allow externalized cognitive skills to autonomously execute Popperian falsification scoring ($\Phi$) and propose principle crystallizations without polluting the minimal core execution kernel.                                                                                      |
+| **4. Active TMS & Epistemic Delta Tracking**             | `EP-0134` + `EP-0133`                         | Active Truth Maintenance conflict detection pairs with `tur diff` to expose structured epistemic mutation graphs (added, subsumed, superseded, contradicted) across session boundaries.                                                                                                                            |
+| **5. Zero-Waste Context Engine**                         | `EP-0135` + `EP-0132` + `EP-0136`             | Decoupling operational scaffolding (`AGENTS.md`) from persona identity (`CONSTITUTION.md`) frees up 73% baseline context, which is dynamically packed via Knapsack budgeting with the highest-relevance associative memory subgraphs.                                                                              |
+| **6. High-Recall Hybrid Semantic Diffusion**             | `EP-0144` + `EP-0136` + `EP-0140` + `EP-0132` | Dense ONNX vector embeddings seed Personalized PageRank diffusion across the L2 graph, solving the vocabulary mismatch problem without PyTorch bloat and packing results into token budgets with sub-millisecond $\mathcal{O}(1)$ cached execution.                                                                |
+| **7. Cryptographic Boundary & Tombstone Defense**        | `EP-0143` + `EP-0106` + `EP-0115` + `EP-0135` | Pre-ingest regex and Shannon entropy scanners sanitize credentials before persistence, while Merkle tombstoning allows purging compromised tokens without corrupting content-addressable history or persona export archives.                                                                                       |
+| **8. Interactive Epistemic Topology Observability**      | `EP-0145` + `EP-0138` + `EP-0139` + `EP-0134` | Graphinate local web dashboard and schema-verified `networkx-mermaid` compilation render interactive 3D/2D visual inspections of Popperian elevation chains, simplicial homology voids, and JTMS contradiction boundaries.                                                                                         |
+| **9. Domain-Driven Memory Subsystem**                    | `EP-0146` + `EP-0136` + `EP-0131` + `EP-0139` | Consolidating flat memory, recall, introspection, dreaming, provenance, diff, and sanitizer into the authoritative `tur.memory` package prevents cyclic import deadlocks and provides a unified substrate for higher-algebra tensors and epistemic elevation.                                                      |
+| **10. Hierarchical Subsystem Grammar & Ambient Context** | `EP-0149` + `EP-0147`                         | Consolidating multi-agent coordination commands under clean domain taxonomies (`tur board`, `tur message`, `tur note`, `tur agent`) with ambient `$TUR_AGENT_ID` auto-detection and machine-readable `--json` envelopes, establishing an intuitive, composable command interface before higher-tier features land. |
+| **11. Swarm Fuzzing & Adversarial Fault Injection**      | `EP-0150` + `EP-0141` + `EP-0134` + `EP-0140` | Automated chaos engineering orchestrator running concurrent swarm simulations, lock contention surges, mid-flight process termination (SIGKILL), and contradiction avalanches to verify zero state corruption across the complete memory and IASP substrates.                                                      |

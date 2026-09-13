@@ -1,15 +1,15 @@
 # EXP-0008: Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies
 
-| Field           | Value                                                                                                                                                                                                                                                                                                                                       |
-|:----------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **EXP**         | 0008                                                                                                                                                                                                                                                                                                                                        |
-| **Title**       | Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies                                                                                                                                                                                                                                                                                 |
-| **Author**      | Eran Rivlis, Ariel                                                                                                                                                                                                                                                                                                                          |
-| **Status**      | Active / Implementation Ready                                                                                                                                                                                                                                                                                                               |
-| **Type**        | Execution & Phasing Strategy                                                                                                                                                                                                                                                                                                                |
-| **Created**     | 2026-08-30                                                                                                                                                                                                                                                                                                                                  |
-| **Updated**     | 2026-09-09                                                                                                                                                                                                                                                                                                                                  |
-| **Related EPs** | [EP-0002](../../docs/proposals/EP-0002-roadmap.md), [EP-0146](../../docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md), [EP-0147](../../docs/proposals/EP-0147-agent-operational-workflows-and-context-preservation.md), [EP-0149](../../docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md) |
+| Field           | Value                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|:----------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **EXP**         | 0008                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Title**       | Tactical Layer-by-Layer Execution Plan & Multi-EP Synergies                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Author**      | Eran Rivlis, Ariel                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Status**      | Active / Implementation Ready                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Type**        | Execution & Phasing Strategy                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Created**     | 2026-08-30                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Updated**     | 2026-09-14                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Related EPs** | [EP-0002](../../docs/proposals/EP-0002-roadmap.md), [EP-0146](../../docs/proposals/EP-0146-domain-driven-memory-subsystem-architecture.md), [EP-0147](../../docs/proposals/EP-0147-agent-operational-workflows-and-context-preservation.md), [EP-0149](../../docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md), [EP-0150](../../docs/proposals/EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md) |
 
 ---
 
@@ -36,7 +36,7 @@ sequence:
 
 ## 3. Architectural Synthesis & Multi-EP Synergies
 
-The exploration identified and codified **9 Strategic Confluences and Multi-EP Synergies**:
+The exploration identified and codified **11 Strategic Confluences and Multi-EP Synergies**:
 
 1. The Unified Reactive Wire (`EP-0127`, `EP-0123`, `EP-0141`, `EP-0142`)
 2. High-Speed Cognitive Subgraph Engine (`EP-0140`, `EP-0136`, `EP-0139`)
@@ -49,19 +49,23 @@ The exploration identified and codified **9 Strategic Confluences and Multi-EP S
 9. Domain-Driven Memory Subsystem (`EP-0146`, `EP-0136`, `EP-0131`, `EP-0139`): Consolidating flat memory, recall,
    introspection, dreaming, provenance, diff, and sanitizer into the authoritative `tur.memory` package prevents cyclic
    import deadlocks and provides a unified substrate for higher-algebra tensors and epistemic elevation.
+10. Hierarchical Subsystem Grammar & Ambient Context (`EP-0149`, `EP-0147`): Consolidating multi-agent coordination commands under clean domain taxonomies (`tur board`, `tur message`, `tur note`, `tur agent`) with ambient `$TUR_AGENT_ID` auto-detection and machine-readable `--json` envelopes, establishing an intuitive, composable command interface before higher-tier features land.
+11. Swarm Fuzzing & Adversarial Fault Injection (`EP-0150`, `EP-0141`, `EP-0134`, `EP-0140`): Automated chaos engineering orchestrator running concurrent swarm simulations, lock contention surges, mid-flight process termination (SIGKILL), and contradiction avalanches to verify zero state corruption across the complete memory and IASP substrates.
 
 ---
 
 ## 4. The Verdict / Actionable Design
 
-The 5-Wave Tactical Execution Plan:
+The Phased Tactical Execution Plan:
 
 - **Wave 1:** Substrate Acceleration & Caching (`EP-0140`) — **[Complete / Final]**
 - **Wave 2:** Scaffolding, Observability & Sanitization (`EP-0135`, `EP-0142`, `EP-0143`) — **[Complete / Final]**
-- **Wave 3:** Storage, Lineage, Causal Signals & Task Workflows (`EP-0130`, `EP-0133`, `EP-0141`, `EP-0147`, `EP-0149`) — **[Complete / Final]**
+- **Wave 3:** Storage, Lineage, Causal Signals & Task Workflows (`EP-0130`, `EP-0133`, `EP-0141`, `EP-0147`) — **[Complete / Final]**
 - **Wave 4:** High-Speed Graph Engine, Domain Architecture & Budgeted Wake (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`,
-  `EP-0146`, `EP-0144`, `EP-0148`) — **[In Progress]** (`EP-0146`, `EP-0136`, `EP-0131`, `EP-0132`, `EP-0134`, `EP-0148` Complete; `EP-0144` Pending)
+  `EP-0146`, `EP-0144`, `EP-0148`) — **[Complete / Final]** (All 7 EPs implemented, verified, benchmarked, and Council-ratified)
+- **Wave 4.5 (Bridge):** Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy (`EP-0149`) — **[Next / Ready to Plan]**
 - **Wave 5:** Sovereign Epistemology, Dashboard & Higher Algebra (`EP-0137`, `EP-0138`, `EP-0139`, `EP-0145`) — **[Planned]**
+- **Wave 6 (Capstone):** Adversarial Chaos Engineering & Pre-v1.0.0 Swarm Fuzzing (`EP-0150`) — **[Planned / Hardening Gate]**
 
 ---
 
