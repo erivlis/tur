@@ -105,6 +105,18 @@ def resolve_data_dir() -> Path:
     return (Path.home() / '.tur').resolve()
 
 
+def resolve_models_dir(model_name: str | None = None) -> Path:
+    """Resolve directory for local ONNX embedding models and tokenizers (EP-0144).
+
+    Default: ~/.tur/models (or $TUR_DATA_DIR/models)
+    If model_name is provided, returns ~/.tur/models/<model_name>.
+    """
+    base = resolve_data_dir() / 'models'
+    if model_name:
+        return (base / model_name).resolve()
+    return base.resolve()
+
+
 def get_global_tur_dir() -> Path:
     """Returns the user-global directory for Tur state, respecting TUR_HOME / TUR_DATA_DIR."""
     return resolve_data_dir()

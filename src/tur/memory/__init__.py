@@ -13,8 +13,11 @@ from tur.memory.diff import (
 from tur.memory.dreaming import perform_sleep_dreaming, stage_sleep_dreaming
 from tur.memory.embeddings import (
     DEFAULT_EMBEDDING_MODEL,
+    MODEL_ALIASES,
+    RECOMMENDED_MODELS,
     VectorEngine,
     batch_cosine_similarity,
+    is_model_compatible,
     pure_cosine_similarity,
 )
 from tur.memory.introspection import (
@@ -56,6 +59,8 @@ from tur.memory.tms import (
 __all__ = [
     'DEFAULT_DECAY_POLICIES',
     'DEFAULT_EMBEDDING_MODEL',
+    'MODEL_ALIASES',
+    'RECOMMENDED_MODELS',
     'SEMANTIC_EDGE_WEIGHTS',
     'ContradictionInterceptor',
     'InvariantMemoryError',
@@ -75,6 +80,7 @@ __all__ = [
     'format_graph_as_mermaid',
     'get_git_commit_distance',
     'get_git_head_sha',
+    'is_model_compatible',
     'is_sensitive',
     'load_cognitive_map',
     'load_l2_graph_from_okf',

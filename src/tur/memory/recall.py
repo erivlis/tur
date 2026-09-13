@@ -7,7 +7,7 @@ from typing import Any
 
 import networkx as nx
 
-from tur.memory.embeddings import VectorEngine
+from tur.memory.embeddings import VectorEngine, is_model_compatible
 from tur.models import EdgeType, NodeType
 from tur.text import tokenize_query
 
@@ -399,7 +399,9 @@ def _l1_fallback_search(
         cand_pairs = [
             (m, m.embedding_vector)
             for m in mems
-            if m.embedding_vector is not None and len(m.embedding_vector) == len(query_vector)
+            if m.embedding_vector is not None
+            and len(m.embedding_vector) == len(query_vector)
+            and is_model_compatible(getattr(m, 'embedding_model', None), engine.model_name)
         ]
         if cand_pairs:
             candidate_vecs: list[Sequence[float]] = [vec for _, vec in cand_pairs]
@@ -501,6 +503,8 @@ def _augment_scores_with_vector_similarity(
             continue
         confidence = float(ndata.get('confidence', 1.0))
         if confidence <= 0.0:
+            continue
+        if not is_model_compatible(ndata.get('embedding_model'), engine.model_name):
             continue
         vec = ndata.get('embedding_vector')
         if vec and len(vec) == len(query_vector):

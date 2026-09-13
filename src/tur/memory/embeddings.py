@@ -16,6 +16,56 @@ from typing import Any
 
 DEFAULT_EMBEDDING_MODEL = 'all-MiniLM-L6-v2_onnx_int8'
 
+RECOMMENDED_MODELS: dict[str, dict[str, Any]] = {
+    'minilm': {
+        'id': 'all-MiniLM-L6-v2',
+        'repo': 'Xenova/all-MiniLM-L6-v2',
+        'dim': 384,
+        'size_mb': 22.8,
+        'files': ['onnx/model_quantized.onnx', 'tokenizer.json'],
+    },
+    'bge-small': {
+        'id': 'bge-small-en-v1.5',
+        'repo': 'Xenova/bge-small-en-v1.5',
+        'dim': 384,
+        'size_mb': 32.6,
+        'files': ['onnx/model_quantized.onnx', 'tokenizer.json'],
+    },
+    'e5-small': {
+        'id': 'e5-small-v2',
+        'repo': 'Xenova/e5-small-v2',
+        'dim': 384,
+        'size_mb': 32.6,
+        'files': ['onnx/model_quantized.onnx', 'tokenizer.json'],
+    },
+}
+
+MODEL_ALIASES: dict[str, str] = {
+    'minilm': 'all-MiniLM-L6-v2',
+    'all-minilm-l6-v2': 'all-MiniLM-L6-v2',
+    'all-minilm-l6-v2_onnx_int8': 'all-MiniLM-L6-v2',
+    'bge-small': 'bge-small-en-v1.5',
+    'bge-small-en-v1.5': 'bge-small-en-v1.5',
+    'e5-small': 'e5-small-v2',
+    'e5-small-v2': 'e5-small-v2',
+}
+
+
+def is_model_compatible(candidate_model: str | None, active_model: str | None) -> bool:
+    """Verifies whether a candidate vector's embedding model matches the active model.
+
+    Enforces the Strict Vector Space Homogeneity Invariant (EP-0144).
+    If candidate_model is None (legacy or test fixture), it is allowed to prevent breakage.
+    If both candidate_model and active_model are specified, their canonical IDs must match.
+    """
+    if not candidate_model or not active_model:
+        return True
+    if candidate_model == active_model:
+        return True
+    cand_norm = MODEL_ALIASES.get(candidate_model.lower(), candidate_model)
+    act_norm = MODEL_ALIASES.get(active_model.lower(), active_model)
+    return cand_norm.lower() == act_norm.lower()
+
 
 def pure_cosine_similarity(vec_a: Sequence[float], vec_b: Sequence[float]) -> float:
     """Computes cosine similarity between two dense or sparse vector sequences in pure Python.
@@ -94,6 +144,32 @@ class VectorEngine:
         self.providers = list(providers) if providers is not None else None
         self._session: Any = None
         self._tokenizer: Any = None
+
+        if self.model_path is None:
+            self._auto_discover_model()
+
+    def _auto_discover_model(self) -> None:
+        """Auto-discovers model and tokenizer from ~/.tur/models (EP-0144)."""
+        from tur.paths import resolve_models_dir
+
+        candidates = [self.model_name]
+        canonical = MODEL_ALIASES.get(self.model_name.lower())
+        if canonical and canonical not in candidates:
+            candidates.append(canonical)
+        for alias, rec in RECOMMENDED_MODELS.items():
+            if self.model_name.lower() in (alias, rec['id'].lower()) and rec['id'] not in candidates:
+                candidates.append(rec['id'])
+
+        for cand in candidates:
+            cand_dir = resolve_models_dir(cand)
+            if cand_dir.exists() and cand_dir.is_dir():
+                for m_file in ('model_quantized.onnx', 'model.onnx', f'{cand}.onnx'):
+                    cand_file = cand_dir / m_file
+                    if cand_file.exists():
+                        self.model_path = cand_file
+                        if self.tokenizer_path is None and (cand_dir / 'tokenizer.json').exists():
+                            self.tokenizer_path = cand_dir / 'tokenizer.json'
+                        return
 
     @property
     def is_onnx_available(self) -> bool:

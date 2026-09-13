@@ -27,7 +27,14 @@ from tur.cli.common import (
     require_human,
     run_scaffold_cli,
 )
-from tur.memory import MemoryManager
+from tur.memory import (
+    DEFAULT_EMBEDDING_MODEL,
+    MODEL_ALIASES,
+    RECOMMENDED_MODELS,
+    MemoryManager,
+    VectorEngine,
+    is_model_compatible,
+)
 from tur.models import (
     MemoryType,
     PersonaIndex,
@@ -37,6 +44,7 @@ from tur.paths import (
     PERSONA_FILENAME,
     PERSONAS_FILENAME,
     get_global_tur_dir,
+    resolve_models_dir,
     resolve_personas_base_dir,
     resolve_workspace_dir,
 )
@@ -74,11 +82,13 @@ persona_app = typer.Typer(help='Manage persona configurations and identities.')
 memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger.')
 session_app = typer.Typer(help='Start, end, and inspect session state and notes.')
 signal_app = typer.Typer(help='Inspect inter-agent signals and Lamport Vector Clocks (EP-0118, EP-0141).')
+model_app = typer.Typer(help='Manage ONNX embedding models and tokenizers (EP-0144).')
 
 app.add_typer(persona_app, name='persona')
 app.add_typer(memory_app, name='memory')
 app.add_typer(session_app, name='session')
 app.add_typer(signal_app, name='signal')
+app.add_typer(model_app, name='model')
 
 
 # -----------------------------------------------------------------------------
@@ -707,6 +717,143 @@ def memory_redact(
         handle_cli_error(e, 'Error redacting memory')
 
 
+@memory_app.command('embed')
+@require_human
+def memory_embed(
+    identifier: str | None = typer.Argument(None, help=HELP_ADMIN_PERSONA_ARG),
+    model: str = typer.Option(
+        DEFAULT_EMBEDDING_MODEL,
+        '--model',
+        '-m',
+        help='Target embedding model alias or name.',
+    ),
+    force: bool = typer.Option(
+        False,
+        '--force',
+        '-f',
+        help='Force re-embedding of memories even if already embedded with target model.',
+    ),
+    accelerate: bool = typer.Option(
+        False,
+        '--accelerate',
+        help='Enable hardware acceleration (DirectML / CUDA) for batch embedding.',
+    ),
+    include_archived: bool = typer.Option(
+        False,
+        '--include-archived',
+        help='Include archived memories in the embedding run.',
+    ),
+) -> None:
+    """Idempotently embed or migrate all L1/L2 memories to the target model space (EP-0144)."""
+    try:
+        active_id = persona.get_active_persona_id(identifier)
+        persona_dir = persona.get_persona_path(active_id)
+
+        engine = VectorEngine(model_name=model, accelerate=accelerate)
+        if not engine.is_onnx_available or not engine.is_tokenizers_available:
+            console.print(
+                '[yellow]Warning: ONNX Runtime or Tokenizers package not detected.[/yellow]\n'
+                'To generate local dense semantic embeddings, please install:\n'
+                '  [bold]pip install "tur[embeddings]"[/bold]\n'
+                'or for DirectML hardware acceleration:\n'
+                '  [bold]pip install onnxruntime-directml tokenizers numpy[/bold]'
+            )
+            raise typer.Exit(code=1)  # noqa: TRY301
+
+        if not engine.model_path or not engine.model_path.exists():
+            console.print(
+                f"[yellow]Warning: Model assets for '{model}' not found locally.[/yellow]\n"
+                f'Run `tur-adm model pull {model}` to download the model and tokenizer to ~/.tur/models/.'
+            )
+            raise typer.Exit(code=1)  # noqa: TRY301
+
+        memory_manager = MemoryManager(base_dir=persona_dir)
+        mems = memory_manager.load_all(include_archived=include_archived)
+
+        skipped_mems = 0
+        updated_mems = 0
+
+        for m in mems:
+            if (
+                not force
+                and m.embedding_vector is not None
+                and m.embedding_model
+                and is_model_compatible(m.embedding_model, engine.model_name)
+            ):
+                skipped_mems += 1
+                continue
+
+            try:
+                vec = engine.embed_text(m.content)
+                m.embedding_vector = vec
+                m.embedding_model = engine.model_name
+                memory_manager.save(m)
+                updated_mems += 1
+            except Exception as embed_err:
+                console.print(f"[red]Failed to embed memory '{m.id[:8]}': {embed_err}[/red]")
+
+        # L2 Knowledge Graph node migration
+        kg_path = persona_dir / 'knowledge_graph.yaml'
+        skipped_nodes = 0
+        updated_nodes = 0
+
+        if kg_path.exists():
+            try:
+                with open(kg_path, encoding='utf-8') as f:
+                    kg_data = yaml_safe_load(f.read()) or {}
+                nodes = kg_data.get('nodes', [])
+                for node in nodes:
+                    if (
+                        not force
+                        and node.get('embedding_vector') is not None
+                        and node.get('embedding_model')
+                        and is_model_compatible(node.get('embedding_model'), engine.model_name)
+                    ):
+                        skipped_nodes += 1
+                        continue
+
+                    text_parts = []
+                    if node.get('title'):
+                        text_parts.append(str(node['title']))
+                    if node.get('content'):
+                        text_parts.append(str(node['content']))
+                    node_text = '\n'.join(text_parts).strip() or str(node.get('id', ''))
+
+                    try:
+                        node['embedding_vector'] = engine.embed_text(node_text)
+                        node['embedding_model'] = engine.model_name
+                        updated_nodes += 1
+                    except Exception as node_err:
+                        console.print(f"[red]Failed to embed node '{node.get('id')}': {node_err}[/red]")
+
+                if updated_nodes > 0:
+                    with open(kg_path, 'w', encoding='utf-8') as f:
+                        yaml.dump(kg_data, f, sort_keys=False)
+            except Exception as kg_err:
+                console.print(f'[yellow]Warning: Could not update knowledge graph embeddings: {kg_err}[/yellow]')
+
+        table = Table(title=f'Embedding Migration Summary ({active_id})', box=box.ROUNDED)
+        table.add_column('Target Model', style='cyan bold')
+        table.add_column('L1 Processed', style='green')
+        table.add_column('L1 Skipped (Valid)', style='dim')
+        table.add_column('L2 Processed', style='green')
+        table.add_column('L2 Skipped (Valid)', style='dim')
+
+        table.add_row(
+            engine.model_name,
+            str(updated_mems),
+            str(skipped_mems),
+            str(updated_nodes),
+            str(skipped_nodes),
+        )
+        console.print(table)
+        console.print(f"[green]Successfully synchronized embeddings for persona '{active_id}'.[/green]")
+    except typer.Exit:
+        raise
+    except Exception as e:
+        handle_cli_error(e, 'Error embedding memories')
+
+
 # -----------------------------------------------------------------------------
 # SESSION COMMANDS GROUP
 # -----------------------------------------------------------------------------
@@ -1048,6 +1195,207 @@ def scaffold_cmd(
 ) -> None:
     """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
     run_scaffold_cli(format=format, output=output, force=force)
+
+
+# -----------------------------------------------------------------------------
+# MODEL COMMANDS GROUP (EP-0144)
+# -----------------------------------------------------------------------------
+
+
+@model_app.command('list')
+@require_human
+def model_list() -> None:
+    """List available recommended ONNX embedding models and local download status."""
+    try:
+        models_base = resolve_models_dir()
+        table = Table(title='ONNX Embedding Models (EP-0144)', box=box.ROUNDED)
+        table.add_column('Alias', style='cyan bold')
+        table.add_column('Canonical ID', style='bold')
+        table.add_column('Dimensions', justify='right')
+        table.add_column('Size (MB)', justify='right')
+        table.add_column('HuggingFace Repo', style='dim')
+        table.add_column('Status')
+
+        for alias, info in RECOMMENDED_MODELS.items():
+            model_id = info['id']
+            cand_dir = models_base / model_id
+            is_installed = cand_dir.exists() and (
+                (cand_dir / 'model_quantized.onnx').exists() or (cand_dir / 'model.onnx').exists()
+            )
+            status_str = '[bold green]Installed[/bold green]' if is_installed else '[dim]Available[/dim]'
+            table.add_row(
+                alias,
+                model_id,
+                str(info['dim']),
+                f'{info["size_mb"]:.1f}',
+                info['repo'],
+                status_str,
+            )
+
+        console.print(table)
+    except Exception as e:
+        handle_cli_error(e, 'Error listing models')
+
+
+@model_app.command('status')
+@require_human
+def model_status() -> None:
+    """Inspect local hardware acceleration providers, tokenizers, and active models."""
+    try:
+        engine = VectorEngine()
+        models_base = resolve_models_dir()
+
+        installed_models: list[str] = []
+        if models_base.exists():
+            for child in models_base.iterdir():
+                if child.is_dir() and ((child / 'model_quantized.onnx').exists() or (child / 'model.onnx').exists()):
+                    installed_models.append(child.name)
+
+        table = Table(box=box.SIMPLE, show_header=False)
+        table.add_column('Property', style='bold cyan')
+        table.add_column('Value')
+
+        tok_status = '[green]Yes[/green]' if engine.is_tokenizers_available else '[red]No[/red]'
+        table.add_row('ONNX Runtime Available', '[green]Yes[/green]' if engine.is_onnx_available else '[red]No[/red]')
+        table.add_row('Tokenizers Available', tok_status)
+
+        providers_str = 'None'
+        if engine.is_onnx_available:
+            with contextlib.suppress(Exception):
+                import onnxruntime as ort
+
+                providers_str = ', '.join(ort.get_available_providers())
+        table.add_row('Hardware Providers', providers_str)
+        table.add_row('Default Model Name', engine.model_name)
+        active_path_str = str(engine.model_path) if engine.model_path else '[yellow]None (not downloaded)[/yellow]'
+        table.add_row('Active Model Path', active_path_str)
+        table.add_row('Models Base Directory', str(models_base))
+        table.add_row('Installed Models', ', '.join(installed_models) if installed_models else 'None')
+
+        console.print(Panel(table, title='[bold]ONNX Embedding Subsystem Status[/bold]', border_style='cyan'))
+    except Exception as e:
+        handle_cli_error(e, 'Error checking model status')
+
+
+@model_app.command('pull')
+@require_human
+def model_pull(
+    model_alias: str = typer.Argument('minilm', help='Model alias (minilm, bge-small, e5-small) or HuggingFace repo.'),
+    force: bool = typer.Option(False, '--force', '-f', help='Force re-download even if already present.'),
+    target: Path | None = typer.Option(None, '--target', '-t', help='Custom destination directory.'),
+) -> None:
+    """Download ONNX quantized model and tokenizer files from HuggingFace."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        alias_lower = model_alias.lower()
+        if alias_lower in RECOMMENDED_MODELS:
+            info = RECOMMENDED_MODELS[alias_lower]
+            canonical_id = info['id']
+            repo = info['repo']
+            files = info['files']
+        elif '/' in model_alias:
+            repo = model_alias
+            canonical_id = model_alias.split('/')[-1]
+            files = ['onnx/model_quantized.onnx', 'tokenizer.json']
+        else:
+            matched = next((v for v in RECOMMENDED_MODELS.values() if v['id'].lower() == alias_lower), None)
+            if matched:
+                canonical_id = matched['id']
+                repo = matched['repo']
+                files = matched['files']
+            else:
+                rec_keys = ', '.join(RECOMMENDED_MODELS.keys())
+                console.print(
+                    f"[red]Error: Unknown model alias '{model_alias}'.[/red]\n"
+                    f'Choose from: {rec_keys} or specify a full HuggingFace repo (e.g. Xenova/all-MiniLM-L6-v2).'
+                )
+                raise typer.Exit(code=1)  # noqa: TRY301
+
+        dest_dir = target if target is not None else resolve_models_dir(canonical_id)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        console.print(f"[bold]Fetching '{canonical_id}' from HuggingFace repo '{repo}'...[/bold]")
+        console.print(f'Destination: [cyan]{dest_dir}[/cyan]')
+
+        from tur import __version__
+
+        headers = {'User-Agent': f'tur-adm/{__version__}'}
+
+        for remote_file in files:
+            local_name = remote_file.split('/')[-1]
+            local_path = dest_dir / local_name
+
+            if local_path.exists() and not force:
+                console.print(f'  - [dim]{local_name} already exists (skipping). Use --force to re-download.[/dim]')
+                continue
+
+            url = f'https://huggingface.co/{repo}/resolve/main/{remote_file}'
+            console.print(f'  - Downloading [cyan]{local_name}[/cyan] from {url}...')
+            req = urllib.request.Request(url, headers=headers)
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    data = resp.read()
+            except urllib.error.HTTPError as http_err:
+                if 'model_quantized.onnx' in remote_file and http_err.code == 404:
+                    alt_remote = remote_file.replace('model_quantized.onnx', 'model.onnx')
+                    alt_url = f'https://huggingface.co/{repo}/resolve/main/{alt_remote}'
+                    console.print(f'  - [yellow]model_quantized not found, falling back to {alt_url}...[/yellow]')
+                    alt_req = urllib.request.Request(alt_url, headers=headers)
+                    with urllib.request.urlopen(alt_req) as alt_resp:
+                        data = alt_resp.read()
+                else:
+                    raise
+
+            tmp_fd, tmp_file = tempfile.mkstemp(dir=dest_dir, prefix=f'{local_name}.tmp.')
+            try:
+                with open(tmp_fd, 'wb') as f:
+                    f.write(data)
+                shutil.move(tmp_file, local_path)
+            finally:
+                if Path(tmp_file).exists():
+                    with contextlib.suppress(OSError):
+                        Path(tmp_file).unlink()
+
+            size_mb = len(data) / (1024 * 1024)
+            console.print(f'  - [green]Successfully saved {local_name} ({size_mb:.2f} MB)[/green]')
+
+        console.print(f"[bold green]Model '{canonical_id}' is ready for vector retrieval.[/bold green]")
+    except typer.Exit:
+        raise
+    except Exception as e:
+        handle_cli_error(e, f"Error pulling model '{model_alias}'")
+
+
+@model_app.command('remove')
+@require_human
+def model_remove(
+    model_alias: str = typer.Argument(..., help='Model alias or name to delete.'),
+    yes: bool = typer.Option(False, '--yes', '-y', help='Confirm deletion without interactive prompt.'),
+) -> None:
+    """Delete a local model directory from ~/.tur/models/."""
+    try:
+        alias_lower = model_alias.lower()
+        canonical_id = model_alias
+        if alias_lower in RECOMMENDED_MODELS:
+            canonical_id = RECOMMENDED_MODELS[alias_lower]['id']
+        elif alias_lower in MODEL_ALIASES:
+            canonical_id = MODEL_ALIASES[alias_lower]
+
+        cand_dir = resolve_models_dir(canonical_id)
+        if not cand_dir.exists():
+            console.print(f"[yellow]No local model directory found for '{canonical_id}' at '{cand_dir}'.[/yellow]")
+            return
+
+        if not yes and not typer.confirm(f"Are you sure you want to delete '{cand_dir}'?"):
+            console.print('Deletion cancelled.')
+            return
+
+        shutil.rmtree(cand_dir)
+        console.print(f"[green]Successfully removed model directory: '{cand_dir}'[/green]")
+    except Exception as e:
+        handle_cli_error(e, f"Error removing model '{model_alias}'")
 
 
 def main():
