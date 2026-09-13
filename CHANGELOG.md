@@ -1,3 +1,10 @@
+## v0.15.0 (2026-09-14)
+
+### Feat
+
+- **EP-0144**: Adds model management and memory embedding CLI (EP-0144)
+- **EP-0144**: Enhance VectorEngine with tokenizer support and improved ONNX session management
+
 ## v0.14.0 (2026-09-10)
 
 ### Feat
