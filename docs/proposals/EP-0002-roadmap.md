@@ -15,7 +15,7 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-08-28      |
+| **Updated** | 2026-09-14      |
 
 ## Abstract
 
@@ -353,6 +353,11 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-09-14:**
+    * Completed and ratified Wave 4 implementation with **EP-0144 (Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval)**.
+    * Council of Giants review completed and unanimously ratified in **REV-0007**.
+    * Added comprehensive CodSpeed benchmarks in `benchmarks/test_bench_embeddings.py` (26/26 benchmarks passing).
+    * Marked Wave 4 as **Complete / Final** across all 7 proposals (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`, `EP-0146`, `EP-0144`, `EP-0148`).
 * **2026-09-08:**
     * Registered **EP-0147 (Agent Operational Workflows and Context Preservation Protocol)** and **EP-0149 (Two-Tier Hierarchical Command Grammar)**
       under Layer 3 (Storage, Lineage, Signal Infrastructure & Workflows) to formalize the 4-phase operational agent lifecycle, Task protocol,
