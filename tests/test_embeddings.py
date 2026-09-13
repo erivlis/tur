@@ -214,3 +214,161 @@ def test_l1_fallback_search_with_vector(tmp_path: Path):
     parsed = json.loads(res)
     assert len(parsed) == 1
     assert 'Persistent disk indexing' in parsed[0]['content']
+
+
+def test_vector_engine_real_tokenization_and_inference(tmp_path: Path):
+    """Verifies that input text is genuinely tokenized, passed to ONNX, mean-pooled, and L2 normalized."""
+    import numpy as np
+    from tokenizers import Tokenizer, models, pre_tokenizers
+
+    # 1. Create a real tokenizer and save to tmp_path / 'tokenizer.json'
+    vocab = {'[PAD]': 0, '[UNK]': 1, '[CLS]': 2, '[SEP]': 3, 'hello': 4, 'world': 5, 'tur': 6}
+    tok = Tokenizer(models.WordPiece(vocab=vocab, unk_token='[UNK]'))
+    tok.pre_tokenizer = pre_tokenizers.Whitespace()
+    tok.enable_padding(pad_id=0, pad_token='[PAD]')
+    tok.enable_truncation(max_length=512)
+
+    tok_path = tmp_path / 'tokenizer.json'
+    tok.save(str(tok_path))
+
+    # 2. Mock ONNX input meta and InferenceSession
+    class MockInputMeta:
+        def __init__(self, name: str):
+            self.name = name
+
+    captured_inputs: list[dict] = []
+
+    class MockSession:
+        def get_inputs(self):
+            return [MockInputMeta('input_ids'), MockInputMeta('attention_mask'), MockInputMeta('token_type_ids')]
+
+        def run(self, output_names, onnx_inputs):
+            captured_inputs.append(onnx_inputs)
+            # Produce distinct embeddings for tokens
+            # Shape: (1, seq_len, 4)
+            seq_len = onnx_inputs['input_ids'].shape[1]
+            # Give token 4 a distinct embedding from token 5
+            embeddings = np.ones((1, seq_len, 4), dtype=np.float32)
+            return [embeddings]
+
+    engine = VectorEngine(
+        model_name='all-MiniLM-L6-v2_onnx_int8',
+        model_path=tmp_path / 'dummy_model.onnx',
+        tokenizer_path=tok_path,
+    )
+    engine._session = MockSession()
+
+    # 3. Test embedding generation
+    vec = engine.embed_text('hello world')
+    assert len(vec) == 4
+    # Verify input_ids received by session correspond to 'hello' (4) and 'world' (5)
+    assert len(captured_inputs) == 1
+    passed_ids = captured_inputs[0]['input_ids'][0].tolist()
+    assert passed_ids == [4, 5]
+
+    # Verify L2 normalization (length == 1.0)
+    norm = np.linalg.norm(vec)
+    assert pytest.approx(norm, abs=1e-5) == 1.0
+
+    # 4. Verify different text yields different token inputs
+    vec2 = engine.embed_text('tur')
+    assert len(vec2) == 4
+    assert len(captured_inputs) == 2
+    assert captured_inputs[1]['input_ids'][0].tolist() == [6]
+
+
+def test_vector_engine_fallback_modes(tmp_path: Path, monkeypatch):
+    """Verifies graceful degradation when onnxruntime or tokenizers are unavailable."""
+    engine = VectorEngine(model_name='all-MiniLM-L6-v2_onnx_int8', model_path=tmp_path / 'dummy.onnx')
+
+    # Without tokenizer or session
+    assert engine.embed_text('test text') == []
+
+    # With monkeypatched flags
+    monkeypatch.setattr(VectorEngine, 'is_onnx_available', property(lambda self: False))
+    assert engine.embed_text('test text') == []
+
+    monkeypatch.setattr(VectorEngine, 'is_onnx_available', property(lambda self: True))
+    monkeypatch.setattr(VectorEngine, 'is_tokenizers_available', property(lambda self: False))
+    assert engine.embed_text('test text') == []
+
+
+def test_vector_engine_directory_tokenizer_resolution(tmp_path: Path):
+    """Verifies tokenizer.json resolution adjacent to model_path or inside model directory."""
+    from tokenizers import Tokenizer, models
+
+    vocab = {'[PAD]': 0, '[UNK]': 1}
+    tok = Tokenizer(models.WordPiece(vocab=vocab, unk_token='[UNK]'))
+    tok_path = tmp_path / 'tokenizer.json'
+    tok.save(str(tok_path))
+
+    # Test 1: model_path is a directory containing tokenizer.json
+    engine_dir = VectorEngine(model_path=tmp_path)
+    loaded_tok = engine_dir._get_tokenizer()
+    assert loaded_tok is not None
+
+    # Test 2: model_path is a file in the directory
+    engine_file = VectorEngine(model_path=tmp_path / 'model.onnx')
+    loaded_tok2 = engine_file._get_tokenizer()
+    assert loaded_tok2 is not None
+
+
+def test_vector_engine_hardware_acceleration_defaults_and_env(monkeypatch):
+    """Verifies opt-in hardware acceleration behavior, provider resolution, and environment triggers."""
+    import onnxruntime as ort
+
+    # Default is always strictly CPUExecutionProvider
+    engine_default = VectorEngine()
+    assert engine_default.accelerate is False
+    assert engine_default._resolve_providers() == ['CPUExecutionProvider']
+
+    # Explicit providers list overrides everything
+    engine_custom = VectorEngine(providers=['DmlExecutionProvider', 'CPUExecutionProvider'])
+    assert engine_custom._resolve_providers() == ['DmlExecutionProvider', 'CPUExecutionProvider']
+
+    # Opt-in acceleration via accelerate=True queries available providers and appends CPU fallback
+    monkeypatch.setattr(ort, 'get_available_providers', lambda: ['CUDAExecutionProvider', 'CPUExecutionProvider'])
+    engine_accel = VectorEngine(accelerate=True)
+    assert engine_accel.accelerate is True
+    assert engine_accel._resolve_providers() == ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+    # Ensure CPU fallback is appended if missing from available
+    monkeypatch.setattr(ort, 'get_available_providers', lambda: ['CoreMLExecutionProvider'])
+    engine_coreml = VectorEngine(accelerate=True)
+    assert engine_coreml._resolve_providers() == ['CoreMLExecutionProvider', 'CPUExecutionProvider']
+
+    # Opt-in via TUR_EMBEDDING_ACCELERATE environment variable
+    monkeypatch.setenv('TUR_EMBEDDING_ACCELERATE', '1')
+    engine_env = VectorEngine()
+    assert engine_env.accelerate is True
+
+
+def test_vector_engine_accelerator_fallback_on_session_error(tmp_path: Path, monkeypatch):
+    """Verifies that if an accelerator provider fails to initialize, VectorEngine falls back to pure CPU."""
+    import onnxruntime as ort
+
+    model_file = tmp_path / 'dummy.onnx'
+    model_file.write_text('dummy onnx bytes')
+
+    sessions_created = []
+
+    class MockSession:
+        def __init__(self, path, sess_options=None, providers=None):
+            sessions_created.append(providers)
+            if providers and 'CUDAExecutionProvider' in providers:
+                raise RuntimeError('CUDA driver initialization failed')
+            self.providers = providers
+
+    monkeypatch.setattr(ort, 'InferenceSession', MockSession)
+
+    engine = VectorEngine(
+        model_path=model_file,
+        accelerate=True,
+        providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
+    )
+    session = engine._get_session()
+    assert session is not None
+    # Verified that it first attempted CUDA, failed, and fell back to CPUExecutionProvider
+    assert len(sessions_created) == 2
+    assert sessions_created[0] == ['CUDAExecutionProvider', 'CPUExecutionProvider']
+    assert sessions_created[1] == ['CPUExecutionProvider']
