@@ -1,3 +1,14 @@
+## v0.15.1 (2026-09-18)
+
+### Refactor
+
+- **EP-0149**: Refactors Tur commands for EP-0149 grammar and ensures consistent agent ID.
+- **EP-0149**: Standardizes messages, session board, and CLI sub-apps.
+
+### Perf
+
+- Refactors YAML safe load benchmark to use the benchmark fixture.
+
 ## v0.15.0 (2026-09-14)
 
 ### Feat
