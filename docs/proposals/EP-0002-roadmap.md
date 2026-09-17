@@ -323,6 +323,10 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Canonical Text Tokenization, Identifier Validation, and Precompiled Regex Substrate (EP-0148) [Status: Implemented]:**
       Establishing `tur.text` as a zero-dependency foundational substrate for tokenization, identifier validation, and
       precompiled regex operations, eliminating HippoRAG retrieval seed drift and inner-loop lock contention.
+    * **Sovereign Note-Based Dreaming, Consolidation Provenance, and Session Lifecycle Pruning (EP-0152) [Status: Draft]:**
+      Establishes sovereign note-based dreaming directly from Tur session state, cryptographic memory-to-note consolidation
+      provenance, and bounded session lifecycle retention policies.
+
 * **Deferred / Rejected Tracks**
     * **Multi-Agent Swarms Synchronization (EP-0107) [Status: Deferred]:** Early swarm concurrency draft; superseded and
       realized through SQLite-backed IASP (EP-0118) and Reactive Signals (EP-0123).

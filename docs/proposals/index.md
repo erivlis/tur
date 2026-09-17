@@ -77,6 +77,7 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
 | **[0149](EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md)**         | [Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics](EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md) |   Implemented   | Standards Track | Establishes a two-tier command hierarchy for Tur, structuring ad-hoc commands into orthogonal domain subcommands (note, board, message, agent, task, memory) while standardizing --json output and ambient agent identity. |
 | **[0150](EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md)**      | [Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification](EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md)   |     *Draft*     | Standards Track | Establishes an automated, adversarial Chaos Engineering and Fuzzing test framework to stress-test Tur under high-concurrency swarms, mid-flight process crashes, lock contention, and contradiction avalanches.            |
 | **[0151](EP-0151-distributed-manifestation-architecture.md)**                      | [Distributed Manifestation Architecture — Formalizing Multi-Instance Entity Coordination](EP-0151-distributed-manifestation-architecture.md)                      |     *Draft*     | Standards Track | Formalizes Tur's distributed manifestation model across heterogeneous runtimes, establishing an ontological taxonomy that separates single-entity multi-instance coordination from generic multi-agent swarms.             |
+| **[0152](EP-0152-sovereign-note-based-dreaming-and-session-lifecycle.md)**         | [Sovereign Note-Based Dreaming, Consolidation Provenance, and Session Lifecycle Pruning](EP-0152-sovereign-note-based-dreaming-and-session-lifecycle.md)          |     *Draft*     | Standards Track | Establishes sovereign note-based dreaming directly from Tur session state, cryptographic memory-to-note consolidation provenance, and bounded session lifecycle retention policies.                                        |
 
 ---
 
@@ -119,6 +120,9 @@ project milestones, see the [**EP-0002: Project Roadmap**](EP-0002-roadmap.md).
 - **[EP-0144](EP-0144-zero-dependency-dense-semantic-embeddings.md)**: Zero-Dependency Dense Semantic Embeddings and
   ONNX Vector Retrieval
 - **[EP-0146](EP-0146-domain-driven-memory-subsystem-architecture.md)**: Domain-Driven Memory Subsystem Architecture
+- **[EP-0152](EP-0152-sovereign-note-based-dreaming-and-session-lifecycle.md)**: Sovereign Note-Based Dreaming,
+  Consolidation
+  Provenance, and Session Lifecycle Pruning
 
 ### 3. Architecture, Interfaces & Security
 
