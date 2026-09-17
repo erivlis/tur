@@ -81,13 +81,13 @@ def main_callback(
 persona_app = typer.Typer(help='Manage persona configurations and identities.')
 memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger.')
 session_app = typer.Typer(help='Start, end, and inspect session state and notes.')
-signal_app = typer.Typer(help='Inspect inter-agent signals and Lamport Vector Clocks (EP-0118, EP-0141).')
-model_app = typer.Typer(help='Manage ONNX embedding models and tokenizers (EP-0144).')
+message_app = typer.Typer(help='Inspect inter-agent messages and Lamport Vector Clocks.')
+model_app = typer.Typer(help='Manage ONNX embedding models and tokenizers.')
 
 app.add_typer(persona_app, name='persona')
 app.add_typer(memory_app, name='memory')
 app.add_typer(session_app, name='session')
-app.add_typer(signal_app, name='signal')
+app.add_typer(message_app, name='message')
 app.add_typer(model_app, name='model')
 
 
@@ -744,7 +744,7 @@ def memory_embed(
         help='Include archived memories in the embedding run.',
     ),
 ) -> None:
-    """Idempotently embed or migrate all L1/L2 memories to the target model space (EP-0144)."""
+    """Idempotently embed or migrate all L1/L2 memories to the target model space."""
     try:
         active_id = persona.get_active_persona_id(identifier)
         persona_dir = persona.get_persona_path(active_id)
@@ -978,17 +978,17 @@ def session_note(
 
 
 # -----------------------------------------------------------------------------
-# SIGNAL COMMANDS GROUP (EP-0118, EP-0141)
+# MESSAGE & SIGNAL INSPECTION COMMANDS GROUP
 # -----------------------------------------------------------------------------
 
 
-@signal_app.command('inspect')
+@message_app.command('inspect')
 @require_human
-def signal_inspect(
+def message_inspect(
     session_id: str | None = typer.Argument(None, help='The session ID (defaults to active session).'),
-    json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
+    json_mode: bool = typer.Option(False, '--json', '-j', help='Output raw JSON.'),
 ) -> None:
-    """Inspect the inter-agent signal queue and Lamport Vector Clocks (EP-0141)."""
+    """Inspect the inter-agent message queue and Lamport Vector Clocks."""
     try:
         resolved_sess_id = session_id or session.get_active_session_id()
         if not resolved_sess_id:
@@ -1009,40 +1009,40 @@ def signal_inspect(
 
         from tur.vector_clock import VectorClock
 
-        signals = []
+        messages = []
         for r in rows:
             d = dict(r)
             d['vector_clock'] = VectorClock(d.get('vector_clock'))
-            signals.append(d)
+            messages.append(d)
 
         if json_mode:
-            console.print(json.dumps(signals, indent=2))
+            console.print(json.dumps(messages, indent=2))
             return
 
-        if not signals:
-            console.print(f"No signals found in session '{resolved_sess_id}'.")
+        if not messages:
+            console.print(f"No messages found in session '{resolved_sess_id}'.")
             return
 
-        table = Table(title=f'IASP Signals & Vector Clocks ({resolved_sess_id})', show_lines=True)
+        table = Table(title=f'IASP Messages & Vector Clocks ({resolved_sess_id})', show_lines=True)
         table.add_column('Seq', style='dim', justify='right')
         table.add_column('Sender -> Recipient', style='cyan')
         table.add_column('Type', style='magenta')
         table.add_column('Vector Clock', style='green')
         table.add_column('Content')
 
-        for sig in signals:
-            v_clock_str = json.dumps(sig['vector_clock']) if sig['vector_clock'] else '{}'
-            content_snippet = sig['content'][:80] + ('...' if len(sig['content']) > 80 else '')
+        for msg in messages:
+            v_clock_str = json.dumps(msg['vector_clock']) if msg['vector_clock'] else '{}'
+            content_snippet = msg['content'][:80] + ('...' if len(msg['content']) > 80 else '')
             table.add_row(
-                str(sig['sequence']),
-                f'{sig["sender"]} -> {sig["recipient"]}',
-                sig['type'],
+                str(msg['sequence']),
+                f'{msg["sender"]} -> {msg["recipient"]}',
+                msg['type'],
                 v_clock_str,
                 content_snippet,
             )
         console.print(table)
     except Exception as e:
-        console.print(f'[red]Error inspecting signals: {e}[/red]')
+        console.print(f'[red]Error inspecting messages: {e}[/red]')
         raise typer.Exit(code=1)
 
 
@@ -1198,7 +1198,7 @@ def scaffold_cmd(
 
 
 # -----------------------------------------------------------------------------
-# MODEL COMMANDS GROUP (EP-0144)
+# MODEL COMMANDS GROUP
 # -----------------------------------------------------------------------------
 
 
@@ -1208,7 +1208,7 @@ def model_list() -> None:
     """List available recommended ONNX embedding models and local download status."""
     try:
         models_base = resolve_models_dir()
-        table = Table(title='ONNX Embedding Models (EP-0144)', box=box.ROUNDED)
+        table = Table(title='ONNX Embedding Models', box=box.ROUNDED)
         table.add_column('Alias', style='cyan bold')
         table.add_column('Canonical ID', style='bold')
         table.add_column('Dimensions', justify='right')

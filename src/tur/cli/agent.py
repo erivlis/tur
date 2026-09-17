@@ -11,6 +11,7 @@ from rich import box
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
+from typer.core import TyperGroup
 
 from tur import persona, session, task
 from tur.cli.common import (
@@ -46,6 +47,41 @@ from tur.session import update_system_state
 HELP_PERSONA_ARG = 'The name or UUID of the persona. If omitted, uses the default.'
 HELP_SESSION_ID_OPT = 'The session ID.'
 ERROR_NO_ACTIVE_SESSION_CLI = '[red]Error: No active session ID found.[/red]'
+
+
+class DefaultWriteCommandGroup(TyperGroup):
+    """Typer group that implicitly routes unknown first arguments to 'write'."""
+
+    def parse_args(self, ctx: typer.Context, args: list[str]) -> list[str]:
+        cmd_names = self.commands.keys()
+        if args and not any(arg in cmd_names for arg in args) and not any(arg in ('--help', '-h') for arg in args):
+            args = ['write', *list(args)]
+        return super().parse_args(ctx, args)
+
+
+class DefaultSendCommandGroup(TyperGroup):
+    """Typer group that implicitly routes unknown first arguments to 'send'."""
+
+    def parse_args(self, ctx: typer.Context, args: list[str]) -> list[str]:
+        cmd_names = self.commands.keys()
+        if args and not any(arg in cmd_names for arg in args) and not any(arg in ('--help', '-h') for arg in args):
+            args = ['send', *list(args)]
+        return super().parse_args(ctx, args)
+
+
+def emit_json_error(error_type: str, message: str, code: int = 1) -> None:
+    """Emits a structured JSON error envelope to stderr and exits."""
+    import sys
+
+    err_payload = {
+        'status': 'error',
+        'error_type': error_type,
+        'message': message,
+    }
+    sys.stderr.write(json.dumps(err_payload, indent=2) + '\n')
+    sys.stderr.flush()
+    raise typer.Exit(code=code)
+
 
 app = typer.Typer(
     help='Tur: Persona safe agent runtime.',
@@ -89,7 +125,7 @@ def wake(
         None,
         '--token-budget',
         '-b',
-        help='Token budget for wake prompt compilation (EP-0132). Pass 0 or omit for unbounded.',
+        help='Token budget for wake prompt compilation. Pass 0 or omit for unbounded.',
     ),
     identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
 ):
@@ -269,7 +305,7 @@ def learn(
             else:
                 c = conflicts[0]
                 console.print(
-                    f'\n[bold yellow]⚠️  TMS Contradiction Detected (EP-0134):[/bold yellow]\n'
+                    f'\n[bold yellow]⚠️  TMS Contradiction Detected:[/bold yellow]\n'
                     f'New assertion conflicts with active memory [bold]{c.existing_memory_id}[/bold]:\n'
                     f'  [cyan]Existing:[/cyan] "{c.existing_content}"\n'
                     f'  [cyan]New:[/cyan]      "{content}"\n'
@@ -326,6 +362,7 @@ def recall(
     ),
     mermaid: bool = typer.Option(False, '--mermaid', help='Render retrieved subgraph as Mermaid flowchart.'),
     top_k: int = typer.Option(5, '--top-k', '-k', help='Maximum number of memory nodes to return.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output results as JSON.'),
 ):
     """Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval."""
     active_id = persona.get_active_persona_id(identifier)
@@ -343,26 +380,19 @@ def recall(
 
 
 @app.command()
-@cli_guard('Error saving note')
-def note(
-    content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
-    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
-    session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
-):
-    """Append a note to the active session's notes.yaml."""
-    res = session.note_logic(content, session_id=session_id, identifier=identifier)
-    console.print(f'[green]{res}[/green]')
-
-
-@app.command()
 @cli_guard()
 def status(
     identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output status as raw JSON.'),
 ):
     """Show the current persona, session, and memory status."""
     active_id = persona.get_active_persona_id(identifier)
     persona_dir = persona.get_persona_path(active_id)
     summary = session.get_persona_status_summary(persona_dir=persona_dir, persona_id=active_id)
+
+    if json_output:
+        console.print(json.dumps(summary, indent=2, default=str))
+        return
 
     # --- Memory stats ---
     stats = summary['memory_stats']
@@ -538,14 +568,14 @@ def sleep(
     console.print('[bold green]State saved. Persona is now sleeping.[/bold green]')
 
 
-def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
+def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None) -> tuple[str, str]:
     # 1. Resolve session_id
     sess_id = session_id_opt or session.get_active_session_id()
     if not sess_id:
         console.print("[red]Error: No active session ID found. Run 'wake' first or provide --session-id option.[/red]")
         raise typer.Exit(code=1)
 
-    # 2. Resolve agent_id
+    # 2. Resolve explicit --agent-id flag
     env_agent_id = os.getenv('TUR_AGENT_ID')
     if (
         agent_id_opt
@@ -559,45 +589,375 @@ def resolve_cli_context(agent_id_opt: str | None, session_id_opt: str | None):
         )
         raise typer.Exit(code=1)
 
-    agent_id = agent_id_opt or env_agent_id
-    if not agent_id:
-        active_agents = []
+    if agent_id_opt:
         with contextlib.suppress(Exception):
-            agents = session.list_agents_logic(sess_id)
-            active_agents = [a['id'] for a in agents if a['status'] == 'active']
-
-        if len(active_agents) == 1:
-            agent_id = active_agents[0]
-        elif len(active_agents) > 1:
-            console.print(
-                f'[red]AmbiguousIdentityError: Multiple active agents found: {active_agents}. '
-                f'Please specify --agent-id.[/red]'
+            session.register_agent_logic(
+                sess_id,
+                harness=os.environ.get('TUR_HARNESS', 'cli'),
+                agent_id=agent_id_opt,
             )
-            raise typer.Exit(code=1)
+        return agent_id_opt, sess_id
 
-    if not agent_id:
-        model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
+    # 3. Check $TUR_AGENT_ID set in env
+    if env_agent_id:
+        return env_agent_id, sess_id
 
-        short_hex = uuid4().hex[:8]
-        agent_id = f'{model_slug}_cli_{short_hex}'
+    # 4. Query active session agents
+    active_agents: list[dict] = []
+    with contextlib.suppress(Exception):
+        agents = session.list_agents_logic(sess_id)
+        active_agents = [a for a in agents if a.get('status') == 'active']
 
+    if len(active_agents) == 1:
+        agent_id = active_agents[0]['id']
+        os.environ['TUR_AGENT_ID'] = agent_id
+        return agent_id, sess_id
+
+    if len(active_agents) > 1:
+        # Match manifestation by OS PID / harness context
+        harness_env = os.environ.get('TUR_HARNESS')
+        run_token_env = os.environ.get('TUR_RUN_TOKEN')
+        for a in active_agents:
+            if run_token_env and a.get('run_token') == run_token_env:
+                agent_id = a['id']
+                os.environ['TUR_AGENT_ID'] = agent_id
+                return agent_id, sess_id
+            if harness_env and a.get('harness') == harness_env:
+                agent_id = a['id']
+                os.environ['TUR_AGENT_ID'] = agent_id
+                return agent_id, sess_id
+
+    # Auto-spawn and register ephemeral agent ID (Count > 1 with no match, or Count == 0)
+    model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
+    short_hex = uuid4().hex[:8]
+    agent_id = f'{model_slug}_cli_{short_hex}'
+    harness_name = os.environ.get('TUR_HARNESS', 'cli')
+
+    with contextlib.suppress(Exception):
+        session.register_agent_logic(
+            sess_id,
+            harness=harness_name,
+            agent_id=agent_id,
+        )
+
+    os.environ['TUR_AGENT_ID'] = agent_id
     return agent_id, sess_id
 
 
-@app.command()
-def list_agents(
-    session_id: str | None = typer.Option(None, help='Session ID. If omitted, uses active session.'),
-    json_mode: bool = typer.Option(False, '--json', help='Output in JSON format.'),
+# ============================================================================
+# Tier 2: Sub-apps
+# ============================================================================
+
+note_app = typer.Typer(
+    cls=DefaultWriteCommandGroup,
+    help='Session scratchpad notes (Tier 2).',
+    no_args_is_help=True,
+)
+
+
+@note_app.command('write')
+@cli_guard('Error saving note')
+def note_write_cmd(
+    content: str = typer.Argument(..., help='The transient content/note of the current session state.'),
+    identifier: str | None = typer.Argument(None, help=HELP_PERSONA_ARG),
+    session_id: str | None = typer.Option(None, help='The session ID to isolate this note to.'),
 ):
+    """Append a chronological note to the active session."""
+    res = session.note_logic(content, session_id=session_id, identifier=identifier)
+    console.print(f'[green]{res}[/green]')
+
+
+@note_app.command('read')
+def note_read_cmd(
+    limit: int = typer.Option(50, '--limit', '-l', help='Max number of notes to retrieve.'),
+    session_id: str | None = typer.Option(None, help="The session ID, or 'previous' for immediate parent session."),
+    include_previous: bool = typer.Option(False, '--include-previous', help='Prepend notes from the parent session.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output notes as JSON.'),
+):
+    """Read chronological notes from the active session."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_output:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
+    try:
+        notes = session.read_notes_logic(sess_id, limit=limit, include_previous=include_previous)
+        if json_output:
+            console.print(json.dumps(notes, indent=2, default=str))
+            return
+        if not notes:
+            console.print('[dim]No broadcast notes found.[/dim]')
+            return
+        for note_data in notes:
+            console.print(f'[bold yellow][{note_data["sender"]}][/bold yellow] ({note_data["timestamp"]})')
+            console.print(f'  {note_data["content"]}')
+            console.print('')
+    except Exception as e:
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error reading notes: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+board_app = typer.Typer(
+    help='Shared session board parameters (Blackboard).',
+    no_args_is_help=True,
+)
+
+
+@board_app.command('write')
+def board_write_cmd(
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    value: str = typer.Argument(..., help='The value string.'),
+    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Write or update parameters on the shared session board."""
+    try:
+        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
+        res = session.write_board_logic(sess_id, key, value, modifier_id)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error writing to board: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@board_app.command('read')
+def board_read_cmd(
+    key: str = typer.Argument(..., help='The coordinate key.'),
+    raw: bool = typer.Option(False, '--raw', help='Output raw value without decoration.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output as structured JSON.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Read a coordinate value from the board."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_output:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
+    try:
+        val = session.read_board_logic(sess_id, key)
+        if val is None:
+            if json_output:
+                emit_json_error('KeyNotFoundError', f"Key '{key}' not found on session board.")
+            console.print(f"[dim]Key '{key}' not set.[/dim]")
+        else:
+            if json_output:
+                try:
+                    parsed = json.loads(val)
+                except Exception:
+                    parsed = val
+                console.print(json.dumps({'key': key, 'value': parsed, 'session_id': sess_id}, indent=2))
+            elif raw:
+                print(val, end='')
+            else:
+                console.print(val)
+    except Exception as e:
+        if isinstance(e, typer.Exit):
+            raise
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error reading from board: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@board_app.command('list')
+def board_list_cmd(
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output as structured JSON.'),
+):
+    """List all keys and metadata currently on the active board."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_output:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
+    try:
+        items = session.list_board_logic(sess_id)
+        if json_output:
+            console.print(json.dumps(items, indent=2, default=str))
+            return
+
+        if not items:
+            console.print('[dim]Session board is empty.[/dim]')
+            return
+
+        table = Table(title=f'Board Parameters for Session {sess_id}', box=box.ROUNDED)
+        table.add_column('Key', style='bold cyan')
+        table.add_column('Value', style='white')
+        table.add_column('Updated By', style='yellow')
+        table.add_column('Updated At', style='dim')
+
+        for item in items:
+            val_snippet = str(item['value'])
+            if len(val_snippet) > 60:
+                val_snippet = val_snippet[:57] + '...'
+            table.add_row(item['key'], val_snippet, item['updated_by'], str(item['updated_at']))
+
+        console.print(table)
+    except Exception as e:
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error listing board parameters: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@board_app.command('clear')
+def board_clear_cmd(
+    key: str | None = typer.Argument(None, help='Coordinate key to clear. If omitted, requires --all.'),
+    all: bool = typer.Option(False, '--all', help='Clear all coordinates on the session board.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Remove a key or clear the session board."""
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
         console.print(ERROR_NO_ACTIVE_SESSION_CLI)
         raise typer.Exit(code=1)
 
+    if not key and not all:
+        console.print("[red]Error: Specify a key to clear or pass '--all' to clear the entire board.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        res = session.clear_board_logic(sess_id, key=key, clear_all=all)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error clearing board: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+message_app = typer.Typer(
+    cls=DefaultSendCommandGroup,
+    help='Inter-agent messaging and coordination.',
+    no_args_is_help=True,
+)
+
+
+@message_app.command('send')
+def message_send_cmd(
+    target_or_content: str = typer.Argument(..., help='Recipient or content string.'),
+    content: str | None = typer.Argument(None, help='Content string if first argument was recipient.'),
+    recipient: str = typer.Option(
+        '*', '--recipient', '-r', '--to', help='The recipient agent ID, handle, or "*" for broadcast.'
+    ),
+    type: str = typer.Option(
+        'inform', '--type', '-t', help='The message type (inform, query, delegate, ack, warn, etc.).'
+    ),
+    agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Send a vector-clock stamped message to peer manifestations."""
+    if content is not None:
+        actual_recipient = target_or_content
+        actual_content = content
+    else:
+        actual_recipient = recipient
+        actual_content = target_or_content
+
+    try:
+        sender_id, sess_id = resolve_cli_context(agent_id, session_id)
+        sig_id = session.message_logic(sess_id, sender_id, actual_recipient, actual_content, type)
+        console.print(f'[green]Message sent successfully. ID: {sig_id}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error sending message: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@message_app.command('read')
+def message_read_cmd(
+    unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread messages or all.'),
+    json_mode: bool = typer.Option(False, '--json', '-j', help='Output raw JSON.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Retrieve incoming coordination messages."""
+    try:
+        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
+        signals = session.read_messages_logic(sess_id, reader_id, unread_only)
+
+        if json_mode:
+            console.print(json.dumps(signals, indent=2, default=str))
+        else:
+            if not signals:
+                console.print('[dim]No incoming messages.[/dim]')
+                return
+            for sig in signals:
+                console.print(f'[bold cyan][{sig["sender"]} -> {sig["recipient"]}][/bold cyan] ({sig["type"]})')
+                clock_str = f' | VectorClock: {sig["vector_clock"]}' if sig.get('vector_clock') else ''
+                console.print(f'  Sequence: {sig["sequence"]}{clock_str} | Timestamp: {sig["timestamp"]}')
+                console.print(f'  Content: {sig["content"]}')
+                console.print('')
+    except Exception as e:
+        if json_mode:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error reading messages: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+@message_app.command('ack')
+def message_ack_cmd(
+    message_ids: str | None = typer.Argument(None, help='Comma-separated list of message IDs to acknowledge.'),
+    all: bool = typer.Option(False, '--all', help='Acknowledge all unread messages for this agent.'),
+    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+):
+    """Acknowledge read messages to mark them as read."""
+    if not message_ids and not all:
+        console.print("[red]Error: Specify message IDs or pass '--all' to acknowledge all messages.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
+        if all:
+            unread = session.read_messages_logic(sess_id, reader_id, unread_only=True)
+            ids = [s['id'] for s in unread]
+        else:
+            ids = [mid.strip() for mid in (message_ids or '').split(',') if mid.strip()]
+
+        if not ids:
+            console.print('[dim]No messages to acknowledge.[/dim]')
+            return
+
+        res = session.ack_messages_logic(sess_id, reader_id, ids)
+        console.print(f'[green]{res}[/green]')
+    except Exception as e:
+        console.print(f'[red]Error acknowledging messages: {e}[/red]')
+        raise typer.Exit(code=1)
+
+
+agent_app_sub = typer.Typer(
+    help='Manifestation and swarm management.',
+    no_args_is_help=True,
+)
+
+
+@agent_app_sub.command('list')
+def agent_list_cmd(
+    session_id: str | None = typer.Option(None, help='Session ID. If omitted, uses active session.'),
+    active_only: bool = typer.Option(False, '--active-only', help='Filter to only active manifestations.'),
+    json_mode: bool = typer.Option(False, '--json', '-j', help='Output in JSON format.'),
+):
+    """List all active agent manifestations and heartbeats."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_mode:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
     try:
         agents = session.list_agents_logic(sess_id)
+        if active_only:
+            agents = [a for a in agents if a.get('status') == 'active']
+
         if json_mode:
-            console.print(json.dumps(agents, indent=2))
+            console.print(json.dumps(agents, indent=2, default=str))
         else:
             table = Table(title=f'Manifestations in Session {sess_id}')
             table.add_column('Agent ID', style='cyan')
@@ -608,75 +968,98 @@ def list_agents(
 
             for agent in agents:
                 table.add_row(
-                    agent['id'], agent['harness'], agent['substrate'], agent['status'], agent['last_heartbeat']
+                    agent['id'], agent['harness'], agent['substrate'], agent['status'], str(agent['last_heartbeat'])
                 )
             console.print(table)
     except Exception as e:
+        if json_mode:
+            emit_json_error(type(e).__name__, str(e))
         console.print(f'[red]Error listing agents: {e}[/red]')
         raise typer.Exit(code=1)
 
 
-@app.command()
-def signal(
-    to: str = typer.Argument(..., help='The recipient agent ID or dot-notation handle, or "*" for broadcast.'),
-    content: str = typer.Argument(..., help='The content string of the signal.'),
-    type: str = typer.Option('inform', help='The signal type (inform, query, delegate, ack, warn, etc.).'),
-    agent_id: str | None = typer.Option(None, help='The sender agent ID.'),
+@agent_app_sub.command('whoami')
+def agent_whoami_cmd(
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output as structured JSON.'),
+    agent_id: str | None = typer.Option(None, help='The agent ID override.'),
     session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
-    """Send a coordination message signal to another manifestation."""
-    try:
-        sender_id, sess_id = resolve_cli_context(agent_id, session_id)
-        sig_id = session.signal_logic(sess_id, sender_id, to, content, type)
-        console.print(f'[green]Signal sent successfully. ID: {sig_id}[/green]')
-    except Exception as e:
-        console.print(f'[red]Error sending signal: {e}[/red]')
+    """Display current inferred agent identity, harness, and session context."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_output:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
         raise typer.Exit(code=1)
 
-
-@app.command()
-def read_signals(
-    unread_only: bool = typer.Option(True, '--unread-only/--all', help='Retrieve only unread signals or all.'),
-    json_mode: bool = typer.Option(False, '--json', help='Output raw JSON.'),
-    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
-    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
-):
-    """Retrieve incoming coordination signals."""
     try:
-        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
-        signals = session.read_signals_logic(sess_id, reader_id, unread_only)
+        resolved_id, _ = resolve_cli_context(agent_id, sess_id)
+        agents = session.list_agents_logic(sess_id)
+        matched = next((a for a in agents if a['id'] == resolved_id), None)
 
-        if json_mode:
-            console.print(json.dumps(signals, indent=2))
+        info = {
+            'agent_id': resolved_id,
+            'session_id': sess_id,
+            'harness': matched['harness'] if matched else os.environ.get('TUR_HARNESS', 'terminal'),
+            'substrate': matched['substrate'] if matched else os.environ.get('TUR_SUBSTRATE', 'local'),
+            'status': matched['status'] if matched else 'active',
+            'run_token': matched.get('run_token') if matched else os.environ.get('TUR_RUN_TOKEN'),
+            'last_heartbeat': str(matched['last_heartbeat']) if matched else None,
+        }
+
+        if json_output:
+            console.print(json.dumps(info, indent=2))
         else:
-            if not signals:
-                console.print('[dim]No incoming signals.[/dim]')
-                return
-            for sig in signals:
-                console.print(f'[bold cyan][{sig["sender"]} -> {sig["recipient"]}][/bold cyan] ({sig["type"]})')
-                clock_str = f' | VectorClock: {sig["vector_clock"]}' if sig.get('vector_clock') else ''
-                console.print(f'  Sequence: {sig["sequence"]}{clock_str} | Timestamp: {sig["timestamp"]}')
-                console.print(f'  Content: {sig["content"]}')
-                console.print('')
+            table = Table(title='Agent Identity (whoami)', box=box.ROUNDED)
+            table.add_column('Field', style='bold cyan')
+            table.add_column('Value', style='white')
+            table.add_row('Agent ID', info['agent_id'])
+            table.add_row('Session ID', info['session_id'])
+            table.add_row('Harness', info['harness'])
+            table.add_row('Substrate', info['substrate'])
+            table.add_row('Status', info['status'])
+            if info['run_token']:
+                table.add_row('Run Token', str(info['run_token']))
+            console.print(table)
     except Exception as e:
-        console.print(f'[red]Error reading signals: {e}[/red]')
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error resolving agent identity: {e}[/red]')
         raise typer.Exit(code=1)
 
 
-@app.command()
-def ack_signals(
-    signal_ids: str = typer.Argument(..., help='Comma-separated list of signal IDs to acknowledge.'),
-    agent_id: str | None = typer.Option(None, help='The reader agent ID.'),
+@agent_app_sub.command('register')
+def agent_register_cmd(
+    harness: str = typer.Option(..., '--harness', '-H', help='The harness name (e.g. claude, antigravity, terminal).'),
+    agent_id: str | None = typer.Option(None, '--agent-id', '-a', help='Optional explicit agent ID.'),
+    substrate: str = typer.Option('local', '--substrate', '-s', help='The substrate name.'),
     session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output registered info as JSON.'),
 ):
-    """Acknowledge read signals to mark them as read."""
+    """Explicitly register a new manifestation."""
+    sess_id = session_id or session.get_active_session_id()
+    if not sess_id:
+        if json_output:
+            emit_json_error('SessionNotFoundError', 'No active session ID found.')
+        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
+        raise typer.Exit(code=1)
+
     try:
-        reader_id, sess_id = resolve_cli_context(agent_id, session_id)
-        ids = [sid.strip() for sid in signal_ids.split(',') if sid.strip()]
-        res = session.ack_signals_logic(sess_id, reader_id, ids)
-        console.print(f'[green]{res}[/green]')
+        registered = session.register_agent_logic(
+            sess_id,
+            harness=harness,
+            agent_id=agent_id,
+            substrate=substrate,
+        )
+        if json_output:
+            console.print(json.dumps(registered, indent=2))
+        else:
+            msg = f"Registered agent '{registered['id']}' under harness '{registered['harness']}'."
+            console.print(f'[bold green]{msg}[/bold green]')
     except Exception as e:
-        console.print(f'[red]Error acknowledging signals: {e}[/red]')
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
+        console.print(f'[red]Error registering agent: {e}[/red]')
         raise typer.Exit(code=1)
 
 
@@ -685,14 +1068,14 @@ def ack_signals(
 def diff(
     base_session_id: str | None = typer.Argument(None, help='Base session ID (or predecessor if omitted).'),
     target_session_id: str | None = typer.Argument(None, help='Target session ID (or active session if omitted).'),
-    json_output: bool = typer.Option(False, '--json', help='Output diff as structured JSON.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output diff as structured JSON.'),
     type_filter: str | None = typer.Option(None, '--type', help='Filter by memory type (e.g. fact, insight).'),
     scope_filter: str | None = typer.Option(
         None, '--scope', help='Filter by memory scope (e.g. incarnation, universal).'
     ),
     identifier: str | None = typer.Option(None, '--persona', help='Persona identifier (default: active persona).'),
 ):
-    """Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133)."""
+    """Inspect memory mutations, additions, supersessions, and contradictions across sessions."""
     deltas = compute_session_diff(
         base_session_id=base_session_id,
         target_session_id=target_session_id,
@@ -707,71 +1090,8 @@ def diff(
         console.print(format_diff_terminal(deltas, session_id=target_session_id))
 
 
-@app.command()
-def read_notes(
-    limit: int = typer.Option(50, help='Max number of notes to retrieve.'),
-    session_id: str | None = typer.Option(None, help="The session ID, or 'previous' for immediate parent session."),
-    include_previous: bool = typer.Option(False, '--include-previous', help='Prepend notes from the parent session.'),
-):
-    sess_id = session_id or session.get_active_session_id()
-    if not sess_id:
-        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
-        raise typer.Exit(code=1)
-
-    try:
-        notes = session.read_notes_logic(sess_id, limit=limit, include_previous=include_previous)
-        if not notes:
-            console.print('[dim]No broadcast notes found.[/dim]')
-            return
-        for note_data in notes:
-            console.print(f'[bold yellow][{note_data["sender"]}][/bold yellow] ({note_data["timestamp"]})')
-            console.print(f'  {note_data["content"]}')
-            console.print('')
-    except Exception as e:
-        console.print(f'[red]Error reading notes: {e}[/red]')
-        raise typer.Exit(code=1)
-
-
-@app.command()
-def whiteboard_write(
-    key: str = typer.Argument(..., help='The coordinate key.'),
-    value: str = typer.Argument(..., help='The value string.'),
-    agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
-    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
-):
-    """Write or update parameters on the shared session whiteboard."""
-    try:
-        modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
-        res = session.write_whiteboard_logic(sess_id, key, value, modifier_id)
-        console.print(f'[green]{res}[/green]')
-    except Exception as e:
-        console.print(f'[red]Error writing to whiteboard: {e}[/red]')
-        raise typer.Exit(code=1)
-
-
-@app.command()
-def whiteboard_read(
-    key: str = typer.Argument(..., help='The coordinate key.'),
-    session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
-):
-    sess_id = session_id or session.get_active_session_id()
-    if not sess_id:
-        console.print(ERROR_NO_ACTIVE_SESSION_CLI)
-        raise typer.Exit(code=1)
-
-    try:
-        val = session.read_whiteboard_logic(sess_id, key)
-        if val is None:
-            console.print(f"[dim]Key '{key}' not set.[/dim]")
-        else:
-            console.print(val)
-    except Exception as e:
-        console.print(f'[red]Error reading from whiteboard: {e}[/red]')
-        raise typer.Exit(code=1)
-
-
 task_app = typer.Typer(
-    help='Task coordination and context preservation commands (EP-0147, EP-0149).',
+    help='Task coordination and context preservation commands.',
     no_args_is_help=True,
 )
 
@@ -779,9 +1099,9 @@ task_app = typer.Typer(
 @task_app.command('list')
 def task_list_cmd(
     session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
-    json_output: bool = typer.Option(False, '--json', help='Output as raw JSON.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output as raw JSON.'),
 ):
-    """List all tasks registered on the session whiteboard."""
+    """List all tasks registered on the session board."""
     sess_id = session_id or session.get_active_session_id()
     if not sess_id:
         console.print(ERROR_NO_ACTIVE_SESSION_CLI)
@@ -795,10 +1115,10 @@ def task_list_cmd(
         return
 
     if not tasks:
-        console.print('[dim]No tasks found on session whiteboard.[/dim]')
+        console.print('[dim]No tasks found on session board.[/dim]')
         return
 
-    table = Table(title='Tasks (EP-0147, EP-0149)', box=box.ROUNDED)
+    table = Table(title='Tasks', box=box.ROUNDED)
     table.add_column('Task ID', style='bold cyan')
     table.add_column('Title', style='white')
     table.add_column('Status', style='bold')
@@ -820,7 +1140,7 @@ def task_list_cmd(
 def task_show_cmd(
     task_id: str | None = typer.Argument(None, help='Optional task ID. If omitted, shows active task.'),
     session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
-    json_output: bool = typer.Option(False, '--json', help='Output as raw JSON.'),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output as raw JSON.'),
 ):
     """Display details and checklist for a task."""
     sess_id = session_id or session.get_active_session_id()
@@ -864,7 +1184,7 @@ def task_show_cmd(
 
 @task_app.command('claim')
 def task_claim_cmd(
-    task_id: str = typer.Argument(..., help='The task ID (e.g. EP-0147).'),
+    task_id: str = typer.Argument(..., help='The task ID (e.g. task-123).'),
     title: str = typer.Option(..., '--title', '-t', help='Human-readable title of the task.'),
     objective: str = typer.Option('', '--objective', '-o', help='Objective of the task.'),
     work_items: list[str] | None = typer.Option(None, '--item', '-i', help='Work item checklist items.'),
@@ -875,7 +1195,7 @@ def task_claim_cmd(
     agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
     session_id: str | None = typer.Option(None, help=HELP_SESSION_ID_OPT),
 ):
-    """Claim a task on the session whiteboard."""
+    """Claim a task on the session board."""
     try:
         modifier_id, sess_id = resolve_cli_context(agent_id, session_id)
         t = task.claim_task(
@@ -914,11 +1234,10 @@ def task_check_cmd(
         raise typer.Exit(code=1)
 
 
-@task_app.command('yield', hidden=True)
 @task_app.command('handover')
 def task_handover_cmd(
     task_id: str | None = typer.Argument(
-        None, help='Optional task ID to handover/yield. If omitted, hands over active task.'
+        None, help='Optional task ID to handover. If omitted, hands over active task.'
     ),
     note: str | None = typer.Option(None, '--note', '-n', help='Optional handover note.'),
     agent_id: str | None = typer.Option(None, help='The modifier agent ID.'),
@@ -934,7 +1253,6 @@ def task_handover_cmd(
         raise typer.Exit(code=1)
 
 
-@task_app.command('seal', hidden=True)
 @task_app.command('complete')
 def task_complete_cmd(
     task_id: str | None = typer.Argument(None, help='Optional task ID to complete. If omitted, completes active task.'),
@@ -976,6 +1294,7 @@ def verify(
     strict: bool = typer.Option(
         False, '--strict', help='Fail with non-zero exit code if any stale memories are detected.'
     ),
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output verification result as structured JSON.'),
 ):
     """Verify the cryptographic integrity and epistemic staleness of all memory files."""
     failures = None
@@ -985,31 +1304,50 @@ def verify(
         persona_dir = persona.get_persona_path(active_id)
         memory_manager = MemoryManager(base_dir=persona_dir)
 
-        console.print(f"Verifying memory integrity for persona '{active_id}'...")
+        if not json_output:
+            console.print(f"Verifying memory integrity for persona '{active_id}'...")
         failures = memory_manager.verify_integrity()
-        if failures:
-            console.print('[bold red]TAMPERED STATE: Cryptographic verification failed![/bold red]')
-            for path, error in failures:
-                console.print(f'  [red]File:[/red] {path}')
-                console.print(f'  [red]Reason:[/red] {error}')
-        else:
-            console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
+        if not json_output:
+            if failures:
+                console.print('[bold red]TAMPERED STATE: Cryptographic verification failed![/bold red]')
+                for path, error in failures:
+                    console.print(f'  [red]File:[/red] {path}')
+                    console.print(f'  [red]Reason:[/red] {error}')
+            else:
+                console.print('[bold green]All memory banks verified successfully. Integrity conserved.[/bold green]')
 
-        # Epistemic staleness checks (EP-0131)
+        # Epistemic staleness checks
         stale_memories = memory_manager.get_stale_memories()
-        if stale_memories:
+        if not json_output and stale_memories:
             console.print(
-                f'[yellow]Detected {len(stale_memories)} stale/unanchored/refuted memories (EP-0131):[/yellow]'
+                f'[yellow]Detected {len(stale_memories)} stale/unanchored/refuted memories:[/yellow]'
             )
             for mem, st, reason in stale_memories:
                 status_color = 'red' if st in ('stale', 'refuted') else 'dim'
                 console.print(f'  [{status_color}]• [{st.upper()}][/] {mem.id[:8]} ({mem.type.value}): {reason}')
 
     except Exception as e:
+        if json_output:
+            emit_json_error(type(e).__name__, str(e))
         console.print(f'[bold red]TAMPERED STATE: {e}[/bold red]')
         raise typer.Exit(code=1)
 
-    if failures or (strict and any(st == 'stale' for _, st, _ in stale_memories)):
+    has_err = bool(failures or (strict and any(st == 'stale' for _, st, _ in stale_memories)))
+    if json_output:
+        payload = {
+            'status': 'error' if has_err else 'ok',
+            'failures': [{'file': str(path), 'reason': str(error)} for path, error in (failures or [])],
+            'stale_memories': [
+                {'id': mem.id, 'type': mem.type.value, 'staleness': st, 'reason': reason}
+                for mem, st, reason in stale_memories
+            ],
+        }
+        console.print(json.dumps(payload, indent=2))
+        if has_err:
+            raise typer.Exit(code=1)
+        return
+
+    if has_err:
         raise typer.Exit(code=1)
 
 
@@ -1149,6 +1487,28 @@ def scaffold_cmd(
 ) -> None:
     """Generates repository-level AI agent guidelines conforming to AAIF or Claude Code standards."""
     run_scaffold_cli(format=format, output=output, force=force)
+
+
+memory_app = typer.Typer(
+    help='Epistemic memory ledger and cognitive graph (Tier 2).',
+    no_args_is_help=True,
+)
+memory_app.command('recall')(recall)
+memory_app.command('learn')(learn)
+memory_app.command('diff')(diff)
+memory_app.command('introspect')(introspect)
+memory_app.command('verify')(verify)
+
+# Domain Sub-app Registrations
+app.add_typer(note_app, name='note')
+app.add_typer(board_app, name='board')
+app.add_typer(message_app, name='message')
+app.add_typer(agent_app_sub, name='agent')
+app.add_typer(memory_app, name='memory')
+
+# Shortcuts
+app.command('read-notes', hidden=True)(note_read_cmd)
+app.command('list-agents', hidden=True)(agent_list_cmd)
 
 
 def main():

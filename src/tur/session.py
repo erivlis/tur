@@ -794,7 +794,7 @@ def end_session_logic(session_id: str, identifier: str | None = None) -> str:
 
 
 @db_retry()
-def signal_logic(
+def message_logic(
     session_id: str,
     sender: str,
     recipient: str,
@@ -802,7 +802,7 @@ def signal_logic(
     type_: str = 'inform',
     vector_clock: dict[str, int] | None = None,
 ) -> str:
-    """Sends a message signal transactionally with Lamport Vector Clock ticking (EP-0141)."""
+    """Sends an inter-agent message transactionally with Lamport Vector Clock ticking."""
     if not is_safe_identifier(sender):
         raise ValueError(f"Invalid sender ID: '{sender}'")
     if recipient != '*' and not is_safe_identifier(recipient):
@@ -821,7 +821,7 @@ def signal_logic(
     count_row = cursor.fetchone()
     if count_row and count_row['count'] >= 10:
         conn.close()
-        raise ValueError(f"RateLimitError: Agent '{sender}' exceeded rate limit of 10 signals per minute.")
+        raise ValueError(f"RateLimitError: Agent '{sender}' exceeded rate limit of 10 messages per minute.")
 
     payload = f'{sender}|{recipient}|{type_}|{content}'
     timestamp_str = datetime.now(UTC).isoformat()
@@ -855,19 +855,25 @@ def signal_logic(
     return signal_id
 
 
-def sort_signals_causally(signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Sorts incoming IASP signal dictionaries in causal delivery order using VectorClock (EP-0141)."""
-    return VectorClock.sort(signals, key=lambda s: s.get('vector_clock', {}))
+signal_logic = message_logic
+
+
+def sort_messages_causally(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sorts incoming message dictionaries in causal delivery order using VectorClock."""
+    return VectorClock.sort(messages, key=lambda s: s.get('vector_clock', {}))
+
+
+sort_signals_causally = sort_messages_causally
 
 
 @db_retry()
-def read_signals_logic(
+def read_messages_logic(
     session_id: str,
     agent_id: str,
     unread_only: bool = True,
     causal_delivery: bool = True,
 ) -> list[dict]:
-    """Peeks incoming signals matching caller handle or dot subagent namespaces with causal ordering (EP-0141)."""
+    """Peeks incoming messages matching caller handle or dot subagent namespaces with causal ordering."""
     conn = get_db_connection(session_id)
     cursor = conn.cursor()
 
@@ -897,7 +903,7 @@ def read_signals_logic(
         results.append(d)
 
     if causal_delivery and results:
-        results = sort_signals_causally(results)
+        results = sort_messages_causally(results)
 
     with conn:
         conn.execute(
@@ -913,22 +919,27 @@ def read_signals_logic(
     return results
 
 
+read_signals_logic = read_messages_logic
+
+
 @db_retry()
-def ack_signals_logic(
+def ack_messages_logic(
     session_id: str,
     agent_id: str,
-    signal_ids: list[str],
+    message_ids: list[str] | None = None,
+    signal_ids: list[str] | None = None,
 ) -> str:
     """
-    Acknowledges signals by registering read entries in the signal_reads table
-    and merging vector clocks (EP-0141).
+    Acknowledges messages by registering read entries in the signal_reads table
+    and merging vector clocks.
     """
+    target_ids = message_ids if message_ids is not None else (signal_ids or [])
     conn = get_db_connection(session_id)
     agent_clock = get_agent_vector_clock(conn, agent_id)
     merged = False
 
     with conn:
-        for sig_id in signal_ids:
+        for sig_id in target_ids:
             conn.execute(
                 """
                 INSERT OR IGNORE INTO signal_reads (signal_id, agent_id)
@@ -957,17 +968,20 @@ def ack_signals_logic(
             (json.dumps(agent_clock), agent_id),
         )
     conn.close()
-    return f'Acknowledged {len(signal_ids)} signals.'
+    return f'Acknowledged {len(target_ids)} messages.'
+
+
+ack_signals_logic = ack_messages_logic
 
 
 @db_retry()
-def write_whiteboard_logic(
+def write_board_logic(
     session_id: str,
     key: str,
     value: str,
     updated_by: str,
 ) -> str:
-    """Writes key-value state parameters to the shared session whiteboard."""
+    """Writes key-value state parameters to the shared session board."""
     conn = get_db_connection(session_id)
     with conn:
         conn.execute(
@@ -986,21 +1000,109 @@ def write_whiteboard_logic(
             (updated_by,),
         )
     conn.close()
-    return f"Whiteboard coordinate '{key}' updated."
+    return f"Board coordinate '{key}' updated."
+
+
+write_whiteboard_logic = write_board_logic
 
 
 @db_retry()
-def read_whiteboard_logic(
+def read_board_logic(
     session_id: str,
     key: str,
 ) -> str | None:
-    """Reads state parameters from the shared session whiteboard."""
+    """Reads state parameters from the shared session board."""
     conn = get_db_connection(session_id)
     cursor = conn.cursor()
     cursor.execute('SELECT value FROM session_state WHERE key = ?', (key,))
     row = cursor.fetchone()
     conn.close()
     return row['value'] if row else None
+
+
+read_whiteboard_logic = read_board_logic
+
+
+@db_retry()
+def list_board_logic(session_id: str) -> list[dict[str, Any]]:
+    """Lists all state parameters stored on the shared session board."""
+    conn = get_db_connection(session_id)
+    cursor = conn.cursor()
+    cursor.execute('SELECT key, value, updated_by, updated_at FROM session_state ORDER BY key ASC')
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+list_whiteboard_logic = list_board_logic
+
+
+@db_retry()
+def clear_board_logic(session_id: str, key: str | None = None, clear_all: bool = False) -> str:
+    """Removes a coordinate key or clears all keys from the session board."""
+    conn = get_db_connection(session_id)
+    with conn:
+        if clear_all or (key is None):
+            conn.execute('DELETE FROM session_state')
+            msg = 'Session board cleared.'
+        else:
+            conn.execute('DELETE FROM session_state WHERE key = ?', (key,))
+            msg = f"Board coordinate '{key}' cleared."
+    conn.close()
+    return msg
+
+
+clear_whiteboard_logic = clear_board_logic
+
+
+@db_retry()
+def register_agent_logic(
+    session_id: str,
+    harness: str = 'terminal',
+    agent_id: str | None = None,
+    substrate: str = 'local',
+) -> dict[str, Any]:
+    """Registers or updates a manifestation in the session SQLite database."""
+    model_slug = os.environ.get('TUR_MODEL_SLUG', 'agent')
+    if not agent_id:
+        random_hex = uuid.uuid4().hex[:8]
+        agent_id = f'{model_slug}_cli_{random_hex}'
+
+    if not is_safe_identifier(agent_id):
+        raise ValueError(f"Invalid agent_id format: '{agent_id}'. Must match ^[a-zA-Z0-9_.-]+$")
+
+    run_token = os.environ.get('TUR_RUN_TOKEN') or str(uuid.uuid4())
+    conn = get_db_connection(session_id)
+    init_db(conn)
+    with conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, status FROM agents WHERE id = ?', (agent_id,))
+        row = cursor.fetchone()
+        if row:
+            cursor.execute(
+                """
+                UPDATE agents
+                SET harness = ?, substrate = ?, status = 'active', run_token = ?, last_heartbeat = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (harness, substrate, run_token, agent_id),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO agents (id, harness, substrate, status, run_token, last_heartbeat)
+                VALUES (?, ?, ?, 'active', ?, CURRENT_TIMESTAMP)
+                """,
+                (agent_id, harness, substrate, run_token),
+            )
+    conn.close()
+    return {
+        'id': agent_id,
+        'harness': harness,
+        'substrate': substrate,
+        'status': 'active',
+        'run_token': run_token,
+    }
 
 
 @db_retry()
@@ -1277,7 +1379,7 @@ def note_logic(content: str, session_id: str | None = None, identifier: str | No
 
         # Mirror note to SQLite database
         with contextlib.suppress(Exception):
-            signal_logic(
+            message_logic(
                 session_id=resolved_session_id,
                 sender=os.environ.get('TUR_AGENT_ID') or 'legacy_agent',
                 recipient='*',

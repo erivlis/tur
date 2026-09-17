@@ -2,7 +2,7 @@
 src/tur/task.py - Task Coordination, Preservation Protocol, and Swarm Management.
 
 Provides structured task handover, in-flight milestone synchronization,
-namespaced whiteboard storage (task:<task_id>), dependency resolution (depends_on),
+namespaced board storage (task:<task_id>), dependency resolution (depends_on),
 and lease TTL expiration handling.
 """
 
@@ -16,8 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from tur.session import (
     get_db_connection,
-    read_whiteboard_logic,
-    write_whiteboard_logic,
+    read_board_logic,
+    write_board_logic,
 )
 
 
@@ -55,7 +55,7 @@ class Task(BaseModel):
 
 
 def get_task_key(task_id: str | None) -> str:
-    """Returns the whiteboard key for a given task ID."""
+    """Returns the board key for a given task ID."""
     if not task_id or task_id in ('task', 'default'):
         return 'task'
     if task_id.startswith('task:'):
@@ -64,13 +64,13 @@ def get_task_key(task_id: str | None) -> str:
 
 
 def get_task(session_id: str, task_id: str | None = None) -> Task | None:
-    """Retrieves a Task from the session whiteboard."""
+    """Retrieves a Task from the session board."""
     key = get_task_key(task_id)
-    raw_val = read_whiteboard_logic(session_id, key)
+    raw_val = read_board_logic(session_id, key)
 
     if not raw_val and key != 'task':
         # Fallback: check if the default task matches the requested task_id
-        default_val = read_whiteboard_logic(session_id, 'task')
+        default_val = read_board_logic(session_id, 'task')
         if default_val:
             try:
                 data = json.loads(default_val)
@@ -97,7 +97,7 @@ def get_task(session_id: str, task_id: str | None = None) -> Task | None:
 
 
 def list_tasks(session_id: str) -> list[Task]:
-    """Discovers all tasks registered on the session whiteboard."""
+    """Discovers all tasks registered on the session board."""
     conn = get_db_connection(session_id)
     with conn:
         cursor = conn.cursor()
@@ -180,15 +180,15 @@ def check_dependencies(depends_on: list[str], session_id: str) -> tuple[bool, li
 
 
 def save_task(session_id: str, task: Task, updated_by: str) -> None:
-    """Persists a Task to the session whiteboard under namespaced and default keys."""
+    """Persists a Task to the session board under namespaced and default keys."""
     namespaced_key = get_task_key(task.task_id)
     payload = task.to_json()
 
     # Always write to the namespaced coordinate
-    write_whiteboard_logic(session_id, namespaced_key, payload, updated_by)
+    write_board_logic(session_id, namespaced_key, payload, updated_by)
 
     # Mirror to default task key if active or default
-    current_default = read_whiteboard_logic(session_id, 'task')
+    current_default = read_board_logic(session_id, 'task')
     should_mirror = True
     if current_default:
         try:
@@ -205,7 +205,7 @@ def save_task(session_id: str, task: Task, updated_by: str) -> None:
             pass
 
     if should_mirror:
-        write_whiteboard_logic(session_id, 'task', payload, updated_by)
+        write_board_logic(session_id, 'task', payload, updated_by)
 
 
 def claim_task(

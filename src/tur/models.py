@@ -432,3 +432,6 @@ class Signal(BaseModel):
         default_factory=dict,
         description='Lamport Vector Clock mapping agent_id -> logical_counter.',
     )
+
+
+Message = Signal

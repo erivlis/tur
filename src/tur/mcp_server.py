@@ -21,21 +21,21 @@ from tur.metrics import CognitiveMetrics, compute_persona_metrics
 from tur.models import Memory, MemoryScope, MemoryType
 from tur.persona import get_active_persona_id, get_persona_path
 from tur.session import (
-    ack_signals_logic,
+    ack_messages_logic,
     end_session_logic,
     get_active_session_id,
     get_persona_status_summary,
     hydrate_session_state,
     list_agents_logic,
     load_session_index,
+    message_logic,
     note_logic,
+    read_board_logic,
+    read_messages_logic,
     read_notes_logic,
-    read_signals_logic,
-    read_whiteboard_logic,
-    signal_logic,
     start_session_logic,
     tired_logic,
-    write_whiteboard_logic,
+    write_board_logic,
 )
 
 ERROR_NO_ACTIVE_SESSION = 'No active session ID found.'
@@ -123,7 +123,7 @@ def wake(
         session_id(str): Optional session ID. If omitted, uses active or most recent session.
         previous_session_id(str): Optional session ID to seed the opening note of a new session.
         include_stale(bool): Optional flag to include decayed/stale memories in the system prompt.
-        token_budget(int): Optional token budget for wake prompt compilation (EP-0132).
+        token_budget(int): Optional token budget for wake prompt compilation. Pass 0 or omit for unbounded.
     """
     global _active_session_id
     active_id = get_active_persona_id()
@@ -206,7 +206,7 @@ def learn(
         context_ref(str): Optional source file or URI reference (e.g. 'src/auth.py#L10-L20').
         source_agent(str): Optional agent identifier recording this observation.
         source_harness(str): Optional harness identifier (e.g. 'antigravity', 'pycharm').
-        supersedes(str): Optional memory ID to explicitly supersede upon contradiction or update (EP-0134).
+        supersedes(str): Optional memory ID to explicitly supersede upon contradiction or update.
         allow_conflict(bool): If True, bypasses active TMS contradiction checks and forces ingestion (default False).
     """
     try:
@@ -499,7 +499,7 @@ def recall(
     top_k: int = 5,
 ) -> str:
     """
-    Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval (EP-0136).
+    Search your deep memory bank for past events, decisions, or knowledge with graph-theoretic retrieval.
 
     Args:
         query: The topic or concept to search for in past memories.
@@ -529,7 +529,7 @@ def recall(
 @mcp.tool()
 def metrics(identifier: str | None = None) -> dict:
     """
-    Calculate Constraint Dimensionality (Cp), cognitive load, and spectral graph metrics for a persona (EP-0136).
+    Calculate Constraint Dimensionality (Cp), cognitive load, and spectral graph metrics for a persona.
 
     Args:
         identifier: The name or UUID of the persona. If omitted, uses the default.
@@ -545,7 +545,7 @@ def metrics(identifier: str | None = None) -> dict:
 @mcp.resource('tur://context/subgraph/{node_id}')
 def get_subgraph_context(node_id: str) -> str:
     """
-    Exposes a bounded semantic ego-subgraph context resource for a given node (EP-0136).
+    Exposes a bounded semantic ego-subgraph context resource for a given node.
     """
     import json
 
@@ -586,7 +586,7 @@ def diff_memories(
     scope_filter: str | None = None,
 ) -> list[dict]:
     """
-    Inspect memory mutations, additions, supersessions, and contradictions across sessions (EP-0133).
+    Inspect memory mutations, additions, supersessions, and contradictions across sessions.
     Categorizes deltas into ADDED, SUPERSEDED, REFUTED, DECAYED, and MODIFIED.
 
     Args:
@@ -615,7 +615,7 @@ def diff(
     scope_filter: str | None = None,
 ) -> list[dict]:
     """
-    Alias for diff_memories(). Inspect memory mutations across sessions (EP-0133).
+    Alias for diff_memories(). Inspect memory mutations across sessions.
     """
     return diff_memories(
         base_session_id=base_session_id,
@@ -642,7 +642,19 @@ def read_notes(session_id: str | None = None, include_previous: bool = False, li
 
 
 @mcp.tool()
-def signal(
+def read_note(
+    session_id: str | None = None,
+    limit: int = 10,
+    include_previous: bool = False,
+) -> list[dict]:
+    """
+    Alias for read_notes(). Reads chronological session notes in ascending sequence order.
+    """
+    return read_notes(session_id=session_id, limit=limit, include_previous=include_previous)
+
+
+@mcp.tool()
+def send_message(
     to: str,
     content: str,
     type: str = 'inform',
@@ -650,8 +662,8 @@ def signal(
     vector_clock: dict[str, int] | None = None,
 ) -> str:
     """
-    Sends a message signal to another manifestation or broadcast to all ('*').
-    Enforces a token-bucket rate limiter of 10 messages/minute and attaches Lamport Vector Clocks (EP-0141).
+    Sends an inter-agent message to another manifestation or broadcast to all ('*').
+    Enforces a token-bucket rate limiter of 10 messages/minute and attaches Lamport Vector Clocks.
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
@@ -660,17 +672,17 @@ def signal(
     if sender_id and env_agent_id and sender_id != env_agent_id and not sender_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: sender_id '{sender_id}' does not match calling agent '{env_agent_id}'.")
     sender = sender_id or env_agent_id or 'mcp_agent'
-    return signal_logic(sess_id, sender, to, content, type, vector_clock=vector_clock)
+    return message_logic(sess_id, sender, to, content, type, vector_clock=vector_clock)
 
 
 @mcp.tool()
-def read_signals(
+def read_messages(
     agent_id: str | None = None,
     unread_only: bool = True,
     causal_delivery: bool = True,
 ) -> list[dict]:
     """
-    Peeks incoming signals directed to the agent or its namespaces with causal partial order delivery (EP-0141).
+    Retrieves incoming messages directed to the agent or its namespaces with causal partial order delivery.
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
@@ -679,13 +691,16 @@ def read_signals(
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
     active_agent = agent_id or env_agent_id or 'mcp_agent'
-    return read_signals_logic(sess_id, active_agent, unread_only, causal_delivery=causal_delivery)
+    return read_messages_logic(sess_id, active_agent, unread_only, causal_delivery=causal_delivery)
 
 
 @mcp.tool()
-def ack_signals(agent_id: str | None = None, signal_ids: list[str] | None = None) -> str:
+def ack_messages(
+    agent_id: str | None = None,
+    message_ids: list[str] | None = None,
+) -> str:
     """
-    Acknowledges signals by marking them as read.
+    Acknowledges messages by marking them as read.
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
@@ -694,9 +709,9 @@ def ack_signals(agent_id: str | None = None, signal_ids: list[str] | None = None
     if agent_id and env_agent_id and agent_id != env_agent_id and not agent_id.startswith(env_agent_id + '.'):
         raise ValueError(f"Namespace violation: agent_id '{agent_id}' does not match calling agent '{env_agent_id}'.")
     active_agent = agent_id or env_agent_id or 'mcp_agent'
-    if not signal_ids:
-        return 'No signal IDs provided.'
-    return ack_signals_logic(sess_id, active_agent, signal_ids)
+    if not message_ids:
+        return 'No message IDs provided.'
+    return ack_messages_logic(sess_id, active_agent, message_ids)
 
 
 @mcp.tool()
@@ -711,32 +726,32 @@ def list_agents() -> list[dict]:
 
 
 @mcp.tool()
-def write_whiteboard(key: str, value: str) -> str:
+def write_board(key: str, value: str) -> str:
     """
-    Writes or updates key-value state parameters on the shared session whiteboard.
+    Writes or updates key-value state parameters on the shared session board.
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
         raise ValueError(ERROR_NO_ACTIVE_SESSION)
     sender = os.environ.get('TUR_AGENT_ID') or 'mcp_agent'
-    return write_whiteboard_logic(sess_id, key, value, sender)
+    return write_board_logic(sess_id, key, value, sender)
 
 
 @mcp.tool()
-def read_whiteboard(key: str) -> str | None:
+def read_board(key: str) -> str | None:
     """
-    Reads coordinate parameters from the shared session whiteboard.
+    Reads coordinate parameters from the shared session board.
     """
     sess_id = _active_session_id or get_active_session_id()
     if not sess_id:
         raise ValueError(ERROR_NO_ACTIVE_SESSION)
-    return read_whiteboard_logic(sess_id, key)
+    return read_board_logic(sess_id, key)
 
 
 @mcp.tool()
 def show_task(task_id: str | None = None) -> str:
     """
-    Displays the active task or specified task from the session whiteboard (EP-0147, EP-0149).
+    Displays the active task or specified task from the session board.
     """
     from tur import task
 
@@ -761,7 +776,7 @@ def claim_task(
     force: bool = False,
 ) -> str:
     """
-    Claims a task on the session whiteboard for the calling agent (EP-0147, EP-0149).
+    Claims a task on the session board for the calling agent.
     """
     from tur import task
 
@@ -792,7 +807,7 @@ def claim_task(
 @mcp.tool()
 def check_task_item(item: str, task_id: str | None = None, done: bool = True) -> str:
     """
-    Marks a checklist item in a task as completed (or undone) (EP-0147, EP-0149).
+    Marks a checklist item in a task as completed (or undone).
     """
     from tur import task
 
@@ -811,7 +826,7 @@ def check_task_item(item: str, task_id: str | None = None, done: bool = True) ->
 @mcp.tool()
 def handover_task(task_id: str | None = None, note: str | None = None) -> str:
     """
-    Hands over an active task without marking it completed (EP-0147, EP-0149).
+    Hands over an active task without marking it completed.
     """
     from tur import task
 
@@ -830,7 +845,7 @@ def handover_task(task_id: str | None = None, note: str | None = None) -> str:
 @mcp.tool()
 def complete_task(task_id: str | None = None) -> str:
     """
-    Marks a task as completed and unblocks dependent tasks (EP-0147, EP-0149).
+    Marks a task as completed and unblocks dependent tasks.
     """
     from tur import task
 
