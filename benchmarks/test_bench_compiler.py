@@ -28,7 +28,7 @@ def test_bench_compile_persona(benchmark, session_state: SessionState):
     benchmark(compile_persona, session_state)
 
 
-@pytest.mark.benchmark
-def test_bench_yaml_safe_load():
+def test_bench_yaml_safe_load(benchmark):
     """The OKF frontmatter parser used on every memory and concept read."""
-    yaml_safe_load(io.StringIO(YAML_DOCUMENT))
+    benchmark(lambda: yaml_safe_load(io.StringIO(YAML_DOCUMENT)))
+
