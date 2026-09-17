@@ -91,7 +91,8 @@ nav = [
         "proposals/EP-0147-agent-operational-workflows-and-context-preservation.md",
         "proposals/EP-0148-canonical-text-tokenization-and-regex-substrate.md",
         "proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md",
-        "proposals/EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md"
+        "proposals/EP-0150-adversarial-chaos-engineering-and-swarm-stress-fuzzing.md",
+        "proposals/EP-0151-distributed-manifestation-architecture.md"
     ] },
     { "Audits & Reviews" = [
         "reviews/REV-0001-council-audit-report.md",

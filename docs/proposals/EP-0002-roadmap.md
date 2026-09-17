@@ -246,6 +246,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Adversarial Chaos Engineering, Swarm Stress Fuzzing, and Epistemic Robustness Verification (EP-0150) [Status: Draft]:**
       Establishing multi-agent race-condition fuzzing, concurrent lock contention testing, and epistemic decay verification
       under chaos harness conditions.
+    * **Distributed Manifestation Architecture — Formalizing Multi-Instance Entity Coordination and Retiring the Swarm Metaphor (EP-0151) [Status: Draft]:**
+      Decoupling single-entity multi-instance coordination from heterogeneous swarms, codifying the tripartite identity
+      hierarchy (Persona -> Session -> Manifestation), and harmonizing grounded distributed systems terminology.
 
 ### Phase 3: The Agent Ecosystem (v0.6.x -> v1.0.0) [Status: Active]
 
@@ -358,6 +361,8 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
     * Council of Giants review completed and unanimously ratified in **REV-0007**.
     * Added comprehensive CodSpeed benchmarks in `benchmarks/test_bench_embeddings.py` (26/26 benchmarks passing).
     * Marked Wave 4 as **Complete / Final** across all 7 proposals (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`, `EP-0146`, `EP-0144`, `EP-0148`).
+* **2026-09-17:**
+    * Registered **EP-0151 (Distributed Manifestation Architecture)** under Phase 2/3 to formalize single-persona multi-instance coordination and retire ambiguous swarm metaphors.
 * **2026-09-08:**
     * Registered **EP-0147 (Agent Operational Workflows and Context Preservation Protocol)** and **EP-0149 (Two-Tier Hierarchical Command Grammar)**
       under Layer 3 (Storage, Lineage, Signal Infrastructure & Workflows) to formalize the 4-phase operational agent lifecycle, Task protocol,
