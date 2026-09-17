@@ -133,7 +133,7 @@ class MemoryLink(BaseModel):
 
 class MemoryProvenance(BaseModel):
     """
-    Observation provenance and temporal anchor metadata (EP-0131).
+    Observation provenance and temporal anchor metadata.
     """
 
     observed_at: datetime = Field(default_factory=datetime.now, description='When this observation was recorded')
@@ -145,7 +145,7 @@ class MemoryProvenance(BaseModel):
 
 class MemoryDecay(BaseModel):
     """
-    Epistemic half-life decay kinetics and staleness tracking (EP-0131).
+    Epistemic half-life decay kinetics and staleness tracking.
     """
 
     half_life_days: float | None = Field(default=14.0, description='Half-life in days (None for non-decaying types)')
@@ -179,24 +179,24 @@ class Memory(BaseModel):
     )
     status: str | None = Field(default='active', description='active, pending_approval, superseded, or falsified')
 
-    # Provenance & Staleness Decay fields (EP-0131)
+    # Provenance & Staleness Decay fields
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, description='Confidence score in [0.0, 1.0]')
     provenance: MemoryProvenance | None = Field(default=None, description='Observation provenance and temporal anchor')
     decay: MemoryDecay | None = Field(default=None, description='Epistemic decay kinetics and staleness tracking')
 
-    # Merkle Tombstone & Redaction fields (EP-0143)
+    # Merkle Tombstone & Redaction fields
     redacted: bool = Field(default=False, description='Whether this memory has been redacted due to sensitive data')
     redacted_at: datetime | None = Field(default=None, description='Timestamp of redaction')
     redaction_reason: str | None = Field(default=None, description='Reason/policy justification for redaction')
 
-    # Semantic Embedding fields (EP-0144)
+    # Semantic Embedding fields
     embedding_model: str | None = Field(default=None, description='Name/version of model that generated embedding')
     embedding_vector: list[float] | None = Field(default=None, description='Dense semantic embedding vector')
 
     @model_validator(mode='before')
     @classmethod
     def sanitize_memory_content(cls, data: Any) -> Any:  # type: ignore[operator]
-        """Deterministic pre-ingest sanitization of memory content (EP-0143)."""
+        """Deterministic pre-ingest sanitization of memory content."""
         if (
             isinstance(data, dict)
             and 'content' in data
@@ -304,7 +304,7 @@ class SessionState(BaseModel):
     knowledge_graph: dict | None = Field(None, description='The L2 Cognitive Map (serialized networkx graph)')
     context_omitted: int | None = Field(None, description='Number of omitted memories/nodes due to token budget')
     token_budget: int | None = Field(None, description='Configured token budget')
-    task: dict[str, Any] | None = Field(None, description='Active task coordinate (EP-0147, EP-0149)')
+    task: dict[str, Any] | None = Field(None, description='Active task coordinate')
 
 
 class PersonaIndexEntry(BaseModel):
@@ -331,7 +331,7 @@ class SessionEntry(BaseModel):
     """
 
     id: str = Field(..., description='The unique session ID.')
-    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG (EP-0130).')
+    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG.')
     created_at: datetime = Field(default_factory=datetime.now, description='When the session was started.')
     updated_at: datetime = Field(default_factory=datetime.now, description='When the session was last updated.')
     status: str = Field('active', description="The status of the session ('active' or 'ended').")
@@ -373,7 +373,7 @@ class Note(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def sanitize_note_content(cls, data: Any) -> Any:  # type: ignore[operator]
-        """Deterministic pre-ingest sanitization of note content (EP-0143)."""
+        """Deterministic pre-ingest sanitization of note content."""
         if isinstance(data, dict) and 'content' in data and isinstance(data['content'], str):
             from tur.memory.sanitizer import sanitize_text
 
@@ -389,7 +389,7 @@ class SessionNotes(BaseModel):
     """
 
     session_id: str | None = Field(default=None, description='The session ID.')
-    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG (EP-0130).')
+    parent_session_id: str | None = Field(default=None, description='Parent session ID in the lineage DAG.')
     notes: list[Note] = Field(default_factory=list, description='Chronological notes.')
 
     @model_validator(mode='after')
@@ -415,7 +415,7 @@ class HarnessDelegationError(ValueError):
 
 class Signal(BaseModel):
     """
-    An inter-agent message signal in IASP (EP-0118, EP-0123, EP-0141).
+    An inter-agent message signal in IASP.
     """
 
     id: str = Field(..., description='Unique deterministic hash of the signal.')
@@ -430,5 +430,5 @@ class Signal(BaseModel):
     content: str = Field(..., description='Signal content payload.')
     vector_clock: dict[str, int] = Field(
         default_factory=dict,
-        description='Lamport Vector Clock mapping agent_id -> logical_counter (EP-0141).',
+        description='Lamport Vector Clock mapping agent_id -> logical_counter.',
     )

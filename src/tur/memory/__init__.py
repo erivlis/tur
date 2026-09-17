@@ -1,4 +1,4 @@
-"""Authoritative public facade for the Tur memory subsystem (EP-0146).
+"""Authoritative public facade for the Tur memory subsystem.
 
 Consolidates L1 flat persistence, Merkle trees, L2 cognitive maps, graph-theoretic recall,
 session transcript dreaming, observation provenance, delta tracking, and sanitization.

@@ -1,5 +1,5 @@
 """
-src/tur/memory/tms.py - Active TMS Contradiction Interruption Protocol (EP-0134).
+src/tur/memory/tms.py - Active TMS Contradiction Interruption Protocol.
 
 Proactively queries active Layer 1 / Layer 2 memories during ingestion (tur learn)
 to detect semantic contradictions, incompatible axioms, or opposing polarities.

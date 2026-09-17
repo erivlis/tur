@@ -1,5 +1,5 @@
 """
-Zero-dependency deterministic sensitive data prevention and secret redaction engine (EP-0143).
+Zero-dependency deterministic sensitive data prevention and secret redaction engine.
 Implements pattern-based detection and Shannon entropy scanning.
 """
 

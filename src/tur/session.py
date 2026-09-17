@@ -125,14 +125,14 @@ SESSION_ID_REGEX = SESSION_ID_RE
 
 
 def validate_session_id(session_id: str) -> None:
-    """Validates that a session_id conforms to safe alphanumeric format and prevents path traversal (EP-0130)."""
+    """Validates that a session_id conforms to safe alphanumeric format and prevents path traversal."""
     if not is_session_identifier(session_id):
         raise ValueError(f"Invalid session_id format: '{session_id}'. Must match ^[a-zA-Z0-9_-]+$")
 
 
 def get_parent_session_id(session_id: str | None, persona_dir: Path | None = None) -> str | None:
     """
-    Returns the parent session ID in the lineage DAG for the given session ID (EP-0130).
+    Returns the parent session ID in the lineage DAG for the given session ID.
     Checks both the session flat YAML file and sessions.yaml index.
     """
     if not session_id:
@@ -164,7 +164,7 @@ def get_parent_session_id(session_id: str | None, persona_dir: Path | None = Non
 def get_session_lineage(session_id: str, persona_dir: Path | None = None, max_depth: int = 10) -> list[str]:
     """
     Traverses parent_session_id pointers up the DAG to return the lineage sequence:
-    [session_id, parent_id, grandparent_id, ...] up to max_depth (EP-0130).
+    [session_id, parent_id, grandparent_id, ...] up to max_depth.
     Guards against cyclic loops via a visited set.
     """
     validate_session_id(session_id)
@@ -456,7 +456,7 @@ def init_db(conn: sqlite3.Connection):
                      );
                  """)
 
-    # Schema migration checks (EP-0141)
+    # Schema migration checks
     with contextlib.suppress(Exception):
         cursor = conn.cursor()
         cursor.execute('PRAGMA table_info(agents);')
@@ -569,7 +569,7 @@ def update_heartbeat(session_id: str, agent_id: str):
 
 
 def get_agent_vector_clock(conn: sqlite3.Connection, agent_id: str) -> VectorClock:
-    """Retrieves the Lamport Vector Clock for a specific agent (EP-0141)."""
+    """Retrieves the Lamport Vector Clock for a specific agent."""
     cursor = conn.cursor()
     cursor.execute('SELECT vector_clock FROM agents WHERE id = ?', (agent_id,))
     row = cursor.fetchone()
@@ -579,7 +579,7 @@ def get_agent_vector_clock(conn: sqlite3.Connection, agent_id: str) -> VectorClo
 
 
 def update_agent_vector_clock(conn: sqlite3.Connection, agent_id: str, clock: dict[str, int]) -> None:
-    """Updates the Lamport Vector Clock for an agent (EP-0141)."""
+    """Updates the Lamport Vector Clock for an agent."""
     clock_json = json.dumps(clock)
     conn.execute(
         'UPDATE agents SET vector_clock = ? WHERE id = ?',
@@ -614,7 +614,7 @@ def start_session_logic(
 
         index = load_session_index(persona_dir)
 
-        # EP-0130: Resolve parent session ID
+        # Resolve parent session ID
         parent_id = previous_session_id
         if not parent_id and index.sessions:
             prior_sessions = [s for s in index.sessions if s.id != session_id]
@@ -638,7 +638,7 @@ def start_session_logic(
                 if is_fresh:
                     prev_content = compile_session_notes(persona_dir, parent_id)
                     if prev_content and prev_content != ALEPH_CONSERVED_MSG:
-                        # Clamp auto-seeded spark to 256 characters (EP-0130)
+                        # Clamp auto-seeded spark to 256 characters
                         seed_content = prev_content[:256].strip()
 
             session_notes = SessionNotes(
@@ -827,7 +827,7 @@ def signal_logic(
     timestamp_str = datetime.now(UTC).isoformat()
     signal_id = hashlib.sha256(f'{payload}|{timestamp_str}|{uuid.uuid4().hex}'.encode()).hexdigest()
 
-    # EP-0141: Vector Clock local emission ticking (Rule 1)
+    # Vector Clock local emission ticking (Rule 1)
     sender_clock = get_agent_vector_clock(conn, sender)
     if vector_clock:
         sender_clock = sender_clock | VectorClock(vector_clock)
@@ -1075,7 +1075,7 @@ def read_notes_logic(
 ) -> list[dict]:
     """
     Returns broadcast notes in ascending sequence order with dual-backend fallback (SQLite + YAML)
-    and cross-session lineage support (EP-0130).
+    and cross-session lineage support.
     """
     if persona_dir is None:
         active_id = get_active_persona_id(identifier)

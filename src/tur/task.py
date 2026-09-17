@@ -1,5 +1,5 @@
 """
-src/tur/task.py - Task Coordination, Preservation Protocol, and Swarm Management (EP-0147, EP-0149).
+src/tur/task.py - Task Coordination, Preservation Protocol, and Swarm Management.
 
 Provides structured task handover, in-flight milestone synchronization,
 namespaced whiteboard storage (task:<task_id>), dependency resolution (depends_on),

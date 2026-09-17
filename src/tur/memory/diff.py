@@ -19,7 +19,7 @@ class DeltaStatus(StrEnum):
 
 class MemoryDelta(BaseModel):
     """
-    Epistemic classification of memory state changes across sessions (EP-0133).
+    Epistemic classification of memory state changes across sessions.
     """
 
     status: DeltaStatus
@@ -151,8 +151,8 @@ def compute_session_diff(
     scope_filter: MemoryScope | str | None = None,
 ) -> list[MemoryDelta]:
     """
-    Computes memory delta for a specific session against its predecessor (EP-0130 lineage)
-    or between two explicitly provided session IDs (EP-0133).
+    Computes memory delta for a specific session against its predecessor lineage
+    or between two explicitly provided session IDs.
     """
     active_id = persona_id or get_active_persona_id()
     persona_dir = get_persona_path(active_id)
@@ -210,7 +210,7 @@ def compute_session_diff(
 
 def format_diff_terminal(deltas: list[MemoryDelta], session_id: str | None = None) -> str:
     """
-    Renders styled terminal output for memory deltas according to EP-0133 specification.
+    Renders styled terminal output for memory deltas.
     """
     header = f'Memory Delta: Session {session_id or "active"} ({len(deltas)} mutation{"s" if len(deltas) != 1 else ""})'
     if not deltas:
@@ -269,7 +269,7 @@ def format_diff_terminal(deltas: list[MemoryDelta], session_id: str | None = Non
 
 def format_diff_summary(deltas: list[MemoryDelta]) -> str:
     """
-    Renders the Markdown summary for session consolidation / sleep epilogue (EP-0133).
+    Renders the Markdown summary for session consolidation / sleep epilogue.
     """
     added_by_type: dict[str, int] = {}
     superseded_count = 0
@@ -305,7 +305,7 @@ def format_diff_summary(deltas: list[MemoryDelta]) -> str:
 
 def format_diff_json(deltas: list[MemoryDelta]) -> list[dict[str, Any]]:
     """
-    Renders structured JSON array for MCP and programmatic consumption (EP-0133).
+    Renders structured JSON array for MCP and programmatic consumption.
     """
     results: list[dict[str, Any]] = []
     for d in deltas:

@@ -153,7 +153,7 @@ def apply_budgeted_wake(
     tokenizer: Callable[[str], int] = estimate_tokens,
 ) -> SessionState:
     """
-    Applies Knapsack dynamic token budgeting (EP-0132) to prioritize and pack
+    Applies Knapsack dynamic token budgeting to prioritize and pack
     top-ranked HippoRAG memory subgraphs or memories within the token budget.
     Returns a new SessionState with pruned items and context_omitted set.
     """
@@ -304,7 +304,7 @@ def compile_persona(
     """
     Renders a SessionState into a final System Prompt string using pre-compiled AST.
     If token_budget is specified (or state.token_budget is set), applies Knapsack
-    dynamic token budgeting to pack top-ranked HippoRAG memory subgraphs (EP-0132).
+    dynamic token budgeting to pack top-ranked HippoRAG memory subgraphs.
     """
     eff_budget = token_budget if token_budget is not None else state.token_budget
     eff_tokenizer = tokenizer or estimate_tokens

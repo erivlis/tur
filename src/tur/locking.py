@@ -3,7 +3,7 @@ Multi-process state synchronization and advisory file locking for Tur.
 
 Single canonical source for transactional lock acquisition across workspace
 terrain (.tur/.locks) and global traveler runtime directories (resolve_runtime_dir/locks).
-Implements EP-0129 with filelock, configured for low-latency fast-probing (5ms)
+Implements inter-process advisory locking with filelock, configured for low-latency fast-probing (5ms)
 and singleton thread re-entrancy.
 """
 

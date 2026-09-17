@@ -9,7 +9,7 @@ from typing import Literal
 from tur.models import Memory, MemoryDecay, MemoryProvenance, MemoryType
 from tur.paths import resolve_workspace_dir
 
-# Default half-life (in days) and commit distance sensitivity lambda (EP-0131)
+# Default half-life (in days) and commit distance sensitivity lambda
 DEFAULT_DECAY_POLICIES: dict[MemoryType, tuple[float | None, float]] = {
     MemoryType.AXIOM: (None, 0.0),
     MemoryType.CORE: (None, 0.0),
@@ -175,7 +175,7 @@ def compute_epistemic_weight(
     Computes the current epistemic weight of a memory using exponential half-life decay and Git commit sensitivity:
         Weight(t, Delta_commits) = confidence * 2^(-t / t_1/2) * e^(-lambda * Delta_commits)
 
-    Legacy memories lacking decay configuration default to infinite half-life (EP-0131 Backwards Compatibility).
+    Legacy memories lacking decay configuration default to infinite half-life (backwards compatibility).
     """
     if memory.status == 'falsified':
         return 0.0

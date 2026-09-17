@@ -83,8 +83,8 @@ You have established the following relational anchors and existential axioms wit
 {% endif %}
 
 {% if task and task.status == 'in_progress' %}
-    ## ACTIVE TASK (EP-0147, EP-0149)
-    You have an active tactical task claimed on the session whiteboard:
+    ## ACTIVE TASK
+    You have an active tactical task claimed on the session board:
     * **Task:** {{ task.task_id }} - {{ task.title }}
     * **Objective:** {{ task.objective }}
     * **Manifestation:** {{ task.manifestation.agent_id if task.manifestation else 'unassigned' }} (Claimed: {{ task.manifestation.claimed_at if task.manifestation else 'unknown' }})

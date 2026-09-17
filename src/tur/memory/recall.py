@@ -139,7 +139,7 @@ def pure_algebraic_connectivity(graph: nx.Graph | nx.DiGraph, max_iter: int = 20
 
 class CognitiveGraphEngine:
     """
-    Graph-Theoretic Memory Engine built natively on NetworkX (EP-0136).
+    Graph-Theoretic Memory Engine built natively on NetworkX.
     Incorporates HippoRAG Personalized PageRank associative activation,
     Louvain community clustering, and spectral graph metrics.
     """
@@ -157,7 +157,7 @@ class CognitiveGraphEngine:
         query: str,
         query_vector: Sequence[float] | None = None,
     ) -> dict[str, float]:
-        """Computes seed scores combining lexical tokens and dense vector similarity (EP-0144)."""
+        """Computes seed scores combining lexical tokens and dense vector similarity."""
         return _calculate_seed_scores(self.graph, query, query_vector=query_vector, vector_engine=self.vector_engine)
 
     def compute_spectral_health(self) -> dict[str, Any]:
@@ -341,7 +341,7 @@ class CognitiveGraphEngine:
         return conflicts
 
     def validate_git_anchors(self, nodes: list[str], repo_dir: Path | None = None) -> dict[str, Any]:
-        """Validates Git commit anchors and source provenance for retrieved nodes (EP-0131)."""
+        """Validates Git commit anchors and source provenance for retrieved nodes."""
         from tur.memory.provenance import get_git_commit_distance
 
         validations: dict[str, Any] = {}
@@ -389,7 +389,7 @@ def _l1_fallback_search(
             matched_ids.add(str(m.id))
             results.append(m)
 
-    # Vector similarity search over L1 memories (EP-0144)
+    # Vector similarity search over L1 memories
     engine = vector_engine or VectorEngine()
     if query_vector is None and engine.is_onnx_available:
         with contextlib.suppress(Exception):
@@ -427,7 +427,7 @@ def _calculate_seed_scores(
     query_vector: Sequence[float] | None = None,
     vector_engine: VectorEngine | None = None,
 ) -> dict[str, float]:
-    """Computes lexical seed relevance scores and semantic vector similarity across active L2 graph nodes (EP-0144)."""
+    """Computes lexical seed relevance scores and semantic vector similarity across active L2 graph nodes."""
     query_lower = query.lower().strip()
     query_tokens = tokenize_query(query)
     scores: dict[str, float] = {}
@@ -468,7 +468,7 @@ def _calculate_seed_scores(
         if score > 0.0:
             scores[node] = score * confidence
 
-    # Dense semantic vector similarity calculation (EP-0144)
+    # Dense semantic vector similarity calculation
     _augment_scores_with_vector_similarity(
         graph=graph,
         query=query,
@@ -487,7 +487,7 @@ def _augment_scores_with_vector_similarity(
     query_vector: Sequence[float] | None = None,
     vector_engine: VectorEngine | None = None,
 ) -> None:
-    """Augments seed scores with dense vector similarities across active nodes (EP-0144)."""
+    """Augments seed scores with dense vector similarities across active nodes."""
     engine = vector_engine or VectorEngine()
     if query_vector is None and engine.is_onnx_available:
         with contextlib.suppress(Exception):
@@ -670,7 +670,7 @@ def topological_recall(
     vector_engine: VectorEngine | None = None,
 ) -> str:
     """
-    Graph-enhanced semantic recall logic supporting the Cognitive Effort Spectrum (EP-0136).
+    Graph-enhanced semantic recall logic supporting the Cognitive Effort Spectrum.
 
     Effort Spectrum:
       - 0: Fast BM25 / keyword discrete node lookup (<5ms).

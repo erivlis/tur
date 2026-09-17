@@ -142,7 +142,7 @@ class MemoryManager:
         if memory.status:
             frontmatter['status'] = memory.status
 
-        # Provenance & Epistemic Decay fields (EP-0131)
+        # Provenance & Epistemic Decay fields
         if not math.isclose(memory.confidence, 1.0, abs_tol=1e-5):
             frontmatter['confidence'] = memory.confidence
         if memory.provenance:
@@ -168,7 +168,7 @@ class MemoryManager:
                 'staleness_status': memory.decay.staleness_status,
             }
 
-        # Merkle Tombstone & Redaction fields (EP-0143)
+        # Merkle Tombstone & Redaction fields
         if memory.redacted:
             frontmatter['redacted'] = True
             if memory.redacted_at:
@@ -180,7 +180,7 @@ class MemoryManager:
             if memory.redaction_reason:
                 frontmatter['redaction_reason'] = memory.redaction_reason
 
-        # Semantic Embedding fields (EP-0144)
+        # Semantic Embedding fields
         if memory.embedding_model:
             frontmatter['embedding_model'] = memory.embedding_model
         if memory.embedding_vector:
@@ -260,7 +260,7 @@ class MemoryManager:
         self._move_memory(memory_id, self.local_subsumed_dir, self.global_subsumed_dir)
 
     def supersede(self, target_memory_id: str, superseding_memory_id: str) -> Memory:
-        """Marks a target memory as superseded by another memory (EP-0134).
+        """Marks a target memory as superseded by another memory.
 
         Enforces the Golem Core Memory Protection Invariant: Core and Axiom memories
         cannot be superseded by an agent.
@@ -313,7 +313,7 @@ class MemoryManager:
 
     def redact(self, memory_id: str, reason: str) -> Path:
         """
-        Merkle Tombstone Redaction (EP-0143).
+        Merkle Tombstone Redaction.
         Replaces the body of a memory with a tombstone marker while preserving
         frontmatter hash and original file path to prevent breaking inbound L2 graph links.
         """
@@ -402,7 +402,7 @@ class MemoryManager:
     def _compute_directory_digest(self, include_archived: bool = False) -> str:
         """Fast state digest computed in < 1ms using high-resolution mtime and file size.
 
-        Follows the mathematical model in EP-0140:
+        Follows the mathematical model:
         H_digest = SHA256( (name_f || mtime_f || size_f) for f in Memories )
         """
         stat_digests: list[str] = []
@@ -549,7 +549,7 @@ class MemoryManager:
             if not file_path.name.endswith(expected_suffix):
                 return f'Filename does not match stored ID: {stored_id}'
 
-            # Merkle Tombstone Redaction (EP-0143): Content was purged/redacted post-facto.
+            # Merkle Tombstone Redaction: Content was purged/redacted post-facto.
             # Hash in filename and frontmatter is preserved for relational graph continuity.
             if data.get('redacted'):
                 return None

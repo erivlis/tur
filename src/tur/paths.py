@@ -4,7 +4,7 @@ Shared OS-native path resolution utilities for Tur.
 Single canonical source for global/local path predicates, workspace resolution,
 and registry resolution.
 All other modules import from here — no inline copies permitted.
-Implements EP-0128 with platformdirs, hardened with container fallbacks and POSIX permissions.
+Implements cross-platform path resolution with platformdirs, hardened with container fallbacks and POSIX permissions.
 """
 
 import contextlib
@@ -106,7 +106,7 @@ def resolve_data_dir() -> Path:
 
 
 def resolve_models_dir(model_name: str | None = None) -> Path:
-    """Resolve directory for local ONNX embedding models and tokenizers (EP-0144).
+    """Resolve directory for local ONNX embedding models and tokenizers.
 
     Default: ~/.tur/models (or $TUR_DATA_DIR/models)
     If model_name is provided, returns ~/.tur/models/<model_name>.

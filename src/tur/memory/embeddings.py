@@ -1,4 +1,4 @@
-"""src/tur/memory/embeddings.py - Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval (EP-0144).
+"""src/tur/memory/embeddings.py - Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval.
 
 Provides multi-tier vector generation and cosine similarity calculation:
 1. Generation: ONNX Runtime (all-MiniLM-L6-v2_onnx_int8) when installed, or graceful fallback.
@@ -54,7 +54,7 @@ MODEL_ALIASES: dict[str, str] = {
 def is_model_compatible(candidate_model: str | None, active_model: str | None) -> bool:
     """Verifies whether a candidate vector's embedding model matches the active model.
 
-    Enforces the Strict Vector Space Homogeneity Invariant (EP-0144).
+    Enforces the Strict Vector Space Homogeneity Invariant.
     If candidate_model is None (legacy or test fixture), it is allowed to prevent breakage.
     If both candidate_model and active_model are specified, their canonical IDs must match.
     """
@@ -125,7 +125,7 @@ def batch_cosine_similarity(
 
 
 class VectorEngine:
-    """Dual-tier semantic vector similarity engine with zero-dependency fallback (EP-0144)."""
+    """Dual-tier semantic vector similarity engine with zero-dependency fallback."""
 
     def __init__(
         self,
@@ -149,7 +149,7 @@ class VectorEngine:
             self._auto_discover_model()
 
     def _auto_discover_model(self) -> None:
-        """Auto-discovers model and tokenizer from ~/.tur/models (EP-0144)."""
+        """Auto-discovers model and tokenizer from ~/.tur/models."""
         from tur.paths import resolve_models_dir
 
         candidates = [self.model_name]

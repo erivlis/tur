@@ -58,7 +58,7 @@ def init_wizard() -> str:
     persona_folder = personas_dir / str(persona_id)
     persona_folder.mkdir(exist_ok=True)
 
-    # Save CONSTITUTION.md (EP-0135) and persona.yaml (backwards compatibility)
+    # Save CONSTITUTION.md and persona.yaml (backwards compatibility)
     save_constitution(persona_folder, persona)
     file_path = persona_folder / 'persona.yaml'
     with open(file_path, 'w', encoding='utf-8') as f:

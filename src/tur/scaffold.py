@@ -1,7 +1,7 @@
 """
 Scaffolding generator for agentic harnesses.
 
-Implements EP-0135: The Modular Scaffolding Protocol, decoupling operational
+Implements the Modular Scaffolding Protocol, decoupling operational
 harnessing (AGENTS.md) from persona identity (CONSTITUTION.md).
 """
 

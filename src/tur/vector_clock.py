@@ -1,5 +1,5 @@
 """
-Vector Clock Module (EP-0141).
+Vector Clock Module.
 
 Implements Lamport Vector Clocks V in N^k for the Inter-Agent Signal Protocol (IASP).
 Provides an immutable Mapping value object with formal partial ordering (N^k, <=),
@@ -18,7 +18,7 @@ T = TypeVar('T')
 
 class VectorClock(dict[str, int]):
     """
-    Immutable Lamport Vector Clock Value Object (EP-0141).
+    Immutable Lamport Vector Clock Value Object.
 
     Maintains causal invariance across distributed agent manifestations.
     Subclasses dict for zero-friction JSON serialization (json.dumps), SQLite storage,
