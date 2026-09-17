@@ -109,11 +109,11 @@ When running cognitive commands (`tur introspect`, `tur sleep`, `tur learn`) in 
 
 ## 🐝 Inter-Agent Swarm Concurrency
 
-When collaborating in multi-agent swarms, use the typed signal queues and shared whiteboard tools:
+When collaborating in multi-agent swarms, use the typed message queues and shared session board tools:
 
-- **Send Signal**: `signal(recipient="worker-1", signal_type="task_ready", payload={...})`
-- **Read & Ack Signals**: `read_signals(unread_only=True)` $\to$ `ack_signals(signal_ids=[1, 2])`
-- **Shared Whiteboard**: `write_whiteboard(key="architecture_plan", value="...")` $\to$ `read_whiteboard(key="architecture_plan")`
+- **Send Message**: `send_message(to="worker-1", type="inform", content="...")`
+- **Read & Ack Messages**: `read_messages(unread_only=True)` $\to$ `ack_messages(message_ids=["..."])`
+- **Shared Board**: `write_board(key="architecture_plan", value="...")` $\to$ `read_board(key="architecture_plan")`
 - **List Swarm Agents**: `list_agents()`
 
 ---
