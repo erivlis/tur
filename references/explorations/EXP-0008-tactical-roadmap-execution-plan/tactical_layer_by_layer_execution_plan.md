@@ -130,7 +130,7 @@ graph TD
 
 ---
 
-### 🌊 Wave 4.5 (Bridge): Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy [Status: Ready / Next]
+### 🌊 Wave 4.5 (Bridge): Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy [Status: Complete / Final]
 * **Primary Proposals:**
   - [`EP-0149`](file:///C:/dev/erivlis/tur/docs/proposals/EP-0149-hierarchical-command-taxonomy-and-subsystem-grammar.md): Two-Tier Hierarchical Command Grammar and Subsystem Taxonomy [Status: Accepted]
 * **Key Deliverables:**

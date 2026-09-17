@@ -63,7 +63,7 @@ The Phased Tactical Execution Plan:
 - **Wave 3:** Storage, Lineage, Causal Signals & Task Workflows (`EP-0130`, `EP-0133`, `EP-0141`, `EP-0147`) — **[Complete / Final]**
 - **Wave 4:** High-Speed Graph Engine, Domain Architecture & Budgeted Wake (`EP-0131`, `EP-0132`, `EP-0134`, `EP-0136`,
   `EP-0146`, `EP-0144`, `EP-0148`) — **[Complete / Final]** (All 7 EPs implemented, verified, benchmarked, and Council-ratified)
-- **Wave 4.5 (Bridge):** Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy (`EP-0149`) — **[Next / Ready to Plan]**
+- **Wave 4.5 (Bridge):** Two-Tier Hierarchical Command Grammar & Subsystem Taxonomy (`EP-0149`) — **[Complete / Final]**
 - **Wave 5:** Sovereign Epistemology, Dashboard & Higher Algebra (`EP-0137`, `EP-0138`, `EP-0139`, `EP-0145`) — **[Planned]**
 - **Wave 6 (Capstone):** Adversarial Chaos Engineering & Pre-v1.0.0 Swarm Fuzzing (`EP-0150`) — **[Planned / Hardening Gate]**
 
