@@ -287,7 +287,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
     * **Declarative Knowledge Graph Modeling, Interactive Dashboard, and Mermaid Visualization (EP-0145) [Status: Draft]:**
       Integrating `networkx-mermaid` for robust subgraph rendering and `graphinate` for interactive local browser inspection
       under `tur-adm graph serve`.
-    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Accepted]:**
+    * **Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics (EP-0149) [Status: Implemented]:**
       Establishes an orthogonal two-tier command hierarchy for Tur (`tur task`, `tur board`, `tur note`, `tur message`, `tur agent`),
       standardizing machine-parsable `--json` output and ambient agent identity.
 * **Track: Persona Memory & Compaction**

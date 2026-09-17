@@ -2,7 +2,7 @@
 title: "EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics"
 description: "Establishes a two-tier command hierarchy for Tur, structuring ad-hoc commands into orthogonal domain subcommands (note, board, message, agent, task, memory) while standardizing --json output and ambient agent identity."
 icon: lucide/layers
-status: accepted
+status: implemented
 ---
 
 # EP-0149: Two-Tier Hierarchical Command Grammar, Subsystem Taxonomy, and Deterministic Machine Ergonomics
@@ -14,10 +14,10 @@ status: accepted
 | **Author**   | Eran Rivlis, Ariel                                                                                        |
 | **Sponsor**  | Council of Giants                                                                                         |
 | **Delegate** | Russell (Consistency & Logic), Shannon (Information Density & Parsimony), Noether (Symmetry & Invariance) |
-| **Status**   | Accepted                                                                                                  |
+| **Status**   | Implemented                                                                                               |
 | **Type**     | Standards Track                                                                                           |
 | **Created**  | 2026-09-08                                                                                                |
-| **Updated**  | 2026-09-10                                                                                                |
+| **Updated**  | 2026-09-17                                                                                                |
 | **Replaces** | EP-0004 (Partially supersedes command grammar sections)                                                   |
 
 ---
@@ -26,7 +26,7 @@ status: accepted
 
 This proposal establishes a unified **Two-Tier Hierarchical Command Grammar** and machine-ergonomics standard for the
 Tur agent runtime (`tur`). As Tur expanded to accommodate multi-agent swarms (EP-0107), causal vector clocks (EP-0141),
-session diffs (EP-0133), shared whiteboards, and task context preservation protocols (EP-0147), the CLI accumulated over
+session diffs (EP-0133), shared session boards, and task context preservation protocols (EP-0147), the CLI accumulated over
 twenty flat, ad-hoc commands with irregular grammatical structures (e.g., `read-notes` vs. `whiteboard-write` vs.
 `signal`).
 
@@ -97,9 +97,7 @@ The architecture of EP-0149 is governed by core Council principles:
   tokens parsing Rich ANSI escape sequences and decorative ASCII tables.
 - **Noether (Symmetry & Invariance):** Command actions must exhibit read/write symmetry. The state write path
   (`tur board write <k> <v>`) must structurally mirror the state read path (`tur board read <k>`).
-- **Maharal (Boundary Containment & Backwards Compatibility):** Structural cleanup must never break running harnesses.
-  Legacy commands (`read-notes`, `whiteboard-write`, `list-agents`) remain active as transparent, non-advertised
-  aliases.
+- **Maharal (Boundary Containment & Zero-Entropy Clean Break):** Structural cleanliness enforces boundary stability. Rather than perpetuating decaying ghost aliases that confuse LLMs and inflate prompt tokens, legacy flat commands (`whiteboard-write`, `signal`, `read-signals`, `tur-adm signal`) are cleanly severed across all user-facing interfaces.
 
 ---
 
@@ -150,7 +148,7 @@ These high-frequency verbs represent the foundational cognitive lifecycle and re
 | `tur note read`            | `[--limit N] [--json]` | Read chronological notes from active session.      |
 | *Default fallback:*        | `tur note "<content>"` | Implicitly routes to `tur note write "<content>"`. |
 
-##### 2. Session Board (`tur board`, alias: `whiteboard`)
+##### 2. Session Board (`tur board`)
 
 | Command                         | Arguments / Flags  | Description                                                  |
 |:--------------------------------|:-------------------|:-------------------------------------------------------------|
@@ -159,13 +157,13 @@ These high-frequency verbs represent the foundational cognitive lifecycle and re
 | `tur board list`                | `[--json]`         | List all keys and metadata currently on the active board.    |
 | `tur board clear [key]`         | `[--all]`          | Remove a key or clear the session board.                     |
 
-##### 3. Inter-Agent Messaging & Signals (`tur message`, alias: `signal`)
+##### 3. Inter-Agent Messaging & Vector Clocks (`tur message`)
 
-| Command                       | Arguments / Flags                    | Description                                                 |
-|:------------------------------|:-------------------------------------|:------------------------------------------------------------|
-| `tur message send <content>`  | `--recipient <id\|all> [--type <t>]` | Send a vector-clock stamped message to peer manifestations. |
-| `tur message read`            | `[--unread-only] [--json]`           | Ingest pending incoming messages and signals.               |
-| `tur message ack <signal_id>` | `[--all]`                            | Acknowledge and mark messages as read.                      |
+| Command                        | Arguments / Flags                    | Description                                                 |
+|:-------------------------------|:-------------------------------------|:------------------------------------------------------------|
+| `tur message send <content>`   | `--recipient <id\|all> [--type <t>]` | Send a vector-clock stamped message to peer manifestations. |
+| `tur message read`             | `[--unread-only] [--json]`           | Ingest pending incoming messages.                           |
+| `tur message ack <message_id>` | `[--all]`                            | Acknowledge and mark messages as read.                      |
 
 ##### 4. Manifestation & Swarm Management (`tur agent`)
 
@@ -237,16 +235,46 @@ Every query, list, or diagnostic command across Tur MUST accept a `--json` (or `
 
 ---
 
+### 4. Canonical Nomenclature and MCP Interface Parity
+
+To enforce the Grounded Technical Prose Invariant and eliminate cognitive friction across interface boundaries:
+
+#### 1. "Board" as the Canonical Invariant (Retiring "Whiteboard")
+- In accordance with classical blackboard system architecture (Hearsay-II), all user-facing terminal outputs, error messages, table headers, task coordination schemas, CLI commands, and API docstrings MUST standardize on the term **"Board"**.
+- The legacy term "whiteboard" is formally retired from user-facing surfaces (`tur board write`, `tur board read`), preserving the internal SQLite table identifier (`CREATE TABLE whiteboard`) strictly for database schema migration continuity.
+
+#### 2. "Message" as Canonical User-Facing Nomenclature (Retiring "Signal" in Verbs)
+- While the Inter-Agent Signal Protocol (IASP) remains the formal mechanism name for causal vector clock routing, all user-facing CLI commands, MCP tools, feedback logs, and documentation standardize on **"Message"** (`tur message send`, `tur message read`, `tur message ack`).
+- Flat legacy verbs (`tur signal`, `tur read-signals`, `tur ack-signals`) are formally retired.
+
+#### 3. MCP Server Tool Parity & The Zero-Entropy Clean Break
+To ensure symmetry between the CLI and the Model Context Protocol server (`tur-mcp`), the following first-class tools are standardized:
+
+| MCP Tool Name                            | Arguments                                 | Behavior                                                      |
+|:-----------------------------------------|:------------------------------------------|:--------------------------------------------------------------|
+| `write_board(key, value)`                | `key: str, value: str`                    | Writes or updates parameter coordinates on the session board. |
+| `read_board(key)`                        | `key: str`                                | Reads parameter coordinates from the session board.           |
+| `send_message(to, content, type)`        | `to: str, content: str, type: str`        | Sends an IASP message with vector clock stamping.             |
+| `read_messages(unread_only)`             | `unread_only: bool`                       | Ingests pending incoming messages for the agent.              |
+| `ack_messages(message_ids)`              | `message_ids: list[str]`                  | Acknowledges received messages.                               |
+
+**Council Invariant (Zero-Entropy Tool Manifest):**
+Per Council consensus (Shannon on context window efficiency, Russell on orthogonal grammar, Maharal on containment), duplicate alias tools (`signal`, `send_signal`, `read_signals`, `ack_signals`, `write_whiteboard`, `read_whiteboard`) are permanently excised from the active MCP server tool manifest. Exposing redundant synonyms in tool definitions inflates static token budgets on every turn and induces model hesitation; a single canonical tool per operation enforces structural clarity.
+
+#### 4. Administrative Parity & Clean Break (`tur-adm message`)
+- Symmetrically extends the Zero-Entropy Clean Break to the human administrative governance binary (`tur-adm`).
+- `tur-adm signal inspect` is formally retired in favor of canonical `tur-adm message inspect`.
+- The administrative CLI adheres to the exact same noun-verb orthogonal taxonomy, eliminating divergent mental models between human governance and agent runtime.
+
+---
+
 ## Backwards Compatibility
 
-EP-0149 maintains **100% backwards compatibility**:
+EP-0149 maintains intentional, high-leverage backwards compatibility:
 
-- **Alias Registry:** All legacy flat commands (`whiteboard-write`, `whiteboard-read`, `read-notes`, `list-agents`,
-  `read-signals`, `ack-signals`) are retained in Typer as hidden aliases pointing directly to the new subcommand
-  handlers.
-- **Top-Level Cognitive Shortcuts:** Commands like `tur learn` and `tur recall` continue to function as root shortcuts
-  delegating to `tur memory learn` and `tur memory recall`.
+- **Top-Level Cognitive Shortcuts:** Core single-word cognitive verbs (`tur learn`, `tur recall`, `tur wake`, `tur sleep`) continue to function as root shortcuts delegating directly to their subsystem handlers (`tur memory learn`, `tur memory recall`).
 - **Positional Note Handling:** Invoking `tur note "text"` continues to work identically to `tur note write "text"`.
+- **Zero-Entropy Clean Break:** Ad-hoc legacy flat verbs (`whiteboard-write`, `whiteboard-read`, `signal`, `read-signals`, `ack-signals`, `tur-adm signal inspect`) and duplicate MCP tool wrappers are retired rather than perpetuated as ghost aliases, establishing a pure, orthogonal grammar for `v0.15.0+`.
 
 ---
 
@@ -279,33 +307,22 @@ memory_app = typer.Typer(help="Epistemic memory ledger and cognitive graph.")
 # Sub-app registrations
 app.add_typer(note_app, name="note")
 app.add_typer(board_app, name="board")
-app.add_typer(board_app, name="whiteboard", hidden=True)  # Alias
 app.add_typer(message_app, name="message")
-app.add_typer(message_app, name="signal", hidden=True)  # Alias
 app.add_typer(agent_app, name="agent")
 app.add_typer(task_app, name="task")
 app.add_typer(memory_app, name="memory")
-
-# Backward-compatible legacy aliases
-app.command("read-notes", hidden=True)(note_read_cmd)
-app.command("whiteboard-write", hidden=True)(board_write_cmd)
-app.command("whiteboard-read", hidden=True)(board_read_cmd)
-app.command("list-agents", hidden=True)(agent_list_cmd)
-app.command("read-signals", hidden=True)(message_read_cmd)
-app.command("ack-signals", hidden=True)(message_ack_cmd)
 ```
 
 ---
 
 ## Rejected Ideas
 
+- **Retaining Permanent Duplicate Aliases in the MCP Tool Manifest (`signal`, `write_whiteboard`, etc.):** Rejected by Council consensus (Shannon/Russell/Maharal). In MCP, all registered tools are injected into the agent prompt context window on every turn. Exposing redundant synonyms inflates token overhead, causes decision paralysis, and creates uncontained ghost pathways. A single orthogonal grammar provides superior agentic reliability.
 - **Strict Single-Level Noun Overloading (e.g. `tur note --read`, `tur note --write`):** Rejected because overloading
   flags for core actions produces complex, brittle CLI option parsing and contradicts Typer/Click standard practices.
 - **Renaming Shared State to `forum` (`tur forum write`):** Rejected because "forum" implies threaded, append-only
   conversational discourse. The session state coordinate store is a mutable, overwriteable blackboard, making `board`
   the accurate computer science term.
-- **Breaking Removal of Flat Legacy Commands:** Rejected to avoid breaking external harness scripts, CI pipelines, and
-  existing integrations (`.pi/extensions/tur-adapter.ts`).
 
 ---
 
@@ -314,11 +331,24 @@ app.command("ack-signals", hidden=True)(message_ack_cmd)
 - [ ] Should `tur task claim` automatically infer the active task ID from the current branch name (e.g.
   `feature/EP-0149`)?
 - [ ] Should `tur board export` be introduced to dump the entire session board to a standalone JSON file?
+- [ ] **Physical Storage and Model Layer Convergence (`Signal` vs `Message`):**
+  - Should the underlying SQLite tables (`signals`, `signal_reads`) and the core Pydantic model (`class Signal(BaseModel)`) eventually be renamed to `messages`, `message_reads`, and `class Message(BaseModel)`?
+  - *Current Decision:* Retained as `Signal` / `signals` to preserve the Shannon/Dirac distinction between the physical transport mechanism (IASP: Inter-Agent Signal Protocol) and the agent's semantic speech acts (`Message`). This avoids migration overhead and foreign key cascade risks across existing session SQLite databases, while the CLI and MCP surfaces remain strictly canonical (`tur message`, `send_message`). Deferred as an open consideration for a future major storage schema revision (e.g., v1.0).
 
 ---
 
 ## Change Log
 
+* **2026-09-17 (Council Decision: Extension of Clean Break to Administrative Governance):**
+    * Extended the Zero-Entropy Clean Break to the human administrative governance binary (`tur-adm`).
+    * Formally retired `tur-adm signal inspect` in favor of canonical `tur-adm message inspect`, enforcing cross-executable grammar symmetry between agent runtime and human governance without ghost aliases.
+    * Excised internal early prototype aliases (`yield`, `seal`) in `tur task`, preserving only canonical `handover` and `complete`.
+    * Stripped bureaucratic tracking prefixes (`EP-XXXX`) from all test docstrings and standardized rate-limit telemetry on `messages per minute`.
+* **2026-09-17 (Council Decision: Zero-Entropy Clean Break):**
+    * Council consensus adopted to retire legacy alias verbs from the active MCP server tool surface and CLI.
+    * Excised duplicate MCP tools (`signal`, `send_signal`, `read_signals`, `ack_signals`, `write_whiteboard`, `read_whiteboard`) in favor of canonical `send_message`, `read_messages`, `ack_messages`, `write_board`, `read_board`.
+    * Excised legacy flat CLI aliases (`tur whiteboard`, `tur whiteboard-write`, `tur whiteboard-read`, `tur signal`, `tur read-signals`, `tur ack-signals`).
+    * Canonical terminology harmonization: formal retirement of "whiteboard" in favor of "board" across docstrings, table titles, and error messages; alignment of user-facing outputs around "message" rather than "signal".
 * **2026-09-10:**
     * Accepted for target release `v0.15.0`. Partial implementation (`tur task`) landed with EP-0147 in `v0.14.0`; full domain subcommand restructuring deferred to `v0.15.0`.
 * **2026-09-08:**
