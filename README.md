@@ -195,33 +195,40 @@ inside
 tur-adm persona init
 ```
 
-### 3. The Core Lifecycle (Agent-Facing)
+### 3. The Core Lifecycle & Subsystem Taxonomy (Agent-Facing)
 
-The agent interacts with the lightweight `tur` binary inside its sandboxed virtual environment:
+The agent interacts with the lightweight `tur` binary inside its sandboxed environment. Tur provides a two-tier command grammar: single-word cognitive reflexes for fast lifecycle management, and domain subcommands for multi-agent swarm coordination, task tracking, and structured memory operations. See the complete [Usage Guide](docs/usage.md) for full syntax and options.
 
-**Wake:** Compiles the active persona state into a compiled System Prompt.
+#### Tier 1: Cognitive Reflexes (Fast Path)
 
 ```shell
+# Wake: Compiles active persona, principles, and active task state into a system prompt
 tur wake
-```
 
-**Learn:** Manually injects a memory.
-
-```shell
+# Learn: Manually ingest a permanent memory into the L1 ledger
 tur learn "The user prefers functional programming." --type preference
-```
 
-**Recall:** Keyword semantic search.
-
-```shell
+# Recall: Keyword and semantic memory retrieval
 tur recall "functional"
-```
 
-**Sleep:** Dehydrates the session and extracts memories.
-
-```shell
+# Sleep: Dehydrate session and consolidate memories from chat log
 tur sleep path/to/chat.log
 ```
+
+#### Tier 2: Domain Subsystems & Swarm Coordination
+
+| Subsystem | Command Example | Description |
+|:---|:---|:---|
+| **`task`** | `tur task claim <id> --title <t>` | Tactical milestone and handover preservation ([EP-0147](docs/proposals/index.md#L74)) |
+| **`board`** | `tur board write <key> <val>` | Shared multi-agent parameter blackboard (Blackboard Architecture) |
+| **`message`** | `tur message send <to> <content>` | Causal inter-agent messaging with Lamport vector clocks ([EP-0141](docs/proposals/index.md#L68)) |
+| **`note`** | `tur note write <text>` | Ephemeral in-flight session scratchpad |
+| **`memory`** | `tur memory recall <query>` | Deep associative recall, Louvain graph clustering, and Merkle verification |
+| **`agent`** | `tur agent list` | Multi-agent swarm discovery, heartbeats, and manifestation resolution |
+
+> [!TIP]
+> **Universal `--json` Standard**: Every query, list, and inspection command across `tur` accepts `--json` (or `-j`) for headless subshell scripting and clean tool parsing.
+
 
 ### 4. Running the Harness Gateway (The MCP Server)
 
