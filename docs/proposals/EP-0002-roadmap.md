@@ -182,6 +182,9 @@ The maturation of the 100-series proposals produces eight emergent architectural
 * **Policy vs. Mechanism Decoupling (EP-0003) [Status: Implemented]:** Decoupled deterministic execution mechanics in
   `src/tur/` from anthropomorphic Council metaphors. Refactored `introspection.py` to functional class names
   (`IntegrityVerifier`, `OntologyExtractor`, `TruthMaintenanceEngine`, `SymmetryValidator`, `HebbianGraphDecayer`).
+* **Canonical Ontological Lexicon, Conceptual Taxonomy, and Rosetta Stone (EP-0005) [Status: Draft]:** Establishing the
+  authoritative conceptual taxonomy, negative boundary constraints, and bidirectional mapping between philosophical
+  metaphors and computer science mechanisms.
 * **Telemetry Enhancements:** Refining the Cognitive Load ($C_p$) calculations.
 * **EP Process Adoption:** Full integration of the EP process for all structural changes (EP-0000).
 * **Historical Core Boundaries (EP-0001) [Status: Superseded]:** Defined the early boundary between Core and Periphery;
