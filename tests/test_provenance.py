@@ -269,7 +269,7 @@ def test_okf_provenance_and_decay_roundtrip(tmp_path, monkeypatch):
 
 
 def test_wake_filter_omits_stale_memories(tmp_path, monkeypatch):
-    """EP-0131: Stale memories with weight < 0.3 are omitted from the default wake prompt."""
+    """Stale memories with weight < 0.3 are omitted from the default wake prompt."""
     monkeypatch.chdir(tmp_path)
     dot_tur = tmp_path / '.tur'
     dot_tur.mkdir()

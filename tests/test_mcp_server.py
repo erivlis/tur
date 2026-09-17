@@ -379,17 +379,17 @@ def test_mcp_parallel_tools_namespace_violation(mock_mcp_env, monkeypatch):
     mcp_server._active_session_id = 'sess-active'
     monkeypatch.setenv('TUR_AGENT_ID', 'agent_A')
 
-    # Test signal with invalid sender_id
+    # Test send_message with invalid sender_id
     with pytest.raises(ValueError, match='Namespace violation'):
-        mcp_server.signal(to='agent_C', content='hello', sender_id='agent_B')
+        mcp_server.send_message(to='agent_C', content='hello', sender_id='agent_B')
 
-    # Test read_signals with invalid agent_id
+    # Test read_messages with invalid agent_id
     with pytest.raises(ValueError, match='Namespace violation'):
-        mcp_server.read_signals(agent_id='agent_B')
+        mcp_server.read_messages(agent_id='agent_B')
 
-    # Test ack_signals with invalid agent_id
+    # Test ack_messages with invalid agent_id
     with pytest.raises(ValueError, match='Namespace violation'):
-        mcp_server.ack_signals(agent_id='agent_B', signal_ids=['sig1'])
+        mcp_server.ack_messages(agent_id='agent_B', message_ids=['sig1'])
 
     # Test tired with invalid agent_id
     with pytest.raises(ValueError, match='Namespace violation'):
@@ -404,22 +404,22 @@ def test_mcp_parallel_tools_no_session_error(mock_mcp_env, monkeypatch):
         mcp_server.read_notes()
 
     with pytest.raises(ValueError, match='No active session ID found'):
-        mcp_server.signal(to='*', content='msg')
+        mcp_server.send_message(to='*', content='msg')
 
     with pytest.raises(ValueError, match='No active session ID found'):
-        mcp_server.read_signals()
+        mcp_server.read_messages()
 
     with pytest.raises(ValueError, match='No active session ID found'):
-        mcp_server.ack_signals(signal_ids=['s1'])
+        mcp_server.ack_messages(message_ids=['s1'])
 
     with pytest.raises(ValueError, match='No active session ID found'):
         mcp_server.list_agents()
 
     with pytest.raises(ValueError, match='No active session ID found'):
-        mcp_server.write_whiteboard('k', 'v')
+        mcp_server.write_board('k', 'v')
 
     with pytest.raises(ValueError, match='No active session ID found'):
-        mcp_server.read_whiteboard('k')
+        mcp_server.read_board('k')
 
     with pytest.raises(ValueError, match='No active session ID found'):
         mcp_server.tired()
@@ -431,7 +431,7 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     monkeypatch.setenv('TUR_AGENT_ID', 'agent_A')
 
     # Mock business logics
-    mock_signal = MagicMock(return_value='sig-ok')
+    mock_msg = MagicMock(return_value='sig-ok')
     mock_read = MagicMock(return_value=[])
     mock_ack = MagicMock(return_value='ack-ok')
     mock_tired = MagicMock(return_value='Consensus sleep reached')
@@ -440,38 +440,38 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     mock_wb_w = MagicMock(return_value='wb-ok')
     mock_wb_r = MagicMock(return_value='wb-val')
 
-    monkeypatch.setattr(mcp_server, 'signal_logic', mock_signal)
-    monkeypatch.setattr(mcp_server, 'read_signals_logic', mock_read)
-    monkeypatch.setattr(mcp_server, 'ack_signals_logic', mock_ack)
+    monkeypatch.setattr(mcp_server, 'message_logic', mock_msg)
+    monkeypatch.setattr(mcp_server, 'read_messages_logic', mock_read)
+    monkeypatch.setattr(mcp_server, 'ack_messages_logic', mock_ack)
     monkeypatch.setattr(mcp_server, 'tired_logic', mock_tired)
     monkeypatch.setattr(mcp_server, 'read_notes_logic', mock_notes)
     monkeypatch.setattr(mcp_server, 'list_agents_logic', mock_list_agents)
-    monkeypatch.setattr(mcp_server, 'write_whiteboard_logic', mock_wb_w)
-    monkeypatch.setattr(mcp_server, 'read_whiteboard_logic', mock_wb_r)
+    monkeypatch.setattr(mcp_server, 'write_board_logic', mock_wb_w)
+    monkeypatch.setattr(mcp_server, 'read_board_logic', mock_wb_r)
 
     # Valid sender_id
-    res_sig = mcp_server.signal(to='agent_C', content='hello', sender_id='agent_A')
+    res_sig = mcp_server.send_message(to='agent_C', content='hello', sender_id='agent_A')
     assert res_sig == 'sig-ok'
 
     # Valid subagent sender_id (dot namespace)
-    res_sig_sub = mcp_server.signal(to='agent_C', content='hello', sender_id='agent_A.popper')
+    res_sig_sub = mcp_server.send_message(to='agent_C', content='hello', sender_id='agent_A.popper')
     assert res_sig_sub == 'sig-ok'
 
     # Valid agent_id
-    res_read = mcp_server.read_signals(agent_id='agent_A')
+    res_read = mcp_server.read_messages(agent_id='agent_A')
     assert res_read == []
 
     # Valid subagent agent_id
-    res_read_sub = mcp_server.read_signals(agent_id='agent_A.popper')
+    res_read_sub = mcp_server.read_messages(agent_id='agent_A.popper')
     assert res_read_sub == []
 
     # Valid ack
-    res_ack = mcp_server.ack_signals(agent_id='agent_A', signal_ids=['sig1'])
+    res_ack = mcp_server.ack_messages(agent_id='agent_A', message_ids=['sig1'])
     assert res_ack == 'ack-ok'
 
     # Empty ack
-    res_ack_empty = mcp_server.ack_signals(agent_id='agent_A', signal_ids=[])
-    assert res_ack_empty == 'No signal IDs provided.'
+    res_ack_empty = mcp_server.ack_messages(agent_id='agent_A', message_ids=[])
+    assert res_ack_empty == 'No message IDs provided.'
 
     # Read notes
     assert mcp_server.read_notes() == []
@@ -479,9 +479,15 @@ def test_mcp_parallel_tools_namespace_success(mock_mcp_env, monkeypatch):
     # List agents
     assert mcp_server.list_agents() == []
 
-    # Whiteboard
-    assert mcp_server.write_whiteboard('k', 'v') == 'wb-ok'
-    assert mcp_server.read_whiteboard('k') == 'wb-val'
+    # Board operations
+    assert mcp_server.write_board('k', 'v') == 'wb-ok'
+    assert mcp_server.read_board('k') == 'wb-val'
+
+    # Messages
+    assert mcp_server.send_message(to='*', content='test') == 'sig-ok'
+    assert mcp_server.read_messages() == []
+    assert mcp_server.read_note() == []
+    assert mcp_server.ack_messages(message_ids=['sig1']) == 'ack-ok'
 
     # Valid tired with consensus sleep clearing _active_session_id
     res_tired = mcp_server.tired(agent_id='agent_A')

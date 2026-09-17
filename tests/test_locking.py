@@ -200,7 +200,7 @@ def test_matrix_m6_total_lock_hierarchy_ordering(tmp_path: Path):
 
 
 def test_compute_jittered_poll_interval_bounds():
-    """EP-0140: Verify decorrelated jitter mathematically satisfies lower/upper bounds."""
+    """Verify decorrelated jitter mathematically satisfies lower/upper bounds."""
     base = 0.005
     max_sleep = 0.25
 
@@ -221,7 +221,7 @@ def test_compute_jittered_poll_interval_bounds():
 
 
 def test_compute_jittered_poll_interval_distribution():
-    """EP-0140: Verify decorrelated jitter produces stochastic values (not fixed intervals)."""
+    """Verify decorrelated jitter produces stochastic values (not fixed intervals)."""
     base = 0.005
     max_sleep = 0.25
     prev = 0.05
@@ -230,7 +230,7 @@ def test_compute_jittered_poll_interval_distribution():
 
 
 def test_jittered_backoff_delays_exhaustion():
-    """EP-0140: Verify jittered_backoff_delays generator stops when timeout deadline expires."""
+    """Verify jittered_backoff_delays generator stops when timeout deadline expires."""
     delays = []
     for d in jittered_backoff_delays(timeout=0.05, base=0.005, max_sleep=0.02):
         delays.append(d)
@@ -241,7 +241,7 @@ def test_jittered_backoff_delays_exhaustion():
 
 
 def test_get_async_file_lock_creation(tmp_path: Path):
-    """EP-0140: Verify get_async_file_lock instantiates configured AsyncFileLock."""
+    """Verify get_async_file_lock instantiates configured AsyncFileLock."""
     lock_file = tmp_path / '.locks' / 'async_inst.lock'
     async_lock = get_async_file_lock(lock_file, timeout=2.0)
     assert async_lock.is_singleton

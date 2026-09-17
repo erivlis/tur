@@ -185,21 +185,26 @@ def test_broadcast_join_table_isolation(mock_signal_workspace):
     assert len(session.read_signals_logic(session_id, agent_id='agent_B', unread_only=True)) == 1
 
 
-def test_session_whiteboard(mock_signal_workspace):
+def test_session_board(mock_signal_workspace):
     _, _ = mock_signal_workspace
-    session_id = 'sess_whiteboard'
+    session_id = 'sess_board'
 
     session.start_session_logic(session_id, agent_id='agent_A')
 
-    # Write key
-    session.write_whiteboard_logic(session_id, key='coord', value='X=10, Y=20', updated_by='agent_A')
+    # Write key using canonical write_board_logic
+    session.write_board_logic(session_id, key='coord', value='X=10, Y=20', updated_by='agent_A')
 
-    # Read key
-    val = session.read_whiteboard_logic(session_id, key='coord')
+    # Read key using canonical read_board_logic
+    val = session.read_board_logic(session_id, key='coord')
     assert val == 'X=10, Y=20'
 
     # Read missing key
-    assert session.read_whiteboard_logic(session_id, key='missing') is None
+    assert session.read_board_logic(session_id, key='missing') is None
+
+    # Verify backward-compatible aliases
+    assert session.read_whiteboard_logic(session_id, key='coord') == 'X=10, Y=20'
+    session.write_whiteboard_logic(session_id, key='legacy_coord', value='Z=30', updated_by='agent_A')
+    assert session.read_board_logic(session_id, key='legacy_coord') == 'Z=30'
 
 
 def test_staged_dreaming_consensus_sleep(mock_signal_workspace):
@@ -297,7 +302,7 @@ def test_vector_clock_emission_and_ack_merge(mock_signal_workspace):
     assert signals_a[0]['vector_clock'] == {'agent_A': 1, 'agent_B': 2}
 
 
-def test_cli_admin_signal_inspect(mock_signal_workspace):
+def test_cli_admin_message_inspect(mock_signal_workspace):
     from typer.testing import CliRunner
 
     from tur.cli.admin import app as admin_app
@@ -307,17 +312,21 @@ def test_cli_admin_signal_inspect(mock_signal_workspace):
     session_id = 'sess_admin_sig_inspect'
 
     session.start_session_logic(session_id, agent_id='agent_A')
-    session.signal_logic(session_id, sender='agent_A', recipient='*', content='Broadcast hello')
+    session.message_logic(session_id, sender='agent_A', recipient='*', content='Broadcast hello')
 
-    # Test terminal table output
-    res = runner.invoke(admin_app, ['signal', 'inspect', session_id])
+    # Test terminal table output via canonical 'message inspect'
+    res = runner.invoke(admin_app, ['message', 'inspect', session_id])
     assert res.exit_code == 0
-    assert 'IASP Signals & Vector Clocks' in res.stdout
+    assert 'IASP Messages & Vector Clocks' in res.stdout
     assert 'agent_A -> *' in res.stdout
     assert 'agent_A' in res.stdout
 
+    # Verify retired legacy command 'signal inspect' is rejected
+    res_retired = runner.invoke(admin_app, ['signal', 'inspect', session_id])
+    assert res_retired.exit_code != 0
+
     # Test JSON output
-    res_json = runner.invoke(admin_app, ['signal', 'inspect', session_id, '--json'])
+    res_json = runner.invoke(admin_app, ['message', 'inspect', session_id, '--json'])
     assert res_json.exit_code == 0
     import json
 

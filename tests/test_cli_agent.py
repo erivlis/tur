@@ -1,3 +1,4 @@
+import json
 import os
 import stat
 import sys
@@ -567,56 +568,56 @@ def test_agent_list_agents_and_coordination(mock_workspace):
     assert list_json.exit_code == 0
     assert '"id": "agent_alpha"' in list_json.stdout
 
-    # Send a signal
+    # Send a message
     sig_res = runner.invoke(
         agent_app,
-        ['signal', '*', 'Broadcast sync message', '--agent-id', 'agent_alpha'],
+        ['message', 'send', '*', 'Broadcast sync message', '--agent-id', 'agent_alpha'],
     )
     assert sig_res.exit_code == 0
-    assert 'Signal sent successfully' in sig_res.stdout
+    assert 'Message sent successfully' in sig_res.stdout
 
-    # Read signals (standard format)
+    # Read messages (standard format)
     read_res = runner.invoke(
         agent_app,
-        ['read-signals', '--agent-id', 'agent_alpha', '--unread-only'],
+        ['message', 'read', '--agent-id', 'agent_alpha', '--unread-only'],
     )
     assert read_res.exit_code == 0
     assert 'Broadcast sync message' in read_res.stdout
 
-    # Read signals (json format)
+    # Read messages (json format)
     read_json = runner.invoke(
         agent_app,
-        ['read-signals', '--agent-id', 'agent_alpha', '--json', '--all'],
+        ['message', 'read', '--agent-id', 'agent_alpha', '--json', '--all'],
     )
     assert read_json.exit_code == 0
     assert 'Broadcast sync message' in read_json.stdout
 
-    # Extract signal id from JSON
+    # Extract message id from JSON
     import json
 
     sigs = json.loads(read_json.stdout)
     sig_id = sigs[0]['id']
 
-    # Ack signal
+    # Ack message
     ack_res = runner.invoke(
         agent_app,
-        ['ack-signals', sig_id, '--agent-id', 'agent_alpha'],
+        ['message', 'ack', sig_id, '--agent-id', 'agent_alpha'],
     )
     assert ack_res.exit_code == 0
 
-    # Whiteboard write and read
+    # Board write and read
     wb_w = runner.invoke(
         agent_app,
-        ['whiteboard-write', 'coord_key', 'val_123', '--agent-id', 'agent_alpha'],
+        ['board', 'write', 'coord_key', 'val_123', '--agent-id', 'agent_alpha'],
     )
     assert wb_w.exit_code == 0
 
-    wb_r = runner.invoke(agent_app, ['whiteboard-read', 'coord_key'])
+    wb_r = runner.invoke(agent_app, ['board', 'read', 'coord_key'])
     assert wb_r.exit_code == 0
     assert 'val_123' in wb_r.stdout
 
-    # Whiteboard unset key
-    wb_unset = runner.invoke(agent_app, ['whiteboard-read', 'nonexistent_key'])
+    # Board unset key
+    wb_unset = runner.invoke(agent_app, ['board', 'read', 'nonexistent_key'])
     assert wb_unset.exit_code == 0
     assert "Key 'nonexistent_key' not set." in wb_unset.stdout
 
@@ -637,7 +638,7 @@ def test_agent_resolve_cli_context_namespace_violation(mock_workspace, monkeypat
     monkeypatch.setenv('TUR_AGENT_ID', 'alpha')
     sig_err = runner.invoke(
         agent_app,
-        ['signal', '*', 'hello', '--agent-id', 'beta'],
+        ['message', 'send', '*', 'hello', '--agent-id', 'beta'],
     )
     assert sig_err.exit_code == 1
     assert 'Namespace violation' in sig_err.stdout
@@ -688,10 +689,11 @@ def test_agent_resolve_cli_context_ambiguous_agents(mock_workspace, monkeypatch)
     # Clear env so auto-resolution triggers
     monkeypatch.delenv('TUR_AGENT_ID', raising=False)
 
-    # Signal without --agent-id should fail due to ambiguity
-    res = runner.invoke(agent_app, ['signal', '*', 'hello'])
-    assert res.exit_code == 1
-    assert 'AmbiguousIdentityError' in res.stdout
+    # Under ambient resolution, AmbiguousIdentityError is eliminated;
+    # auto-registration of ephemeral identity allows subshell execution to succeed.
+    res = runner.invoke(agent_app, ['message', 'send', '*', 'hello'])
+    assert res.exit_code == 0
+    assert 'Message sent successfully' in res.stdout
 
 
 def test_agent_status_long_note_and_past_session(mock_workspace, monkeypatch):
@@ -727,12 +729,12 @@ def test_agent_coordination_no_session_errors(mock_workspace, monkeypatch):
 
     # List agents should fail
     assert runner.invoke(agent_app, ['list-agents']).exit_code == 1
-    # Read signals should fail
-    assert runner.invoke(agent_app, ['read-signals']).exit_code == 1
-    # Whiteboard read should fail
-    assert runner.invoke(agent_app, ['whiteboard-read', 'key']).exit_code == 1
-    # Whiteboard write should fail
-    assert runner.invoke(agent_app, ['whiteboard-write', 'key', 'val']).exit_code == 1
+    # Read messages should fail
+    assert runner.invoke(agent_app, ['message', 'read']).exit_code == 1
+    # Board read should fail
+    assert runner.invoke(agent_app, ['board', 'read', 'key']).exit_code == 1
+    # Board write should fail
+    assert runner.invoke(agent_app, ['board', 'write', 'key', 'val']).exit_code == 1
     # Read notes should fail
     assert runner.invoke(agent_app, ['read-notes']).exit_code == 1
 
@@ -883,3 +885,235 @@ def test_cli_guard_lock_contention(mock_workspace, monkeypatch):
     res = runner.invoke(agent_app, ['status'])
     assert res.exit_code == 1
     assert 'Contention Warning: State lock is held by another process' in res.stdout
+
+
+def test_cli_note_subcommands(mock_workspace):
+    # Wake session first
+    wake_res = runner.invoke(agent_app, ['wake'])
+    assert wake_res.exit_code == 0
+
+    # 1. Explicit note write
+    w_res = runner.invoke(agent_app, ['note', 'write', 'Explicit note content'])
+    assert w_res.exit_code == 0
+    assert 'saved' in w_res.stdout.lower() or 'appended' in w_res.stdout.lower()
+
+    # 2. Implicit fallback note write (tur note "<content>")
+    fallback_res = runner.invoke(agent_app, ['note', 'Fallback note content'])
+    assert fallback_res.exit_code == 0
+    assert 'saved' in fallback_res.stdout.lower() or 'appended' in fallback_res.stdout.lower()
+
+    # 3. Note read (human format)
+    r_res = runner.invoke(agent_app, ['note', 'read'])
+    assert r_res.exit_code == 0
+    assert 'Explicit note content' in r_res.stdout
+    assert 'Fallback note content' in r_res.stdout
+
+    # 4. Note read (--json format)
+    r_json = runner.invoke(agent_app, ['note', 'read', '--json'])
+    assert r_json.exit_code == 0
+    data = json.loads(r_json.stdout)
+    assert isinstance(data, list)
+    assert any('Explicit note content' in n.get('content', '') for n in data)
+    assert any('Fallback note content' in n.get('content', '') for n in data)
+
+    # 5. Legacy alias: read-notes
+    legacy_notes = runner.invoke(agent_app, ['read-notes'])
+    assert legacy_notes.exit_code == 0
+    assert 'Explicit note content' in legacy_notes.stdout
+
+
+def test_cli_board_subcommands(mock_workspace):
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_alpha'])
+
+    # 1. Board write
+    bw_res = runner.invoke(agent_app, ['board', 'write', 'arch_key', 'arch_val_42'])
+    assert bw_res.exit_code == 0
+    assert 'updated' in bw_res.stdout.lower()
+
+    # 2. Board read
+    br_res = runner.invoke(agent_app, ['board', 'read', 'arch_key'])
+    assert br_res.exit_code == 0
+    assert 'arch_val_42' in br_res.stdout
+
+    # 3. Board read --json
+    br_json = runner.invoke(agent_app, ['board', 'read', 'arch_key', '--json'])
+    assert br_json.exit_code == 0
+    b_data = json.loads(br_json.stdout)
+    assert b_data['key'] == 'arch_key'
+    assert b_data['value'] == 'arch_val_42'
+
+    # 4. Board list
+    bl_res = runner.invoke(agent_app, ['board', 'list'])
+    assert bl_res.exit_code == 0
+    assert 'arch_key' in bl_res.stdout
+
+    # 5. Board list --json
+    bl_json = runner.invoke(agent_app, ['board', 'list', '--json'])
+    assert bl_json.exit_code == 0
+    items = json.loads(bl_json.stdout)
+    assert any(item['key'] == 'arch_key' for item in items)
+
+    # 6. Board clear single key
+    bclear_res = runner.invoke(agent_app, ['board', 'clear', 'arch_key'])
+    assert bclear_res.exit_code == 0
+    assert 'cleared' in bclear_res.stdout.lower()
+
+    # 7. Board clear all keys
+    bc_all = runner.invoke(agent_app, ['board', 'clear', '--all'])
+    assert bc_all.exit_code == 0
+    assert 'cleared' in bc_all.stdout.lower()
+
+
+def test_cli_message_subcommands(mock_workspace):
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_alpha'])
+
+    # 1. Message send with --recipient
+    msg_res = runner.invoke(agent_app, ['message', 'send', 'Hello agent beta', '--recipient', 'agent_beta'])
+    assert msg_res.exit_code == 0
+    assert 'ID:' in msg_res.stdout
+
+    # 2. Message send positional recipient
+    msg_pos = runner.invoke(agent_app, ['message', 'send', '*', 'Broadcast payload'])
+    assert msg_pos.exit_code == 0
+    assert 'ID:' in msg_pos.stdout
+
+    # 3. Message read
+    r_msg = runner.invoke(agent_app, ['message', 'read', '--all'])
+    assert r_msg.exit_code == 0
+
+    # 4. Message read --json
+    r_msg_json = runner.invoke(agent_app, ['message', 'read', '--json'])
+    assert r_msg_json.exit_code == 0
+    signals = json.loads(r_msg_json.stdout)
+    assert isinstance(signals, list)
+
+    # 5. Message ack by ID
+    if signals:
+        first_id = signals[0]['id']
+        ack_msg_res = runner.invoke(agent_app, ['message', 'ack', first_id])
+        assert ack_msg_res.exit_code == 0
+
+    # 6. Message ack --all
+    ack_all = runner.invoke(agent_app, ['message', 'ack', '--all'])
+    assert ack_all.exit_code == 0
+
+
+def test_cli_agent_subcommands(mock_workspace):
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_alpha'])
+
+    # 1. Agent list
+    al_res = runner.invoke(agent_app, ['agent', 'list'])
+    assert al_res.exit_code == 0
+    assert 'agent_alpha' in al_res.stdout
+
+    # 2. Agent list --json
+    al_json = runner.invoke(agent_app, ['agent', 'list', '--json'])
+    assert al_json.exit_code == 0
+    agents = json.loads(al_json.stdout)
+    assert isinstance(agents, list)
+    assert any(a['id'] == 'agent_alpha' for a in agents)
+
+    # 3. Agent whoami
+    who_res = runner.invoke(agent_app, ['agent', 'whoami'])
+    assert who_res.exit_code == 0
+    assert 'agent_alpha' in who_res.stdout
+
+    # 4. Agent whoami --json
+    who_json = runner.invoke(agent_app, ['agent', 'whoami', '--json'])
+    assert who_json.exit_code == 0
+    who_data = json.loads(who_json.stdout)
+    assert who_data['agent_id'] == 'agent_alpha'
+    assert 'session_id' in who_data
+    assert 'harness' in who_data
+
+    # 5. Agent register
+    reg_res = runner.invoke(agent_app, ['agent', 'register', '--harness', 'claude_code', '--agent-id', 'claude_1'])
+    assert reg_res.exit_code == 0
+    assert 'claude_1' in reg_res.stdout
+
+    # 6. Agent register --json
+    reg_json = runner.invoke(
+        agent_app,
+        ['agent', 'register', '--harness', 'antigravity', '--agent-id', 'gemini_1', '--json'],
+    )
+    assert reg_json.exit_code == 0
+    reg_data = json.loads(reg_json.stdout)
+    assert reg_data['id'] == 'gemini_1'
+    assert reg_data['harness'] == 'antigravity'
+
+    # 7. Legacy alias: list-agents
+    legacy_list = runner.invoke(agent_app, ['list-agents', '--json'])
+    assert legacy_list.exit_code == 0
+    assert any(a['id'] == 'claude_1' for a in json.loads(legacy_list.stdout))
+
+
+def test_cli_memory_subcommands(mock_workspace):
+    runner.invoke(agent_app, ['wake'])
+
+    # 1. Memory learn
+    learn_res = runner.invoke(
+        agent_app,
+        ['memory', 'learn', 'Tur uses SQLite for session coordination', '--type', 'fact', '--scope', 'incarnation'],
+    )
+    assert learn_res.exit_code == 0
+    assert 'Memory saved' in learn_res.stdout
+
+    # 2. Memory recall
+    recall_res = runner.invoke(agent_app, ['memory', 'recall', 'SQLite'])
+    assert recall_res.exit_code == 0
+
+    # 3. Memory recall --json
+    recall_json = runner.invoke(agent_app, ['memory', 'recall', 'SQLite', '--json'])
+    assert recall_json.exit_code == 0
+
+    # 4. Memory diff --json
+    diff_json = runner.invoke(agent_app, ['memory', 'diff', '--json'])
+    assert diff_json.exit_code == 0
+
+    # 5. Memory verify --json
+    verify_json = runner.invoke(agent_app, ['memory', 'verify', '--json'])
+    assert verify_json.exit_code == 0
+    v_data = json.loads(verify_json.stdout)
+    assert v_data['status'] == 'ok'
+
+
+def test_cli_universal_json_flags(mock_workspace):
+    runner.invoke(agent_app, ['wake'])
+
+    # 1. Status --json
+    status_json = runner.invoke(agent_app, ['status', '--json'])
+    assert status_json.exit_code == 0
+    s_data = json.loads(status_json.stdout)
+    assert 'persona_name' in s_data
+    assert 'session_id' in s_data
+    assert 'memory_stats' in s_data
+
+    # 2. Verify --json at root
+    verify_json = runner.invoke(agent_app, ['verify', '--json'])
+    assert verify_json.exit_code == 0
+    v_data = json.loads(verify_json.stdout)
+    assert v_data['status'] == 'ok'
+
+
+def test_cli_ambient_manifestation_resolution(mock_workspace, monkeypatch):
+    runner.invoke(agent_app, ['wake', '--agent-id', 'agent_prime'])
+
+    # 1. When TUR_AGENT_ID is set in env, it is used
+    monkeypatch.setenv('TUR_AGENT_ID', 'agent_prime')
+    who_res = runner.invoke(agent_app, ['agent', 'whoami', '--json'])
+    assert who_res.exit_code == 0
+    assert json.loads(who_res.stdout)['agent_id'] == 'agent_prime'
+
+    # 2. Namespace violation: explicit agent_id does not match TUR_AGENT_ID
+    violation_res = runner.invoke(agent_app, ['agent', 'whoami', '--agent-id', 'foreign_agent'])
+    assert violation_res.exit_code == 1
+    assert 'Namespace violation' in violation_res.stdout
+
+    # 3. Multi-agent: waking a second agent and unsetting env triggers ambient resolution
+    runner.invoke(agent_app, ['agent', 'register', '--harness', 'harness_sec', '--agent-id', 'agent_second'])
+    monkeypatch.delenv('TUR_AGENT_ID', raising=False)
+
+    # Ambient resolution should auto-spawn ephemeral or match without throwing AmbiguousIdentityError
+    auto_who = runner.invoke(agent_app, ['agent', 'whoami', '--json'])
+    assert auto_who.exit_code == 0
+    assert 'agent_id' in json.loads(auto_who.stdout)

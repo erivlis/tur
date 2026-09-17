@@ -410,7 +410,7 @@ def test_session_lineage_spark_clamping_and_staleness(mock_session_workspace):
 
     session.start_session_logic('sess-next', identifier=persona_id)
     notes = session.read_notes_logic('sess-next', persona_dir=p_dir)
-    # Check clamping to 256 characters (EP-0130)
+    # Check clamping to 256 characters
     assert len(notes[0]['content']) <= 256
 
     # Test staleness TTL: simulate prior sessions updated 50 hours ago

@@ -99,7 +99,7 @@ def test_compile_persona_renders_knowledge_graph():
 
 
 def test_compile_persona_uses_precompiled_singleton():
-    """EP-0140: Verify that compile_persona uses the module singleton template AST."""
+    """Verify that compile_persona uses the module singleton template AST."""
     from tur import compiler
 
     assert hasattr(compiler, '_PERSONA_TEMPLATE')
@@ -117,7 +117,7 @@ def test_compile_persona_uses_precompiled_singleton():
 
 
 def test_estimate_tokens():
-    """EP-0132: Verify token estimation heuristic."""
+    """Verify token estimation heuristic."""
     from tur.compiler import estimate_tokens
 
     assert estimate_tokens('') == 0
@@ -126,7 +126,7 @@ def test_estimate_tokens():
 
 
 def test_knapsack_01_exact_and_edge_cases():
-    """EP-0132: Verify 0-1 Knapsack exact DP solver."""
+    """Verify 0-1 Knapsack exact DP solver."""
     from tur.compiler import knapsack_01
 
     # Empty
@@ -144,7 +144,7 @@ def test_knapsack_01_exact_and_edge_cases():
 
 
 def test_knapsack_01_large_capacity_heuristic():
-    """EP-0132: Verify large capacity heuristic fallback."""
+    """Verify large capacity heuristic fallback."""
     from tur.compiler import knapsack_01
 
     n = 100
@@ -157,7 +157,7 @@ def test_knapsack_01_large_capacity_heuristic():
 
 
 def test_compile_persona_budgeted_wake_knowledge_graph():
-    """EP-0132: Verify Knapsack dynamic token budgeting packs HippoRAG subgraphs within budget."""
+    """Verify Knapsack dynamic token budgeting packs HippoRAG subgraphs within budget."""
     persona = Persona(name='Ariel', aleph='Manifest clarity', principles=[], protocols=[], speech_modulations=[])
     user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
 
@@ -208,7 +208,7 @@ def test_compile_persona_budgeted_wake_knowledge_graph():
 
 
 def test_compile_persona_budgeted_wake_flat_memories():
-    """EP-0132: Verify Knapsack dynamic budgeting on flat memories list."""
+    """Verify Knapsack dynamic budgeting on flat memories list."""
     persona = Persona(name='Ariel', aleph='Clarity', principles=[], protocols=[], speech_modulations=[])
     user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
 
@@ -246,7 +246,7 @@ def test_compile_persona_budgeted_wake_flat_memories():
 
 
 def test_compile_persona_extreme_tight_budget():
-    """EP-0132: Verify graceful handling when token budget is smaller than base prompt."""
+    """Verify graceful handling when token budget is smaller than base prompt."""
     persona = Persona(name='Ariel', aleph='Clarity', principles=[], protocols=[], speech_modulations=[])
     user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
     memories = [
@@ -268,7 +268,7 @@ def test_compile_persona_extreme_tight_budget():
 
 
 def test_compile_persona_custom_tokenizer():
-    """EP-0132: Verify custom tokenizer injection into compile_persona."""
+    """Verify custom tokenizer injection into compile_persona."""
     persona = Persona(name='Ariel', aleph='Clarity', principles=[], protocols=[], speech_modulations=[])
     user = UserProfile(name='Eran', role='Architect', domain_expertise=[], core_values=[])
     state = SessionState(persona=persona, user=user, memories=[], epilogue='End')

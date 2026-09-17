@@ -1,5 +1,5 @@
 """
-tests/test_tms.py - Unit tests for Active TMS Contradiction Interruption Protocol (EP-0134).
+tests/test_tms.py - Unit tests for Active TMS Contradiction Interruption Protocol.
 """
 
 import json

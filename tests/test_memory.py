@@ -482,7 +482,7 @@ def test_memory_get_stats(temp_home_and_base):
 
 
 def test_merkle_invalidation_cache_hit_and_miss(temp_home_and_base, monkeypatch):
-    """EP-0140: Verify O(1) cache hits and cache invalidation on save."""
+    """Verify O(1) cache hits and cache invalidation on save."""
     _fake_home, local_base = temp_home_and_base
     MemoryManager.clear_cache()
     manager = MemoryManager(base_dir=local_base)
@@ -530,7 +530,7 @@ def test_merkle_invalidation_cache_hit_and_miss(temp_home_and_base, monkeypatch)
 
 
 def test_merkle_invalidation_cache_detects_external_file_change(temp_home_and_base):
-    """EP-0140: External file addition or modification changes digest and invalidates cache."""
+    """External file addition or modification changes digest and invalidates cache."""
     _fake_home, local_base = temp_home_and_base
     MemoryManager.clear_cache()
     manager = MemoryManager(base_dir=local_base)
@@ -557,7 +557,7 @@ def test_merkle_invalidation_cache_detects_external_file_change(temp_home_and_ba
 
 
 def test_merkle_invalidation_cache_archive_and_subsume(temp_home_and_base):
-    """EP-0140: Archiving or subsuming memories invalidates the active cache."""
+    """Archiving or subsuming memories invalidates the active cache."""
     _fake_home, local_base = temp_home_and_base
     MemoryManager.clear_cache()
     manager = MemoryManager(base_dir=local_base)

@@ -1,5 +1,5 @@
 """
-tests/test_task.py - Unit tests for Task Protocol and Swarm Management (EP-0147, EP-0149).
+tests/test_task.py - Unit tests for Task Protocol and Swarm Management.
 """
 
 from pathlib import Path
