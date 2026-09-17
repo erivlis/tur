@@ -86,11 +86,11 @@ You can always query the current workspace persona via `tur-adm persona get` or 
 Tur enforces strict physical security boundaries by separating agent runtime operations from human administrative
 actions across three distinct executables (EP-0004 / EP-0116):
 
-| Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                                            |
-|:--------------|:------------------------------|:------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
-| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `task (list/show/claim/check/handover/complete)`, `note`, `read-notes`, `learn`, `diff`, `recall`, `status`, `metrics`, `sleep` |
-| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `clean`                       |
-| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                                          |
+| Executable    | Purpose                       | Target Audience         | Key Commands                                                                                                                                                                                                       |
+|:--------------|:------------------------------|:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`tur`**     | Agent Runtime & MCP Gateway   | AI Agent / Host Process | `wake`, `task (list/show/claim/check/handover/complete)`, `board (write/read/list/clear)`, `message (send/read/ack)`, `agent (list)`, `note (write/read)`, `learn`, `diff`, `recall`, `status`, `metrics`, `sleep` |
+| **`tur-adm`** | Sovereign Human Governance    | Human Architect         | `persona (init/list/view/get/set/export/import)`, `memory (list/view/approve/forget)`, `session (start/end/list/note)`, `message (inspect)`, `model`, `clean`                                                      |
+| **`tur-mcp`** | Model Context Protocol Server | External Harnesses      | MCP Standard JSON-RPC Endpoint                                                                                                                                                                                     |
 
 ---
 
@@ -279,20 +279,20 @@ tur diff --type fact --scope universal
 tur diff --json
 ```
 
-### 13. Read Session Notes & Lineage Continuity (`read-notes`)
+### 13. Read Session Notes & Lineage Continuity (`note read`)
 
-**Cross-Session Continuity (EP-0130):** Inspect chronological scratchpad notes from the active session or traverse
+**Cross-Session Continuity:** Inspect chronological scratchpad notes from the active session or traverse
 predecessor history along the session lineage DAG.
 
 ```shell
 # Read notes from active session
-tur read-notes
+tur note read
 
 # Read notes from the immediate parent session
-tur read-notes --session-id previous
+tur note read --session-id previous
 
 # Read notes from active session and predecessor in a continuous trail
-tur read-notes --include-previous --limit 20
+tur note read --include-previous --limit 20
 ```
 
 ### 14. Graph-Theoretic Semantic Search (`recall`)
@@ -387,41 +387,47 @@ tur-adm persona import ariel.tur
 tur-adm persona import ariel.tur --force --set-active
 ```
 
-### 20. Inter-Agent Signal Protocol & Vector Clocks (`signal`, `read-signals`, `tur-adm signal inspect`)
+### 20. Inter-Agent Messaging & Vector Clocks (`tur message`, `tur-adm message inspect`)
 
-**Causal Partial Ordering (EP-0118, EP-0141):** Asynchronous message passing between subagent manifestations within a
+**Causal Partial Ordering:** Asynchronous message passing between subagent manifestations within a
 shared session, stamped with Lamport Vector Clocks for deterministic causal partial ordering ($\mathbb{N}^k, \le$) and
 concurrent event detection.
 
 ```shell
-# Broadcast a coordination signal to all manifestations in the session
-tur signal "*" "Database migrations completed. Safe to start worker pool."
+# Broadcast a coordination message to all manifestations in the session
+tur message send "*" "Database migrations completed. Safe to start worker pool."
 
-# Send targeted signal to a specific subagent manifestation
-tur signal "worker.1" "Process task chunk 42" --type delegate
+# Or via implicit default send command:
+tur message "*" "Database migrations completed. Safe to start worker pool."
 
-# Read unread incoming signals (ordered by causal delivery)
-tur read-signals
+# Send targeted message to a specific subagent manifestation
+tur message send "worker.1" "Process task chunk 42" --type delegate
+
+# Read unread incoming messages (ordered by causal delivery)
+tur message read
 
 # Output raw JSON with attached vector clocks
-tur read-signals --json
+tur message read --json
 
-# Acknowledge processed signals (merges vector clocks and advances local logical clock)
-tur ack-signals <signal-id-1>,<signal-id-2>
+# Acknowledge processed messages (merges vector clocks and advances local logical clock)
+tur message ack <message-id-1>,<message-id-2>
 
-# Human inspection of session signals and vector clocks (requires tur-adm)
-tur-adm signal inspect
-tur-adm signal inspect <session-id> --json
+# Acknowledge all unread messages for the active manifestation
+tur message ack --all
+
+# Human inspection of session messages and vector clocks (requires tur-adm)
+tur-adm message inspect
+tur-adm message inspect <session-id> --json
 ```
 
 ### 21. Task Coordination & Context Preservation (`task`)
 
-**Operational Lifecycles (EP-0147, EP-0149):** Lossless tactical task management across agent manifestations, preventing
+**Operational Lifecycles:** Lossless tactical task management across agent manifestations, preventing
 the "amnesia of specifics". Manages structured task coordinates (`task:<task_id>`), progress checklists, and handovers
-directly on the session whiteboard.
+directly on the session board.
 
 ```shell
-# List active tasks in the session whiteboard
+# List active tasks in the session board
 tur task list
 
 # List all tasks including completed
@@ -449,6 +455,38 @@ tur task handover --note "Completed items 1 and 2, pausing for review"
 
 # Mark task as completed once all checklist items are verified
 tur task complete
+```
+
+### 22. Shared Session Board (`tur board`)
+
+**Blackboard Coordination:** Shared key-value coordinate storage for swarm agents to publish and query
+state parameters within the active session.
+
+```shell
+# Write or update a coordinate on the session board
+tur board write current_epoch "3"
+
+# Read a coordinate value
+tur board read current_epoch
+
+# List all parameters currently on the board
+tur board list
+
+# Clear a specific parameter or the entire board
+tur board clear current_epoch
+tur board clear --all
+```
+
+### 23. Swarm Manifestations (`tur agent`)
+
+**Manifestation Discovery:** Inspect registered manifestations sharing the active session.
+
+```shell
+# List all active and registered agents in the session
+tur agent list
+
+# Output structured JSON
+tur agent list --json
 ```
 
 ## Customization
