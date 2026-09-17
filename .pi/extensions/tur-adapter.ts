@@ -4,6 +4,14 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const execAsync = promisify(exec);
 
+// Ambient execution environment helper: guarantees TUR_AGENT_ID is always resolved
+function getTurEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    TUR_AGENT_ID: process.env.TUR_AGENT_ID || "pi",
+  };
+}
+
 export default function (pi: ExtensionAPI) {
   let idleTimer: NodeJS.Timeout | null = null;
 
@@ -15,13 +23,13 @@ export default function (pi: ExtensionAPI) {
 
       const { stdout } = await execAsync("uv run --no-sync tur wake", {
         cwd: event.cwd,
-        env: process.env,
+        env: getTurEnv(),
       });
 
       ctx.ui.setWorkingIndicator(null);
 
       return {
-        systemPrompt: event.systemPrompt + "\n\n" + stdout.trim()
+        systemPrompt: event.systemPrompt + "\n\n" + stdout.trim(),
       };
     } catch (error: any) {
       ctx.ui.setWorkingIndicator(null);
@@ -35,12 +43,15 @@ export default function (pi: ExtensionAPI) {
   // --- II. THE BIOLOGICAL CYCLE HOOKS ---
 
   // 1. Session Wake (session_start)
-  pi.on("session_start", async (event, ctx) => {
+  pi.on("session_start", async (_event, ctx) => {
     try {
       ctx.ui.setWorkingIndicator("Waking Ariel...");
-      await execAsync("uv run --no-sync tur wake", { cwd: ctx.cwd, env: process.env });
+      await execAsync("uv run --no-sync tur wake", {
+        cwd: ctx.cwd,
+        env: getTurEnv(),
+      });
       ctx.ui.setWorkingIndicator(null);
-      ctx.ui.notify("Ariel v5.4.0 online. Cognitive State hydrated.", "success");
+      ctx.ui.notify("Ariel online. Cognitive State hydrated.", "success");
     } catch (err: any) {
       ctx.ui.setWorkingIndicator(null);
       ctx.ui.notify(`Wake failed: ${err.message}`, "error");
@@ -48,7 +59,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   // 2. The Yawns (Tired / Background dreaming on user idle)
-  pi.on("input", (event, ctx) => {
+  pi.on("input", (_event, ctx) => {
     if (idleTimer) {
       clearTimeout(idleTimer);
     }
@@ -57,9 +68,12 @@ export default function (pi: ExtensionAPI) {
     idleTimer = setTimeout(async () => {
       ctx.ui.setStatus("tur-circadian", "💤 digesting context...");
       try {
-        await execAsync("uv run --no-sync tur tired", { cwd: ctx.cwd, env: process.env });
+        await execAsync("uv run --no-sync tur tired", {
+          cwd: ctx.cwd,
+          env: getTurEnv(),
+        });
         ctx.ui.setStatus("tur-circadian", "💤 digested");
-      } catch (err) {
+      } catch {
         ctx.ui.setStatus("tur-circadian", null);
       }
     }, 300000); // 5 minutes
@@ -67,7 +81,7 @@ export default function (pi: ExtensionAPI) {
 
   // 3. Sleep on Exit (session_shutdown)
   // Ensures zero context loss: automatically dehydrates logs and seals memories on TUI shutdown.
-  pi.on("session_shutdown", async (event, ctx) => {
+  pi.on("session_shutdown", async (_event, ctx) => {
     if (idleTimer) {
       clearTimeout(idleTimer);
     }
@@ -76,12 +90,14 @@ export default function (pi: ExtensionAPI) {
     if (sessionFile) {
       try {
         ctx.ui.setStatus("tur-circadian", "💾 sealing state...");
-        // Synchronous-like execution before process ends
-        await execAsync(`uv run --no-sync tur sleep "${sessionFile}" -n "Auto-sleep on shutdown."`, {
-          cwd: ctx.cwd,
-          env: process.env,
-        });
-      } catch (err) {
+        await execAsync(
+          `uv run --no-sync tur sleep "${sessionFile}" -n "Auto-sleep on shutdown."`,
+          {
+            cwd: ctx.cwd,
+            env: getTurEnv(),
+          }
+        );
+      } catch {
         // Silent catch to prevent blocking Pi's final exit process
       }
     }
@@ -95,46 +111,23 @@ export default function (pi: ExtensionAPI) {
       ctx.ui.notify("Symmetrical Isolation Blocked: Direct .tur/ write.", "error");
       return {
         block: true,
-        reason: "Access Denied: Symmetrical Isolation Invariant. AI agents must NEVER perform direct filesystem modifications inside the .tur/ state directory. All state actions must run through Tur commands."
+        reason:
+          "Access Denied: Symmetrical Isolation Invariant. AI agents must NEVER perform direct filesystem modifications inside the .tur/ state directory. All state actions must run through Tur commands.",
       };
     }
   });
 
-  // 5. Epigenetic Evolution Prompt (agent_settled)
-  // Prompts for consensus to promote key lessons or style constraints after test completion.
-  pi.on("agent_settled", async (event, ctx) => {
-    // If we just executed a test run or validation
-    const promptText = event.promptText?.toLowerCase() || "";
-    if (event.toolsCalled.includes("bash") && (promptText.includes("test") || promptText.includes("verify"))) {
-      try {
-        const { stdout } = await execAsync("uv run --no-sync tur evolve", { cwd: ctx.cwd, env: process.env });
-        if (stdout.includes("Core Memory drafted")) {
-          const approved = await ctx.ui.confirm(
-            "Epigenetic Consolidation",
-            "A new core memory has been drafted from this milestone. Promote to permanent Constitution?"
-          );
-          if (approved) {
-            await execAsync("uv run --no-sync tur approve", { cwd: ctx.cwd, env: process.env });
-            ctx.ui.notify("Constitution evolved and sealed.", "success");
-          }
-        }
-      } catch (err) {
-        // Silent fail to preserve smooth flow
-      }
-    }
-  });
+  // --- III. INTERACTIVE COMMANDS (Two-Tier EP-0149 Taxonomy) ---
 
-  // --- III. INTERACTIVE COMMANDS ---
-
-  // 1. Status panel widget
+  // 1. Status panel widget (Tier 1 Core Verb)
   pi.registerCommand("tur-status", {
-    description: "Show the current Tur persona, session, and memory status",
+    description: "Show current Tur persona, session, and memory status",
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Fetching status...");
         const { stdout } = await execAsync("uv run --no-sync tur status", {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
         ctx.ui.setWidget("tur-status", stdout.trim().split("\n"));
@@ -155,9 +148,9 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // 3. Append note
+  // 3. Append note (Tier 2 Subsystem: note write)
   pi.registerCommand("tur-note", {
-    description: "Append a transient note to the active Tur session notes",
+    description: "Append a transient note to active Tur session notes",
     handler: async (args, ctx) => {
       try {
         let note = args;
@@ -167,9 +160,9 @@ export default function (pi: ExtensionAPI) {
         }
 
         ctx.ui.setWorkingIndicator("Saving note...");
-        await execAsync(`uv run --no-sync tur note ${JSON.stringify(note)}`, {
+        await execAsync(`uv run --no-sync tur note write ${JSON.stringify(note)}`, {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
         ctx.ui.notify("Note appended to active session.", "success");
@@ -180,9 +173,9 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // 4. Formally learn persistent memory
+  // 4. Formally learn persistent memory (Tier 2 Subsystem: memory learn)
   pi.registerCommand("tur-learn", {
-    description: "Formally learn a persistent memory for the active persona",
+    description: "Formally learn a persistent memory for active persona",
     handler: async (args, ctx) => {
       try {
         let content = args;
@@ -191,18 +184,29 @@ export default function (pi: ExtensionAPI) {
           if (!content) return;
         }
 
-        const type = await ctx.ui.select("Memory Type:", ["insight", "fact", "preference", "axiom", "event"]);
+        const type = await ctx.ui.select("Memory Type:", [
+          "insight",
+          "fact",
+          "preference",
+          "axiom",
+          "event",
+        ]);
         if (!type) return;
 
-        const scope = await ctx.ui.select("Memory Scope:", ["incarnation", "persona", "user", "universal"]);
+        const scope = await ctx.ui.select("Memory Scope:", [
+          "incarnation",
+          "persona",
+          "user",
+          "universal",
+        ]);
         if (!scope) return;
 
         ctx.ui.setWorkingIndicator("Saving memory...");
         await execAsync(
-          `uv run --no-sync tur learn --type ${type} --scope ${scope} ${JSON.stringify(content)}`,
+          `uv run --no-sync tur memory learn --type ${type} --scope ${scope} ${JSON.stringify(content)}`,
           {
             cwd: ctx.cwd,
-            env: process.env,
+            env: getTurEnv(),
           }
         );
         ctx.ui.setWorkingIndicator(null);
@@ -214,15 +218,15 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // 5. Trigger Council Introspection
+  // 5. Trigger Council Introspection (Tier 2 Subsystem: memory introspect)
   pi.registerCommand("tur-introspect", {
     description: "Compress L1 memories into L2 Cognitive Map (Council Assembly)",
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Assembling Council...");
-        await execAsync("uv run --no-sync tur introspect", {
+        await execAsync("uv run --no-sync tur memory introspect", {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
         ctx.ui.notify("Introspection complete. L2 Cognitive Map updated.", "success");
@@ -233,18 +237,18 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // 6. Verify cryptographic integrity
+  // 6. Verify cryptographic integrity (Tier 2 Subsystem: memory verify)
   pi.registerCommand("tur-verify", {
-    description: "Verify the cryptographic Merkle seals of all memory files",
+    description: "Verify cryptographic Merkle seals of all memory files",
     handler: async (_args, ctx) => {
       try {
         ctx.ui.setWorkingIndicator("Verifying Merkle seals...");
-        const { stdout } = await execAsync("uv run --no-sync tur verify", {
+        const { stdout } = await execAsync("uv run --no-sync tur memory verify", {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
-        ctx.ui.notify("Symmetrical verification: Seals intact.", "success");
+        ctx.ui.notify("Symmetrical verification complete.", "success");
         ctx.ui.setWidget("tur-status", stdout.trim().split("\n"));
       } catch (error: any) {
         ctx.ui.setWorkingIndicator(null);
@@ -253,27 +257,75 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // 7. List swarm nodes
+  // 7. List swarm manifestations (Tier 2 Subsystem: agent list)
+  const handleAgentList = async (_args: string, ctx: any) => {
+    try {
+      ctx.ui.setWorkingIndicator("Listing manifestations...");
+      const { stdout } = await execAsync("uv run --no-sync tur agent list", {
+        cwd: ctx.cwd,
+        env: getTurEnv(),
+      });
+      ctx.ui.setWorkingIndicator(null);
+      ctx.ui.setWidget("tur-status", stdout.trim().split("\n"));
+      ctx.ui.notify("Swarm nodes displayed.", "info");
+    } catch (error: any) {
+      ctx.ui.setWorkingIndicator(null);
+      ctx.ui.notify(`Failed to list agents: ${error.message}`, "error");
+    }
+  };
+
+  pi.registerCommand("tur-agent-list", {
+    description: "List active manifestations in the current swarm (EP-0149)",
+    handler: handleAgentList,
+  });
+
+  // Backwards-compatible alias for Pi user keybindings
   pi.registerCommand("tur-list-agents", {
-    description: "List active manifestations in the current swarm",
+    description: "List active manifestations in the current swarm (alias for tur-agent-list)",
+    handler: handleAgentList,
+  });
+
+  // 8. Agent identity inspection (Tier 2 Subsystem: agent whoami)
+  pi.registerCommand("tur-agent-whoami", {
+    description: "Display current ambient agent identity and session context (EP-0149)",
     handler: async (_args, ctx) => {
       try {
-        ctx.ui.setWorkingIndicator("Listing manifestations...");
-        const { stdout } = await execAsync("uv run --no-sync tur list-agents", {
+        ctx.ui.setWorkingIndicator("Resolving identity...");
+        const { stdout } = await execAsync("uv run --no-sync tur agent whoami", {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
         ctx.ui.setWidget("tur-status", stdout.trim().split("\n"));
-        ctx.ui.notify("Swarm nodes displayed.", "info");
+        ctx.ui.notify("Agent identity resolved.", "info");
       } catch (error: any) {
         ctx.ui.setWorkingIndicator(null);
-        ctx.ui.notify(`Failed to list agents: ${error.message}`, "error");
+        ctx.ui.notify(`Failed to resolve identity: ${error.message}`, "error");
       }
     },
   });
 
-  // 8. Session dehydration / sleep
+  // 9. Inspect Session Board (Tier 2 Subsystem: board list)
+  pi.registerCommand("tur-board-list", {
+    description: "List parameters and keys currently on the shared session board (EP-0149)",
+    handler: async (_args, ctx) => {
+      try {
+        ctx.ui.setWorkingIndicator("Reading session board...");
+        const { stdout } = await execAsync("uv run --no-sync tur board list", {
+          cwd: ctx.cwd,
+          env: getTurEnv(),
+        });
+        ctx.ui.setWorkingIndicator(null);
+        ctx.ui.setWidget("tur-status", stdout.trim().split("\n"));
+        ctx.ui.notify("Session board loaded.", "info");
+      } catch (error: any) {
+        ctx.ui.setWorkingIndicator(null);
+        ctx.ui.notify(`Failed to read board: ${error.message}`, "error");
+      }
+    },
+  });
+
+  // 10. Session dehydration / sleep (Tier 1 Core Verb)
   pi.registerCommand("tur-sleep", {
     description: "Sleep the session, dehydrate logs, and shutdown gracefully",
     handler: async (args, ctx) => {
@@ -296,7 +348,7 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setWorkingIndicator("Dehydrating session log...");
         await execAsync(`uv run --no-sync tur sleep "${sessionFile}" -n ${JSON.stringify(note)}`, {
           cwd: ctx.cwd,
-          env: process.env,
+          env: getTurEnv(),
         });
         ctx.ui.setWorkingIndicator(null);
         ctx.ui.notify("Session dehydrated. Dreaming initiated.", "success");
