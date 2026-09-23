@@ -255,14 +255,14 @@ Evaluating System One integration against Tur's core invariants:
 ### 4. Zero-Dependency & Local ONNX Execution Invariants
 - Tur's core package prioritizes lightweight CLI startup times and zero heavy ML framework dependencies (e.g., no local PyTorch/transformers requirements).
 - Accessing Jev via REST/gRPC or lightweight HTTP requests requires only standard Python libraries (`httpx` or `urllib`), maintaining fast execution without inflating package size.
-- **Local Open-Weights Execution (`kev-0.6b-ONNX`):** System One models are not limited to closed cloud APIs. Open-weights decision models—such as `jaredpalmer/kev-0.6b` (a Qwen3-0.6B backbone with a LoRA adapter and pointer head) converted to ONNX as `onnx-community/kev-0.6b-ONNX`—can run locally in Tur using the lightweight ONNX Runtime engine already integrated in `src/tur/memory/embeddings.py` (EP-0144).
-- In `kev-0.6b-ONNX`, state blocks and delimiter tokens (`<|fim_prefix|>`, `<|fim_middle|>`, `<|box_start|>`, `<|box_end|>`, `<|fim_suffix|>`) are processed in a single forward pass with a block-causal mask and pointer readout head. Tur's `VectorEngine` can execute this ONNX graph natively for offline, zero-network, sub-200ms local decision evaluations.
+- **Local Open-Weights Execution (`kev-0.6b-ONNX` & `open-jev-deberta-v3-large-ONNX`):** System One models are not limited to closed cloud APIs. Open-weights decision models—such as `jaredpalmer/kev-0.6b` (Qwen3-0.6B Causal LM with pointer head, ONNX: `onnx-community/kev-0.6b-ONNX`) and Kotoba Labs' `com-kotobalabs/open-jev-deberta-v3-large` (DeBERTa-v3 encoder with span-scoring head, ONNX: `onnx-community/open-jev-deberta-v3-large-ONNX` in `q4f16` 350MB / `q4` 480MB variants)—can run locally in Tur using the lightweight ONNX Runtime engine already integrated in `src/tur/memory/embeddings.py` (EP-0144).
+- In both ONNX architectures, state blocks, question instructions, and options are encoded into a single pass. Input token IDs, segment markers (`seg`), and option pair slots (`pair_q`, `pair_opt`) are evaluated in a single forward pass (25–100ms), returning calibrated logits and probabilities per question. Tur's `VectorEngine` can execute these ONNX graphs natively for offline, zero-network local decision evaluations.
 
 ---
 
 ## 4. The Verdict / Actionable Design Roadmap
 
-This exploration confirms that System One non-LLM models represent a highly synergistic paradigm for Tur's persistent state management engine. By delegating discriminative verification tasks to calibrated, schema-bounded System One models—either via cloud endpoints (Jev) or local open-weights ONNX models (`kev-0.6b-ONNX`)—Tur achieves sub-second truth maintenance and hallucination-free memory crystallization.
+This exploration confirms that System One non-LLM models represent a highly synergistic paradigm for Tur's persistent state management engine. By delegating discriminative verification tasks to calibrated, schema-bounded System One models—either via cloud endpoints (Jev) or local open-weights ONNX models (`kev-0.6b-ONNX`, `open-jev-deberta-v3-large-ONNX`)—Tur achieves sub-second truth maintenance and hallucination-free memory crystallization.
 
 ### Actionable Roadmap & Proposed Enhancement Proposals:
 
@@ -287,6 +287,7 @@ This exploration confirms that System One non-LLM models represent a highly syne
 ### 1. External Literature & References
 - **TypeSafe AI / Jev Launch (2026):** Almeida, Diogo. *"Introducing System One Models & Jev."* TypeSafe AI Blog, Sept 15, 2026.
 - **Open-Weights Kev / ONNX Conversion (2026):** Palmer, Jared; ONNX Community. *"kev-0.6b-ONNX / jaredpalmer/kev-0.6b."* Hugging Face Hub, `onnx-community/kev-0.6b-ONNX`. Qwen3-0.6B backbone with LoRA adapter and pointer readout head serving TypeSafe System One contract locally.
+- **Open Jev DeBERTa-v3 / ONNX Conversion (2026):** Kotoba Labs; ONNX Community. *"open-jev-deberta-v3-large-ONNX / com-kotobalabs/open-jev-deberta-v3-large."* Hugging Face Hub, `onnx-community/open-jev-deberta-v3-large-ONNX`. DeBERTa-v3-large encoder with span-scoring head implementing open-source typed decisions contract in 350MB quantized ONNX graph.
 - **RLCD Training Paradigm:** Reinforcement Learning for Calibrated Decisions — Optimizing probabilities against empirical outcomes rather than human rater preference.
 - **Kahneman, Daniel:** *"Thinking, Fast and Slow"* (System 1 fast intuitive decision-making vs. System 2 slow deliberative reasoning).
 
