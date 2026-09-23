@@ -252,22 +252,23 @@ Evaluating System One integration against Tur's core invariants:
 - Core and Axiom memories remain protected by hardcoded mechanism checks (`type in (MemoryType.CORE, MemoryType.AXIOM)`), ensuring System One models can suggest supersessions but never bypass human-governed invariant protection.
 - **Verdict:** Fully aligned.
 
-### 4. Zero-Dependency & Latency Invariants
-- Tur's core package prioritizes lightweight CLI startup times and zero heavy ML framework dependencies (e.g., no local PyTorch requirements).
+### 4. Zero-Dependency & Local ONNX Execution Invariants
+- Tur's core package prioritizes lightweight CLI startup times and zero heavy ML framework dependencies (e.g., no local PyTorch/transformers requirements).
 - Accessing Jev via REST/gRPC or lightweight HTTP requests requires only standard Python libraries (`httpx` or `urllib`), maintaining fast execution without inflating package size.
-- For offline local execution, distilled System One models compiled to ONNX run directly via the existing ONNX runtime introduced in EP-0144.
+- **Local Open-Weights Execution (`kev-0.6b-ONNX`):** System One models are not limited to closed cloud APIs. Open-weights decision models—such as `jaredpalmer/kev-0.6b` (a Qwen3-0.6B backbone with a LoRA adapter and pointer head) converted to ONNX as `onnx-community/kev-0.6b-ONNX`—can run locally in Tur using the lightweight ONNX Runtime engine already integrated in `src/tur/memory/embeddings.py` (EP-0144).
+- In `kev-0.6b-ONNX`, state blocks and delimiter tokens (`<|fim_prefix|>`, `<|fim_middle|>`, `<|box_start|>`, `<|box_end|>`, `<|fim_suffix|>`) are processed in a single forward pass with a block-causal mask and pointer readout head. Tur's `VectorEngine` can execute this ONNX graph natively for offline, zero-network, sub-200ms local decision evaluations.
 
 ---
 
 ## 4. The Verdict / Actionable Design Roadmap
 
-This exploration confirms that System One non-LLM models represent a highly synergistic paradigm for Tur's persistent state management engine. By delegating discriminative verification tasks to calibrated, schema-bounded System One models, Tur achieves sub-second truth maintenance and hallucination-free memory crystallization.
+This exploration confirms that System One non-LLM models represent a highly synergistic paradigm for Tur's persistent state management engine. By delegating discriminative verification tasks to calibrated, schema-bounded System One models—either via cloud endpoints (Jev) or local open-weights ONNX models (`kev-0.6b-ONNX`)—Tur achieves sub-second truth maintenance and hallucination-free memory crystallization.
 
 ### Actionable Roadmap & Proposed Enhancement Proposals:
 
 1. **Proposed EP-0154: System One Typed Evaluator Driver Protocol**
    - Author a formal proposal (**`EP-0154`**) defining a generic `SystemOneEvaluator` abstract interface in `src/tur/evaluators/` supporting `Choice`, `Score`, and `Noul` primitives.
-   - Implement driver adapters for Jev API and local ONNX-distilled decision models.
+   - Implement driver adapters for both cloud API endpoints (TypeSafe Jev) and local ONNX models (`onnx-community/kev-0.6b-ONNX` via `tur.memory.embeddings.VectorEngine`).
 
 2. **Phase 1: Sub-Second TMS Integration in `ContradictionInterceptor`**
    - Update `src/tur/memory/tms.py` to support an optional `SystemOneEvaluator` backend alongside the default symbolic keyword matcher.
@@ -285,6 +286,7 @@ This exploration confirms that System One non-LLM models represent a highly syne
 
 ### 1. External Literature & References
 - **TypeSafe AI / Jev Launch (2026):** Almeida, Diogo. *"Introducing System One Models & Jev."* TypeSafe AI Blog, Sept 15, 2026.
+- **Open-Weights Kev / ONNX Conversion (2026):** Palmer, Jared; ONNX Community. *"kev-0.6b-ONNX / jaredpalmer/kev-0.6b."* Hugging Face Hub, `onnx-community/kev-0.6b-ONNX`. Qwen3-0.6B backbone with LoRA adapter and pointer readout head serving TypeSafe System One contract locally.
 - **RLCD Training Paradigm:** Reinforcement Learning for Calibrated Decisions — Optimizing probabilities against empirical outcomes rather than human rater preference.
 - **Kahneman, Daniel:** *"Thinking, Fast and Slow"* (System 1 fast intuitive decision-making vs. System 2 slow deliberative reasoning).
 
