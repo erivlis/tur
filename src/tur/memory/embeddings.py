@@ -58,13 +58,13 @@ def is_model_compatible(candidate_model: str | None, active_model: str | None) -
     If candidate_model is None (legacy or test fixture), it is allowed to prevent breakage.
     If both candidate_model and active_model are specified, their canonical IDs must match.
     """
-    if not candidate_model or not active_model:
+    if not candidate_model or not active_model or candidate_model == active_model:
         return True
-    if candidate_model == active_model:
+    cand_low = candidate_model.lower()
+    act_low = active_model.lower()
+    if cand_low == act_low:
         return True
-    cand_norm = MODEL_ALIASES.get(candidate_model.lower(), candidate_model)
-    act_norm = MODEL_ALIASES.get(active_model.lower(), active_model)
-    return cand_norm.lower() == act_norm.lower()
+    return MODEL_ALIASES.get(cand_low, cand_low) == MODEL_ALIASES.get(act_low, act_low)
 
 
 def pure_cosine_similarity(vec_a: Sequence[float], vec_b: Sequence[float]) -> float:
