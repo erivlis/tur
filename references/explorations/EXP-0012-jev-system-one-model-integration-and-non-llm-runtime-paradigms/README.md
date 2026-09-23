@@ -260,7 +260,48 @@ Evaluating System One integration against Tur's core invariants:
 
 ---
 
-## 4. The Verdict / Actionable Design Roadmap
+## 4. Tur as the Persistent State & Memory Engine for Pure Type 1 Agents
+
+### The State Dependence of Type 1 Agents
+A fundamental architectural characteristic of Type 1 (System One) models—such as Jev, Kev, and Open-Jev—is that **they do not possess internal context windows or conversational text-generation loops**. Unlike LLMs, which accumulate state implicitly in rolling token context windows, a Type 1 model is stateless and prefill-only: it requires an explicit, structured `state` block to be passed into its forward pass alongside every request.
+
+Without an external state manager, a Type 1 model is an isolated, stateless evaluator incapable of:
+- Remembering past decisions or session history across execution resets.
+- Maintaining long-term user preferences or project invariants.
+- Building structured knowledge graphs or causal lineage.
+
+### Tur as the "Soul & Memory" for Type 1 Agents
+Tur is uniquely positioned as the canonical memory and persistent state substrate for pure Type 1 agent architectures:
+
+```
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                         TUR PERSISTENT ENGINE (SOUL)                        │
+ │  - Tier 1 (L1): Immutable OKF Markdown Ledger (Identity, Invariants)        │
+ │  - Tier 2 (L2): NetworkX / AlgebraX Cognitive Graph & Vector Embeddings     │
+ │  - Tier 3 (L3): Episodic SQLite Scratchpad & Vector Clocks                  │
+ └────────────────                      ▲                               ──────┘
+                                        │
+                         State Assembly │  Typed State Mutation
+                         (compile state)│  (learn / note / check)
+                                        │
+ ┌──────────────────────────────────────▼──────────────────────────────────────┐
+ │                      TYPE 1 REFLEX ENGINE (Jev / Kev)                       │
+ │  - Forward Pass: [State Block + Typed Questions (Choice, Score, Noul)]     │
+ │  - Sub-100ms Calibrated Logits & Probabilities                             │
+ │  - Schema-Bounded Action Selection                                          │
+ └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### The Type 1 Agent Loop Driven by Tur:
+1. **State Synthesis:** On every perception-action turn, Tur compiles active L1 memories, relevant L2 cognitive graph nodes, and L3 session notes into a compact, sanitized `state` payload (under the 512 / 8,192 token state limits).
+2. **Sub-100ms Parallel Evaluation:** The Type 1 model (Jev/Kev) receives the Tur state block and issues parallel typed queries (`Choice` for action selection, `Score` for confidence/risk, `Noul` for precondition checks).
+3. **Epistemic State Commitment:** Tur ingests the calibrated decision probabilities, updates vector clocks and memory links, and logs the outcome in the L3 session continuity or L1 permanent ledger.
+
+Through this symbiosis, **Tur provides the "Soul" (persistence, identity, epistemic continuity) while the Type 1 model provides the "Mind" (sub-second calibrated reflexes)**, proving that Tur can function as the primary memory and cognitive substrate for pure Type 1 autonomous agents.
+
+---
+
+## 5. The Verdict / Actionable Design Roadmap
 
 This exploration confirms that System One non-LLM models represent a highly synergistic paradigm for Tur's persistent state management engine. By delegating discriminative verification tasks to calibrated, schema-bounded System One models—either via cloud endpoints (Jev) or local open-weights ONNX models (`kev-0.6b-ONNX`, `open-jev-deberta-v3-large-ONNX`)—Tur achieves sub-second truth maintenance and hallucination-free memory crystallization.
 
@@ -282,7 +323,7 @@ This exploration confirms that System One non-LLM models represent a highly syne
 
 ---
 
-## 5. Related Proposals & External Literature
+## 6. Related Proposals & External Literature
 
 ### 1. External Literature & References
 - **TypeSafe AI / Jev Launch (2026):** Almeida, Diogo. *"Introducing System One Models & Jev."* TypeSafe AI Blog, Sept 15, 2026.
