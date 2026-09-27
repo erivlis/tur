@@ -233,6 +233,25 @@ In this dual-brain architecture, **Tur acts as the persistent substrate ("Soul")
 
 ---
 
+### Comparative Analysis: Tur vs. TencentCloud Octop-Memory
+
+TencentCloud's **`octop-memory`** represents a contemporary industry approach to agent memory, focusing on relational storage (SQLite/PostgreSQL), full-text search (FTS5), and portable archive packages (`.hmpkg`). Comparing Octop-Memory with Tur illuminates key architectural contrasts:
+
+| Dimension | **Tur** | **TencentCloud `octop-memory`** |
+|:---|:---|:---|
+| **Core Architecture** | Fractal Memory Hierarchy: Tier 1 L1 OKF Markdown Merkle DAG (Identity), Tier 2 L2 NetworkX/AlgebraX Cognitive Graph, Tier 3 L3 SQLite/Vector Clocks | Relational AtomCard tables, EntityPages, Episodes, and FTS5 full-text search index |
+| **Model Invariant & Execution** | Native dual-support for System One Non-LLM Models (Jev, Kev, Open-Jev via `VectorEngine` ONNX) and System Two LLMs. Zero external ML framework dependencies | Injected generative LLMs (`LLMClient`) for extraction & promotion; vector search exists as unverified mocks |
+| **Truth Maintenance System (TMS)** | Active, real-time Contradiction Interception (`ContradictionInterceptor`) preventing semantic contradictions and protecting Core Invariants | Heuristic candidate promotion, merging, and duplicate dropping |
+| **Epistemic Invariants & Safety** | Golem Invariant: autonomous agents can propose insights but can **never** overwrite or supersede human-ratified Core Axioms without `tur-adm` authorization | Automated LLM promotion with optional manual review |
+| **Cognitive Telemetry & Metrics** | Constraint Dimensionality ($C_p$), Information Density, Spectral Graph Modularity ($Q$), and Algebraic Connectivity | Token budgeting and FTS5 ranking scores |
+| **Inter-Agent Synchronization** | Causal Vector Clocks (Lamport clocks in IASP), Multi-Manifestation Blackboard, and Session Lineage | JSON-RPC bridge, LangGraph checkpoints, and `.hmpkg` archive export |
+
+#### Key Architectural Takeaways:
+1. **Model-Agnostic vs. LLM-Centric:** Octop-Memory relies heavily on injected generative LLMs for fact extraction, candidate promotion, and page regeneration. Tur decouples Policy from Mechanism (EP-0003), enabling lightweight System One decision models (Jev, Kev) and ONNX vector engines to handle state validation without generative LLM overhead.
+2. **Deterministic Truth Maintenance vs. Relational FTS:** Octop-Memory uses standard FTS5 keyword queries over SQLite/PostgreSQL tables. Tur combines graph-theoretic PPR recall (HippoRAG) with active Truth Maintenance Systems (TMS) to prevent epistemic drift and protect core persona invariants.
+
+---
+
 ## 3. Architectural Synthesis & Constraint Alignment
 
 Evaluating System One integration against Tur's core invariants:
