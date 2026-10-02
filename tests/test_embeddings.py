@@ -218,7 +218,8 @@ def test_l1_fallback_search_with_vector(tmp_path: Path):
 
 def test_vector_engine_real_tokenization_and_inference(tmp_path: Path):
     """Verifies that input text is genuinely tokenized, passed to ONNX, mean-pooled, and L2 normalized."""
-    import numpy as np
+    np = pytest.importorskip('numpy')
+    pytest.importorskip('tokenizers')
     from tokenizers import Tokenizer, models, pre_tokenizers
 
     # 1. Create a real tokenizer and save to tmp_path / 'tokenizer.json'
@@ -295,6 +296,7 @@ def test_vector_engine_fallback_modes(tmp_path: Path, monkeypatch):
 
 def test_vector_engine_directory_tokenizer_resolution(tmp_path: Path):
     """Verifies tokenizer.json resolution adjacent to model_path or inside model directory."""
+    pytest.importorskip('tokenizers')
     from tokenizers import Tokenizer, models
 
     vocab = {'[PAD]': 0, '[UNK]': 1}
@@ -315,7 +317,7 @@ def test_vector_engine_directory_tokenizer_resolution(tmp_path: Path):
 
 def test_vector_engine_hardware_acceleration_defaults_and_env(monkeypatch):
     """Verifies opt-in hardware acceleration behavior, provider resolution, and environment triggers."""
-    import onnxruntime as ort
+    ort = pytest.importorskip('onnxruntime')
 
     # Default is always strictly CPUExecutionProvider
     engine_default = VectorEngine()
@@ -345,7 +347,7 @@ def test_vector_engine_hardware_acceleration_defaults_and_env(monkeypatch):
 
 def test_vector_engine_accelerator_fallback_on_session_error(tmp_path: Path, monkeypatch):
     """Verifies that if an accelerator provider fails to initialize, VectorEngine falls back to pure CPU."""
-    import onnxruntime as ort
+    ort = pytest.importorskip('onnxruntime')
 
     model_file = tmp_path / 'dummy.onnx'
     model_file.write_text('dummy onnx bytes')
