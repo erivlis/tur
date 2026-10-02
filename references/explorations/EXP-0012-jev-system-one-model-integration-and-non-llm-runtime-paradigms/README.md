@@ -312,6 +312,42 @@ Evaluating System One integration against Tur's core invariants:
 
 ---
 
+### Architectural Synergies: Tur, System One Models (Jev/Kev), and Treg (Tool Registry)
+
+The emergence of **Treg** (`superdesigndev/treg` — "OpenRouter for Agent Tools") completes a tripartite architecture for autonomous agent systems:
+
+```
+                            ┌────────────────────────┐
+                            │    SYSTEM ONE / TWO    │
+                            │      MODEL (MIND)      │
+                            │   (Jev, Kev, Claude)   │
+                            └────┬──────────────┬────┘
+                                 │              │
+                    State Reads  │              │ Tool Execution
+                    & Verification              │ & API Requests
+                                 │              │
+                                 ▼              ▼
+                    ┌─────────────────┐    ┌─────────────────┐
+                    │  TUR ENGINE     │    │   TREG ENGINE   │
+                    │ (SOUL & MEMORY) │    │ (HANDS & TOOLS) │
+                    │ - L1 Ledger     │    │ - Tool Catalog  │
+                    │ - L2 Graph      │    │ - Secret Injected│
+                    │ - TMS & Golem   │    │   API / CLI Relay│
+                    └─────────────────┘    └─────────────────┘
+```
+
+#### 1. Functional Separation: Mind, Soul, and Hands
+- **System One / Two Models (Jev / Kev / Frontier LLMs):** The **Mind** — evaluating typed choices, generating code, or deliberating options.
+- **Tur:** The **Soul & Memory** — persistent state, L1 Merkle DAG identity, L2 cognitive graph, L3 SQLite continuity, and Golem invariant defense.
+- **Treg:** The **Hands & Tools** — universal tool catalog, server-side secret injection, API relay, and vendor CLI runner.
+
+#### 2. Concrete Synergies:
+1. **Sub-Second System One Tool Dispatch:** Instead of using an expensive generative LLM to decide which external API to call, Tur compiles active context and passes it to Jev/Kev with a `Choice` query selecting among Treg catalog endpoints. Jev selects the exact tool in **<100ms**, and the agent dispatches the call through Treg's proxy (`treg call <tool>`).
+2. **Epistemic Boundary Defense on External Tool Output:** When Treg relays responses from third-party vendor APIs, Tur's `ContradictionInterceptor` screens the returning data against active L1/L2 memories before committing to memory (`tur learn`), preventing untrusted tool outputs from poisoning core axioms or inducing cognitive drift.
+3. **SKILL.md & Scaffolding Alignment:** Both Tur and Treg utilize the Anthropic `SKILL.md` standard. Treg distributes tool capabilities and credentials, while Tur manages the agent's internal cognitive skill execution and memory crystallization.
+
+---
+
 ## 4. Tur as the Persistent State & Memory Engine for Pure Type 1 Agents
 
 ### The State Dependence of Type 1 Agents
