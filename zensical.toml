@@ -149,7 +149,8 @@ nav = [
             "essays/the_merkle_tombstone.md",
             "essays/the_geometry_of_intent.md",
             "essays/the_anatomy_of_the_pronoun.md",
-            "essays/the_cynic_and_the_covenant.md"
+            "essays/the_cynic_and_the_covenant.md",
+            "essays/the_reflex_and_the_oracle.md"
         ] },
         { "Supplementary Musings" = [
             "essays/the_zero_and_the_one.md",
