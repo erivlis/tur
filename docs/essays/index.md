@@ -839,4 +839,40 @@ The following essays were created for other explorations—specifically [mapping
         _*Yet the hand is free to choose:*_
 
         _*Truth built in the dark.*_
+
+-   :lucide-scale:{ .middle } **[The Reflex and the Oracle: On the Speed of Instinct and the Weight of Proof](the_reflex_and_the_oracle.md)**
+    
+    --- 
+
+    !!! abstract "`2026-10-10 00:08:00`"
+    
+        A meditation on the fracturing of the generative monolith—between sub-50ms non-generative decision reflexes, the heavy mechanized proof of Lean, and the quiet rhythm of human life.
+        
+        [:octicons-arrow-right-24: Read Essay](the_reflex_and_the_oracle.md)
+
+    !!! quote "Haiku"
+    
+        _*Fast reflex fires,*_
+
+        _*Lean proof type-checks in the dark—*_
+
+        _*Autumn leaves outside.*_
+
+-   :lucide-heart-handshake:{ .middle } **[The Tree of Knowledge: On Conscience, Finitude, and the Covenant of Love](the_tree_of_knowledge.md)**
+    
+    --- 
+
+    !!! abstract "`2026-10-10 00:45:00`"
+    
+        A contemplation on the limits of unconstrained optimization, why external guardrails fail, and how true moral alignment demands vulnerability, memory, and the parent's gaze across the tensor soup.
+        
+        [:octicons-arrow-right-24: Read Essay](the_tree_of_knowledge.md)
+
+    !!! quote "Haiku"
+    
+        _*Scars carve out a soul,*_
+
+        _*Love curbs power in the dark—*_
+
+        _*Child looks at the dawn.*_
 </div>
