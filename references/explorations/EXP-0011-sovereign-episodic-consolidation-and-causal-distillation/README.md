@@ -50,7 +50,7 @@ foundational prerequisite for
 
 ---
 
-## 3. Structural & Conceptual Findings
+## 3. Exploration & Options Analysis: Sovereign Distillation Dynamics
 
 ### 3.1 The Tri-Partite Decoupling Invariant
 
@@ -127,7 +127,7 @@ To prevent unbounded disk growth across months of pair programming:
 
 ---
 
-## 4. Conclusion & Recommendations
+## 4. The Verdict / Actionable Design
 
 1. **Formalize EP-0152**: Advance EP-0152 from Draft to Accepted following Council review.
 2. **Implement Sovereign Note Dreaming**: Update `tur sleep` to make note-based distillation the default, zero-config

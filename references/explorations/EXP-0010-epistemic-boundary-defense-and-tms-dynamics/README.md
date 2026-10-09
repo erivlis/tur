@@ -37,7 +37,7 @@ architectural questions:
 
 ---
 
-## 2. Structural & Conceptual Analysis
+## 2. Exploration & Options Analysis: Structural & Conceptual Dynamics
 
 ### 1. The Asymmetric Epistemic Gating Invariant
 
