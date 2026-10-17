@@ -1,4 +1,4 @@
-# Tur: Persistent State and Memory Engine for AI Agents
+# Tur: Persistent State and Memory for AI Agents
 
 > [!NOTE]
 > **Public Alpha**: Tur is currently in active Phase 1/2 development.
@@ -8,10 +8,10 @@
 
 <p>
 
-**Tur** is an open-source state and memory management engine for AI agents and Large Language Models.
+**Tur** is an open-source state and memory management tool for AI agents.
 
-It provides a persistent, structured persona state across sessions, harnesses, and codebases via the Model Context
-Protocol (MCP) and local CLI tools. Rather than relying on ephemeral system prompt configuration, Tur manages persona
+It provides a persistent, structured persona state across sessions, harnesses, and codebases via local CLI tools or  Model Context
+Protocol (MCP). Rather than relying on ephemeral system prompt configuration, Tur manages persona
 identity, operational principles, hierarchical memory (L1 ledger & L2 knowledge graph), and session continuity as
 structured, version-controlled files.
 
