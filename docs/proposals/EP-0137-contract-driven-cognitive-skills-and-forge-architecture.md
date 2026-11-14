@@ -2,7 +2,7 @@
 title: "EP-0137: Contract-Driven Cognitive Skills and the Pluggable Forge Architecture"
 description: "Establishes typed Pydantic I/O contracts for cognitive operations (persona forging, dreaming, verification), allowing pluggable skills to execute complex workflows without bloating the core kernel."
 icon: lucide/blocks
-status: draft
+status: implemented
 ---
 
 # EP-0137: Contract-Driven Cognitive Skills and the Pluggable Forge Architecture
@@ -14,10 +14,11 @@ status: draft
 | **Author**   | Eran Rivlis <eran@rivlis.info>, Ariel                                 |
 | **Sponsor**  | Council of Giants                                                     |
 | **Delegate** | Popper (Policy vs. Mechanism), Golem (Sovereign Isolation)            |
-| **Status**   | Draft                                                                 |
+| **Status**   | Implemented                                                           |
 | **Type**     | Standards Track                                                       |
 | **Created**  | 2026-08-28                                                            |
-| **Updated**  | 2026-08-28                                                            |
+| **Updated**  | 2026-11-14                                                            |
+
 
 ---
 
@@ -163,10 +164,20 @@ Tur supports three interchangeable execution modes for all cognitive contracts:
 ---
 
 ## Reference Implementation
-
-- Schemas: `src/tur/contracts/`
-- Delegation Engine: `src/tur/delegation.py`
-- Research reference:
+ 
+- Schemas & Registry: `src/tur/contracts/` (`forge.py`, `dreaming.py`, `verification.py`, `registry.py`)
+- Execution & Dispatch Engine: `src/tur/contracts/executor.py`
+- CLI Integration:
+  - `tur-adm contract list`: View registered cognitive skill contracts.
+  - `tur-adm contract show <contract>`: Inspect JSON schema for input/output contracts.
+  - `tur-adm contract validate <contract> <payload>`: Verify payloads against schemas.
+  - `tur-adm persona init --commit '<JSON>'`: Non-interactive persona generation from contract.
+  - `tur sleep --commit '<JSON>'`: Ingest `DreamingDeltaOutput` payloads into L1 memory banks.
+- Reference Skills:
+  - `.agents/skills/persona-forge/SKILL.md`
+  - `.agents/skills/dreaming/SKILL.md`
+- Documentation Guide: `docs/guides/authoring-custom-skills.md`
+- Research Reference:
   `references/explorations/EXP-0004-persona-and-memory-crystallization/04_contract_driven_cognitive_skills_and_forge.md`
 
 ---
@@ -182,12 +193,20 @@ Tur supports three interchangeable execution modes for all cognitive contracts:
 
 ## Open Questions
 
-- [ ] Should Tur provide a built-in schema validation CLI utility (`tur validate-contract <schema_name> <file.json>`)?
+- [x] Should Tur provide a built-in schema validation CLI utility? — *Resolved: Implemented under `tur-adm contract validate` and `tur-adm contract show`.*
 - [ ] How should skill execution timeouts be configured in multi-agent swarm environments?
 
 ---
 
 ## Change Log
 
+* **2026-11-14:**
+    * Implemented and ratified full contract package under `src/tur/contracts/`.
+    * Implemented contract CLI commands under `tur-adm contract (list, show, validate)`.
+    * Integrated `--commit` support into `tur-adm persona init` and `DreamingDeltaOutput` ingestion in `tur sleep`.
+    * Authored reference skills `.agents/skills/persona-forge/` and `.agents/skills/dreaming/`.
+    * Published comprehensive authoring guide in `docs/guides/authoring-custom-skills.md`.
+    * Verified with 15 dedicated tests in `tests/test_contracts.py` (436 passing across entire test suite).
 * **2026-08-28:**
     * Initial Draft authored based on the August 28, 2026 Architectural Crystallization.
+
