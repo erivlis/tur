@@ -2,11 +2,11 @@
 Canonical registry and validation routines for Cognitive Skill Contracts (EP-0137).
 """
 
-from dataclasses import dataclass, field
 import json
+from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from tur.contracts.dreaming import DreamingDeltaInput, DreamingDeltaOutput
 from tur.contracts.forge import PersonaForgeInput, PersonaForgeOutput
@@ -21,7 +21,7 @@ class ContractDefinition:
     aliases: list[str] = field(default_factory=list)
     input_schema: type[BaseModel] = BaseModel
     output_schema: type[BaseModel] = BaseModel
-    description: str = ""
+    description: str = ''
 
 
 _REGISTRY: dict[str, ContractDefinition] = {}
@@ -39,9 +39,7 @@ def get_contract(name: str) -> ContractDefinition:
     key = name.strip().lower()
     if key not in _REGISTRY:
         available = sorted({c.name for c in _REGISTRY.values()})
-        raise KeyError(
-            f"Unknown cognitive contract '{name}'. Available contracts: {', '.join(available)}"
-        )
+        raise KeyError(f"Unknown cognitive contract '{name}'. Available contracts: {', '.join(available)}")
     return _REGISTRY[key]
 
 
@@ -73,13 +71,13 @@ def validate_contract(
     if isinstance(payload, str):
         cleaned = payload.strip()
         # strip markdown fences if present
-        if cleaned.startswith("```"):
+        if cleaned.startswith('```'):
             lines = cleaned.splitlines()
-            if lines[0].startswith("```"):
+            if lines[0].startswith('```'):
                 lines = lines[1:]
-            if lines and lines[-1].startswith("```"):
+            if lines and lines[-1].startswith('```'):
                 lines = lines[:-1]
-            cleaned = "\n".join(lines).strip()
+            cleaned = '\n'.join(lines).strip()
         try:
             data = json.loads(cleaned)
         except json.JSONDecodeError as e:
@@ -88,7 +86,7 @@ def validate_contract(
         data = payload
     else:
         raise TypeError(
-            f"Expected dict, JSON string, or {target_schema.__name__} instance, got {type(payload).__name__}"
+            f'Expected dict, JSON string, or {target_schema.__name__} instance, got {type(payload).__name__}'
         )
 
     return target_schema.model_validate(data)
@@ -97,30 +95,30 @@ def validate_contract(
 # Built-in Contract Registrations
 register_contract(
     ContractDefinition(
-        name="forge",
-        aliases=["persona-forge", "persona_forge", "persona_init"],
+        name='forge',
+        aliases=['persona-forge', 'persona_forge', 'persona_init'],
         input_schema=PersonaForgeInput,
         output_schema=PersonaForgeOutput,
-        description="Interactive persona genesis, scaffolding, and constitutional crystallization.",
+        description='Interactive persona genesis, scaffolding, and constitutional crystallization.',
     )
 )
 
 register_contract(
     ContractDefinition(
-        name="dreaming",
-        aliases=["dreaming-compactor", "dreaming_compactor", "compactor", "sleep"],
+        name='dreaming',
+        aliases=['dreaming-compactor', 'dreaming_compactor', 'compactor', 'sleep'],
         input_schema=DreamingDeltaInput,
         output_schema=DreamingDeltaOutput,
-        description="Dehydrates session notes and chat logs into durable L1 memories and L2 graph deltas.",
+        description='Dehydrates session notes and chat logs into durable L1 memories and L2 graph deltas.',
     )
 )
 
 register_contract(
     ContractDefinition(
-        name="verification",
-        aliases=["codebase-verification", "codebase_verification", "verify"],
+        name='verification',
+        aliases=['codebase-verification', 'codebase_verification', 'verify'],
         input_schema=VerificationInput,
         output_schema=VerificationOutput,
-        description="Audits working memory claims against Git repository and filesystem ground truth.",
+        description='Audits working memory claims against Git repository and filesystem ground truth.',
     )
 )

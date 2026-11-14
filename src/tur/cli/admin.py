@@ -170,7 +170,8 @@ def persona_init(
             forge_output = PersonaForgeOutput.model_validate(p)
             pid, pname = apply_forge_output(forge_output)
             console.print(
-                f"[bold green]Persona '{pname}' ({pid}) successfully created via PersonaForgeOutput contract.[/bold green]"
+                f"[bold green]Persona '{pname}' ({pid})"
+                f" successfully created via PersonaForgeOutput contract.[/bold green]"
             )
         return
 
@@ -188,9 +189,10 @@ def persona_init(
             console.print(
                 f"[bold green]Persona '{pname}' ({pid}) successfully created via skill '{skill}'.[/bold green]"
             )
-            return
         except Exception as e:
             handle_cli_error(e, f"Error executing persona forge skill '{skill}'")
+        else:
+            return
 
     wizards.init_wizard()
 
@@ -1544,7 +1546,8 @@ def contract_validate(
             validated = validate_contract(contract_name, p, is_output=not is_input)
             success_count += 1
             console.print(
-                f"[green]✓ Record {idx}: Valid {validated.__class__.__name__} payload for contract '{contract_name}'.[/green]"
+                f"[green]✓ Record {idx}: Valid {validated.__class__.__name__}"
+                f" payload for contract '{contract_name}'.[/green]"
             )
         except Exception as e:
             console.print(f"[red]✗ Record {idx}: Validation failed for contract '{contract_name}': {e}[/red]")

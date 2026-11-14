@@ -4,17 +4,17 @@ Execution and dispatch engine for Cognitive Skill Contracts (EP-0137).
 
 import contextlib
 import json
-from pathlib import Path
 import subprocess
-from typing import Any
 import uuid
+from pathlib import Path
+from typing import Any
 
 import yaml
 
 from tur._helpers import format_delegation_prompt, yaml_safe_load
 from tur.contracts.dreaming import DreamingDeltaOutput
 from tur.contracts.forge import PersonaForgeOutput
-from tur.contracts.registry import get_contract, validate_contract
+from tur.contracts.registry import get_contract
 from tur.memory.storage import MemoryManager
 from tur.models import (
     Memory,
