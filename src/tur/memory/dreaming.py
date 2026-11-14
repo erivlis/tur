@@ -83,46 +83,82 @@ def perform_sleep_dreaming(
     persona_dir = get_persona_path(active_id)
     memory_manager = MemoryManager(base_dir=persona_dir)
 
+    from tur.contracts.dreaming import DreamingDeltaOutput
+    from tur.contracts.executor import apply_dreaming_output
+
     if commit_payload:
         payloads = parse_multi_json_payloads(commit_payload)
-        extracted_memories = []
+        count = 0
+        legacy_memories: list[dict] = []
+
         for p in payloads:
-            if isinstance(p, dict):
+            if isinstance(p, dict) and any(
+                k in p for k in ('added_memories', 'superseded_memories', 'tms_refutations', 'staged_core_memories')
+            ):
+                delta = DreamingDeltaOutput.model_validate(p)
+                res = apply_dreaming_output(delta, active_id=active_id, session_id=session_id)
+                count += res['added']
+                if res['superseded']:
+                    console.print(f"  [yellow]~ Superseded {res['superseded']} memories[/yellow]")
+                if res['refuted']:
+                    console.print(f"  [red]- Refuted {res['refuted']} memories[/red]")
+                if res['staged_core']:
+                    console.print(f"  [cyan]* Staged {res['staged_core']} core memories[/cyan]")
+            elif isinstance(p, dict):
                 if 'memories' in p and isinstance(p['memories'], list):
-                    extracted_memories.extend(p['memories'])
+                    # Could be legacy Dream schema or DreamingDeltaOutput with memories alias
+                    delta = DreamingDeltaOutput.model_validate(p)
+                    res = apply_dreaming_output(delta, active_id=active_id, session_id=session_id)
+                    count += res['added']
                 elif 'type' in p and 'content' in p:
-                    extracted_memories.append(p)
-    else:
-        prompt = build_dreaming_prompt(log_content)
+                    legacy_memories.append(p)
 
-        def build_delegation_instructions() -> str:
-            return format_delegation_prompt(
-                title='Session Epilogue & Memory Extraction Request',
-                task_instructions=(
-                    'Analyze the session chat log and extract durable long-term memories, '
-                    'categorizing each by type, scope, and tags.'
-                ),
-                input_sections=[
-                    ('Memory Extraction Principles & Scoping Rules', DREAMING_EXTRACTION_PRINCIPLES),
-                    ('Chat Log to Process', log_content),
-                ],
-                schema=Dream,
-                primary_commit_cmd="tur sleep --commit '<JSON_PAYLOAD>'",
-                secondary_commit_cmd="tur learn --json '<JSON_PAYLOAD>'",
+        for mem_data in legacy_memories:
+            m_type = MemoryType(mem_data['type']) if isinstance(mem_data['type'], str) else mem_data['type']
+            m_scope = MemoryScope(mem_data['scope']) if isinstance(mem_data['scope'], str) else mem_data['scope']
+            memory = Memory(
+                type=m_type,
+                scope=m_scope,
+                tags=[*mem_data.get('tags', []), 'dreaming'],
+                content=mem_data['content'],
+                source_session=session_id,
             )
+            memory_manager.save(memory)
+            count += 1
+            console.print(f'  [green]+ Consolidated:[/green] {memory.content[:50]}...')
 
-        resp_text = require_inference(
-            prompt=prompt,
-            ctx=ctx,
-            task_description='session dreaming extraction',
-            delegation_instructions_builder=build_delegation_instructions,
-            model=model,
-            response_schema=Dream.model_json_schema(),
+        return count
+
+    prompt = build_dreaming_prompt(log_content)
+
+    def build_delegation_instructions() -> str:
+        return format_delegation_prompt(
+            title='Session Epilogue & Memory Extraction Request',
+            task_instructions=(
+                'Analyze the session chat log and extract durable long-term memories, '
+                'categorizing each by type, scope, and tags.'
+            ),
+            input_sections=[
+                ('Memory Extraction Principles & Scoping Rules', DREAMING_EXTRACTION_PRINCIPLES),
+                ('Chat Log to Process', log_content),
+            ],
+            schema=DreamingDeltaOutput,
+            primary_commit_cmd="tur sleep --commit '<JSON_PAYLOAD>'",
+            secondary_commit_cmd="tur learn --json '<JSON_PAYLOAD>'",
         )
 
-        resp_text = _clean_json_response(resp_text)
-        dream_data = json.loads(resp_text)
-        extracted_memories = dream_data.get('memories', [])
+    resp_text = require_inference(
+        prompt=prompt,
+        ctx=ctx,
+        task_description='session dreaming extraction',
+        delegation_instructions_builder=build_delegation_instructions,
+        model=model,
+        response_schema=Dream.model_json_schema(),
+    )
+
+    resp_text = _clean_json_response(resp_text)
+    dream_data = json.loads(resp_text)
+    extracted_memories = dream_data.get('memories', dream_data.get('added_memories', []))
 
     count = 0
     for mem_data in extracted_memories:
@@ -140,6 +176,7 @@ def perform_sleep_dreaming(
         console.print(f'  [green]+ Consolidated:[/green] {memory.content[:50]}...')
 
     return count
+
 
 
 def stage_sleep_dreaming(

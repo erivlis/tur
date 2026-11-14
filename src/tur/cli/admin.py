@@ -83,12 +83,15 @@ memory_app = typer.Typer(help='Query, inspect, and manage memories in the ledger
 session_app = typer.Typer(help='Start, end, and inspect session state and notes.')
 message_app = typer.Typer(help='Inspect inter-agent messages and Lamport Vector Clocks.')
 model_app = typer.Typer(help='Manage ONNX embedding models and tokenizers.')
+contract_app = typer.Typer(help='Inspect and validate cognitive skill contracts.')
 
 app.add_typer(persona_app, name='persona')
 app.add_typer(memory_app, name='memory')
 app.add_typer(session_app, name='session')
 app.add_typer(message_app, name='message')
 app.add_typer(model_app, name='model')
+app.add_typer(contract_app, name='contract')
+
 
 
 # -----------------------------------------------------------------------------
@@ -141,8 +144,54 @@ def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
 
 @persona_app.command('init')
 @require_human
-def persona_init() -> None:
-    """Bootstrap a new persona via interactive prompts."""
+def persona_init(
+    commit: list[str] | None = typer.Option(
+        None,
+        '--commit',
+        help='Structured JSON payload(s), file path(s), or glob(s) conforming to PersonaForgeOutput.',
+    ),
+    skill: str | None = typer.Option(
+        None,
+        '--skill',
+        help='Custom external command or skill script to execute for interactive persona generation.',
+    ),
+) -> None:
+    """Bootstrap a new persona via interactive prompts or commit a PersonaForgeOutput contract."""
+    from tur._helpers import parse_multi_json_payloads
+    from tur.contracts.executor import apply_forge_output, execute_external_skill_command
+    from tur.contracts.forge import PersonaForgeInput, PersonaForgeOutput
+
+    if commit:
+        payloads = parse_multi_json_payloads(commit)
+        if not payloads:
+            console.print('[red]Error: Empty or unparseable --commit payload.[/red]')
+            raise typer.Exit(code=1)
+        for p in payloads:
+            forge_output = PersonaForgeOutput.model_validate(p)
+            pid, pname = apply_forge_output(forge_output)
+            console.print(
+                f"[bold green]Persona '{pname}' ({pid}) successfully created via PersonaForgeOutput contract.[/bold green]"
+            )
+        return
+
+    if skill:
+        ws = resolve_workspace_dir() or Path.cwd()
+        forge_input = PersonaForgeInput(
+            project_name=ws.name,
+            project_root=str(ws),
+            target_harnesses=['claude-code', 'antigravity', 'pycharm'],
+        )
+        try:
+            raw_output = execute_external_skill_command(skill, forge_input)
+            forge_output = PersonaForgeOutput.model_validate(json.loads(raw_output))
+            pid, pname = apply_forge_output(forge_output)
+            console.print(
+                f"[bold green]Persona '{pname}' ({pid}) successfully created via skill '{skill}'.[/bold green]"
+            )
+            return
+        except Exception as e:
+            handle_cli_error(e, f"Error executing persona forge skill '{skill}'")
+
     wizards.init_wizard()
 
 
@@ -1398,8 +1447,115 @@ def model_remove(
         handle_cli_error(e, f"Error removing model '{model_alias}'")
 
 
+# -----------------------------------------------------------------------------
+# CONTRACT COMMANDS GROUP (EP-0137)
+# -----------------------------------------------------------------------------
+
+
+
+@contract_app.command('list')
+def contract_list(
+    json_output: bool = typer.Option(False, '--json', '-j', help='Output registered contracts as JSON.'),
+) -> None:
+    """List all registered Cognitive Skill Contracts and their schemas."""
+    from tur.contracts.registry import list_contracts
+
+    contracts = list_contracts()
+    if json_output:
+        data = [
+            {
+                'name': c.name,
+                'aliases': c.aliases,
+                'input_schema': c.input_schema.__name__,
+                'output_schema': c.output_schema.__name__,
+                'description': c.description,
+            }
+            for c in contracts
+        ]
+        print(json.dumps(data, indent=2))
+        return
+
+
+    table = Table(title='Registered Cognitive Skill Contracts', box=box.SIMPLE)
+    table.add_column('Contract', style='bold cyan')
+    table.add_column('Aliases', style='dim')
+    table.add_column('Input Schema', style='green')
+    table.add_column('Output Schema', style='magenta')
+    table.add_column('Description')
+
+    for c in contracts:
+        aliases_str = ', '.join(c.aliases) if c.aliases else '-'
+        table.add_row(
+            c.name,
+            aliases_str,
+            c.input_schema.__name__,
+            c.output_schema.__name__,
+            c.description,
+        )
+
+    console.print(table)
+
+
+@contract_app.command('show')
+def contract_show(
+    contract_name: str = typer.Argument(..., help='Name or alias of the cognitive contract to inspect.'),
+    schema_type: str = typer.Option('output', '--type', '-t', help="Schema type to display: 'input' or 'output'."),
+) -> None:
+    """Show the JSON Schema for a specific cognitive contract."""
+    from tur.contracts.registry import get_contract
+
+    try:
+        contract = get_contract(contract_name)
+    except KeyError as e:
+        console.print(f'[red]{e}[/red]')
+        raise typer.Exit(code=1)
+
+    schema_model = contract.input_schema if schema_type.lower() == 'input' else contract.output_schema
+    schema_json = json.dumps(schema_model.model_json_schema(), indent=2)
+    print(schema_json)
+
+
+
+@contract_app.command('validate')
+def contract_validate(
+    contract_name: str = typer.Argument(..., help='Name or alias of the contract to validate against.'),
+    payload_or_path: str = typer.Argument(..., help='JSON string, file path, or glob matching the contract.'),
+    is_input: bool = typer.Option(
+        False, '--input', help='Validate against the contract input schema instead of output schema.'
+    ),
+) -> None:
+    """Validate a JSON payload or file against a registered cognitive contract schema."""
+    from tur._helpers import parse_multi_json_payloads
+    from tur.contracts.registry import validate_contract
+
+    try:
+        payloads = parse_multi_json_payloads(payload_or_path)
+    except Exception as e:
+        console.print(f'[red]Failed to parse payload: {e}[/red]')
+        raise typer.Exit(code=1)
+
+    if not payloads:
+        console.print(f"[red]No valid JSON records found in '{payload_or_path}'.[/red]")
+        raise typer.Exit(code=1)
+
+    success_count = 0
+    for idx, p in enumerate(payloads, 1):
+        try:
+            validated = validate_contract(contract_name, p, is_output=not is_input)
+            success_count += 1
+            console.print(
+                f"[green]✓ Record {idx}: Valid {validated.__class__.__name__} payload for contract '{contract_name}'.[/green]"
+            )
+        except Exception as e:
+            console.print(f"[red]✗ Record {idx}: Validation failed for contract '{contract_name}': {e}[/red]")
+            raise typer.Exit(code=1)
+
+    console.print(f'[bold green]All {success_count} record(s) successfully validated.[/bold green]')
+
+
 def main():
     app()
+
 
 
 if __name__ == '__main__':
