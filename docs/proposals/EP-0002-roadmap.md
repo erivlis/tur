@@ -15,7 +15,7 @@ status: active
 | **Status**  | Active          |
 | **Type**    | Informational   |
 | **Created** | 2026-02-19      |
-| **Updated** | 2026-09-14      |
+| **Updated** | 2026-11-14      |
 
 ## Abstract
 
@@ -275,7 +275,7 @@ The maturation of the 100-series proposals produces eight emergent architectural
       persona state while preserving workspace terrain isolation.
     * **The Modular Scaffolding Protocol (EP-0135) [Status: Final]:** Decoupling repository-root operational guidelines
       (`AGENTS.md`) from sovereign persona identity (`CONSTITUTION.md`), reducing Turn Zero wake context by 73%.
-    * **Contract-Driven Cognitive Skills and the Pluggable Forge Architecture (EP-0137) [Status: Draft]:** Establishing
+    * **Contract-Driven Cognitive Skills and the Pluggable Forge Architecture (EP-0137) [Status: Implemented]:** Establishing
       typed Pydantic I/O contracts for cognitive workflows (persona forging, dreaming, verification) with pluggable skills.
     * **Dynamic Epistemic Elevation and Principle Crystallization Lifecycle (EP-0138) [Status: Draft]:** Formalizing the
       Epistemological Ladder from empirical facts to constitutional principles, introducing falsification scoring ($\Phi$),
@@ -363,6 +363,8 @@ Roadmap document implemented across `docs/proposals/` and core CLI/MCP implement
 
 ## Change Log
 
+* **2026-11-14:**
+    * Marked **EP-0137 (Contract-Driven Cognitive Skills and the Pluggable Forge Architecture)** as **Implemented** following delivery of typed Pydantic contracts (`src/tur/contracts/`), `tur-adm contract` CLI, and cognitive skills (`dreaming`, `persona-forge`, `tur`).
 * **2026-09-14:**
     * Completed and ratified Wave 4 implementation with **EP-0144 (Zero-Dependency Dense Semantic Embeddings and ONNX Vector Retrieval)**.
     * Council of Giants review completed and unanimously ratified in **REV-0007**.
