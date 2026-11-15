@@ -1,3 +1,19 @@
+## v0.16.0 (2026-11-15)
+
+### Feat
+
+- Add Dreaming and Persona Forge cognitive skills with detailed output schemas and execution guidelines
+- Add Dreaming and Persona Forge cognitive skills with structured output schemas
+- Introduce contract management commands for cognitive skills
+
+### Refactor
+
+- Improve console output formatting and reorganize imports in admin, executor, and registry modules
+
+### Perf
+
+- **EP-0141,0147,0149**: Adds benchmarks for session, tasks, vector clocks.
+
 ## v0.15.1 (2026-09-18)
 
 ### Refactor
